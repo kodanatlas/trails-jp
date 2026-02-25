@@ -3,8 +3,9 @@ import { matchLapCenterEvents } from "@/lib/scraper/lapcenter";
 import eventsJson from "@/data/events.json";
 import type { JOEEvent } from "@/lib/scraper/events";
 
-// Vercel Cron: 15分ごと
-// vercel.json: { "path": "/api/cron/sync-lapcenter", "schedule": "*/15 * * * *" }
+// Vercel Cron: 日次 04:00 JST (19:00 UTC前日) — Hobbyプラン制約
+// Pro化後は "*/15 * * * *" に変更可能
+// vercel.json: { "path": "/api/cron/sync-lapcenter", "schedule": "0 19 * * *" }
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
