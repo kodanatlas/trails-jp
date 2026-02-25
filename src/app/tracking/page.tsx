@@ -22,10 +22,10 @@ export default function TrackingListPage() {
         </div>
         <Link
           href="/tracking/create"
-          className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-primary-dark"
+          className="flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-primary-dark sm:px-4"
         >
           <Plus className="h-3.5 w-3.5" />
-          イベント作成
+          <span className="hidden sm:inline">イベント</span>作成
         </Link>
       </div>
       <p className="mb-8 text-xs text-muted">
@@ -268,6 +268,15 @@ export default function TrackingListPage() {
             </div>
           </div>
         </div>
+
+        {/* CTA */}
+        <Link
+          href="/tracking/create"
+          className="flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
+        >
+          <Plus className="h-4 w-4" />
+          ライブ追跡イベントを作成する
+        </Link>
       </div>
     </div>
   );
