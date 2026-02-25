@@ -78,7 +78,9 @@ export function TrackingView({ event }: Props) {
   const [speed, setSpeed] = useState(10);
   const [currentTime, setCurrentTime] = useState(0);
   const [visible, setVisible] = useState<Set<string>>(() => new Set(event.participants.map((p) => p.id)));
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 640 : true
+  );
   const [splitsPanelOpen, setSplitsPanelOpen] = useState(false);
   const [showFullTrail, setShowFullTrail] = useState(false);
   const [massStart, setMassStart] = useState(false);
@@ -196,9 +198,9 @@ export function TrackingView({ event }: Props) {
             source: `full-trail-${p.id}`,
             paint: {
               "line-color": p.color,
-              "line-width": 1.5,
+              "line-width": 2.5,
               "line-opacity": 0,
-              "line-dasharray": [2, 2],
+              "line-dasharray": [4, 2],
             },
           });
 
@@ -271,7 +273,7 @@ export function TrackingView({ event }: Props) {
       try {
         mlMap.setLayoutProperty(`trail-line-${p.id}`, "visibility", isVisible ? "visible" : "none");
         mlMap.setLayoutProperty(`full-trail-line-${p.id}`, "visibility", isVisible ? "visible" : "none");
-        mlMap.setPaintProperty(`full-trail-line-${p.id}`, "line-opacity", showFullTrail && isVisible ? 0.3 : 0);
+        mlMap.setPaintProperty(`full-trail-line-${p.id}`, "line-opacity", showFullTrail && isVisible ? 0.7 : 0);
       } catch { /* layer not ready */ }
 
       const marker = markersRef.current.get(p.id);
@@ -402,7 +404,7 @@ export function TrackingView({ event }: Props) {
           id: `full-trail-line-${newParticipant.id}`,
           type: "line",
           source: `full-trail-${newParticipant.id}`,
-          paint: { "line-color": newParticipant.color, "line-width": 1.5, "line-opacity": showFullTrail ? 0.3 : 0, "line-dasharray": [2, 2] },
+          paint: { "line-color": newParticipant.color, "line-width": 2.5, "line-opacity": showFullTrail ? 0.7 : 0, "line-dasharray": [4, 2] },
         });
 
         const mod = await import("maplibre-gl");
@@ -427,7 +429,7 @@ export function TrackingView({ event }: Props) {
   }, [event.splits, event.courseOrder]);
 
   return (
-    <div className="relative flex h-[calc(100vh-56px)] overflow-hidden bg-background">
+    <div className="relative flex h-[calc(100dvh-56px)] overflow-hidden bg-background">
       {/* Left Sidebar - Participants */}
       <div
         className={`absolute left-0 top-0 z-30 flex h-full w-[calc(100vw-48px)] flex-col border-r border-border bg-card transition-transform duration-300 sm:w-72 ${
