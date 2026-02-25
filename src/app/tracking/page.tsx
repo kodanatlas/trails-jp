@@ -139,18 +139,124 @@ export default function TrackingListPage() {
           </div>
         </div>
 
-        {/* For organizers */}
+        {/* Recommended devices */}
         <div className="rounded-lg border border-border bg-surface p-5">
-          <h2 className="mb-2 text-sm font-bold">大会主催者の方へ</h2>
-          <div className="space-y-1.5 text-xs text-muted">
+          <h2 className="mb-3 text-sm font-bold">推奨GPS端末</h2>
+          <div className="space-y-3 text-xs text-muted">
             <p>
-              GPS追跡サービスの導入をご検討の方は、お気軽にお問い合わせください。
+              ライブGPS追跡には、セルラー通信（SIMカード）対応のGPSトラッカーが必要です。
+              以下の端末で動作確認済みです
             </p>
-            <ul className="ml-4 list-disc space-y-1">
-              <li>GPS端末の手配・配送・回収を含むフルサポート</li>
-              <li>大会ページへのライブ追跡リンク埋め込み</li>
-              <li>レース後のリプレイとルート分析の自動公開</li>
-            </ul>
+            <div className="space-y-2">
+              {/* Device 1 */}
+              <div className="rounded-lg border border-border bg-card p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-semibold text-foreground">Queclink GL300MA</div>
+                    <div className="mt-0.5 text-[10px] text-primary">推奨 - プロ仕様</div>
+                  </div>
+                  <span className="flex-shrink-0 rounded bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">LTE Cat-M1</span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] sm:grid-cols-4">
+                  <div><span className="text-muted">サイズ:</span> <span className="text-foreground">46×46×17mm</span></div>
+                  <div><span className="text-muted">重量:</span> <span className="text-foreground">50g</span></div>
+                  <div><span className="text-muted">バッテリー:</span> <span className="text-foreground">約12時間</span></div>
+                  <div><span className="text-muted">送信間隔:</span> <span className="text-foreground">1〜60秒</span></div>
+                </div>
+                <p className="mt-2">高精度・高耐久のプロ向けトラッカー。IP67防水で雨天の大会でも安心。送信間隔を1秒に設定可能で、最も滑らかなライブ追跡が可能</p>
+              </div>
+
+              {/* Device 2 */}
+              <div className="rounded-lg border border-border bg-card p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-semibold text-foreground">Sinotrack ST-901L</div>
+                    <div className="mt-0.5 text-[10px] text-green-400">低コスト</div>
+                  </div>
+                  <span className="flex-shrink-0 rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium text-muted">4G LTE</span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] sm:grid-cols-4">
+                  <div><span className="text-muted">サイズ:</span> <span className="text-foreground">50×36×16mm</span></div>
+                  <div><span className="text-muted">重量:</span> <span className="text-foreground">35g</span></div>
+                  <div><span className="text-muted">バッテリー:</span> <span className="text-foreground">約8時間</span></div>
+                  <div><span className="text-muted">送信間隔:</span> <span className="text-foreground">5〜60秒</span></div>
+                </div>
+                <p className="mt-2">コストパフォーマンスに優れた小型トラッカー。多数台の導入に向いており、中規模以上の大会にも対応しやすい</p>
+              </div>
+
+              {/* Device 3 */}
+              <div className="rounded-lg border border-border bg-card p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-semibold text-foreground">スマートフォンアプリ</div>
+                    <div className="mt-0.5 text-[10px] text-blue-400">端末購入不要</div>
+                  </div>
+                  <span className="flex-shrink-0 rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium text-muted">Wi-Fi / 4G</span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] sm:grid-cols-4">
+                  <div><span className="text-muted">サイズ:</span> <span className="text-foreground">各自のスマホ</span></div>
+                  <div><span className="text-muted">重量:</span> <span className="text-foreground">-</span></div>
+                  <div><span className="text-muted">バッテリー:</span> <span className="text-foreground">端末依存</span></div>
+                  <div><span className="text-muted">送信間隔:</span> <span className="text-foreground">3〜60秒</span></div>
+                </div>
+                <p className="mt-2">trails.jp専用アプリ（開発中）をインストールし、選手自身のスマートフォンで位置を送信。端末の手配が不要で、練習会やカジュアルな大会に最適</p>
+              </div>
+            </div>
+
+            <div className="rounded bg-white/5 px-3 py-2">
+              <div className="mb-1 text-[11px] font-semibold text-foreground">SIMカードについて</div>
+              <p>GPS端末にはデータ通信用のSIMカードが必要です。IIJmio、povo、SORACOM Air 等の低容量データSIMが適しています。1端末あたり月額200〜500円程度で運用可能です</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Setup guide */}
+        <div className="rounded-lg border border-border bg-surface p-5">
+          <h2 className="mb-3 text-sm font-bold">ライブ追跡の設定方法</h2>
+          <div className="space-y-3 text-xs text-muted">
+            <p>大会主催者は以下の手順でライブGPS追跡を設定できます</p>
+
+            <div className="space-y-2">
+              <div className="flex gap-3 rounded-lg border border-border bg-card p-3">
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">1</div>
+                <div>
+                  <div className="font-semibold text-foreground">イベントを作成</div>
+                  <p className="mt-0.5">大会名、日時、開催場所を入力。地図上でコース範囲を設定し、コントロール位置を登録します</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 rounded-lg border border-border bg-card p-3">
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">2</div>
+                <div>
+                  <div className="font-semibold text-foreground">GPS端末を登録</div>
+                  <p className="mt-0.5">使用するGPS端末のIMEI番号（端末固有のID）をイベントに登録。端末の送信先サーバーをtrails.jpに設定します</p>
+                  <div className="mt-1.5 rounded bg-white/5 px-2 py-1 font-mono text-[10px] text-foreground">
+                    送信先: tracking.trails.jp:5023 (TCP)
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 rounded-lg border border-border bg-card p-3">
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">3</div>
+                <div>
+                  <div className="font-semibold text-foreground">選手に端末を割り当て</div>
+                  <p className="mt-0.5">各GPS端末を選手に紐付け。選手名、所属クラブ、クラスを入力します。スタートリストのCSVインポートにも対応</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 rounded-lg border border-border bg-card p-3">
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">4</div>
+                <div>
+                  <div className="font-semibold text-foreground">ライブ配信を開始</div>
+                  <p className="mt-0.5">大会当日、管理画面から配信を開始。GPS端末の電源を入れれば自動的に位置情報が地図に反映されます。配信URLを大会サイトやSNSで共有してください</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded bg-white/5 px-3 py-2">
+              <div className="mb-1 text-[11px] font-semibold text-foreground">大会後の処理</div>
+              <p>配信終了後、ルートデータは自動的にアーカイブされ、リプレイとして公開されます。GPXファイルのエクスポートも可能です</p>
+            </div>
           </div>
         </div>
       </div>
