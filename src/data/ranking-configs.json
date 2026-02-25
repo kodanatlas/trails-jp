@@ -1,0 +1,430 @@
+[
+  {
+    "type": "elite_forest",
+    "label": "エリートフォレスト",
+    "typeId": 5,
+    "classes": [
+      {
+        "id": 39,
+        "name": "M21E",
+        "label": "男子"
+      },
+      {
+        "id": 46,
+        "name": "W21E",
+        "label": "女子"
+      }
+    ]
+  },
+  {
+    "type": "elite_sprint",
+    "label": "エリートスプリント",
+    "typeId": 17,
+    "classes": [
+      {
+        "id": 85,
+        "name": "S_Open",
+        "label": "総合"
+      },
+      {
+        "id": 86,
+        "name": "S_W",
+        "label": "女子"
+      }
+    ]
+  },
+  {
+    "type": "age_forest",
+    "label": "年齢別フォレスト",
+    "typeId": 1,
+    "classes": [
+      {
+        "id": 1,
+        "name": "無差別",
+        "label": "無差別"
+      },
+      {
+        "id": 2,
+        "name": "M15",
+        "label": "M15"
+      },
+      {
+        "id": 3,
+        "name": "M18",
+        "label": "M18"
+      },
+      {
+        "id": 4,
+        "name": "M20",
+        "label": "M20"
+      },
+      {
+        "id": 5,
+        "name": "M21",
+        "label": "M21"
+      },
+      {
+        "id": 6,
+        "name": "M25",
+        "label": "M25"
+      },
+      {
+        "id": 7,
+        "name": "M30",
+        "label": "M30"
+      },
+      {
+        "id": 8,
+        "name": "M35",
+        "label": "M35"
+      },
+      {
+        "id": 9,
+        "name": "M40",
+        "label": "M40"
+      },
+      {
+        "id": 10,
+        "name": "M45",
+        "label": "M45"
+      },
+      {
+        "id": 11,
+        "name": "M50",
+        "label": "M50"
+      },
+      {
+        "id": 12,
+        "name": "M55",
+        "label": "M55"
+      },
+      {
+        "id": 13,
+        "name": "M60",
+        "label": "M60"
+      },
+      {
+        "id": 14,
+        "name": "M65",
+        "label": "M65"
+      },
+      {
+        "id": 15,
+        "name": "M70",
+        "label": "M70"
+      },
+      {
+        "id": 16,
+        "name": "M75",
+        "label": "M75"
+      },
+      {
+        "id": 17,
+        "name": "M80",
+        "label": "M80"
+      },
+      {
+        "id": 18,
+        "name": "M85",
+        "label": "M85"
+      },
+      {
+        "id": 19,
+        "name": "M90",
+        "label": "M90"
+      },
+      {
+        "id": 20,
+        "name": "女子無差別",
+        "label": "女子無差別"
+      },
+      {
+        "id": 21,
+        "name": "W15",
+        "label": "W15"
+      },
+      {
+        "id": 22,
+        "name": "W18",
+        "label": "W18"
+      },
+      {
+        "id": 23,
+        "name": "W20",
+        "label": "W20"
+      },
+      {
+        "id": 24,
+        "name": "W21",
+        "label": "W21"
+      },
+      {
+        "id": 25,
+        "name": "W25",
+        "label": "W25"
+      },
+      {
+        "id": 26,
+        "name": "W30",
+        "label": "W30"
+      },
+      {
+        "id": 27,
+        "name": "W35",
+        "label": "W35"
+      },
+      {
+        "id": 28,
+        "name": "W40",
+        "label": "W40"
+      },
+      {
+        "id": 29,
+        "name": "W45",
+        "label": "W45"
+      },
+      {
+        "id": 30,
+        "name": "W50",
+        "label": "W50"
+      },
+      {
+        "id": 31,
+        "name": "W55",
+        "label": "W55"
+      },
+      {
+        "id": 32,
+        "name": "W60",
+        "label": "W60"
+      },
+      {
+        "id": 33,
+        "name": "W65",
+        "label": "W65"
+      },
+      {
+        "id": 34,
+        "name": "W70",
+        "label": "W70"
+      },
+      {
+        "id": 35,
+        "name": "W75",
+        "label": "W75"
+      },
+      {
+        "id": 36,
+        "name": "W80",
+        "label": "W80"
+      },
+      {
+        "id": 37,
+        "name": "W85",
+        "label": "W85"
+      },
+      {
+        "id": 38,
+        "name": "W90",
+        "label": "W90"
+      }
+    ]
+  },
+  {
+    "type": "age_sprint",
+    "label": "年齢別スプリント",
+    "typeId": 15,
+    "classes": [
+      {
+        "id": 47,
+        "name": "S_無差別",
+        "label": "無差別"
+      },
+      {
+        "id": 48,
+        "name": "S_M15",
+        "label": "M15"
+      },
+      {
+        "id": 49,
+        "name": "S_M18",
+        "label": "M18"
+      },
+      {
+        "id": 50,
+        "name": "S_M20",
+        "label": "M20"
+      },
+      {
+        "id": 51,
+        "name": "S_M21",
+        "label": "M21"
+      },
+      {
+        "id": 52,
+        "name": "S_M25",
+        "label": "M25"
+      },
+      {
+        "id": 53,
+        "name": "S_M30",
+        "label": "M30"
+      },
+      {
+        "id": 54,
+        "name": "S_M35",
+        "label": "M35"
+      },
+      {
+        "id": 55,
+        "name": "S_M40",
+        "label": "M40"
+      },
+      {
+        "id": 56,
+        "name": "S_M45",
+        "label": "M45"
+      },
+      {
+        "id": 57,
+        "name": "S_M50",
+        "label": "M50"
+      },
+      {
+        "id": 58,
+        "name": "S_M55",
+        "label": "M55"
+      },
+      {
+        "id": 59,
+        "name": "S_M60",
+        "label": "M60"
+      },
+      {
+        "id": 60,
+        "name": "S_M65",
+        "label": "M65"
+      },
+      {
+        "id": 61,
+        "name": "S_M70",
+        "label": "M70"
+      },
+      {
+        "id": 62,
+        "name": "S_M75",
+        "label": "M75"
+      },
+      {
+        "id": 63,
+        "name": "S_M80",
+        "label": "M80"
+      },
+      {
+        "id": 64,
+        "name": "S_M85",
+        "label": "M85"
+      },
+      {
+        "id": 65,
+        "name": "S_M90",
+        "label": "M90"
+      },
+      {
+        "id": 66,
+        "name": "S_女子無差別",
+        "label": "女子無差別"
+      },
+      {
+        "id": 67,
+        "name": "S_W15",
+        "label": "W15"
+      },
+      {
+        "id": 68,
+        "name": "S_W18",
+        "label": "W18"
+      },
+      {
+        "id": 69,
+        "name": "S_W20",
+        "label": "W20"
+      },
+      {
+        "id": 70,
+        "name": "S_W21",
+        "label": "W21"
+      },
+      {
+        "id": 71,
+        "name": "S_W25",
+        "label": "W25"
+      },
+      {
+        "id": 72,
+        "name": "S_W30",
+        "label": "W30"
+      },
+      {
+        "id": 73,
+        "name": "S_W35",
+        "label": "W35"
+      },
+      {
+        "id": 74,
+        "name": "S_W40",
+        "label": "W40"
+      },
+      {
+        "id": 75,
+        "name": "S_W45",
+        "label": "W45"
+      },
+      {
+        "id": 76,
+        "name": "S_W50",
+        "label": "W50"
+      },
+      {
+        "id": 77,
+        "name": "S_W55",
+        "label": "W55"
+      },
+      {
+        "id": 78,
+        "name": "S_W60",
+        "label": "W60"
+      },
+      {
+        "id": 79,
+        "name": "S_W65",
+        "label": "W65"
+      },
+      {
+        "id": 80,
+        "name": "S_W70",
+        "label": "W70"
+      },
+      {
+        "id": 81,
+        "name": "S_W75",
+        "label": "W75"
+      },
+      {
+        "id": 82,
+        "name": "S_W80",
+        "label": "W80"
+      },
+      {
+        "id": 83,
+        "name": "S_W85",
+        "label": "W85"
+      },
+      {
+        "id": 84,
+        "name": "S_W90",
+        "label": "W90"
+      }
+    ]
+  }
+]

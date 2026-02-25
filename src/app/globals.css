@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0f1720;
+  --foreground: #e8eaed;
+  --primary: #f97316;
+  --primary-dark: #ea580c;
+  --accent: #00e5ff;
+  --muted: #8a9bb0;
+  --card: #1a2332;
+  --card-hover: #1f2b3d;
+  --border: rgba(255, 255, 255, 0.08);
+  --surface: #151e2b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-border: var(--border);
+  --color-surface: var(--surface);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* MapLibre popup override */
+.maplibregl-popup-content {
+  background: #1a2332 !important;
+  color: #e8eaed !important;
+  border-radius: 8px !important;
+  padding: 4px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+.maplibregl-popup-tip {
+  border-top-color: #1a2332 !important;
+}
