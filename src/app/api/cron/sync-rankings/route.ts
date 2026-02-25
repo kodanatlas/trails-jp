@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { scrapeAllRankings } from "@/lib/scraper/rankings";
 
-// Vercel Cron: 週次月曜 06:00 JST (日曜 21:00 UTC)
-// vercel.json: { "crons": [{ "path": "/api/cron/sync-rankings", "schedule": "0 21 * * 0" }] }
+// Vercel Cron: 週次水曜 03:00 JST (火曜 18:00 UTC)
+// vercel.json: { "path": "/api/cron/sync-rankings", "schedule": "0 18 * * 2" }
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");

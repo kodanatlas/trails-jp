@@ -430,7 +430,7 @@ export function TrackingView({ event }: Props) {
     <div className="relative flex h-[calc(100vh-56px)] overflow-hidden bg-background">
       {/* Left Sidebar - Participants */}
       <div
-        className={`absolute left-0 top-0 z-30 flex h-full w-72 flex-col border-r border-border bg-card transition-transform duration-300 ${
+        className={`absolute left-0 top-0 z-30 flex h-full w-[calc(100vw-48px)] flex-col border-r border-border bg-card transition-transform duration-300 sm:w-72 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -526,15 +526,15 @@ export function TrackingView({ event }: Props) {
       <div ref={mapContainerRef} className="h-full w-full" />
 
       {/* Event Info Badge */}
-      <div className="absolute left-1/2 top-3 z-20 -translate-x-1/2">
-        <div className="flex items-center gap-2 rounded-full bg-card/90 px-4 py-1.5 shadow-lg backdrop-blur">
+      <div className="absolute left-1/2 top-3 z-20 max-w-[85vw] -translate-x-1/2 sm:max-w-none">
+        <div className="flex items-center gap-2 rounded-full bg-card/90 px-3 py-1.5 shadow-lg backdrop-blur sm:px-4">
           {event.status === "live" && (
-            <span className="flex items-center gap-1 text-[10px] font-bold text-red-400">
+            <span className="flex flex-shrink-0 items-center gap-1 text-[10px] font-bold text-red-400">
               <Radio className="h-3 w-3 animate-pulse" /> LIVE
             </span>
           )}
-          <span className="text-sm font-bold">{event.title}</span>
-          <span className="text-[10px] text-muted">{event.date}</span>
+          <span className="truncate text-xs font-bold sm:text-sm">{event.title}</span>
+          <span className="hidden text-[10px] text-muted sm:inline">{event.date}</span>
         </div>
       </div>
 
@@ -549,7 +549,7 @@ export function TrackingView({ event }: Props) {
 
       {/* Splits Panel */}
       {splitsPanelOpen && (
-        <div className="absolute right-3 top-28 z-20 max-h-[60vh] w-80 overflow-y-auto rounded-lg border border-border bg-card/95 shadow-xl backdrop-blur">
+        <div className="absolute left-3 right-3 top-28 z-20 max-h-[60vh] overflow-y-auto rounded-lg border border-border bg-card/95 shadow-xl backdrop-blur sm:left-auto sm:w-80">
           <div className="sticky top-0 border-b border-border bg-card px-3 py-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold">スプリット分析</span>
@@ -591,7 +591,7 @@ export function TrackingView({ event }: Props) {
       )}
 
       {/* Map control buttons */}
-      <div className="absolute bottom-24 right-3 z-20 flex flex-col gap-1.5">
+      <div className="absolute bottom-28 right-3 z-20 flex flex-col gap-1.5 sm:bottom-24">
         <button
           onClick={() => {
             setMassStart(!massStart);
@@ -619,9 +619,9 @@ export function TrackingView({ event }: Props) {
       </div>
 
       {/* Playback Controls */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 border-t border-border bg-card/95 backdrop-blur">
+      <div className="absolute bottom-0 left-0 right-0 z-20 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
         {/* Progress Bar */}
-        <div className="px-4 pt-2">
+        <div className="px-3 pt-2 sm:px-4">
           <input
             type="range"
             min={0}
@@ -636,15 +636,15 @@ export function TrackingView({ event }: Props) {
         </div>
 
         {/* Controls Row */}
-        <div className="flex items-center gap-3 px-4 py-2">
+        <div className="flex items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4">
           {/* Play/Pause */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
             <button
               onClick={() => { handleSeek(0); setIsPlaying(false); }}
-              className="rounded p-1.5 text-muted hover:bg-surface hover:text-foreground"
+              className="rounded p-1 text-muted hover:bg-surface hover:text-foreground sm:p-1.5"
               title="最初に戻る"
             >
-              <SkipBack className="h-4 w-4" />
+              <SkipBack className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
             <button
               onClick={() => {
@@ -653,44 +653,57 @@ export function TrackingView({ event }: Props) {
                 }
                 setIsPlaying(!isPlaying);
               }}
-              className="rounded-full bg-primary p-2 text-white shadow-lg hover:bg-primary-dark"
+              className="rounded-full bg-primary p-1.5 text-white shadow-lg hover:bg-primary-dark sm:p-2"
             >
               {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </button>
             <button
               onClick={() => handleSeek(maxTime)}
-              className="rounded p-1.5 text-muted hover:bg-surface hover:text-foreground"
+              className="rounded p-1 text-muted hover:bg-surface hover:text-foreground sm:p-1.5"
               title="最後まで"
             >
-              <SkipForward className="h-4 w-4" />
+              <SkipForward className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
           </div>
 
           {/* Time Display */}
           <div className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5 text-muted" />
-            <span className="font-mono text-sm font-bold text-primary">
+            <Clock className="hidden h-3.5 w-3.5 text-muted sm:block" />
+            <span className="font-mono text-xs font-bold text-primary sm:text-sm">
               {formatTime(currentTime)}
             </span>
-            <span className="text-xs text-muted">/ {formatTime(maxTime)}</span>
+            <span className="hidden text-xs text-muted sm:inline">/ {formatTime(maxTime)}</span>
           </div>
 
-          {/* Speed Selector */}
+          {/* Speed Selector - dropdown on mobile, buttons on desktop */}
           <div className="ml-auto flex items-center gap-1">
-            <span className="text-[10px] text-muted">速度:</span>
-            {SPEEDS.map((s) => (
-              <button
-                key={s}
-                onClick={() => setSpeed(s)}
-                className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
-                  speed === s
-                    ? "bg-primary text-white"
-                    : "text-muted hover:bg-surface hover:text-foreground"
-                }`}
-              >
-                {s}x
-              </button>
-            ))}
+            <span className="hidden text-[10px] text-muted sm:inline">速度:</span>
+            {/* Mobile: select dropdown */}
+            <select
+              value={speed}
+              onChange={(e) => setSpeed(parseInt(e.target.value, 10))}
+              className="rounded border border-border bg-surface px-2 py-1 text-xs font-medium text-foreground sm:hidden"
+            >
+              {SPEEDS.map((s) => (
+                <option key={s} value={s}>{s}x</option>
+              ))}
+            </select>
+            {/* Desktop: button row */}
+            <div className="hidden sm:flex sm:items-center sm:gap-1">
+              {SPEEDS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSpeed(s)}
+                  className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                    speed === s
+                      ? "bg-primary text-white"
+                      : "text-muted hover:bg-surface hover:text-foreground"
+                  }`}
+                >
+                  {s}x
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

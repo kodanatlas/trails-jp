@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { scrapeEvents } from "@/lib/scraper/events";
 
-// Vercel Cron: 日次 06:00 JST (21:00 UTC前日)
-// vercel.json: { "crons": [{ "path": "/api/cron/sync-events", "schedule": "0 21 * * *" }] }
+// Vercel Cron: 日次 03:00 JST (18:00 UTC前日)
+// vercel.json: { "path": "/api/cron/sync-events", "schedule": "0 18 * * *" }
 
 export async function GET(request: Request) {
   // Verify cron secret in production

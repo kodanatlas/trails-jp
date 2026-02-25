@@ -17,7 +17,7 @@ export default function RankingsPage() {
         </span>
       </div>
       <p className="mb-6 text-xs text-muted">
-        JOY から週次自動取得。最終同期: 2026-02-24 06:00 JST
+        JOY から週次（水曜 03:00 JST）自動取得。
       </p>
       <RankingView rankingConfigs={RANKING_CONFIGS} />
     </div>

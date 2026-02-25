@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { MapIcon, CalendarDays, Trophy, ArrowRight, Compass, Radio, ExternalLink } from "lucide-react";
+import { MapIcon, CalendarDays, Trophy, ArrowRight, Radio, ExternalLink } from "lucide-react";
 import { sampleMaps } from "@/lib/sample-data";
 import type { JOEEvent } from "@/lib/scraper/events";
 import eventsJson from "@/data/events.json";
+import rankingsJson from "@/data/rankings.json";
 import { TERRAIN_LABELS } from "@/lib/utils";
 
 export default function Home() {
@@ -13,6 +14,12 @@ export default function Home() {
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 4);
 
+  const rankingAthletes = new Set(
+    Object.values(rankingsJson as Record<string, { athlete_name: string }[]>)
+      .flat()
+      .map((e) => e.athlete_name)
+  ).size;
+
   const latestMaps = sampleMaps.slice(0, 6);
 
   return (
@@ -21,34 +28,44 @@ export default function Home() {
       <section className="relative overflow-hidden border-b border-border bg-surface py-16 sm:py-24">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
         <div className="relative mx-auto max-w-6xl px-4 text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs text-muted">
-            <Compass className="h-3.5 w-3.5 text-primary" />
-            日本初のオリエンテーリング統合プラットフォーム
-          </div>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
             日本の
             <span className="text-primary">オリエンテーリング</span>
             を、
             <br className="hidden sm:inline" />
-            ひとつの場所に。
+            ひとつの場所に
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base text-muted sm:text-lg">
-            地図データベース、GPS追跡、イベント情報、ランキングを統合。
+            地図データベース、GPS追跡、イベント情報、ランキングを統合
           </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/maps"
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
             >
               <MapIcon className="h-4 w-4" />
-              地図データベースを開く
+              地図データベース
+            </Link>
+            <Link
+              href="/tracking"
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
+            >
+              <Radio className="h-4 w-4" />
+              GPS追跡
             </Link>
             <Link
               href="/events"
               className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
             >
               <CalendarDays className="h-4 w-4" />
-              イベントを見る
+              イベント
+            </Link>
+            <Link
+              href="/rankings"
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
+            >
+              <Trophy className="h-4 w-4" />
+              ランキング
             </Link>
           </div>
         </div>
@@ -60,7 +77,7 @@ export default function Home() {
           {[
             { value: sampleMaps.length, label: "地図", suffix: "枚" },
             { value: allEvents.length, label: "イベント", suffix: "件" },
-            { value: "15", label: "選手ランキング", suffix: "人" },
+            { value: rankingAthletes.toLocaleString(), label: "選手ランキング", suffix: "人" },
             { value: "47", label: "対応都道府県", suffix: "" },
           ].map((stat) => (
             <div key={stat.label} className="border-r border-border px-4 py-5 text-center last:border-r-0">
