@@ -1,5 +1,4 @@
 import type { OrienteeringMap } from "@/types/map";
-import type { Event } from "@/types/event";
 import type { RankingEntry } from "@/types/ranking";
 
 export const sampleMaps: OrienteeringMap[] = [
@@ -142,107 +141,6 @@ export const sampleMaps: OrienteeringMap[] = [
   },
 ];
 
-export const sampleEvents: Event[] = [
-  {
-    id: "1",
-    name: "第50回全日本オリエンテーリング選手権大会",
-    date: "2026-11-15",
-    end_date: "2026-11-16",
-    event_type: "official",
-    location: { prefecture: "長野県", city: "上田市", venue: "菅平高原", lat: 36.5225, lng: 138.335 },
-    organizer: "日本オリエンテーリング協会",
-    map_id: "4",
-    description: "ロングディスタンス・ミドルディスタンスの2日間。日本一を決める最高峰の大会。",
-    classes: [
-      { name: "M21E", distance_km: 12.5, climb_m: 450, controls: 22 },
-      { name: "W21E", distance_km: 8.2, climb_m: 300, controls: 17 },
-      { name: "M20", distance_km: 9.0, climb_m: 350, controls: 18 },
-      { name: "W20", distance_km: 6.5, climb_m: 250, controls: 14 },
-    ],
-    status: "upcoming",
-  },
-  {
-    id: "2",
-    name: "関東スプリントシリーズ #3",
-    date: "2026-03-15",
-    event_type: "official",
-    location: { prefecture: "東京都", city: "渋谷区", venue: "代々木公園", lat: 35.671, lng: 139.694 },
-    organizer: "関東OL協会",
-    map_id: "3",
-    entry_url: "https://japan-o-entry.com/example",
-    description: "都心で開催のスプリント大会。初心者から上級者まで楽しめるクラス設定。",
-    classes: [
-      { name: "ME", distance_km: 3.2, controls: 18 },
-      { name: "WE", distance_km: 2.5, controls: 14 },
-      { name: "M/WB", distance_km: 1.8, controls: 10 },
-      { name: "M/WN", distance_km: 1.2, controls: 8 },
-    ],
-    status: "upcoming",
-  },
-  {
-    id: "3",
-    name: "千葉OL練習会",
-    date: "2026-03-08",
-    event_type: "training",
-    location: { prefecture: "千葉県", city: "千葉市", venue: "昭和の森", lat: 35.5175, lng: 140.23 },
-    organizer: "千葉OLクラブ",
-    map_id: "1",
-    description: "月例の練習会。フリーのスコアOイベント。誰でも参加可能。",
-    classes: [
-      { name: "スコアA", distance_km: 5.0, controls: 30 },
-      { name: "スコアB", distance_km: 3.0, controls: 20 },
-    ],
-    status: "upcoming",
-  },
-  {
-    id: "4",
-    name: "第30回インカレロング",
-    date: "2026-06-14",
-    end_date: "2026-06-15",
-    event_type: "official",
-    location: { prefecture: "千葉県", city: "千葉市", venue: "昭和の森周辺", lat: 35.5175, lng: 140.23 },
-    organizer: "日本学生OL連盟",
-    map_id: "1",
-    description: "大学オリエンテーリング最大の大会。ロング2日間。",
-    classes: [
-      { name: "ME", distance_km: 10.0, climb_m: 300, controls: 20 },
-      { name: "WE", distance_km: 7.0, climb_m: 200, controls: 15 },
-    ],
-    status: "upcoming",
-  },
-  {
-    id: "5",
-    name: "中部スプリントカップ 2026",
-    date: "2026-04-19",
-    event_type: "official",
-    location: { prefecture: "愛知県", city: "名古屋市", venue: "名城公園", lat: 35.186, lng: 136.901 },
-    organizer: "中部OL協会",
-    map_id: "7",
-    description: "名古屋城エリアでのスプリント大会。複雑な地形を攻略せよ。",
-    classes: [
-      { name: "ME", distance_km: 3.5, controls: 20 },
-      { name: "WE", distance_km: 2.8, controls: 16 },
-      { name: "MJ/WJ", distance_km: 2.0, controls: 12 },
-    ],
-    status: "upcoming",
-  },
-  {
-    id: "6",
-    name: "全日本スプリント選手権 2025",
-    date: "2025-10-05",
-    event_type: "official",
-    location: { prefecture: "東京都", city: "渋谷区", venue: "代々木公園", lat: 35.671, lng: 139.694 },
-    organizer: "日本オリエンテーリング協会",
-    map_id: "3",
-    results_url: "#",
-    description: "2025年のスプリント日本一決定戦。",
-    classes: [
-      { name: "M21E", distance_km: 3.8, controls: 22 },
-      { name: "W21E", distance_km: 3.0, controls: 18 },
-    ],
-    status: "completed",
-  },
-];
 
 export const sampleRankingsM21E: RankingEntry[] = [
   { rank: 1, athlete_name: "田中 太郎", club: "東大OLK", points: 1850, events_counted: 5, best_results: [{ event_name: "全日本選手権", date: "2025-11-15", rank: 1, points: 400 }, { event_name: "インカレロング", date: "2025-06-14", rank: 1, points: 380 }] },

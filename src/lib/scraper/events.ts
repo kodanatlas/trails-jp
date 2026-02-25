@@ -15,6 +15,9 @@ export interface JOEEvent {
   update_label?: string;
   lapcenter_event_id?: number;
   lapcenter_url?: string;
+  /** 大会詳細ページから取得した座標（null = ページに座標なし） */
+  lat?: number | null;
+  lng?: number | null;
 }
 
 const BASE_URL = "https://japan-o-entry.com";
@@ -128,4 +131,72 @@ function parseDate(text: string): { date: string; end_date?: string } {
   }
 
   return { date: "" };
+}
+
+// --- 座標取得 ---
+
+const COORD_RE = /var\s+lat\s*=\s*([0-9.-]+)\s*;\s*var\s+lng\s*=\s*([0-9.-]+)\s*;/;
+
+/**
+ * JOY大会詳細ページからLeaflet地図の座標を抽出
+ */
+export async function scrapeEventCoordinates(
+  joeUrl: string
+): Promise<{ lat: number; lng: number } | null> {
+  const res = await fetch(joeUrl, {
+    headers: { "User-Agent": "trails.jp/1.0 (event sync)" },
+  });
+  if (!res.ok) return null;
+  const html = await res.text();
+  const match = html.match(COORD_RE);
+  if (!match) return null;
+  const lat = parseFloat(match[1]);
+  const lng = parseFloat(match[2]);
+  if (isNaN(lat) || isNaN(lng)) return null;
+  // 日本の座標範囲チェック
+  if (lat < 20 || lat > 50 || lng < 120 || lng > 155) return null;
+  return { lat, lng };
+}
+
+/**
+ * 座標未取得のイベントに対してバッチで座標を付与
+ * @param events 対象イベント配列（in-placeで更新）
+ * @param batchSize 1回で処理する最大件数
+ * @param delayMs リクエスト間の待機時間(ms)
+ */
+export async function enrichEventsWithCoordinates(
+  events: JOEEvent[],
+  batchSize = 50,
+  delayMs = 500
+): Promise<{ enriched: number; skipped: number; failed: number }> {
+  let enriched = 0;
+  let skipped = 0;
+  let failed = 0;
+  let processed = 0;
+
+  for (const event of events) {
+    // lat が undefined でないものはスキップ（null = 座標なしページ確認済み）
+    if (event.lat !== undefined) {
+      skipped++;
+      continue;
+    }
+    if (processed >= batchSize) break;
+
+    try {
+      const coords = await scrapeEventCoordinates(event.joe_url);
+      event.lat = coords?.lat ?? null;
+      event.lng = coords?.lng ?? null;
+      if (coords) enriched++;
+    } catch {
+      failed++;
+      // lat を undefined のまま残し、次回リトライ
+    }
+
+    processed++;
+    if (delayMs > 0 && processed < batchSize) {
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+
+  return { enriched, skipped, failed };
 }

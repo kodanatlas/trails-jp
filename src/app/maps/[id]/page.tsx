@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Ruler, Mountain, Calendar, Users } from "lucide-react";
-import { sampleMaps, sampleEvents } from "@/lib/sample-data";
-import { TERRAIN_LABELS, formatDate } from "@/lib/utils";
+import { ArrowLeft, MapPin, Ruler, Mountain, Calendar, Users, ExternalLink } from "lucide-react";
+import { sampleMaps } from "@/lib/sample-data";
+import { TERRAIN_LABELS } from "@/lib/utils";
+import { findEventsForMap } from "@/lib/map-event-matcher";
+import type { JOEEvent } from "@/lib/scraper/events";
+import eventsJson from "@/data/events.json";
 import { MapViewer } from "./MapViewer";
 import { EditButton } from "./MapDetailClient";
 
@@ -31,7 +34,7 @@ export default async function MapDetailPage({ params }: Props) {
     );
   }
 
-  const relatedEvents = sampleEvents.filter((e) => e.map_id === map.id);
+  const matchedEvents = findEventsForMap(map, eventsJson as JOEEvent[]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -81,29 +84,34 @@ export default async function MapDetailPage({ params }: Props) {
         </div>
       )}
 
-      {/* Related Events */}
-      {relatedEvents.length > 0 && (
+      {/* Related JOY Events */}
+      {matchedEvents.length > 0 && (
         <div className="mt-8">
-          <h2 className="mb-3 text-sm font-bold">この地図を使用した大会</h2>
-          <div className="space-y-2">
-            {relatedEvents.map((event) => (
-              <Link
-                key={event.id}
-                href={`/events/${event.id}`}
-                className="flex items-center justify-between rounded-lg border border-border bg-card p-3 transition-all hover:border-primary/30 hover:bg-card-hover"
-              >
-                <div>
-                  <h3 className="text-sm font-medium">{event.name}</h3>
-                  <p className="text-xs text-muted">{formatDate(event.date)}</p>
-                </div>
-                <span className={`rounded px-2 py-0.5 text-[10px] font-medium ${
-                  event.status === "completed" ? "bg-white/10 text-muted" : "bg-primary/15 text-primary"
-                }`}>
-                  {event.status === "completed" ? "終了" : "開催予定"}
-                </span>
-              </Link>
-            ))}
+          <h2 className="mb-3 text-sm font-bold">このテレインで開催された大会</h2>
+          <div className="space-y-1.5">
+            {matchedEvents.map((event) => {
+              const dt = new Date(event.date);
+              const dateStr = `${dt.getFullYear()}/${dt.getMonth() + 1}/${dt.getDate()}`;
+              return (
+                <a
+                  key={event.joe_event_id}
+                  href={event.joe_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-all hover:border-primary/30 hover:bg-card-hover"
+                >
+                  <span className="flex-shrink-0 text-xs font-medium text-primary">
+                    {dateStr}
+                  </span>
+                  <span className="flex-1 truncate text-sm">{event.name}</span>
+                  <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-muted" />
+                </a>
+              );
+            })}
           </div>
+          <p className="mt-2 text-[10px] text-muted">
+            JOY掲載の大会座標がこのテレイン範囲内に含まれるイベントを自動表示
+          </p>
         </div>
       )}
     </div>
