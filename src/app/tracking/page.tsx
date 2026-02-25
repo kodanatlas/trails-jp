@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Radio, MapPin, Users, Calendar, ChevronRight } from "lucide-react";
+import { Radio, MapPin, Users, Calendar, ChevronRight, Plus } from "lucide-react";
 import { sampleTrackingEvents } from "@/lib/tracking/sample-data";
 
 export const metadata: Metadata = {
@@ -13,14 +13,23 @@ export default function TrackingListPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      <div className="mb-1 flex items-center gap-2">
-        <h1 className="text-2xl font-bold">ライブGPS追跡</h1>
-        <span className="rounded bg-green-500/15 px-2 py-0.5 text-[10px] font-medium text-green-400">
-          Route Analysis
-        </span>
+      <div className="mb-1 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">ライブGPS追跡</h1>
+          <span className="rounded bg-green-500/15 px-2 py-0.5 text-[10px] font-medium text-green-400">
+            Route Analysis
+          </span>
+        </div>
+        <Link
+          href="/tracking/create"
+          className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-primary-dark"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          イベント作成
+        </Link>
       </div>
       <p className="mb-8 text-xs text-muted">
-        大会中のリアルタイムGPS追跡とルート分析。GPXファイルのアップロードにも対応。
+        大会中のリアルタイムGPS追跡とルート分析。GPXファイルのアップロードにも対応
       </p>
 
       {/* Live Events */}
