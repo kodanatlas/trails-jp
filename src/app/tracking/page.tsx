@@ -113,33 +113,24 @@ export default function TrackingListPage() {
               GPS端末は大会当日に主催者から配布され、レース後に返却します。
               端末は軽量で競技に影響しない設計です。
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-lg border border-border bg-card p-3">
                 <div className="mb-1.5 font-semibold text-foreground">ライブGPS追跡</div>
-                <p>選手が装着したGPS端末から位置情報をリアルタイムで受信し、地図上に表示します。観戦者はWebブラウザからライブで選手の動きを追えます。</p>
+                <p>選手が装着したGPS端末から位置情報をリアルタイムで受信し、地図上に表示。観戦者はWebブラウザからライブで選手の動きを追えます</p>
                 <div className="mt-2 rounded bg-amber-500/10 px-2 py-1 text-[10px] text-amber-400">
                   GPS端末の装着が必要
                 </div>
               </div>
               <div className="rounded-lg border border-border bg-card p-3">
                 <div className="mb-1.5 font-semibold text-foreground">レース後のリプレイ</div>
-                <p>大会終了後も全選手のルートを再生し、ルートチョイスやスプリットタイムの比較分析ができます。</p>
-                <div className="mt-2 rounded bg-amber-500/10 px-2 py-1 text-[10px] text-amber-400">
-                  GPS端末の装着が必要
-                </div>
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border border-border bg-card p-3">
-                <div className="mb-1.5 font-semibold text-foreground">GPXアップロード</div>
-                <p>スポーツウォッチやスマートフォンで記録したGPXファイルをアップロードして、他の選手のルートと比較できます。</p>
+                <p>大会終了後も全選手のルートを再生し、ルートチョイスやスプリットタイムの比較分析が可能。スポーツウォッチやスマホで記録したGPXファイルをアップロードすれば、GPS端末なしでも他の選手のルートと比較できます</p>
                 <div className="mt-2 rounded bg-green-500/10 px-2 py-1 text-[10px] text-green-400">
-                  GPS端末不要 - 自分のデバイスでOK
+                  GPXアップロードならGPS端末不要
                 </div>
               </div>
               <div className="rounded-lg border border-border bg-card p-3">
                 <div className="mb-1.5 font-semibold text-foreground">スプリット分析</div>
-                <p>コントロールごとのタイムを比較し、区間順位やレッグタイムの差を可視化します。</p>
+                <p>コントロールごとのタイムを比較し、区間順位やレッグタイムの差を可視化します</p>
                 <div className="mt-2 rounded bg-blue-500/10 px-2 py-1 text-[10px] text-blue-400">
                   ライブ・リプレイ共通
                 </div>
