@@ -1,15 +1,17 @@
 import type { JOEEvent } from "@/lib/scraper/events";
 import type { OrienteeringMap } from "@/types/map";
 
+/** 3km ≈ 約0.027度（日本の緯度帯） */
+const DEFAULT_MARGIN_DEG = 0.027;
+
 /**
  * 座標がO-mapのbounds内（+margin）に含まれるか判定
- * marginDeg ≈ 0.01度 ≈ 約1km
  */
 export function isPointInBounds(
   lat: number,
   lng: number,
   bounds: OrienteeringMap["bounds"],
-  marginDeg = 0.01
+  marginDeg = DEFAULT_MARGIN_DEG
 ): boolean {
   return (
     lat >= bounds.south - marginDeg &&
@@ -21,12 +23,12 @@ export function isPointInBounds(
 
 /**
  * O-mapに紐づくJOYイベントを検索
- * イベントの座標がbounds内に含まれるものを日付降順で返す
+ * イベントの座標がbounds + 3km圏内に含まれるものを日付降順で返す
  */
 export function findEventsForMap(
   map: OrienteeringMap,
   events: JOEEvent[],
-  marginDeg = 0.01
+  marginDeg = DEFAULT_MARGIN_DEG
 ): JOEEvent[] {
   return events
     .filter(

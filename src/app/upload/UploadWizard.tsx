@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Upload, ImageIcon, FileText, MapPin, Check, ArrowLeft, ArrowRight, X, User } from "lucide-react";
+import { Upload, ImageIcon, FileText, MapPin, Check, ArrowLeft, ArrowRight, X, User, AlertTriangle } from "lucide-react";
 import { PREFECTURES, TERRAIN_LABELS } from "@/lib/utils";
 import { getCurrentUser } from "@/components/AuthGuard";
 import type { Visibility } from "@/types/user";
@@ -29,6 +29,8 @@ export function UploadWizard() {
   // Step 1
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageDimensions, setImageDimensions] = useState<{ w: number; h: number } | null>(null);
+  const [imageError, setImageError] = useState("");
   const [dragOver, setDragOver] = useState(false);
 
   // Step 2
@@ -50,11 +52,34 @@ export function UploadWizard() {
   // Submission
   const [submitted, setSubmitted] = useState(false);
 
+  const MIN_LONG_SIDE = 2000; // デジタルO-mapの最低長辺ピクセル
+
   const handleFileSelect = useCallback((file: File) => {
-    if (!file.type.startsWith("image/")) return;
+    if (!file.type.startsWith("image/")) {
+      setImageError("画像ファイルを選択してください");
+      return;
+    }
+    setImageError("");
     setImageFile(file);
+
     const reader = new FileReader();
-    reader.onload = (e) => setImagePreview(e.target?.result as string);
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setImagePreview(dataUrl);
+
+      // 解像度チェック
+      const img = new Image();
+      img.onload = () => {
+        const longSide = Math.max(img.width, img.height);
+        setImageDimensions({ w: img.width, h: img.height });
+        if (longSide < MIN_LONG_SIDE) {
+          setImageError(
+            `画像の解像度が低すぎます（${img.width}×${img.height}px）。O-mapの元データ（デジタルファイル）を使用してください。写真撮影やスクリーンショットは登録できません。長辺${MIN_LONG_SIDE}px以上が必要です`
+          );
+        }
+      };
+      img.src = dataUrl;
+    };
     reader.readAsDataURL(file);
   }, []);
 
@@ -171,7 +196,7 @@ export function UploadWizard() {
             {imagePreview ? (
               <div className="relative w-full p-4">
                 <button
-                  onClick={() => { setImageFile(null); setImagePreview(null); }}
+                  onClick={() => { setImageFile(null); setImagePreview(null); setImageDimensions(null); setImageError(""); }}
                   className="absolute right-3 top-3 z-10 rounded-full bg-card p-1.5 shadow hover:bg-card-hover"
                 >
                   <X className="h-4 w-4 text-muted" />
@@ -182,8 +207,19 @@ export function UploadWizard() {
                   className="mx-auto max-h-[400px] rounded-lg object-contain"
                 />
                 <p className="mt-3 text-center text-xs text-muted">
-                  {imageFile?.name} ({(imageFile?.size ?? 0 / 1024 / 1024).toFixed(1)} MB)
+                  {imageFile?.name} ({((imageFile?.size ?? 0) / 1024 / 1024).toFixed(1)} MB)
+                  {imageDimensions && (
+                    <span className="ml-1">— {imageDimensions.w}×{imageDimensions.h}px</span>
+                  )}
                 </p>
+                {imageError && (
+                  <div className="mx-auto mt-3 max-w-md rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2">
+                    <p className="flex items-start gap-2 text-xs text-red-400">
+                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                      {imageError}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <label className="flex cursor-pointer flex-col items-center gap-3 p-8">
@@ -212,10 +248,23 @@ export function UploadWizard() {
             )}
           </div>
 
+          <div className="mt-4 rounded-lg border border-border bg-surface p-3">
+            <p className="text-xs font-medium text-muted">登録できるO-map</p>
+            <ul className="mt-1.5 space-y-1 text-[11px] text-muted">
+              <li>- OCAD、Purple Pen等から出力したデジタルファイル（PDF/JPEG/PNG/TIFF）</li>
+              <li>- 長辺{MIN_LONG_SIDE}px以上の高解像度データ</li>
+            </ul>
+            <p className="mt-1.5 text-xs font-medium text-red-400">登録できないもの</p>
+            <ul className="mt-1 space-y-1 text-[11px] text-red-400/70">
+              <li>- 紙地図をスマートフォンで撮影した写真</li>
+              <li>- スクリーンショットや低解像度の画像</li>
+            </ul>
+          </div>
+
           <div className="mt-6 flex justify-end">
             <button
               onClick={() => setStep(2)}
-              disabled={!imageFile}
+              disabled={!imageFile || !!imageError}
               className="flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-30"
             >
               次へ <ArrowRight className="h-4 w-4" />
