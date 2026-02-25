@@ -342,7 +342,7 @@ export function TrackingView({ event }: Props) {
         const marker = markersRef.current.get(p.id);
         if (marker && pos) {
           marker.setLngLat([pos.lng, pos.lat]);
-          marker.getElement().style.display = participantTime >= 0 ? "block" : "none";
+          marker.getElement().style.display = participantTime >= 0 ? "flex" : "none";
         } else if (marker) {
           marker.getElement().style.display = "none";
         }

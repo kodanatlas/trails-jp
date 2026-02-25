@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Upload, ImageIcon, FileText, MapPin, Check, ArrowLeft, ArrowRight, X } from "lucide-react";
+import { Upload, ImageIcon, FileText, MapPin, Check, ArrowLeft, ArrowRight, X, User } from "lucide-react";
 import { PREFECTURES, TERRAIN_LABELS } from "@/lib/utils";
+import { getCurrentUser } from "@/components/AuthGuard";
 import type { Visibility } from "@/types/user";
 
 type Step = 1 | 2 | 3;
@@ -88,12 +89,12 @@ export function UploadWizard() {
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
           <Check className="h-8 w-8 text-green-400" />
         </div>
-        <h2 className="text-xl font-bold">申請を受け付けました</h2>
+        <h2 className="text-xl font-bold">O-mapを登録しました</h2>
         <p className="mt-2 text-sm text-muted">
-          管理者のレビュー後に公開されます。結果はメールでお知らせします。
+          管理者のレビュー後に公開されます。結果はメールでお知らせします
         </p>
         <p className="mt-1 text-xs text-muted">
-          通常1〜3営業日以内にレビューが完了します。
+          通常1〜3営業日以内にレビューが完了します
         </p>
         <a
           href="/maps"
@@ -109,10 +110,19 @@ export function UploadWizard() {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">地図をアップロード</h1>
+        <h1 className="text-2xl font-bold">O-map登録</h1>
         <p className="mt-1 text-sm text-muted">
-          オリエンテーリング地図を登録して、コミュニティと共有しましょう。
+          オリエンテーリング地図（O-map）をデータベースに登録して共有しましょう
         </p>
+        {(() => {
+          const u = getCurrentUser();
+          return u ? (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-muted">
+              <User className="h-3 w-3" />
+              <span>登録者: <span className="font-medium text-foreground">{u.displayName}</span></span>
+            </div>
+          ) : null;
+        })()}
       </div>
 
       {/* Step indicator */}
@@ -180,7 +190,7 @@ export function UploadWizard() {
                 <Upload className="h-12 w-12 text-muted" />
                 <div className="text-center">
                   <p className="text-sm font-medium">
-                    画像をドラッグ&ドロップ
+                    O-map画像をドラッグ&ドロップ
                   </p>
                   <p className="mt-1 text-xs text-muted">
                     またはクリックして選択
@@ -457,7 +467,7 @@ export function UploadWizard() {
 
           {/* Summary */}
           <div className="mt-6 rounded-xl border border-border bg-card p-4">
-            <h3 className="text-sm font-semibold">アップロード内容の確認</h3>
+            <h3 className="text-sm font-semibold">登録内容の確認</h3>
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <div className="text-muted">地図名</div>
               <div>{name}</div>
@@ -473,6 +483,8 @@ export function UploadWizard() {
               <div>{VISIBILITY_OPTIONS.find((v) => v.key === visibility)?.label}</div>
               <div className="text-muted">画像</div>
               <div>{imageFile?.name ?? "未選択"}</div>
+              <div className="text-muted">登録者</div>
+              <div>{getCurrentUser()?.displayName ?? "-"}</div>
             </div>
           </div>
 
@@ -487,7 +499,7 @@ export function UploadWizard() {
               onClick={handleSubmit}
               className="flex items-center gap-1.5 rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
             >
-              <Check className="h-4 w-4" /> 申請する
+              <Check className="h-4 w-4" /> 登録する
             </button>
           </div>
         </div>

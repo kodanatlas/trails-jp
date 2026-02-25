@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Compass, Upload } from "lucide-react";
+import { Menu, X, Compass, MapPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -45,8 +45,8 @@ export function Header() {
               href="/upload"
               className="ml-2 flex items-center gap-1 rounded-md bg-[#f97316]/20 px-3 py-1.5 text-sm font-medium text-[#f97316] transition-colors hover:bg-[#f97316]/30"
             >
-              <Upload className="h-3.5 w-3.5" />
-              アップロード
+              <MapPlus className="h-3.5 w-3.5" />
+              O-map登録
             </Link>
         </nav>
 
@@ -76,6 +76,14 @@ export function Header() {
               {item.label}
             </Link>
           ))}
+          <Link
+            href="/upload"
+            className="mt-1 flex items-center gap-1.5 rounded-md bg-[#f97316]/20 px-3 py-2 text-sm font-medium text-[#f97316]"
+            onClick={() => setIsOpen(false)}
+          >
+            <MapPlus className="h-3.5 w-3.5" />
+            O-map登録
+          </Link>
         </nav>
       )}
     </header>
