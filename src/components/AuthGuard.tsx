@@ -3,25 +3,23 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { LogIn, ShieldCheck, Mail, ArrowLeft, Loader2, User } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface AuthUser {
   email: string;
   displayName: string;
 }
 
-function getStoredUser(): AuthUser | null {
-  try {
-    const raw = localStorage.getItem("trails_user");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed.email && parsed.displayName) return parsed;
-  } catch { /* */ }
-  return null;
+function extractAuthUser(u: SupabaseUser): AuthUser {
+  return {
+    email: u.email!,
+    displayName: u.user_metadata?.display_name ?? u.email!,
+  };
 }
 
 /**
- * 認証ガード: 未登録ユーザーに登録を促す
- * Supabase Auth 導入後は実際のセッション管理に置き換え
+ * 認証ガード: Supabase Auth (Email OTP) で認証
  */
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null | "loading">("loading");
@@ -34,8 +32,27 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // TODO: Supabase Auth 導入後に実装
-    setUser(getStoredUser());
+    // 既存セッション確認
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(extractAuthUser(session.user));
+      } else {
+        setUser(null);
+      }
+    });
+
+    // 認証状態の変更を監視
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(extractAuthUser(session.user));
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleSendCode = async () => {
@@ -50,11 +67,20 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     setError("");
     setSending(true);
 
-    // TODO: Supabase Auth 導入後に実装
-    // await supabase.auth.signInWithOtp({ email });
-    await new Promise((r) => setTimeout(r, 1000));
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        data: { display_name: displayName.trim() },
+      },
+    });
 
     setSending(false);
+
+    if (otpError) {
+      setError(otpError.message);
+      return;
+    }
+
     setStep("confirm");
   };
 
@@ -66,14 +92,22 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     setError("");
     setVerifying(true);
 
-    // TODO: Supabase Auth 導入後に実装
-    // await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
-    await new Promise((r) => setTimeout(r, 800));
+    const { data, error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token: code,
+      type: "email",
+    });
 
-    const newUser: AuthUser = { email, displayName: displayName.trim() };
-    localStorage.setItem("trails_user", JSON.stringify(newUser));
     setVerifying(false);
-    setUser(newUser);
+
+    if (verifyError) {
+      setError(verifyError.message);
+      return;
+    }
+
+    if (data.user) {
+      setUser(extractAuthUser(data.user));
+    }
   };
 
   // ローディング中
@@ -242,8 +276,27 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** 現在のログインユーザーを取得（コンポーネント外から利用可） */
+/** 現在のログインユーザーを取得（同期的に呼び出し可能） */
 export function getCurrentUser(): AuthUser | null {
   if (typeof window === "undefined") return null;
-  return getStoredUser();
+
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!url) return null;
+    const projectRef = new URL(url).hostname.split(".")[0];
+    const key = `sb-${projectRef}-auth-token`;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    const u = parsed?.user;
+    if (!u?.email) return null;
+
+    return {
+      email: u.email,
+      displayName: u.user_metadata?.display_name ?? u.email,
+    };
+  } catch {
+    return null;
+  }
 }
