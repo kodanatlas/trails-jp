@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { Search, X, Layers, Eye, ExternalLink, ChevronRight, List } from "lucide-react";
+import { Search, X, Layers, Eye, ExternalLink, List, MapPlus } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { OrienteeringMap, TerrainType } from "@/types/map";
 import { TERRAIN_LABELS } from "@/lib/utils";
@@ -346,13 +346,22 @@ export function MapBrowser({ maps }: MapBrowserProps) {
           )}
         </div>
 
-        {/* Count */}
-        <div className="border-t border-gray-200 bg-gray-50 px-3 py-1.5 text-[11px] text-gray-400">
-          地図合計: {filtered.length} 件
+        {/* Footer */}
+        <div className="border-t border-gray-200 bg-gray-50 px-3 py-2">
+          <Link
+            href="/upload"
+            className="flex w-full items-center justify-center gap-1.5 rounded-md bg-[#f97316] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#ea580c]"
+          >
+            <MapPlus className="h-3.5 w-3.5" />
+            O-mapを登録する
+          </Link>
+          <div className="mt-1.5 text-center text-[11px] text-gray-400">
+            {filtered.length} 件のO-map
+          </div>
         </div>
       </div>
 
-      {/* Sidebar Toggle (when closed) - tab on right edge */}
+      {/* Sidebar Toggle (when closed) */}
       {!sidebarOpen && (
         <div className="absolute left-0 top-36 z-20 flex flex-col gap-1">
           <button
@@ -362,6 +371,13 @@ export function MapBrowser({ maps }: MapBrowserProps) {
           >
             <List className="h-4 w-4" />
           </button>
+          <Link
+            href="/upload"
+            className="flex items-center gap-1 rounded-r-lg bg-[#f97316] px-2 py-2 text-white shadow-lg hover:bg-[#ea580c]"
+            title="O-mapを登録する"
+          >
+            <MapPlus className="h-4 w-4" />
+          </Link>
         </div>
       )}
 
