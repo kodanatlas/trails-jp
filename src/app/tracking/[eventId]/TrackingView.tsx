@@ -208,8 +208,8 @@ export function TrackingView({ event }: Props) {
           const dotEl = document.createElement("div");
           dotEl.style.cssText = `
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 2px;
             transition: opacity 0.2s;
             pointer-events: none;
           `;
@@ -227,16 +227,16 @@ export function TrackingView({ event }: Props) {
             font-size: 9px;
             font-weight: bold;
             color: white;
-            flex-shrink: 0;
           `;
           circle.textContent = p.name.charAt(0);
           const label = document.createElement("div");
           label.style.cssText = `
-            background: rgba(0,0,0,0.7);
+            margin-top: 1px;
+            background: rgba(0,0,0,0.75);
             color: white;
             font-size: 9px;
             font-weight: 600;
-            padding: 1px 5px;
+            padding: 0 4px;
             border-radius: 3px;
             white-space: nowrap;
             line-height: 1.4;
@@ -244,7 +244,7 @@ export function TrackingView({ event }: Props) {
           label.textContent = p.name.split(" ")[0];
           dotEl.appendChild(circle);
           dotEl.appendChild(label);
-          const marker = new maplibregl.Marker({ element: dotEl, anchor: "left" })
+          const marker = new maplibregl.Marker({ element: dotEl, anchor: "center" })
             .setLngLat([event.center[1], event.center[0]])
             .addTo(mlMap);
           markersRef.current.set(p.id, marker);
@@ -408,9 +408,17 @@ export function TrackingView({ event }: Props) {
         });
 
         const mod = await import("maplibre-gl");
-        const dotEl = document.createElement("div");
-        dotEl.style.cssText = `width:14px;height:14px;border-radius:50%;background:${newParticipant.color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.5);`;
-        const marker = new mod.default.Marker({ element: dotEl })
+        const gpxDotEl = document.createElement("div");
+        gpxDotEl.style.cssText = `display:flex;flex-direction:column;align-items:center;pointer-events:none;`;
+        const gpxCircle = document.createElement("div");
+        gpxCircle.style.cssText = `width:22px;height:22px;border-radius:50%;background:${newParticipant.color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;color:white;`;
+        gpxCircle.textContent = newParticipant.name.charAt(0);
+        const gpxLabel = document.createElement("div");
+        gpxLabel.style.cssText = `margin-top:1px;background:rgba(0,0,0,0.75);color:white;font-size:9px;font-weight:600;padding:0 4px;border-radius:3px;white-space:nowrap;line-height:1.4;`;
+        gpxLabel.textContent = newParticipant.name.split(" ")[0];
+        gpxDotEl.appendChild(gpxCircle);
+        gpxDotEl.appendChild(gpxLabel);
+        const marker = new mod.default.Marker({ element: gpxDotEl, anchor: "center" })
           .setLngLat([event.center[1], event.center[0]])
           .addTo(mlMap);
         markersRef.current.set(newParticipant.id, marker);
