@@ -66,7 +66,7 @@ function ProfileHeader({ profile }: { profile: AthleteProfile }) {
           <p className="text-2xl font-bold text-primary">
             {profile.bestPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
           </p>
-          <p className="text-[10px] text-muted">最高ポイント</p>
+          <p className="text-[10px] text-muted">F・S 無差別平均</p>
         </div>
       </div>
     </div>

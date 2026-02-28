@@ -288,7 +288,20 @@ for (const [name, data] of athleteMap) {
   const forestCount = data.appearances.filter((r) => r.type.includes("forest")).length;
   const sprintCount = data.appearances.filter((r) => r.type.includes("sprint")).length;
   const bestRank = Math.min(...data.appearances.map((r) => r.rank));
-  const bestPoints = Math.max(...data.appearances.map((r) => r.totalPoints));
+
+  // ポイント = 年齢別の無差別カテゴリ (Forest + Sprint) の平均
+  // 女子選手は「女子無差別」を使用、男子は「無差別」を使用
+  const isFemale = data.appearances.some((r) => r.className === "女子無差別" || r.className === "S_女子無差別");
+  const openForestClass = isFemale ? "女子無差別" : "無差別";
+  const openSprintClass = isFemale ? "S_女子無差別" : "S_無差別";
+  const forestPts = data.appearances.find((r) => r.type === "age_forest" && r.className === openForestClass)?.totalPoints;
+  const sprintPts = data.appearances.find((r) => r.type === "age_sprint" && r.className === openSprintClass)?.totalPoints;
+  let bestPoints: number;
+  if (forestPts != null && sprintPts != null) {
+    bestPoints = Math.round(((forestPts + sprintPts) / 2) * 10) / 10;
+  } else {
+    bestPoints = forestPts ?? sprintPts ?? Math.max(...data.appearances.map((r) => r.totalPoints));
+  }
 
   athletes[name] = {
     name,
