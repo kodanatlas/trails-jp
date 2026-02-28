@@ -465,18 +465,19 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
       const candidates = joyByDate.get(p.d);
       if (!candidates) continue; // JOYにない日付はスキップ
 
-      // JOYイベントと近似一致させてタイプ判定
+      // JOYイベントとタイプ判定: 日付一致 + 名前近似一致（または同日1タイプのみ）
       let type: "forest" | "sprint" | null = null;
-      if (candidates.length === 1) {
-        // 1つだけなら名前マッチ確認
-        if (eventFuzzyMatch(p.e, candidates[0].name)) type = candidates[0].type;
+      const types = new Set(candidates.map((c) => c.type));
+      if (types.size === 1) {
+        // 同日に1タイプのみ → そのタイプを採用
+        type = candidates[0].type;
       } else {
-        // 複数ある場合は名前で最良マッチを選択
+        // 同日にforest+sprintが両方ある → 名前で判定
         for (const c of candidates) {
           if (eventFuzzyMatch(p.e, c.name)) { type = c.type; break; }
         }
       }
-      if (!type) continue; // マッチしない場合はスキップ
+      if (!type) continue;
 
       if (!dateMap.has(p.d)) dateMap.set(p.d, { date: p.d });
       const entry = dateMap.get(p.d)!;

@@ -25,6 +25,38 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/** クラブ名エイリアス → 正式名 */
+const CLUB_ALIASES: Record<string, string> = {
+  // 大学通称
+  "北大": "北海道大学", "東北大": "東北大学", "東大": "東京大学",
+  "名大": "名古屋大学", "京大": "京都大学", "阪大": "大阪大学",
+  "九大": "九州大学", "筑波大": "筑波大学", "千葉大": "千葉大学",
+  "横国大": "横浜国立大学", "金大": "金沢大学", "新大": "新潟大学",
+  "岡大": "岡山大学", "広大": "広島大学", "熊大": "熊本大学",
+  "信大": "信州大学", "静大": "静岡大学",
+  // クラブ名寄せ
+  "大阪": "大阪OLC", "練馬": "練馬OLC", "レオ": "OLCレオ",
+};
+
+/** クラブ名を正規化 (全角→半角, OLC/OLクラブ統一, 大学名統一) */
+function normalizeClub(club: string): string {
+  let s = club;
+  // 全角英数字→半角
+  s = s.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) =>
+    String.fromCharCode(c.charCodeAt(0) - 0xfee0)
+  );
+  // 大文字小文字統一
+  s = s.replace(/olc/gi, "OLC").replace(/olk/gi, "OLK");
+  // 「OLクラブ」→「OLC」
+  s = s.replace(/OLクラブ/g, "OLC");
+  // 大学OLC/OLK → 大学 (「東北大OLC」→「東北大」)
+  s = s.replace(/OLC$/, "").replace(/OLK$/, "");
+  s = s.trim();
+  // エイリアス→正式名
+  if (CLUB_ALIASES[s]) s = CLUB_ALIASES[s];
+  return s;
+}
+
 interface LCPerformance {
   d: string;  // date
   e: string;  // event name
@@ -52,6 +84,14 @@ async function main() {
   // Load tracked athletes (JOY rankings)
   const athleteIndex = JSON.parse(fs.readFileSync(ATHLETES_PATH, "utf-8"));
   const trackedNames = new Set<string>(Object.keys(athleteIndex.athletes));
+  // Build normalized name → { joyName, clubs } lookup
+  // LapCenter: "小牧 弘季" (space), club "筑波大学/ときわ走林会" (slash-separated)
+  // JOY:       "小牧弘季" (no space), clubs ["筑波大学", "ときわ走林会"]
+  const athleteLookup = new Map<string, { joyName: string; clubs: string[] }>();
+  for (const [name, summary] of Object.entries(athleteIndex.athletes) as [string, any][]) {
+    const norm = name.replace(/\s+/g, "");
+    athleteLookup.set(norm, { joyName: name, clubs: summary.clubs || [] });
+  }
   console.log(`Tracked athletes: ${trackedNames.size}`);
 
   // Load existing data (for resume)
@@ -111,11 +151,24 @@ async function main() {
       const runners = await fetchSplitList(eventId, cls.classId);
 
       for (const r of runners) {
-        // Only keep tracked athletes
-        if (!trackedNames.has(r.name)) continue;
+        // Match by normalized name (remove spaces) + club verification
+        const normalized = r.name.replace(/\s+/g, "");
+        const entry = athleteLookup.get(normalized);
+        if (!entry) continue;
 
-        if (!existing[r.name]) existing[r.name] = [];
-        existing[r.name].push({
+        // Club matching: LC club is slash-separated, JOY clubs is array
+        // Normalize both sides (全角→半角, OLクラブ→OLC, 大学OLC→大学)
+        const lcClubs = r.club ? r.club.split("/").map((c) => normalizeClub(c)) : [];
+        const joyClubs = entry.clubs.map((c) => normalizeClub(c));
+        const clubMatch =
+          lcClubs.length === 0 ||
+          joyClubs.length === 0 ||
+          lcClubs.some((lc) => joyClubs.some((joy) => lc === joy || lc.includes(joy) || joy.includes(lc)));
+
+        if (!clubMatch) continue;
+
+        if (!existing[entry.joyName]) existing[entry.joyName] = [];
+        existing[entry.joyName].push({
           d: event.date,
           e: event.name,
           c: cls.className,

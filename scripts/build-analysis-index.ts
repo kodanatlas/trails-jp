@@ -170,6 +170,9 @@ function normalizeClubName(raw: string): string {
   const aliasMap: Record<string, string> = {
     "三河": "三河OLC",
     "名椙": "名椙OLC",
+    "大阪": "大阪OLC",
+    "練馬": "練馬OLC",
+    "レオ": "OLCレオ",
   };
   if (aliasMap[name]) name = aliasMap[name];
 

@@ -20003,7 +20003,9 @@
     "venue": "栃木県「日光所野・霧降」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/1893"
+    "joe_url": "https://japan-o-entry.com/event/view/1893",
+    "lapcenter_event_id": 8984,
+    "lapcenter_url": "https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=8984&file=1"
   },
   {
     "joe_event_id": 1952,
@@ -20239,7 +20241,9 @@
     "venue": "滋賀県守山市",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/1795"
+    "joe_url": "https://japan-o-entry.com/event/view/1795",
+    "lapcenter_event_id": 9027,
+    "lapcenter_url": "https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=9027&file=1"
   },
   {
     "joe_event_id": 1835,
@@ -20684,7 +20688,9 @@
     "venue": "島根県出雲市",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/1919"
+    "joe_url": "https://japan-o-entry.com/event/view/1919",
+    "lapcenter_event_id": 9088,
+    "lapcenter_url": "https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=9088&file=1"
   },
   {
     "joe_event_id": 1470,
@@ -20694,7 +20700,9 @@
     "venue": "岐阜県恵那市「根の上高原」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/1470"
+    "joe_url": "https://japan-o-entry.com/event/view/1470",
+    "lapcenter_event_id": 9086,
+    "lapcenter_url": "https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=9086&file=1"
   },
   {
     "joe_event_id": 1981,
@@ -20790,7 +20798,9 @@
     "venue": "広島県「帝釈峡スコラ高原」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/1991"
+    "joe_url": "https://japan-o-entry.com/event/view/1991",
+    "lapcenter_event_id": 9098,
+    "lapcenter_url": "https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=9098&file=1"
   },
   {
     "joe_event_id": 2070,
@@ -22085,7 +22095,9 @@
     "venue": "茨城県「笠松運動公園」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/2143"
+    "joe_url": "https://japan-o-entry.com/event/view/2143",
+    "lapcenter_event_id": 9311,
+    "lapcenter_url": "https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=9311&file=1"
   },
   {
     "joe_event_id": 2202,
@@ -23083,7 +23095,9 @@
     "venue": "栃木県矢板市",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/2124"
+    "joe_url": "https://japan-o-entry.com/event/view/2124",
+    "lapcenter_event_id": 9466,
+    "lapcenter_url": "https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=9466&file=1"
   },
   {
     "joe_event_id": 2215,
@@ -23133,7 +23147,9 @@
     "venue": "栃木県矢板市",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/2125"
+    "joe_url": "https://japan-o-entry.com/event/view/2125",
+    "lapcenter_event_id": 9469,
+    "lapcenter_url": "https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=9469&file=1"
   },
   {
     "joe_event_id": 2016,
@@ -25628,5 +25644,26 @@
     "entry_status": "closed",
     "tags": [],
     "joe_url": "https://japan-o-entry.com/event/view/2425"
+  },
+  {
+    "joe_event_id": 2454,
+    "name": "全日本スプリント",
+    "date": "2026-02-08",
+    "lapcenter_event_id": 9581,
+    "lapcenter_url": "https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=9581&file=1"
+  },
+  {
+    "joe_event_id": 2455,
+    "name": "千葉大大会",
+    "date": "2026-02-21",
+    "lapcenter_event_id": 9596,
+    "lapcenter_url": "https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=9596&file=1"
+  },
+  {
+    "joe_event_id": 2456,
+    "name": "京葉OLクラブ大会",
+    "date": "2026-02-22",
+    "lapcenter_event_id": 9601,
+    "lapcenter_url": "https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=9601&file=1"
   }
 ]
