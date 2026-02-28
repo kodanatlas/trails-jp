@@ -192,8 +192,29 @@ function StatsCards({ profile }: { profile: AthleteProfile }) {
   );
 }
 
+type ChartRange = "6m" | "1y" | "2y" | "all";
+const CHART_RANGES: { value: ChartRange; label: string }[] = [
+  { value: "6m", label: "6ヶ月" },
+  { value: "1y", label: "1年" },
+  { value: "2y", label: "2年" },
+  { value: "all", label: "全期間" },
+];
+
+function getChartCutoff(range: ChartRange): string {
+  if (range === "all") return "";
+  const now = new Date();
+  switch (range) {
+    case "6m": now.setMonth(now.getMonth() - 6); break;
+    case "1y": now.setFullYear(now.getFullYear() - 1); break;
+    case "2y": now.setFullYear(now.getFullYear() - 2); break;
+  }
+  return now.toISOString().slice(0, 10);
+}
+
 /** スコア推移チャート — Forest / Sprint 分離 */
 function ScoreChart({ profile }: { profile: AthleteProfile }) {
+  const [chartRange, setChartRange] = useState<ChartRange>("1y");
+
   const { forestEvents, sprintEvents, chartData, hasForest, hasSprint } = useMemo(() => {
     const fEvents: { date: string; eventName: string; points: number }[] = [];
     const sEvents: { date: string; eventName: string; points: number }[] = [];
@@ -228,7 +249,10 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
       d.sName = e.eventName;
     }
 
-    const data = [...dateMap.values()].sort((a, b) => a.date.localeCompare(b.date));
+    const cutoff = getChartCutoff(chartRange);
+    const data = [...dateMap.values()]
+      .filter((d) => !cutoff || d.date >= cutoff)
+      .sort((a, b) => a.date.localeCompare(b.date));
     return {
       forestEvents: fEvents,
       sprintEvents: sEvents,
@@ -236,7 +260,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
       hasForest: fEvents.length > 0,
       hasSprint: sEvents.length > 0,
     };
-  }, [profile]);
+  }, [profile, chartRange]);
 
   if (chartData.length < 2) {
     return (
@@ -248,23 +272,40 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">
           スコア推移
         </h3>
-        <div className="flex gap-3 text-[10px]">
-          {hasForest && (
-            <span className="flex items-center gap-1 text-green-400">
-              <span className="inline-block h-2 w-2 rounded-full bg-green-400" />
-              Forest ({forestEvents.length})
-            </span>
-          )}
-          {hasSprint && (
-            <span className="flex items-center gap-1 text-blue-400">
-              <span className="inline-block h-2 w-2 rounded-full bg-blue-400" />
-              Sprint ({sprintEvents.length})
-            </span>
-          )}
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1">
+            {CHART_RANGES.map((r) => (
+              <button
+                key={r.value}
+                onClick={() => setChartRange(r.value)}
+                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                  chartRange === r.value
+                    ? "bg-primary/20 text-primary"
+                    : "text-muted hover:text-foreground"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-3 text-[10px]">
+            {hasForest && (
+              <span className="flex items-center gap-1 text-green-400">
+                <span className="inline-block h-2 w-2 rounded-full bg-green-400" />
+                Forest ({forestEvents.length})
+              </span>
+            )}
+            {hasSprint && (
+              <span className="flex items-center gap-1 text-blue-400">
+                <span className="inline-block h-2 w-2 rounded-full bg-blue-400" />
+                Sprint ({sprintEvents.length})
+              </span>
+            )}
+          </div>
         </div>
       </div>
       <div className="h-56">
