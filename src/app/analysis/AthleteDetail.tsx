@@ -57,7 +57,7 @@ export function AthleteDetail({ summary }: Props) {
       <TypeBadge profile={profile} />
       <StatsCards profile={profile} />
       <ScoreChart profile={profile} />
-      {lcData && lcData.length >= 2 && <LapCenterChart data={lcData} />}
+      {lcData && lcData.length >= 2 && <LapCenterChart data={lcData} profile={profile} />}
       <RecentEvents profile={profile} />
     </div>
   );
@@ -395,13 +395,24 @@ function valOpacity(value: number, min: number, max: number): number {
 }
 
 /** LapCenter 巡航速度・ミス率推移チャート */
-function LapCenterChart({ data }: { data: LapCenterPerformance[] }) {
+function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profile: AthleteProfile }) {
   const [chartRange, setChartRange] = useState<ChartRange>("2y");
 
   const { chartData, hasForest, hasSprint, forestCount, sprintCount, speedMin, speedMax, missMin, missMax } = useMemo(() => {
+    // JOYランキングからイベント日付→type マッピングを構築
+    const joyTypeByDate = new Map<string, "forest" | "sprint">();
+    for (const r of profile.rankings) {
+      const t = r.type.includes("forest") ? "forest" as const : r.type.includes("sprint") ? "sprint" as const : null;
+      if (!t) continue;
+      for (const e of r.events) {
+        if (e.date) joyTypeByDate.set(e.date, t);
+      }
+    }
+
     const cutoff = getChartCutoff(chartRange);
+    // JOYで判定できるイベントのみ
     const filtered = data
-      .filter((d) => !cutoff || d.d >= cutoff)
+      .filter((d) => joyTypeByDate.has(d.d) && (!cutoff || d.d >= cutoff))
       .sort((a, b) => a.d.localeCompare(b.d));
 
     // 同日同イベントは1つにまとめる（Forest/Sprint別）
@@ -416,11 +427,11 @@ function LapCenterChart({ data }: { data: LapCenterPerformance[] }) {
     let sCount = 0;
 
     for (const p of filtered) {
-      const key = `${p.d}:${p.t}`;
+      const type = joyTypeByDate.get(p.d)!;
       if (!dateMap.has(p.d)) dateMap.set(p.d, { date: p.d });
       const entry = dateMap.get(p.d)!;
 
-      if (p.t === "forest") {
+      if (type === "forest") {
         entry.fSpeed = p.s;
         entry.fMiss = p.m;
         entry.fName = p.e;
