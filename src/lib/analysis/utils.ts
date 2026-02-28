@@ -110,18 +110,18 @@ export function calcRecentForm(events: EventScore[]): number {
  * 全イベントスコアを日付順にまとめる（カテゴリ横断、重複排除）
  */
 export function getAllEvents(profile: AthleteProfile): EventScore[] {
-  const seen = new Set<string>();
-  const all: EventScore[] = [];
+  const map = new Map<string, EventScore>();
   for (const r of profile.rankings) {
     for (const e of r.events) {
+      if (!e.date) continue;
       const key = `${e.date}:${e.eventName}`;
-      if (!seen.has(key) && e.date) {
-        seen.add(key);
-        all.push(e);
+      const existing = map.get(key);
+      if (!existing || e.points > existing.points) {
+        map.set(key, e);
       }
     }
   }
-  return all.sort((a, b) => a.date.localeCompare(b.date));
+  return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /**

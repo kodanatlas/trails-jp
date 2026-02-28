@@ -242,16 +242,15 @@ for (const file of files) {
 
 // 選手ごとのイベント重複排除 + 統計計算用ヘルパー
 function dedupeEvents(events: ParsedEvent[]): ParsedEvent[] {
-  const seen = new Set<string>();
-  const result: ParsedEvent[] = [];
+  const map = new Map<string, ParsedEvent>();
   for (const e of events) {
     const key = `${e.date}:${e.eventName}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      result.push(e);
+    const existing = map.get(key);
+    if (!existing || e.points > existing.points) {
+      map.set(key, e);
     }
   }
-  return result.sort((a, b) => a.date.localeCompare(b.date));
+  return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function calcConsistency(events: ParsedEvent[]): number {
