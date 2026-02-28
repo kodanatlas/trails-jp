@@ -140,12 +140,12 @@ function parseEventList(html: string): JOEEvent[] {
 
     const joe_event_id = parseInt(idMatch[1], 10);
 
-    // Date from date-sort attribute or first cell
-    const dateSort = $row.attr("date-sort") ?? "";
+    // Date from "date" attribute (YYYY-MM-DD) or legacy "date-sort" (YYYYMMDD)
+    const dateAttr = $row.attr("date") ?? $row.attr("date-sort") ?? "";
     const dateText = cells.eq(0).text().trim();
 
-    // Parse date range (e.g., "2026/3/14-15" or "2026/3/14")
-    const { date, end_date } = parseDate(dateSort || dateText);
+    // Parse date from attribute first, then cell text
+    const { date, end_date } = parseDateWithAttr(dateAttr, dateText);
 
     // Event name
     const name = link.text().trim();
@@ -184,27 +184,55 @@ function parseEventList(html: string): JOEEvent[] {
   return events;
 }
 
-function parseDate(text: string): { date: string; end_date?: string } {
-  // Handle date-sort format: "20260302"
-  if (/^\d{8}$/.test(text)) {
-    const y = text.slice(0, 4);
-    const m = text.slice(4, 6);
-    const d = text.slice(6, 8);
-    return { date: `${y}-${m}-${d}` };
+/**
+ * date 属性 (YYYY-MM-DD) とセルテキストから日付を解析。
+ * 属性がある場合はそちらを優先し、セルテキストから end_date を抽出。
+ */
+function parseDateWithAttr(
+  dateAttr: string,
+  cellText: string
+): { date: string; end_date?: string } {
+  let date = "";
+
+  // 1. date 属性が YYYY-MM-DD 形式ならそのまま使用
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateAttr)) {
+    date = dateAttr;
+  }
+  // 2. Legacy: date-sort が YYYYMMDD 形式
+  else if (/^\d{8}$/.test(dateAttr)) {
+    date = `${dateAttr.slice(0, 4)}-${dateAttr.slice(4, 6)}-${dateAttr.slice(6, 8)}`;
+  }
+  // 3. セルテキストから年付き日付を試行: "2026/3/14" or "2026/ 1/7"
+  else {
+    const match = cellText.match(/(\d{4})\s*\/\s*(\d{1,2})\s*\/\s*(\d{1,2})/);
+    if (match) {
+      const [, y, m, d] = match;
+      date = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    }
   }
 
-  // Handle "2026/3/14" or "2026/3/14-15"
-  const match = text.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})(?:-(\d{1,2}))?/);
-  if (match) {
-    const [, y, m, d, endD] = match;
-    const date = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
-    const end_date = endD
-      ? `${y}-${m.padStart(2, "0")}-${endD.padStart(2, "0")}`
-      : undefined;
-    return { date, end_date };
+  if (!date) return { date: "" };
+
+  // end_date 抽出: "- M/D" or "- D" パターン
+  const year = date.slice(0, 4);
+  const month = date.slice(5, 7);
+  let end_date: string | undefined;
+
+  // "M/D - M/D" or "YYYY/M/D - M/D"
+  const rangeMatch = cellText.match(/-\s*(\d{1,2})\/(\d{1,2})/);
+  if (rangeMatch) {
+    const [, em, ed] = rangeMatch;
+    end_date = `${year}-${em.padStart(2, "0")}-${ed.padStart(2, "0")}`;
+  } else {
+    // "3/14-15" (same month, different day)
+    const sameMoMatch = cellText.match(/(\d{1,2})\s*-\s*(\d{1,2})(?:\s|$|\))/);
+    if (sameMoMatch) {
+      const endD = sameMoMatch[2];
+      end_date = `${year}-${month}-${endD.padStart(2, "0")}`;
+    }
   }
 
-  return { date: "" };
+  return { date, end_date };
 }
 
 // --- 座標取得 ---

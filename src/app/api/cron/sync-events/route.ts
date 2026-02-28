@@ -52,6 +52,11 @@ export async function GET(request: Request) {
     for (const event of freshEvents) {
       const existing = stored.get(event.joe_event_id);
       if (existing) {
+        // 日付が空の場合は既存データから復元
+        if (!event.date && existing.date) {
+          event.date = existing.date;
+          event.end_date = existing.end_date;
+        }
         event.lat = existing.lat;
         event.lng = existing.lng;
         event.lapcenter_event_id = existing.lapcenter_event_id;
