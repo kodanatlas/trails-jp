@@ -3,7 +3,7 @@ import { Bell } from "lucide-react";
 import { EventList } from "./EventList";
 import { readEvents } from "@/lib/events-store";
 
-export const revalidate = 3600; // 1時間ごとに再検証
+export const dynamic = "force-dynamic"; // 常に最新データを表示
 
 export const metadata: Metadata = {
   title: "イベント",
