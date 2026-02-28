@@ -3,7 +3,7 @@
  * 実行: node scripts/scrape-rankings.mjs
  */
 import * as cheerio from "cheerio";
-import { writeFileSync, mkdirSync } from "fs";
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -150,13 +150,44 @@ async function main() {
     }
   }
 
-  // カテゴリ別 JSON を public/ に保存
+  // カテゴリ別 JSON を public/ に保存（既存データのイベントスコアをマージ）
   const pubDir = join(__dirname, "..", "public", "data", "rankings");
   mkdirSync(pubDir, { recursive: true });
 
+  let mergedEvents = 0;
   for (const [key, entries] of Object.entries(allData)) {
     const filename = key.replace(":", "_") + ".json";
-    writeFileSync(join(pubDir, filename), JSON.stringify(entries));
+    const filePath = join(pubDir, filename);
+
+    // 既存ファイルがあればイベントスコアをマージ（JOYは直近~1年分しか提供しない）
+    if (existsSync(filePath)) {
+      try {
+        const existing = JSON.parse(readFileSync(filePath, "utf-8"));
+        const existingMap = new Map();
+        for (const e of existing) {
+          existingMap.set(e.athlete_name, e.event_scores || []);
+        }
+        for (const entry of entries) {
+          const oldScores = existingMap.get(entry.athlete_name);
+          if (!oldScores || oldScores.length === 0) continue;
+          // 既存イベントを Map に (event_name → max points)
+          const scoreMap = new Map();
+          for (const s of oldScores) {
+            const prev = scoreMap.get(s.event_name);
+            if (!prev || s.points > prev.points) scoreMap.set(s.event_name, s);
+          }
+          // 新しいスコアで上書き（最新が優先）
+          for (const s of entry.event_scores) {
+            scoreMap.set(s.event_name, s);
+          }
+          const before = entry.event_scores.length;
+          entry.event_scores = [...scoreMap.values()];
+          mergedEvents += entry.event_scores.length - before;
+        }
+      } catch { /* ignore parse errors */ }
+    }
+
+    writeFileSync(filePath, JSON.stringify(entries));
   }
 
   // 一括 JSON を src/data/ に保存（バックアップ用）
@@ -175,6 +206,9 @@ async function main() {
     console.log(`${config.label}: ${configEntries.length}クラス / ${count}人`);
   }
   console.log(`\n合計: ${totalAthletes}人 / ${totalCategories}カテゴリ`);
+  if (mergedEvents > 0) {
+    console.log(`蓄積: ${mergedEvents} 件のイベントスコアを過去データからマージ`);
+  }
 }
 
 main().catch(console.error);

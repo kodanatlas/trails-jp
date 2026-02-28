@@ -166,6 +166,13 @@ function normalizeClubName(raw: string): string {
     name = "ES関東C";
   }
 
+  // --- 7. 略称→正式名の個別マッピング ---
+  const aliasMap: Record<string, string> = {
+    "三河": "三河OLC",
+    "名椙": "名椙OLC",
+  };
+  if (aliasMap[name]) name = aliasMap[name];
+
   return name;
 }
 
@@ -215,8 +222,8 @@ for (const file of files) {
     const data = athleteMap.get(key)!;
 
     if (entry.club && entry.club !== "-") {
-      // "/" で区切られている場合、各クラブを個別に登録 + 名寄せ
-      const clubNames = entry.club.split("/").map((c) => normalizeClubName(c)).filter(Boolean);
+      // "/"、全角スペース、"、" で区切られている場合、各クラブを個別に登録 + 名寄せ
+      const clubNames = entry.club.split(/[\/\u3000、]/).map((c) => normalizeClubName(c)).filter(Boolean);
       for (const cn of clubNames) {
         data.clubs.add(cn);
       }
@@ -338,7 +345,14 @@ for (const profile of Object.values(athletes)) {
         rankingType: bestApp.type,
         className: bestApp.className,
         athleteType: profile.type,
-        isActive: profile.appearances.some((r) => r.isActive),
+        isActive: (() => {
+          // アクティブ = 直近6か月以内にランキング対象イベントへの参加記録がある選手
+          const cutoff = new Date();
+          cutoff.setMonth(cutoff.getMonth() - 6);
+          const cutoffStr = cutoff.toISOString().slice(0, 10);
+          const events = athleteStats.get(profile.name)?.events ?? [];
+          return events.some((e) => e.date >= cutoffStr);
+        })(),
         categoryCount: profile.appearances.length,
         recentForm: stats?.recentForm ?? 0,
         consistency: stats?.consistency ?? 0,

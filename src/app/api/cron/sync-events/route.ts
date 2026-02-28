@@ -3,6 +3,7 @@ import { scrapeEvents, scrapeArchive, enrichEventsWithCoordinates } from "@/lib/
 import type { JOEEvent } from "@/lib/scraper/events";
 import { readEvents, writeEvents } from "@/lib/events-store";
 import { scrapeAllRankings } from "@/lib/scraper/rankings";
+import { matchLapCenterEvents } from "@/lib/scraper/lapcenter";
 
 // Vercel Cron: 日次 03:00 JST (18:00 UTC)
 // 水曜日はランキング同期も実行
@@ -72,6 +73,20 @@ export async function GET(request: Request) {
     // 座標未取得のイベントをバッチ処理（50件/回、500ms間隔）
     const coordResult = await enrichEventsWithCoordinates(freshEvents, 50, 500);
 
+    // ---- Lap Center マッチング ----
+    let lapcenterResult = null;
+    try {
+      const lcResult = await matchLapCenterEvents(freshEvents);
+      lapcenterResult = {
+        matched: lcResult.matched,
+        total: lcResult.total,
+        lc_events: lcResult.lcEventsCount,
+      };
+    } catch (lcErr) {
+      console.error("Lap Center matching failed:", lcErr);
+      lapcenterResult = { error: String(lcErr) };
+    }
+
     // Supabaseに保存
     await writeEvents(freshEvents);
 
@@ -105,6 +120,7 @@ export async function GET(request: Request) {
         count: freshEvents.length,
         coordinates: coordResult,
       },
+      lapcenter: lapcenterResult,
       rankings: rankingsResult,
       synced_at: new Date().toISOString(),
     });

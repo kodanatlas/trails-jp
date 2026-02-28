@@ -184,17 +184,15 @@ export async function matchLapCenterEvents(
     [key: string]: unknown;
   }>
 ): Promise<MatchResult> {
-  // Determine which years to fetch
+  // Determine which years to fetch — min event year から current year まで全取得
   const now = new Date();
   const currentYear = now.getFullYear();
-  const years = [currentYear];
-  // Also fetch previous year if we're in the first month or have old events
-  if (now.getMonth() === 0) years.unshift(currentYear - 1);
-  // Also include previous year if events span that range
-  const minEventYear = Math.min(...joeEvents.map((e) => parseInt(e.date.slice(0, 4), 10)).filter(Boolean));
-  if (minEventYear < currentYear && !years.includes(minEventYear)) {
-    years.unshift(minEventYear);
-  }
+  const eventYears = joeEvents
+    .map((e) => parseInt(e.date.slice(0, 4), 10))
+    .filter((y) => y >= 2019 && y <= currentYear);
+  const minYear = eventYears.length > 0 ? Math.min(...eventYears) : currentYear - 1;
+  const years: number[] = [];
+  for (let y = minYear; y <= currentYear; y++) years.push(y);
 
   // Fetch Lap Center events
   const lcEvents: LapCenterEvent[] = [];
