@@ -44,7 +44,7 @@ export function EventList({ events }: EventListProps) {
   const [query, setQuery] = useState("");
   const [tagFilter, setTagFilter] = useState("");
   const [entryFilter, setEntryFilter] = useState("");
-  const [dateRange, setDateRange] = useState("1m");
+  const [dateRange, setDateRange] = useState("yesterday");
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
