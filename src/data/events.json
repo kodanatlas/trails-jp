@@ -2407,7 +2407,9 @@
     "venue": "埼玉県熊谷市「熊谷さくら運動公園",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/205"
+    "joe_url": "https://japan-o-entry.com/event/view/205",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 215,
@@ -2417,7 +2419,9 @@
     "venue": "奈良県宇陀市榛原区・桜井市・「嶽山」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/215"
+    "joe_url": "https://japan-o-entry.com/event/view/215",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 211,
@@ -2427,7 +2431,9 @@
     "venue": "埼玉県・東京都「七国峠」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/211"
+    "joe_url": "https://japan-o-entry.com/event/view/211",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 219,
@@ -2437,7 +2443,9 @@
     "venue": "京都府「淀川河川公園大山崎地区」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/219"
+    "joe_url": "https://japan-o-entry.com/event/view/219",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 197,
@@ -2447,7 +2455,9 @@
     "venue": "茨城県日立市",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/197"
+    "joe_url": "https://japan-o-entry.com/event/view/197",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 214,
@@ -2457,7 +2467,9 @@
     "venue": "神奈川県平塚市",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/214"
+    "joe_url": "https://japan-o-entry.com/event/view/214",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 218,
@@ -2467,7 +2479,9 @@
     "venue": "京都府「山城総合運動公園(太陽が丘)」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/218"
+    "joe_url": "https://japan-o-entry.com/event/view/218",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 227,
@@ -2477,7 +2491,9 @@
     "venue": "千葉県「さんぶの森」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/227"
+    "joe_url": "https://japan-o-entry.com/event/view/227",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 225,
@@ -2487,7 +2503,9 @@
     "venue": "静岡県「勢子辻(松)」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/225"
+    "joe_url": "https://japan-o-entry.com/event/view/225",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 233,
@@ -2497,7 +2515,9 @@
     "venue": "栃木県「矢板日新」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/233"
+    "joe_url": "https://japan-o-entry.com/event/view/233",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 189,
@@ -2507,7 +2527,9 @@
     "venue": "奈良県「馬見丘陵公園」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/189"
+    "joe_url": "https://japan-o-entry.com/event/view/189",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 230,
@@ -2517,7 +2539,9 @@
     "venue": "茨城県「筑波大学」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/230"
+    "joe_url": "https://japan-o-entry.com/event/view/230",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 231,
@@ -2527,7 +2551,9 @@
     "venue": "茨城県 水戸市  水戸市森林公園",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/231"
+    "joe_url": "https://japan-o-entry.com/event/view/231",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 226,
@@ -2537,7 +2563,9 @@
     "venue": "東京都「水元公園(北)」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/226"
+    "joe_url": "https://japan-o-entry.com/event/view/226",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 216,
@@ -2547,7 +2575,9 @@
     "venue": "静岡県「鳥追窪」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/216"
+    "joe_url": "https://japan-o-entry.com/event/view/216",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 239,
@@ -2557,7 +2587,9 @@
     "venue": "静岡県「筏場国有林」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/239"
+    "joe_url": "https://japan-o-entry.com/event/view/239",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 190,
@@ -2567,7 +2599,9 @@
     "venue": "静岡県「村山口登山道、鳥追窪」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/190"
+    "joe_url": "https://japan-o-entry.com/event/view/190",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 217,
@@ -2577,7 +2611,9 @@
     "venue": "神奈川県厚木市",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/217"
+    "joe_url": "https://japan-o-entry.com/event/view/217",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 234,
@@ -2587,7 +2623,9 @@
     "venue": "埼玉県 「四番金昌寺」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/234"
+    "joe_url": "https://japan-o-entry.com/event/view/234",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 232,
@@ -2597,7 +2635,9 @@
     "venue": "栃木県「矢板塩田」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/232"
+    "joe_url": "https://japan-o-entry.com/event/view/232",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 221,
@@ -2607,7 +2647,9 @@
     "venue": "岐阜県恵那市中野方町",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/221"
+    "joe_url": "https://japan-o-entry.com/event/view/221",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 222,
@@ -2617,7 +2659,9 @@
     "venue": "岐阜県恵那市中野方町",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/222"
+    "joe_url": "https://japan-o-entry.com/event/view/222",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 246,
@@ -2627,7 +2671,9 @@
     "venue": "埼玉県「赤根峠」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/246"
+    "joe_url": "https://japan-o-entry.com/event/view/246",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 242,
@@ -2637,7 +2683,9 @@
     "venue": "栃木県日光市「愛宕山、高畑」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/242"
+    "joe_url": "https://japan-o-entry.com/event/view/242",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 251,
@@ -2647,7 +2695,9 @@
     "venue": "神奈川県平塚市",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/251"
+    "joe_url": "https://japan-o-entry.com/event/view/251",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 249,
@@ -2657,7 +2707,9 @@
     "venue": "京都府「丹波自然運動公園」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/249"
+    "joe_url": "https://japan-o-entry.com/event/view/249",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 250,
@@ -2667,7 +2719,9 @@
     "venue": "大阪府岸和田市 中央公園",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/250"
+    "joe_url": "https://japan-o-entry.com/event/view/250",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 252,
@@ -2677,7 +2731,9 @@
     "venue": "栃木県日光市「愛宕山、高畑」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/252"
+    "joe_url": "https://japan-o-entry.com/event/view/252",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 259,
@@ -2687,7 +2743,9 @@
     "venue": "栃木県日光市「日光運動公園」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/259"
+    "joe_url": "https://japan-o-entry.com/event/view/259",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 240,
@@ -2697,7 +2755,9 @@
     "venue": "栃木県日光市所野・霧降地区",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/240"
+    "joe_url": "https://japan-o-entry.com/event/view/240",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 241,
@@ -2707,7 +2767,9 @@
     "venue": "埼玉県比企郡小川町・ときがわ町",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/241"
+    "joe_url": "https://japan-o-entry.com/event/view/241",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 245,
@@ -2717,7 +2779,9 @@
     "venue": "愛知県「春日井少年自然の家」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/245"
+    "joe_url": "https://japan-o-entry.com/event/view/245",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 228,
@@ -2727,7 +2791,9 @@
     "venue": "長野県安曇野市",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/228"
+    "joe_url": "https://japan-o-entry.com/event/view/228",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 235,
@@ -2738,7 +2804,9 @@
     "venue": "山梨県・長野県",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/235"
+    "joe_url": "https://japan-o-entry.com/event/view/235",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 229,
@@ -2748,7 +2816,9 @@
     "venue": "長野県安曇野市",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/229"
+    "joe_url": "https://japan-o-entry.com/event/view/229",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 247,
@@ -2758,7 +2828,9 @@
     "venue": "埼玉県東松山市",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/247"
+    "joe_url": "https://japan-o-entry.com/event/view/247",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 253,
@@ -2768,7 +2840,9 @@
     "venue": "大阪府豊中市服部緑地",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/253"
+    "joe_url": "https://japan-o-entry.com/event/view/253",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 270,
@@ -2778,7 +2852,9 @@
     "venue": "滋賀県「神秘の森・平野」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/270"
+    "joe_url": "https://japan-o-entry.com/event/view/270",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 248,
@@ -2788,7 +2864,9 @@
     "venue": "埼玉県さいたま市「さぎ山記念公園」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/248"
+    "joe_url": "https://japan-o-entry.com/event/view/248",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 257,
@@ -2798,7 +2876,9 @@
     "venue": "神奈川県 横浜国立大学常盤台キャンパス",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/257"
+    "joe_url": "https://japan-o-entry.com/event/view/257",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 264,
@@ -2808,7 +2888,9 @@
     "venue": "神奈川県 横浜国立大学常盤台キャンパス",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/264"
+    "joe_url": "https://japan-o-entry.com/event/view/264",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 262,
@@ -2818,7 +2900,9 @@
     "venue": "岐阜県「根の上高原」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/262"
+    "joe_url": "https://japan-o-entry.com/event/view/262",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 263,
@@ -2828,7 +2912,9 @@
     "venue": "三重県伊勢市「大仏山公園」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/263"
+    "joe_url": "https://japan-o-entry.com/event/view/263",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 272,
@@ -2838,7 +2924,9 @@
     "venue": "新潟県紫雲寺記念公園",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/272"
+    "joe_url": "https://japan-o-entry.com/event/view/272",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 265,
@@ -2848,7 +2936,9 @@
     "venue": "東京都「水元公園」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/265"
+    "joe_url": "https://japan-o-entry.com/event/view/265",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 267,
@@ -2858,7 +2948,9 @@
     "venue": "東京都「水元公園」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/267"
+    "joe_url": "https://japan-o-entry.com/event/view/267",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 278,
@@ -2868,7 +2960,9 @@
     "venue": "埼玉県飯能市「中山城」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/278"
+    "joe_url": "https://japan-o-entry.com/event/view/278",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 268,
@@ -2878,7 +2972,9 @@
     "venue": "東京都港区「品川シーズンテラス」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/268"
+    "joe_url": "https://japan-o-entry.com/event/view/268",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 269,
@@ -2888,7 +2984,9 @@
     "venue": "東京都 「城北中央公園」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/269"
+    "joe_url": "https://japan-o-entry.com/event/view/269",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 266,
@@ -2898,7 +2996,9 @@
     "venue": "滋賀県大津市「大津湖岸なぎさ公園」",
     "entry_status": "closed",
     "tags": [],
-    "joe_url": "https://japan-o-entry.com/event/view/266"
+    "joe_url": "https://japan-o-entry.com/event/view/266",
+    "lat": null,
+    "lng": null
   },
   {
     "joe_event_id": 273,
@@ -21805,14 +21905,16 @@
     "joe_event_id": 2374,
     "name": "2026年   JOA寄附のお願い",
     "date": "2026-01-07",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "end_date": "2026-03-20",
+    "prefecture": "",
+    "venue": "",
+    "entry_status": "open",
+    "tags": [
+      "講習"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2374",
     "lat": null,
-    "lng": null,
-    "end_date": "2026-03-20"
+    "lng": null
   },
   {
     "joe_event_id": 2327,
@@ -21969,25 +22071,29 @@
     "joe_event_id": 2443,
     "name": "ES関東C寺嶋謙一郎選手WSOC応援T販売",
     "date": "2026-02-16",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "end_date": "2026-03-15",
+    "prefecture": "",
+    "venue": "",
+    "entry_status": "open",
+    "tags": [
+      "SKI"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2443",
     "lat": null,
     "lng": null,
     "recently_updated": true,
-    "update_label": "受付開始",
-    "end_date": "2026-03-15"
+    "update_label": "受付開始"
   },
   {
     "joe_event_id": 2305,
     "name": "パークO in 関西 2025 大阪大会",
     "date": "2026-02-28",
-    "prefecture": "(締切済)",
-    "venue": "(締切済)",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "大阪府「万博記念公園」",
+    "venue": "大阪府「万博記念公園」",
+    "entry_status": "closed",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2305",
     "lat": 34.810879577354,
     "lng": 135.52917480425
@@ -21996,10 +22102,12 @@
     "joe_event_id": 2317,
     "name": "【延期】2025年度第10回若桐杯",
     "date": "2026-02-28",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "茨城県笠間市",
+    "venue": "茨城県笠間市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2317",
     "lat": null,
     "lng": null
@@ -22008,23 +22116,27 @@
     "joe_event_id": 2319,
     "name": "全日本スキーO選手権大会",
     "date": "2026-02-28",
-    "prefecture": "あと 3 日",
-    "venue": "あと 3 日",
+    "end_date": "2026-03-07",
+    "prefecture": "北海道留寿都村",
+    "venue": "北海道留寿都村",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "SKI"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2319",
     "lat": 42.752330138817,
-    "lng": 140.90311288834,
-    "end_date": "2026-03-07"
+    "lng": 140.90311288834
   },
   {
     "joe_event_id": 2427,
     "name": "上大岡シティロングO",
     "date": "2026-02-28",
-    "prefecture": "(締切済)",
-    "venue": "(締切済)",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "神奈川県横浜市",
+    "venue": "神奈川県横浜市",
+    "entry_status": "closed",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2427",
     "lat": 35.403755693446,
     "lng": 139.60751473904
@@ -22033,10 +22145,12 @@
     "joe_event_id": 2428,
     "name": "横浜OLクラブ26年2月練習会",
     "date": "2026-02-28",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "神奈川県横浜市「トキワシティ」",
+    "venue": "神奈川県横浜市「トキワシティ」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2428",
     "lat": 35.468569426638,
     "lng": 139.58348751068
@@ -22045,10 +22159,12 @@
     "joe_event_id": 2304,
     "name": "京都シティロゲイニング",
     "date": "2026-03-01",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "京都府京都市",
+    "venue": "京都府京都市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2304",
     "lat": 34.987218220126,
     "lng": 135.74565410614
@@ -22057,23 +22173,27 @@
     "joe_event_id": 2318,
     "name": "WSOC2026",
     "date": "2026-03-01",
-    "prefecture": "-",
-    "venue": "-",
+    "end_date": "2026-03-06",
+    "prefecture": "北海道留寿都村",
+    "venue": "北海道留寿都村",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "SKI"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2318",
     "lat": 42.752153143188,
-    "lng": 140.90296268463,
-    "end_date": "2026-03-06"
+    "lng": 140.90296268463
   },
   {
     "joe_event_id": 2274,
     "name": "クラブ対抗リレーオリエンテーリング大会",
     "date": "2026-03-01",
-    "prefecture": "(締切済)",
-    "venue": "(締切済)",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "埼玉県",
+    "venue": "埼玉県",
+    "entry_status": "closed",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2274",
     "lat": 36.056883128547,
     "lng": 139.47150707201
@@ -22082,10 +22202,12 @@
     "joe_event_id": 2367,
     "name": "JSPO公認コーチ更新研修会（3月OL）",
     "date": "2026-03-07",
-    "prefecture": "(締切済)",
-    "venue": "(締切済)",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "東京都（オンライン）",
+    "venue": "東京都（オンライン）",
+    "entry_status": "closed",
+    "tags": [
+      "講習"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2367",
     "lat": null,
     "lng": null
@@ -22094,10 +22216,12 @@
     "joe_event_id": 2417,
     "name": "練馬OLCインカレ直前練習会",
     "date": "2026-03-07",
-    "prefecture": "(締切済)",
-    "venue": "(締切済)",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "静岡県「裾野」",
+    "venue": "静岡県「裾野」",
+    "entry_status": "closed",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2417",
     "lat": 35.207085603964,
     "lng": 138.88438224749,
@@ -22108,10 +22232,12 @@
     "joe_event_id": 2436,
     "name": "岡山県民パークO大会(吉備中央公園)",
     "date": "2026-03-08",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "岡山県加賀郡吉備中央町吉川 さんさん広場",
+    "venue": "岡山県加賀郡吉備中央町吉川 さんさん広場",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2436",
     "lat": 34.834301173669,
     "lng": 133.76012206078
@@ -22120,23 +22246,27 @@
     "joe_event_id": 2379,
     "name": "イベントディレクタ認定試験(3月)",
     "date": "2026-03-10",
-    "prefecture": "あと 0 日",
-    "venue": "あと 0 日",
+    "end_date": "2026-03-20",
+    "prefecture": "",
+    "venue": "",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "講習"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2379",
     "lat": null,
-    "lng": null,
-    "end_date": "2026-03-20"
+    "lng": null
   },
   {
     "joe_event_id": 2412,
     "name": "丸田一門練 day1",
     "date": "2026-03-11",
-    "prefecture": "あと 1 日",
-    "venue": "あと 1 日",
+    "prefecture": "大阪府「豊能切畑」",
+    "venue": "大阪府「豊能切畑」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2412",
     "lat": 34.926554500449,
     "lng": 135.50954778517,
@@ -22147,10 +22277,12 @@
     "joe_event_id": 2413,
     "name": "丸田一門練 day2",
     "date": "2026-03-12",
-    "prefecture": "あと 1 日",
-    "venue": "あと 1 日",
+    "prefecture": "滋賀県「大平山」",
+    "venue": "滋賀県「大平山」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2413",
     "lat": 34.952283032008,
     "lng": 135.88810729987,
@@ -22161,10 +22293,12 @@
     "joe_event_id": 2386,
     "name": "インカレ協賛トレイルO",
     "date": "2026-03-13",
-    "prefecture": "あと 8 日",
-    "venue": "あと 8 日",
+    "prefecture": "三重県「青山高原」",
+    "venue": "三重県「青山高原」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "Trail"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2386",
     "lat": 34.691443624789,
     "lng": 136.21502770701
@@ -22173,10 +22307,12 @@
     "joe_event_id": 2349,
     "name": "インカレミドル2025併設大会",
     "date": "2026-03-14",
-    "prefecture": "(締切済)",
-    "venue": "(締切済)",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "三重県伊賀市「青山高原」",
+    "venue": "三重県伊賀市「青山高原」",
+    "entry_status": "closed",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2349",
     "lat": 34.688675148558,
     "lng": 136.21569871881
@@ -22185,10 +22321,12 @@
     "joe_event_id": 2403,
     "name": "松本四賀ロゲイニング",
     "date": "2026-03-14",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "長野県松本市四賀地区",
+    "venue": "長野県松本市四賀地区",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2403",
     "lat": 36.349022526973,
     "lng": 137.99095594886
@@ -22197,23 +22335,27 @@
     "joe_event_id": 2170,
     "name": "ハチ高原スキーＯ体験会",
     "date": "2026-03-14",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "end_date": "2026-03-15",
+    "prefecture": "兵庫県養父市「ハチ高原スキー場」",
+    "venue": "兵庫県養父市「ハチ高原スキー場」",
+    "entry_status": "open",
+    "tags": [
+      "SKI"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2170",
     "lat": null,
-    "lng": null,
-    "end_date": "2026-03-15"
+    "lng": null
   },
   {
     "joe_event_id": 2244,
     "name": "彩の森入間公園ＯＬ体験会＆併設ロゲ",
     "date": "2026-03-14",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "埼玉県入間市",
+    "venue": "埼玉県入間市",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2244",
     "lat": 35.83708730666,
     "lng": 139.39802616835,
@@ -22224,10 +22366,12 @@
     "joe_event_id": 2286,
     "name": "インカレミドル2025",
     "date": "2026-03-14",
-    "prefecture": "(締切済)",
-    "venue": "(締切済)",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "三重県伊賀市「青山高原」",
+    "venue": "三重県伊賀市「青山高原」",
+    "entry_status": "closed",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2286",
     "lat": 34.68834984199,
     "lng": 136.23428821564
@@ -22236,10 +22380,12 @@
     "joe_event_id": 2350,
     "name": "インカレリレー2025 併設大会",
     "date": "2026-03-15",
-    "prefecture": "(締切済)",
-    "venue": "(締切済)",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "三重県伊賀市「青山高原」",
+    "venue": "三重県伊賀市「青山高原」",
+    "entry_status": "closed",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2350",
     "lat": 34.688586929954,
     "lng": 136.21546268441
@@ -22248,10 +22394,12 @@
     "joe_event_id": 2375,
     "name": "オリエンテーリング高崎大会",
     "date": "2026-03-15",
-    "prefecture": "あと 0 日",
-    "venue": "あと 0 日",
+    "prefecture": "群馬県高崎市「観音山丘陵」",
+    "venue": "群馬県高崎市「観音山丘陵」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2375",
     "lat": 36.309996335262,
     "lng": 138.98338079453
@@ -22260,10 +22408,12 @@
     "joe_event_id": 2449,
     "name": "ひらかた街ぶらロゲイニング",
     "date": "2026-03-15",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "大阪府・枚方市",
+    "venue": "大阪府・枚方市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2449",
     "lat": 34.815034249873,
     "lng": 135.65027832979,
@@ -22274,10 +22424,12 @@
     "joe_event_id": 2282,
     "name": "インカレリレー2025",
     "date": "2026-03-15",
-    "prefecture": "(締切済)",
-    "venue": "(締切済)",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "三重県伊賀市「青山高原」",
+    "venue": "三重県伊賀市「青山高原」",
+    "entry_status": "closed",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2282",
     "lat": 34.688067541017,
     "lng": 136.23403072357
@@ -22286,10 +22438,12 @@
     "joe_event_id": 2341,
     "name": "則貞記念~第1回関東学連交流戦~",
     "date": "2026-03-18",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "",
+    "venue": "",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2341",
     "lat": null,
     "lng": null
@@ -22298,10 +22452,12 @@
     "joe_event_id": 2370,
     "name": "小豆島大会Day1ミドル",
     "date": "2026-03-20",
-    "prefecture": "(締切済)",
-    "venue": "(締切済)",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "香川県「小豆島」",
+    "venue": "香川県「小豆島」",
+    "entry_status": "closed",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2370",
     "lat": 34.514374474128,
     "lng": 134.27918599356
@@ -22310,10 +22466,12 @@
     "joe_event_id": 2422,
     "name": "三島市まちなかロゲイニング",
     "date": "2026-03-20",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "静岡県三島市",
+    "venue": "静岡県三島市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2422",
     "lat": null,
     "lng": null
@@ -22322,23 +22480,27 @@
     "joe_event_id": 2169,
     "name": "飯豊スキーＯ体験会",
     "date": "2026-03-20",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "end_date": "2026-03-22",
+    "prefecture": "山形県飯豊町「白川ダム湖岸公園」",
+    "venue": "山形県飯豊町「白川ダム湖岸公園」",
+    "entry_status": "open",
+    "tags": [
+      "SKI"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2169",
     "lat": null,
-    "lng": null,
-    "end_date": "2026-03-22"
+    "lng": null
   },
   {
     "joe_event_id": 2062,
     "name": "小豆島大会Day2ロング",
     "date": "2026-03-21",
-    "prefecture": "(締切済)",
-    "venue": "(締切済)",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "香川県「小豆島」",
+    "venue": "香川県「小豆島」",
+    "entry_status": "closed",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2062",
     "lat": 34.513819264435,
     "lng": 134.27892053255
@@ -22347,10 +22509,12 @@
     "joe_event_id": 2332,
     "name": "第1回小豆島ロゲイニング大会",
     "date": "2026-03-22",
-    "prefecture": "(締切済)",
-    "venue": "(締切済)",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "香川県小豆郡土庄町",
+    "venue": "香川県小豆郡土庄町",
+    "entry_status": "closed",
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2332",
     "lat": 34.482072516346,
     "lng": 134.19127106667
@@ -22359,10 +22523,12 @@
     "joe_event_id": 2354,
     "name": "春の里山OL体験会併設練習会",
     "date": "2026-03-22",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "埼玉県",
+    "venue": "埼玉県",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2354",
     "lat": null,
     "lng": null
@@ -22371,10 +22537,12 @@
     "joe_event_id": 2381,
     "name": "44期卒業記念杯―4年間の思い出ロゲ―",
     "date": "2026-03-22",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "京都府京都市",
+    "venue": "京都府京都市",
+    "entry_status": "open",
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2381",
     "lat": 35.022611914957,
     "lng": 135.78102493289
@@ -22383,10 +22551,12 @@
     "joe_event_id": 2401,
     "name": "第128回上尾OLC大会in上尾の森",
     "date": "2026-03-22",
-    "prefecture": "あと 9 日",
-    "venue": "あと 9 日",
+    "prefecture": "埼玉県「上尾宿/スポーツの森",
+    "venue": "埼玉県「上尾宿/スポーツの森",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2401",
     "lat": 35.968575629586,
     "lng": 139.60251476746
@@ -22395,10 +22565,12 @@
     "joe_event_id": 2429,
     "name": "静岡OLC3月練習会",
     "date": "2026-03-22",
-    "prefecture": "あと 9 日",
-    "venue": "あと 9 日",
+    "prefecture": "静岡県富士市",
+    "venue": "静岡県富士市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2429",
     "lat": 35.258462200855,
     "lng": 138.76996278763
@@ -22407,10 +22579,12 @@
     "joe_event_id": 2338,
     "name": "田中一門練",
     "date": "2026-03-24",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "京都府「山紫水明東山」",
+    "venue": "京都府「山紫水明東山」",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2338",
     "lat": 35.01962103105,
     "lng": 135.81171557307,
@@ -22421,10 +22595,12 @@
     "joe_event_id": 2359,
     "name": "第10回横浜みなとみらいロゲイニング",
     "date": "2026-03-28",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "神奈川県横浜市",
+    "venue": "神奈川県横浜市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2359",
     "lat": null,
     "lng": null
@@ -22433,10 +22609,12 @@
     "joe_event_id": 2400,
     "name": "草加フォトロゲ7",
     "date": "2026-03-28",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "埼玉県「エネクルスポーツアリーナSOKA」",
+    "venue": "埼玉県「エネクルスポーツアリーナSOKA」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2400",
     "lat": 35.811723644358,
     "lng": 139.81911226135
@@ -22445,10 +22623,12 @@
     "joe_event_id": 2211,
     "name": "第45回筑波大大会 Day1",
     "date": "2026-03-28",
-    "prefecture": "あと 0 日",
-    "venue": "あと 0 日",
+    "prefecture": "山梨県富士吉田市",
+    "venue": "山梨県富士吉田市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2211",
     "lat": 35.454034390117,
     "lng": 138.76735925653
@@ -22457,10 +22637,12 @@
     "joe_event_id": 2325,
     "name": "めえめえ練習会",
     "date": "2026-03-29",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "奈良県山添村「フォレストパーク神野山」",
+    "venue": "奈良県山添村「フォレストパーク神野山」",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2325",
     "lat": 34.674520025955,
     "lng": 135.99911212921
@@ -22469,10 +22651,12 @@
     "joe_event_id": 2407,
     "name": "オリエンテーリング講習会＆ミニ大会",
     "date": "2026-03-29",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "長野県松本市「アルプス公園」",
+    "venue": "長野県松本市「アルプス公園」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2407",
     "lat": 36.26401210568,
     "lng": 137.95330846313
@@ -22481,10 +22665,12 @@
     "joe_event_id": 2173,
     "name": "第45回筑波大大会 Day2",
     "date": "2026-03-29",
-    "prefecture": "あと 0 日",
-    "venue": "あと 0 日",
+    "prefecture": "山梨県富士吉田市",
+    "venue": "山梨県富士吉田市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2173",
     "lat": 35.453754725396,
     "lng": 138.76765966394
@@ -22493,25 +22679,29 @@
     "joe_event_id": 2287,
     "name": "JOA強化合宿（4月）",
     "date": "2026-04-04",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "end_date": "2026-04-05",
+    "prefecture": "静岡県「富士周辺」",
+    "venue": "静岡県「富士周辺」",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2287",
     "lat": null,
     "lng": null,
     "recently_updated": true,
-    "update_label": "受付開始",
-    "end_date": "2026-04-05"
+    "update_label": "受付開始"
   },
   {
     "joe_event_id": 2373,
     "name": "牛久運動公園大会2026",
     "date": "2026-04-05",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "茨城県牛久市「牛久運動公園」",
+    "venue": "茨城県牛久市「牛久運動公園」",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2373",
     "lat": 35.998134993242,
     "lng": 140.17024755478
@@ -22520,10 +22710,12 @@
     "joe_event_id": 2387,
     "name": "さいたま新都心100CPロゲ",
     "date": "2026-04-05",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "埼玉県さいたま市",
+    "venue": "埼玉県さいたま市",
+    "entry_status": "open",
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2387",
     "lat": 35.884721342007,
     "lng": 139.63678300381,
@@ -22534,10 +22726,12 @@
     "joe_event_id": 2445,
     "name": "信濃川河川敷大会",
     "date": "2026-04-05",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "新潟県長岡市",
+    "venue": "新潟県長岡市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2445",
     "lat": null,
     "lng": null,
@@ -22548,10 +22742,12 @@
     "joe_event_id": 2430,
     "name": "オリエンテーリングサロン朝霧",
     "date": "2026-04-11",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "静岡県朝霧野外活動センター",
+    "venue": "静岡県朝霧野外活動センター",
+    "entry_status": "open",
+    "tags": [
+      "講習"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2430",
     "lat": 35.385541973367,
     "lng": 138.58754038811,
@@ -22562,10 +22758,12 @@
     "joe_event_id": 2453,
     "name": "稲佐山ミニ大会",
     "date": "2026-04-11",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "長崎県長崎市「稲佐山」",
+    "venue": "長崎県長崎市「稲佐山」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2453",
     "lat": 32.758503422439,
     "lng": 129.84577655765
@@ -22574,10 +22772,12 @@
     "joe_event_id": 2176,
     "name": "富士山麓大会2026",
     "date": "2026-04-12",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "静岡県朝霧高原",
+    "venue": "静岡県朝霧高原",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2176",
     "lat": 35.385588988158,
     "lng": 138.58752965927
@@ -22586,10 +22786,12 @@
     "joe_event_id": 2103,
     "name": "白石島八十八ヶ所O",
     "date": "2026-04-18",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "岡山県笠岡市白石島",
+    "venue": "岡山県笠岡市白石島",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2103",
     "lat": 34.40734333713,
     "lng": 133.51821148399,
@@ -22600,10 +22802,12 @@
     "joe_event_id": 2419,
     "name": "ES関東C 春の新歓2026",
     "date": "2026-04-18",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "東京都",
+    "venue": "東京都",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2419",
     "lat": 35.623708771391,
     "lng": 139.76909637451
@@ -22612,10 +22816,12 @@
     "joe_event_id": 2421,
     "name": "練馬OLC春の新歓練習会",
     "date": "2026-04-18",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "",
+    "venue": "",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2421",
     "lat": null,
     "lng": null
@@ -22624,10 +22830,12 @@
     "joe_event_id": 2431,
     "name": "奥三河マウンテンO2026",
     "date": "2026-04-18",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "愛知県設楽町「つぐ高原」",
+    "venue": "愛知県設楽町「つぐ高原」",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2431",
     "lat": 35.199131669986,
     "lng": 137.60594844818,
@@ -22638,10 +22846,12 @@
     "joe_event_id": 2197,
     "name": "ジュニアチャンピオン大会（43JC）",
     "date": "2026-04-19",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "東京都青梅市・埼玉県飯能市",
+    "venue": "東京都青梅市・埼玉県飯能市",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2197",
     "lat": null,
     "lng": null,
@@ -22652,10 +22862,12 @@
     "joe_event_id": 2385,
     "name": "大阪オリエンテーリングクラブ春の練習会",
     "date": "2026-04-25",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "大阪府「服部緑地」",
+    "venue": "大阪府「服部緑地」",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2385",
     "lat": 34.777769167314,
     "lng": 135.48402190212,
@@ -22666,10 +22878,12 @@
     "joe_event_id": 2388,
     "name": "東京都心100CPロゲ 再チャレンジ",
     "date": "2026-04-25",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "東京都新宿区および文京区周辺",
+    "venue": "東京都新宿区および文京区周辺",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2388",
     "lat": 35.70809801309,
     "lng": 139.75133210421
@@ -22678,10 +22892,12 @@
     "joe_event_id": 2405,
     "name": "岡谷古墳ロゲイニング",
     "date": "2026-04-25",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "長野県岡谷市",
+    "venue": "長野県岡谷市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2405",
     "lat": 36.056797061533,
     "lng": 138.04524922374
@@ -22690,10 +22906,12 @@
     "joe_event_id": 2442,
     "name": "アスリートのための読図・ナヴィ講習",
     "date": "2026-04-25",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "京都府",
+    "venue": "京都府",
+    "entry_status": "open",
+    "tags": [
+      "講習"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2442",
     "lat": null,
     "lng": null,
@@ -22704,10 +22922,12 @@
     "joe_event_id": 2365,
     "name": "水戸観光ロゲイニング2026",
     "date": "2026-04-26",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "茨城県水戸市水戸市民会館",
+    "venue": "茨城県水戸市水戸市民会館",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2365",
     "lat": 36.378622254833,
     "lng": 140.46555233028
@@ -22716,10 +22936,12 @@
     "joe_event_id": 2384,
     "name": "京都東山マウンテンオリエンテーリング大会",
     "date": "2026-04-26",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "京都府「山紫水明東山」",
+    "venue": "京都府「山紫水明東山」",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2384",
     "lat": 35.027967654937,
     "lng": 135.79958524408,
@@ -22730,10 +22952,12 @@
     "joe_event_id": 2408,
     "name": "MTBO日本代表選考会、練習会",
     "date": "2026-04-26",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "滋賀県高島市",
+    "venue": "滋賀県高島市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "MTB"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2408",
     "lat": 35.343858599713,
     "lng": 135.91858148575
@@ -22742,10 +22966,12 @@
     "joe_event_id": 2446,
     "name": "Mountainロゲイニング in 余呉",
     "date": "2026-04-26",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "滋賀県長浜市余呉町",
+    "venue": "滋賀県長浜市余呉町",
+    "entry_status": "open",
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2446",
     "lat": 35.53418194928,
     "lng": 136.19682312012,
@@ -22756,10 +22982,12 @@
     "joe_event_id": 2201,
     "name": "茶の里いるま大会",
     "date": "2026-04-26",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "埼玉県「秩父長尾根丘陵」",
+    "venue": "埼玉県「秩父長尾根丘陵」",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2201",
     "lat": 35.991555207379,
     "lng": 139.0491271019,
@@ -22770,10 +22998,12 @@
     "joe_event_id": 2345,
     "name": "ドーリンゲン2026-1",
     "date": "2026-05-02",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "北海道「厚真、島松、大島山林」",
+    "venue": "北海道「厚真、島松、大島山林」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2345",
     "lat": null,
     "lng": null
@@ -22782,10 +23012,12 @@
     "joe_event_id": 2346,
     "name": "ドーリンゲン2026-2",
     "date": "2026-05-03",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "北海道「厚真、島松、大島山林」",
+    "venue": "北海道「厚真、島松、大島山林」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2346",
     "lat": 42.754953500462,
     "lng": 141.82010650635
@@ -22794,10 +23026,12 @@
     "joe_event_id": 2444,
     "name": "ジュニア強化選手キックオフミーティング",
     "date": "2026-05-03",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "東京都",
+    "venue": "東京都",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "講習"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2444",
     "lat": null,
     "lng": null,
@@ -22808,10 +23042,12 @@
     "joe_event_id": 2447,
     "name": "根の上高原つつじまつり大会",
     "date": "2026-05-03",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "岐阜県恵那市「根の上高原」",
+    "venue": "岐阜県恵那市「根の上高原」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2447",
     "lat": 35.446298620164,
     "lng": 137.50132888265,
@@ -22822,10 +23058,12 @@
     "joe_event_id": 2369,
     "name": "横浜観光ロゲイニング2026",
     "date": "2026-05-04",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "神奈川県横浜市開港記念会館",
+    "venue": "神奈川県横浜市開港記念会館",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2369",
     "lat": 35.447193395574,
     "lng": 139.6411571504
@@ -22834,36 +23072,42 @@
     "joe_event_id": 2418,
     "name": "JOA強化合宿",
     "date": "2026-05-04",
-    "prefecture": "-",
-    "venue": "-",
+    "end_date": "2026-05-06",
+    "prefecture": "栃木県　矢板・日光地区（予定）",
+    "venue": "栃木県　矢板・日光地区（予定）",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2418",
     "lat": 36.786353627934,
-    "lng": 139.85389070056,
-    "end_date": "2026-05-06"
+    "lng": 139.85389070056
   },
   {
     "joe_event_id": 2085,
     "name": "【延期】早大OC50周年記念大会",
     "date": "2026-05-05",
-    "prefecture": "-",
-    "venue": "-",
+    "end_date": "2026-05-06",
+    "prefecture": "福島県岩瀬郡天栄村(現在未定",
+    "venue": "福島県岩瀬郡天栄村(現在未定",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2085",
     "lat": 37.240031934216,
-    "lng": 140.06291359663,
-    "end_date": "2026-05-06"
+    "lng": 140.06291359663
   },
   {
     "joe_event_id": 2347,
     "name": "ドーリンゲン2026-3",
     "date": "2026-05-05",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "北海道「厚真、島松、大島山林」",
+    "venue": "北海道「厚真、島松、大島山林」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2347",
     "lat": null,
     "lng": null
@@ -22872,10 +23116,12 @@
     "joe_event_id": 2371,
     "name": "千葉観光ロゲイニング2026",
     "date": "2026-05-05",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "千葉県千葉市民会館",
+    "venue": "千葉県千葉市民会館",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2371",
     "lat": 35.615389339246,
     "lng": 140.12043571485
@@ -22884,10 +23130,12 @@
     "joe_event_id": 2451,
     "name": "第129回上尾ＯＬＣ大会in別府沼",
     "date": "2026-05-05",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "埼玉県「別府沼公園」",
+    "venue": "埼玉県「別府沼公園」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2451",
     "lat": null,
     "lng": null
@@ -22896,10 +23144,12 @@
     "joe_event_id": 2399,
     "name": "第3回長岡OLC大会",
     "date": "2026-05-09",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "新潟県長岡市「長岡ニュータウン公園」",
+    "venue": "新潟県長岡市「長岡ニュータウン公園」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2399",
     "lat": 37.448006124553,
     "lng": 138.74795794487
@@ -22908,10 +23158,12 @@
     "joe_event_id": 2253,
     "name": "太田満喫ロゲ2026",
     "date": "2026-05-09",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "群馬県太田市",
+    "venue": "群馬県太田市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2253",
     "lat": null,
     "lng": null
@@ -22920,10 +23172,12 @@
     "joe_event_id": 2364,
     "name": "【中止】国境平 ワクワクリレー",
     "date": "2026-05-10",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "長野県北佐久郡軽井沢町 「国境平」",
+    "venue": "長野県北佐久郡軽井沢町 「国境平」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2364",
     "lat": 36.419630245873,
     "lng": 138.58341693835
@@ -22932,10 +23186,12 @@
     "joe_event_id": 2372,
     "name": "宇都宮観光ロゲイニング2026",
     "date": "2026-05-10",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "栃木県総合文化センター",
+    "venue": "栃木県総合文化センター",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2372",
     "lat": 36.563254747005,
     "lng": 139.88257741941
@@ -22944,10 +23200,12 @@
     "joe_event_id": 2394,
     "name": "第2回角田山ロゲイニング",
     "date": "2026-05-10",
-    "prefecture": "まもなく受付",
-    "venue": "まもなく受付",
+    "prefecture": "新潟県新潟市西蒲区",
+    "venue": "新潟県新潟市西蒲区",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2394",
     "lat": 37.780561355769,
     "lng": 138.83678197861,
@@ -22958,10 +23216,12 @@
     "joe_event_id": 2414,
     "name": "2026年度第一回関西学連定例戦",
     "date": "2026-05-10",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "滋賀県大津市「皇子が丘公園」",
+    "venue": "滋賀県大津市「皇子が丘公園」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2414",
     "lat": 35.024003929333,
     "lng": 135.85446596146
@@ -22970,10 +23230,12 @@
     "joe_event_id": 2435,
     "name": "チャレンジ・オリエンテーリング",
     "date": "2026-05-10",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "岐阜県「岐阜メモリアルセンター」",
+    "venue": "岐阜県「岐阜メモリアルセンター」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2435",
     "lat": null,
     "lng": null
@@ -22982,10 +23244,12 @@
     "joe_event_id": 2356,
     "name": "富山大会Day1",
     "date": "2026-05-16",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "富山県「富山県総合運動公園」",
+    "venue": "富山県「富山県総合運動公園」",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2356",
     "lat": 36.626308124198,
     "lng": 137.19720554378
@@ -22994,10 +23258,12 @@
     "joe_event_id": 2404,
     "name": "中山道木曽路ウルトラオリエンテーリング",
     "date": "2026-05-16",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "長野県木曽地方",
+    "venue": "長野県木曽地方",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2404",
     "lat": 35.500495790419,
     "lng": 137.50347518924
@@ -23006,23 +23272,27 @@
     "joe_event_id": 2409,
     "name": "MTBO日本代表選考会、練習会",
     "date": "2026-05-16",
-    "prefecture": "-",
-    "venue": "-",
+    "end_date": "2026-05-17",
+    "prefecture": "岐阜県恵那市",
+    "venue": "岐阜県恵那市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "MTB"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2409",
     "lat": 35.443744145695,
-    "lng": 137.50028014183,
-    "end_date": "2026-05-17"
+    "lng": 137.50028014183
   },
   {
     "joe_event_id": 2355,
     "name": "富山大会Day2兼代表選考会",
     "date": "2026-05-17",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "富山県「県民公園太閤山ランド」",
+    "venue": "富山県「県民公園太閤山ランド」",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2355",
     "lat": 36.692572483944,
     "lng": 137.10425090816
@@ -23031,23 +23301,27 @@
     "joe_event_id": 2382,
     "name": "奥三河ほうらいせん2days2026",
     "date": "2026-05-23",
-    "prefecture": "-",
-    "venue": "-",
+    "end_date": "2026-05-24",
+    "prefecture": "愛知県設楽町",
+    "venue": "愛知県設楽町",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2382",
     "lat": 35.198299104702,
-    "lng": 137.60696615325,
-    "end_date": "2026-05-24"
+    "lng": 137.60696615325
   },
   {
     "joe_event_id": 2391,
     "name": "ＫＯＬＡ新歓スプリント2026",
     "date": "2026-05-23",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "大阪府　岸和田中央公園",
+    "venue": "大阪府　岸和田中央公園",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2391",
     "lat": 34.470213508,
     "lng": 135.39640788712
@@ -23056,10 +23330,12 @@
     "joe_event_id": 2420,
     "name": "第53回太田市民オリエンテーリング大会",
     "date": "2026-05-24",
-    "prefecture": "まもなく受付",
-    "venue": "まもなく受付",
+    "prefecture": "群馬県太田市「金山」（仮称）",
+    "venue": "群馬県太田市「金山」（仮称）",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2420",
     "lat": 36.304508370315,
     "lng": 139.3785238266,
@@ -23070,23 +23346,27 @@
     "joe_event_id": 2410,
     "name": "MTBO日本代表選考会、練習会（仮）",
     "date": "2026-05-30",
-    "prefecture": "-",
-    "venue": "-",
+    "end_date": "2026-05-31",
+    "prefecture": "三重県津市",
+    "venue": "三重県津市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "MTB"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2410",
     "lat": 34.676546965547,
-    "lng": 136.31941080093,
-    "end_date": "2026-05-31"
+    "lng": 136.31941080093
   },
   {
     "joe_event_id": 2402,
     "name": "第14回ウェルカムリレー",
     "date": "2026-05-31",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "兵庫県「丹波並木道中央公園」",
+    "venue": "兵庫県「丹波並木道中央公園」",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2402",
     "lat": 35.076259691443,
     "lng": 135.15928566456
@@ -23095,10 +23375,12 @@
     "joe_event_id": 2315,
     "name": "第30回千葉大大会",
     "date": "2026-06-06",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "千葉県御宿町",
+    "venue": "千葉県御宿町",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2315",
     "lat": 35.204800039163,
     "lng": 140.32283306122
@@ -23107,23 +23389,27 @@
     "joe_event_id": 2288,
     "name": "JOA強化合宿（6月）",
     "date": "2026-06-06",
-    "prefecture": "-",
-    "venue": "-",
+    "end_date": "2026-06-07",
+    "prefecture": "静岡県「富士周辺」",
+    "venue": "静岡県「富士周辺」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2288",
     "lat": null,
-    "lng": null,
-    "end_date": "2026-06-07"
+    "lng": null
   },
   {
     "joe_event_id": 2448,
     "name": "第48回東大OLK大会前日大会",
     "date": "2026-06-13",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "山梨県「曽根丘陵公園」",
+    "venue": "山梨県「曽根丘陵公園」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2448",
     "lat": null,
     "lng": null,
@@ -23134,10 +23420,12 @@
     "joe_event_id": 2264,
     "name": "第48回東大OLK大会",
     "date": "2026-06-14",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "長野県「立科町•長和町」",
+    "venue": "長野県「立科町•長和町」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2264",
     "lat": 36.117429229844,
     "lng": 138.25441670481
@@ -23146,10 +23434,12 @@
     "joe_event_id": 2360,
     "name": "2026年度 西日本地区スプリントセレ",
     "date": "2026-06-20",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "兵庫県「播磨中央公園」",
+    "venue": "兵庫県「播磨中央公園」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2360",
     "lat": 34.93655660518,
     "lng": 134.93776048781
@@ -23158,10 +23448,12 @@
     "joe_event_id": 2450,
     "name": "高島ロゲ",
     "date": "2026-06-21",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "滋賀県高島市",
+    "venue": "滋賀県高島市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2450",
     "lat": 35.398763473133,
     "lng": 136.03504768507
@@ -23170,10 +23462,12 @@
     "joe_event_id": 2411,
     "name": "2026年度関東ロングセレ",
     "date": "2026-06-28",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "栃木県日光市",
+    "venue": "栃木県日光市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2411",
     "lat": null,
     "lng": null
@@ -23182,10 +23476,12 @@
     "joe_event_id": 2433,
     "name": "霧ヶ峰ミドルオリエンテーリング2026",
     "date": "2026-07-04",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "長野県諏訪市",
+    "venue": "長野県諏訪市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2433",
     "lat": 36.09757388284,
     "lng": 138.16093826297
@@ -23194,10 +23490,12 @@
     "joe_event_id": 2432,
     "name": "霧ヶ峰ロゲイニング2026",
     "date": "2026-07-05",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "長野県諏訪市",
+    "venue": "長野県諏訪市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2432",
     "lat": 36.097591220955,
     "lng": 138.16092216972
@@ -23206,10 +23504,12 @@
     "joe_event_id": 2434,
     "name": "霧ヶ峰ファミリーオリエンテーリング2026",
     "date": "2026-07-05",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "長野県諏訪市",
+    "venue": "長野県諏訪市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2434",
     "lat": 36.097591220955,
     "lng": 138.16091144088
@@ -23218,10 +23518,12 @@
     "joe_event_id": 2323,
     "name": "岩手大会2026Day1",
     "date": "2026-07-19",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "岩手県大船渡市「大窪山」",
+    "venue": "岩手県大船渡市「大窪山」",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2323",
     "lat": 39.167507462519,
     "lng": 141.75612831168
@@ -23230,10 +23532,12 @@
     "joe_event_id": 2330,
     "name": "岩手大会2026Day2",
     "date": "2026-07-20",
-    "prefecture": "受付中",
-    "venue": "受付中",
-    "entry_status": "none",
-    "tags": [],
+    "prefecture": "岩手県大船渡市「大窪山」",
+    "venue": "岩手県大船渡市「大窪山」",
+    "entry_status": "open",
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2330",
     "lat": 39.167521186818,
     "lng": 141.75103855159
@@ -23242,10 +23546,12 @@
     "joe_event_id": 2392,
     "name": "ＫＯＬＡたそがれ2026",
     "date": "2026-08-08",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "大阪府",
+    "venue": "大阪府",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2392",
     "lat": null,
     "lng": null
@@ -23254,10 +23560,12 @@
     "joe_event_id": 2396,
     "name": "中高選手権　個人オープン競技",
     "date": "2026-08-22",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "愛知県新城市「菅沼・守義」",
+    "venue": "愛知県新城市「菅沼・守義」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2396",
     "lat": 35.052062125985,
     "lng": 137.49166488647
@@ -23266,10 +23574,12 @@
     "joe_event_id": 2397,
     "name": "中高選手権　団体オープン競技",
     "date": "2026-08-23",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "愛知県岡崎市「水別」",
+    "venue": "愛知県岡崎市「水別」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2397",
     "lat": 34.980476073436,
     "lng": 137.41731405258
@@ -23278,10 +23588,12 @@
     "joe_event_id": 2352,
     "name": "クラブカップ7人リレー2026",
     "date": "2026-08-30",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "愛知県・長野県「茶臼山高原（予定）」",
+    "venue": "愛知県・長野県「茶臼山高原（予定）」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2352",
     "lat": 35.227543907082,
     "lng": 137.65765070915
@@ -23290,23 +23602,27 @@
     "joe_event_id": 2377,
     "name": "AMO",
     "date": "2026-09-05",
-    "prefecture": "-",
-    "venue": "-",
+    "end_date": "2026-09-06",
+    "prefecture": "静岡県富士宮市",
+    "venue": "静岡県富士宮市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2377",
     "lat": 35.385411315837,
-    "lng": 138.58763694763,
-    "end_date": "2026-09-06"
+    "lng": 138.58763694763
   },
   {
     "joe_event_id": 2271,
     "name": "第20回名椙大会(1日目)",
     "date": "2026-09-05",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "",
+    "venue": "",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2271",
     "lat": null,
     "lng": null
@@ -23315,10 +23631,12 @@
     "joe_event_id": 2272,
     "name": "第20回名椙大会(2日目)",
     "date": "2026-09-06",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "愛知県「三河高原牧場」",
+    "venue": "愛知県「三河高原牧場」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2272",
     "lat": null,
     "lng": null
@@ -23327,10 +23645,12 @@
     "joe_event_id": 2439,
     "name": "第48回北大大会day1",
     "date": "2026-09-12",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "北海道勇払郡安平町",
+    "venue": "北海道勇払郡安平町",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2439",
     "lat": null,
     "lng": null,
@@ -23341,10 +23661,12 @@
     "joe_event_id": 2440,
     "name": "第48回北大大会day2",
     "date": "2026-09-13",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "北海道恵庭市",
+    "venue": "北海道恵庭市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2440",
     "lat": 42.87323999089,
     "lng": 141.80564058744,
@@ -23355,23 +23677,27 @@
     "joe_event_id": 1839,
     "name": "第130回上尾ＯＬＣ50周年記念大会",
     "date": "2026-09-19",
-    "prefecture": "-",
-    "venue": "-",
+    "end_date": "2026-09-21",
+    "prefecture": "長野県志賀高原",
+    "venue": "長野県志賀高原",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/1839",
     "lat": null,
-    "lng": null,
-    "end_date": "2026-09-21"
+    "lng": null
   },
   {
     "joe_event_id": 2297,
     "name": "会津満喫ロゲ2026",
     "date": "2026-09-22",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "福島県会津若松市",
+    "venue": "福島県会津若松市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2297",
     "lat": 37.485741996933,
     "lng": 139.93415951729
@@ -23380,10 +23706,12 @@
     "joe_event_id": 2424,
     "name": "第47回早大OC大会",
     "date": "2026-09-27",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "長野県茅野市民の森",
+    "venue": "長野県茅野市民の森",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2424",
     "lat": 36.033745801186,
     "lng": 138.16184967756
@@ -23392,10 +23720,12 @@
     "joe_event_id": 2390,
     "name": "第31回京京立大会 Day1",
     "date": "2026-10-03",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "滋賀県(予定",
+    "venue": "滋賀県(予定",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2390",
     "lat": null,
     "lng": null
@@ -23404,10 +23734,12 @@
     "joe_event_id": 2328,
     "name": "第31回京京立大会 Day2",
     "date": "2026-10-04",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "滋賀県 北小松",
+    "venue": "滋賀県 北小松",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2328",
     "lat": 35.268761116605,
     "lng": 135.9519803524
@@ -23416,23 +23748,27 @@
     "joe_event_id": 2306,
     "name": "トータス50周年記念大会",
     "date": "2026-10-10",
-    "prefecture": "-",
-    "venue": "-",
+    "end_date": "2026-10-12",
+    "prefecture": "山梨県",
+    "venue": "山梨県",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2306",
     "lat": null,
-    "lng": null,
-    "end_date": "2026-10-12"
+    "lng": null
   },
   {
     "joe_event_id": 2452,
     "name": "第131回上尾OLC大会inしらこばと",
     "date": "2026-10-18",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "埼玉県「しらこばと公園",
+    "venue": "埼玉県「しらこばと公園",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2452",
     "lat": null,
     "lng": null
@@ -23441,10 +23777,12 @@
     "joe_event_id": 2437,
     "name": "全日本大会 ミドル競技",
     "date": "2026-10-31",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "長野県大町市「中山高原」",
+    "venue": "長野県大町市「中山高原」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2437",
     "lat": 36.54989899869,
     "lng": 137.8708791716,
@@ -23455,10 +23793,12 @@
     "joe_event_id": 2438,
     "name": "全日本大会 ロング競技",
     "date": "2026-11-01",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "長野県大町市「中山高原」",
+    "venue": "長野県大町市「中山高原」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2438",
     "lat": null,
     "lng": null,
@@ -23469,10 +23809,12 @@
     "joe_event_id": 2380,
     "name": "第49回東北大大会",
     "date": "2026-11-22",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "宮城県白石市",
+    "venue": "宮城県白石市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2380",
     "lat": 38.080209342221,
     "lng": 140.52871227243
@@ -23481,23 +23823,27 @@
     "joe_event_id": 2378,
     "name": "オリ朝・朝霧ロゲ",
     "date": "2026-11-28",
-    "prefecture": "-",
-    "venue": "-",
+    "end_date": "2026-11-29",
+    "prefecture": "静岡県富士宮市",
+    "venue": "静岡県富士宮市",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2378",
     "lat": 35.385524479484,
-    "lng": 138.58751893044,
-    "end_date": "2026-11-29"
+    "lng": 138.58751893044
   },
   {
     "joe_event_id": 2415,
     "name": "伊豆大島大会2026",
     "date": "2026-11-29",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "東京都大島町「裏砂漠・奥山砂漠」",
+    "venue": "東京都大島町「裏砂漠・奥山砂漠」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2415",
     "lat": 34.753573783935,
     "lng": 139.40127164125
@@ -23506,23 +23852,27 @@
     "joe_event_id": 2293,
     "name": "第43回ウェスタンカップリレー",
     "date": "2026-12-01",
-    "prefecture": "-",
-    "venue": "-",
+    "end_date": "2026-12-31",
+    "prefecture": "三重県余野公園周辺（予定）",
+    "venue": "三重県余野公園周辺（予定）",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2293",
     "lat": 34.85709452152,
-    "lng": 136.25162601473,
-    "end_date": "2026-12-31"
+    "lng": 136.25162601473
   },
   {
     "joe_event_id": 2361,
     "name": "北摂ロゲ2026",
     "date": "2026-12-06",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "大阪府　高槻市周辺",
+    "venue": "大阪府　高槻市周辺",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "ロゲ"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2361",
     "lat": 34.855518548257,
     "lng": 135.63165693141
@@ -23531,10 +23881,12 @@
     "joe_event_id": 2389,
     "name": "あざおOLC 13周年記念大会",
     "date": "2026-12-27",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "",
+    "venue": "",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2389",
     "lat": null,
     "lng": null
@@ -23543,10 +23895,12 @@
     "joe_event_id": 2393,
     "name": "ＫＯＬＡ新春2027",
     "date": "2027-01-09",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "大阪府",
+    "venue": "大阪府",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2393",
     "lat": null,
     "lng": null
@@ -23555,10 +23909,12 @@
     "joe_event_id": 2423,
     "name": "サン・スーシ大会",
     "date": "2027-01-24",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "神奈川県南足柄市「21世紀の森」",
+    "venue": "神奈川県南足柄市「21世紀の森」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2423",
     "lat": null,
     "lng": null
@@ -23567,10 +23923,12 @@
     "joe_event_id": 2416,
     "name": "第132回上尾OLC大会",
     "date": "2027-01-31",
-    "prefecture": "-",
-    "venue": "-",
+    "prefecture": "埼玉県「その他」",
+    "venue": "埼玉県「その他」",
     "entry_status": "none",
-    "tags": [],
+    "tags": [
+      "OL"
+    ],
     "joe_url": "https://japan-o-entry.com/event/view/2416",
     "lat": null,
     "lng": null

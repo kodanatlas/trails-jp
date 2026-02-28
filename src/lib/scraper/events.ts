@@ -157,7 +157,7 @@ function parseEventList(html: string): JOEEvent[] {
     const tags: string[] = [];
     infoCell.find("span.event_icon").each((_, el) => {
       const t = $(el).text().trim();
-      if (t) tags.push(t);
+      if (t && t !== "-") tags.push(t);
     });
 
     // Location: イベント名リンクの後のテキストから都道府県・会場を抽出
