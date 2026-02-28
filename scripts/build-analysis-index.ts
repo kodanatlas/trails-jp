@@ -175,6 +175,7 @@ const OUTPUT_DIR = path.resolve(__dirname, "../public/data");
 
 interface ParsedEvent {
   date: string;
+  eventName: string;
   points: number;
 }
 
@@ -231,9 +232,9 @@ for (const file of files) {
 
     // イベントスコア収集
     for (const es of entry.event_scores) {
-      const { date } = parseEventName(es.event_name);
+      const { date, eventName } = parseEventName(es.event_name);
       if (date) {
-        data.allEvents.push({ date, points: es.points });
+        data.allEvents.push({ date, eventName, points: es.points });
       }
     }
   }
@@ -244,7 +245,7 @@ function dedupeEvents(events: ParsedEvent[]): ParsedEvent[] {
   const seen = new Set<string>();
   const result: ParsedEvent[] = [];
   for (const e of events) {
-    const key = `${e.date}:${e.points}`;
+    const key = `${e.date}:${e.eventName}`;
     if (!seen.has(key)) {
       seen.add(key);
       result.push(e);
