@@ -150,23 +150,37 @@ function parseEventList(html: string): JOEEvent[] {
     // Event name
     const name = link.text().trim();
 
-    // Location / Prefecture
-    const locationText = cells.eq(2)?.text().trim() ?? "";
+    // --- 新構造対応 (3カラム: 日付 | イベント名・開催地 | 申込) ---
+    const infoCell = cells.eq(1);
 
-    // Entry status
-    const statusText = cells.eq(3)?.text().trim() ?? "";
+    // Tags: span.event_icon から取得
+    const tags: string[] = [];
+    infoCell.find("span.event_icon").each((_, el) => {
+      const t = $(el).text().trim();
+      if (t) tags.push(t);
+    });
+
+    // Location: イベント名リンクの後のテキストから都道府県・会場を抽出
+    const fullText = infoCell.text().trim();
+    const nameIdx = fullText.lastIndexOf(name);
+    let locationText = "";
+    if (nameIdx >= 0) {
+      locationText = fullText.slice(nameIdx + name.length).trim();
+      // 先頭の括弧や改行を除去、最初の行だけ取得
+      locationText = locationText.split("\n")[0].trim();
+      // "(その他)" のような値はクリーン
+      locationText = locationText.replace(/^\(|\)$/g, "").trim();
+      if (locationText === "その他") locationText = "";
+    }
+
+    // Entry status: 最後のセルから取得
+    const statusCell = cells.eq(cells.length - 1);
+    const statusText = statusCell.text().trim();
     const entry_status = statusText.includes("受付中")
       ? "open" as const
       : statusText.includes("締切")
       ? "closed" as const
       : "none" as const;
-
-    // Tags
-    const tagsText = cells.eq(4)?.text().trim() ?? "";
-    const tags = tagsText
-      .split(/[,、]/)
-      .map((t) => t.trim())
-      .filter(Boolean);
 
     events.push({
       joe_event_id,
