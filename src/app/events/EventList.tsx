@@ -191,16 +191,16 @@ export function EventList({ events }: EventListProps) {
                         {event.update_label || "更新"}
                       </span>
                     )}
-                    {entry.label && (
-                      <span className={`rounded px-2 py-0.5 text-[10px] font-medium ${entry.bg} ${entry.text}`}>
-                        {entry.label}
-                      </span>
-                    )}
                     {event.tags.map((tag) => (
                       <span key={tag} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-muted">
                         {tag}
                       </span>
                     ))}
+                    {entry.label && (
+                      <span className={`rounded px-2 py-0.5 text-[10px] font-medium ${entry.bg} ${entry.text}`}>
+                        {entry.label}
+                      </span>
+                    )}
                   </div>
                   <h3 className="mt-1.5 text-sm font-semibold">{event.name}</h3>
                   <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted">
