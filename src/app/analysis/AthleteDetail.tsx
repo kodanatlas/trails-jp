@@ -499,17 +499,21 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
     const speeds = sorted.flatMap((d) => [d.fSpeed, d.sSpeed].filter((v): v is number => v != null));
     const misses = sorted.flatMap((d) => [d.fMiss, d.sMiss].filter((v): v is number => v != null));
 
-    // 5点移動平均を計算（値のあるポイントだけでカウント）
-    const ma = (arr: (number | undefined)[]): (number | undefined)[] => {
-      const indices = arr.map((v, i) => v != null ? i : -1).filter((i) => i >= 0);
+    // 線形回帰（最小二乗法）: 値のあるポイントだけで y = a*i + b を算出
+    const linReg = (arr: (number | undefined)[]): (number | undefined)[] => {
+      const pts = arr.map((v, i) => v != null ? { x: i, y: v } : null).filter((p): p is { x: number; y: number } => p != null);
+      if (pts.length < 2) return new Array(arr.length).fill(undefined);
+      const n = pts.length;
+      const sx = pts.reduce((s, p) => s + p.x, 0);
+      const sy = pts.reduce((s, p) => s + p.y, 0);
+      const sxy = pts.reduce((s, p) => s + p.x * p.y, 0);
+      const sxx = pts.reduce((s, p) => s + p.x * p.x, 0);
+      const a = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+      const b = (sy - a * sx) / n;
       const result: (number | undefined)[] = new Array(arr.length).fill(undefined);
-      for (let k = 0; k < indices.length; k++) {
-        const window = indices.slice(Math.max(0, k - 4), k + 1);
-        const vals = window.map((i) => arr[i] as number);
-        if (vals.length >= 3) {
-          result[indices[k]] = Math.round(vals.reduce((s, v) => s + v, 0) / vals.length * 10) / 10;
-        }
-      }
+      // 最初と最後のデータ点にのみ値を設定（直線の両端）
+      result[pts[0].x] = Math.round((a * pts[0].x + b) * 10) / 10;
+      result[pts[n - 1].x] = Math.round((a * pts[n - 1].x + b) * 10) / 10;
       return result;
     };
 
@@ -517,10 +521,10 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
     const sSpeedArr = sorted.map((d) => d.sSpeed);
     const fMissArr = sorted.map((d) => d.fMiss);
     const sMissArr = sorted.map((d) => d.sMiss);
-    const fSpeedMa = ma(fSpeedArr);
-    const sSpeedMa = ma(sSpeedArr);
-    const fMissMa = ma(fMissArr);
-    const sMissMa = ma(sMissArr);
+    const fSpeedMa = linReg(fSpeedArr);
+    const sSpeedMa = linReg(sSpeedArr);
+    const fMissMa = linReg(fMissArr);
+    const sMissMa = linReg(sMissArr);
 
     const withMa = sorted.map((d, i) => ({
       ...d,
@@ -679,7 +683,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
             {hasForest && (
               <Line
                 name="fSpeedMa"
-                type="monotone"
+                type="linear"
                 dataKey="fSpeedMa"
                 stroke="rgba(74,222,128,0.4)"
                 strokeWidth={1.5}
@@ -693,7 +697,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
             {hasSprint && (
               <Line
                 name="sSpeedMa"
-                type="monotone"
+                type="linear"
                 dataKey="sSpeedMa"
                 stroke="rgba(96,165,250,0.3)"
                 strokeWidth={1.5}
@@ -782,7 +786,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
             {hasForest && (
               <Line
                 name="fMissMa"
-                type="monotone"
+                type="linear"
                 dataKey="fMissMa"
                 stroke="rgba(74,222,128,0.4)"
                 strokeWidth={1.5}
@@ -796,7 +800,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
             {hasSprint && (
               <Line
                 name="sMissMa"
-                type="monotone"
+                type="linear"
                 dataKey="sMissMa"
                 stroke="rgba(96,165,250,0.3)"
                 strokeWidth={1.5}
