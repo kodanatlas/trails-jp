@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Search, User, Users, GitCompareArrows, Loader2 } from "lucide-react";
+import { Search, User, Users, GitCompareArrows, Loader2, ArrowLeft } from "lucide-react";
 import type { AthleteIndex, ClubIndex, AthleteSummary } from "@/lib/analysis/types";
 import { AthleteDetail } from "./AthleteDetail";
 import { ClubAnalysis } from "./ClubAnalysis";
@@ -25,6 +25,9 @@ export function AnalysisHub() {
   // 選手検索
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAthlete, setSelectedAthlete] = useState<AthleteSummary | null>(null);
+
+  // クラブから選手へ遷移した場合の戻り先
+  const [fromClub, setFromClub] = useState<string | null>(null);
 
   // 比較用
   const [compareA, setCompareA] = useState<AthleteSummary | null>(null);
@@ -84,6 +87,7 @@ export function AnalysisHub() {
               setActiveTab(tab.id);
               setSelectedAthlete(null);
               setSearchQuery("");
+              setFromClub(null);
             }}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === tab.id
@@ -152,7 +156,22 @@ export function AnalysisHub() {
 
           {/* Athlete Detail */}
           {selectedAthlete && (
-            <AthleteDetail summary={selectedAthlete} />
+            <>
+              {fromClub && (
+                <button
+                  onClick={() => {
+                    setActiveTab("clubs");
+                    setSelectedAthlete(null);
+                    setSearchQuery("");
+                  }}
+                  className="mb-3 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted transition-colors hover:bg-card hover:text-foreground"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  {fromClub} に戻る
+                </button>
+              )}
+              <AthleteDetail summary={selectedAthlete} />
+            </>
           )}
 
           {/* Distribution chart (shown when no search or when athlete selected) */}
@@ -172,9 +191,11 @@ export function AnalysisHub() {
         <ClubAnalysis
           clubIndex={clubIndex}
           athleteIndex={athleteIndex}
-          onSelectAthlete={(name) => {
+          initialExpandedClub={fromClub}
+          onSelectAthlete={(name, clubName) => {
             const athlete = athleteIndex.athletes[name];
             if (athlete) {
+              setFromClub(clubName ?? null);
               setActiveTab("athlete");
               setSearchQuery(name);
               setSelectedAthlete(athlete);

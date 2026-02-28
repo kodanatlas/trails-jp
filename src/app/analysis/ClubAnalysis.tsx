@@ -13,7 +13,8 @@ const INITIAL_SHOW = 5;
 interface Props {
   clubIndex: ClubIndex;
   athleteIndex: AthleteIndex;
-  onSelectAthlete?: (name: string) => void;
+  onSelectAthlete?: (name: string, clubName?: string) => void;
+  initialExpandedClub?: string | null;
 }
 
 const typeBadgeColors: Record<string, string> = {
@@ -23,10 +24,10 @@ const typeBadgeColors: Record<string, string> = {
   unknown: "bg-white/10 text-muted",
 };
 
-export function ClubAnalysis({ clubIndex, onSelectAthlete }: Props) {
+export function ClubAnalysis({ clubIndex, onSelectAthlete, initialExpandedClub }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("active");
-  const [expandedClub, setExpandedClub] = useState<string | null>(null);
+  const [expandedClub, setExpandedClub] = useState<string | null>(initialExpandedClub ?? null);
 
   const clubs = useMemo(() => {
     let list = Object.values(clubIndex.clubs);
@@ -126,7 +127,7 @@ function ClubCard({
   club: ClubProfile;
   isExpanded: boolean;
   onToggle: () => void;
-  onSelectAthlete?: (name: string) => void;
+  onSelectAthlete?: (name: string, clubName?: string) => void;
 }) {
   const [showAll, setShowAll] = useState(false);
   const totalType = club.forestCount + club.sprintCount;
@@ -217,7 +218,7 @@ function ClubCard({
 
           <div className="space-y-1">
             {visibleMembers.map((m) => (
-              <MemberRow key={m.name} member={m} onSelect={onSelectAthlete} />
+              <MemberRow key={m.name} member={m} onSelect={(name) => onSelectAthlete?.(name, club.name)} />
             ))}
           </div>
 
