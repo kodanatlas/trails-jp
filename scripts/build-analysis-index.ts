@@ -99,27 +99,64 @@ function parseFilename(file: string): { type: string; className: string } | null
 
 /**
  * クラブ名の名寄せ (正規化)
- * - 大文字小文字統一 (OLC/olc → OLC)
- * - 末尾の数字除去 (金沢大学 3 → 金沢大学)
- * - OLクラブ → OLC
- * - ES関東クラブ / ES関東 → ES関東C
+ * 1. 大学OLC略称 → 正式大学名 (京大OLC → 京都大学)
+ * 2. 大学大学院・大学院 → 大学
+ * 3. 大学+末尾数字 → 大学 (京都大学3 → 京都大学)
+ * 4. 末尾スペース+数字除去
+ * 5. OLクラブ → OLC, olc → OLC
  */
 function normalizeClubName(raw: string): string {
   let name = raw.trim();
 
-  // 末尾のスペース+数字を除去 (e.g. "金沢大学 3" → "金沢大学")
+  // --- 0. 大文字小文字の事前統一 ---
+  name = name.replace(/olc/gi, "OLC");
+
+  // --- 1. 大学OLC略称の明示的マッピング ---
+  const universityMap: Record<string, string> = {
+    "京大OLC": "京都大学",
+    "北大OLC": "北海道大学",
+    "千葉大OLC": "千葉大学",
+    "東北大OLC": "東北大学",
+    "東北大学OLC": "東北大学",
+    "広大OLC": "広島大学",
+    "阪大OLC": "大阪大学",
+    "大阪大学OLC": "大阪大学",
+    "金大OLC": "金沢大学",
+    "金大OLC44期": "金沢大学",
+    "岩手大学OLC": "岩手大学",
+    "京女OLC": "京都女子大学",
+    "奈良女OLC": "奈良女子大学",
+    "同志社OLC": "同志社大学",
+    "立命OLC": "立命館大学",
+    "立命館OLC": "立命館大学",
+    "神大OLC": "神戸大学",
+    "神大大学4": "神戸大学",
+    "東大大学院": "東京大学",
+    "新潟大学OC1年": "新潟大学",
+    "HUOLC": "北海道大学",
+    "阪大30期": "大阪大学",
+    "阪大2011入学": "大阪大学",
+  };
+  if (universityMap[name]) return universityMap[name];
+
+  // --- 2. 大学院系の正規化 ---
+  // "京都大学大学院" → "京都大学", "大阪大学大学院4" → "大阪大学"
+  name = name.replace(/大学大学院\d*$/, "大学");
+  // "筑波大学院" → "筑波大学", "名古屋大学院4" → "名古屋大学"
+  name = name.replace(/(..+大)学院\d*$/, "$1学");
+
+  // --- 3. 大学+末尾数字 (京都大学3, 広島大学1 etc.) ---
+  name = name.replace(/(大学)\d+$/, "$1");
+
+  // --- 4. 末尾のスペース+数字を除去 (e.g. "金沢大学 3" → "金沢大学") ---
   name = name.replace(/\s+\d+$/, "");
 
-  // "OLクラブ" → "OLC"
+  // --- 5. 一般的な正規化 ---
   name = name.replace(/OLクラブ$/, "OLC");
 
-  // "ES関東クラブ" / "ES関東" → "ES関東C"
   if (name === "ES関東" || name === "ES関東クラブ") {
     name = "ES関東C";
   }
-
-  // 大文字小文字統一: olc → OLC
-  name = name.replace(/olc$/i, "OLC");
 
   return name;
 }
