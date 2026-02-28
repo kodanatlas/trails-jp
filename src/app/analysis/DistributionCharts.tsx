@@ -64,13 +64,6 @@ export function AthleteDistribution({
     return counts;
   }, [data]);
 
-  // Top athletes to show labels (top 10 by combined score)
-  const topAthletes = useMemo(() => {
-    return [...data]
-      .sort((a, b) => (b.forest + b.sprint) - (a.forest + a.sprint))
-      .slice(0, 10);
-  }, [data]);
-
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="mb-1 flex items-center justify-between">
@@ -178,26 +171,6 @@ export function AthleteDistribution({
                 />
               ))}
             </Scatter>
-            {/* Top athlete name labels */}
-            {topAthletes.map((a) => (
-              <ReferenceDot
-                key={a.name}
-                x={a.forest}
-                y={a.sprint}
-                r={0}
-                fill="none"
-                stroke="none"
-              >
-                <Label
-                  value={a.name}
-                  position="top"
-                  fill={a.isSelected ? "#fbbf24" : TYPE_COLORS[a.type] ?? "#888"}
-                  fontSize={9}
-                  fontWeight={a.isSelected ? "bold" : "normal"}
-                  offset={6}
-                />
-              </ReferenceDot>
-            ))}
           </ScatterChart>
         </ResponsiveContainer>
       </div>
@@ -232,6 +205,33 @@ export function ClubDistribution({
         };
       });
   }, [clubIndex, expandedClub]);
+
+  // Show labels for clubs that don't overlap, prioritized by avgPoints
+  const labeledClubs = useMemo(() => {
+    const sorted = [...data].sort((a, b) => b.avgPoints - a.avgPoints);
+    const placed: { members: number; avgPoints: number }[] = [];
+    const result: typeof data = [];
+
+    // Normalize thresholds relative to data range
+    const maxMembers = Math.max(...data.map((d) => d.members), 1);
+    const maxPts = Math.max(...data.map((d) => d.avgPoints), 1);
+
+    for (const club of sorted) {
+      const nx = club.members / maxMembers;
+      const ny = club.avgPoints / maxPts;
+      const tooClose = placed.some((p) => {
+        const px = p.members / maxMembers;
+        const py = p.avgPoints / maxPts;
+        return Math.abs(nx - px) < 0.12 && Math.abs(ny - py) < 0.08;
+      });
+      if (!tooClose) {
+        placed.push(club);
+        result.push(club);
+      }
+      if (result.length >= 15) break;
+    }
+    return result;
+  }, [data]);
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
@@ -301,6 +301,25 @@ export function ClubDistribution({
                 );
               })}
             </Scatter>
+            {labeledClubs.map((c) => (
+              <ReferenceDot
+                key={c.name}
+                x={c.members}
+                y={c.avgPoints}
+                r={0}
+                fill="none"
+                stroke="none"
+              >
+                <Label
+                  value={c.name}
+                  position="top"
+                  fill={c.isSelected ? "#fff" : "rgba(255,255,255,0.55)"}
+                  fontSize={9}
+                  fontWeight={c.isSelected ? "bold" : "normal"}
+                  offset={6}
+                />
+              </ReferenceDot>
+            ))}
           </ScatterChart>
         </ResponsiveContainer>
       </div>
