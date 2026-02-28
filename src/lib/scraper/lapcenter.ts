@@ -174,16 +174,9 @@ export interface MatchResult {
  * JOE イベントに Lap Center リンクを付与する
  * events 配列を直接変更する (in-place)
  */
-export async function matchLapCenterEvents(
-  joeEvents: Array<{
-    joe_event_id: number;
-    name: string;
-    date: string;
-    lapcenter_event_id?: number;
-    lapcenter_url?: string;
-    [key: string]: unknown;
-  }>
-): Promise<MatchResult> {
+export async function matchLapCenterEvents<
+  T extends { joe_event_id: number; name: string; date: string; lapcenter_event_id?: number; lapcenter_url?: string }
+>(joeEvents: T[]): Promise<MatchResult> {
   // Determine which years to fetch — min event year から current year まで全取得
   const now = new Date();
   const currentYear = now.getFullYear();
