@@ -5,7 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
 import { Loader2, TrendingUp, TrendingDown, Minus, Target, Zap, Calendar } from "lucide-react";
-import type { AthleteSummary, AthleteProfile } from "@/lib/analysis/types";
+import type { AthleteSummary, AthleteProfile, LapCenterPerformance } from "@/lib/analysis/types";
 import {
   loadAthleteDetail,
   calcConsistency,
@@ -21,14 +21,23 @@ interface Props {
 
 export function AthleteDetail({ summary }: Props) {
   const [profile, setProfile] = useState<AthleteProfile | null>(null);
+  const [lcData, setLcData] = useState<LapCenterPerformance[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    loadAthleteDetail(summary).then((p) => {
-      setProfile(p);
-      setLoading(false);
-    });
+    const loadProfile = loadAthleteDetail(summary).then((p) => setProfile(p));
+    const loadLc = fetch("/data/lapcenter-runners.json")
+      .then((r) => r.ok ? r.json() : null)
+      .then((json) => {
+        if (json?.athletes?.[summary.name]) {
+          setLcData(json.athletes[summary.name] as LapCenterPerformance[]);
+        } else {
+          setLcData(null);
+        }
+      })
+      .catch(() => setLcData(null));
+    Promise.all([loadProfile, loadLc]).then(() => setLoading(false));
   }, [summary]);
 
   if (loading) {
@@ -48,6 +57,7 @@ export function AthleteDetail({ summary }: Props) {
       <TypeBadge profile={profile} />
       <StatsCards profile={profile} />
       <ScoreChart profile={profile} />
+      {lcData && lcData.length >= 2 && <LapCenterChart data={lcData} />}
       <RecentEvents profile={profile} />
     </div>
   );
@@ -368,6 +378,340 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
                 dot={{ fill: "#60a5fa", r: 3 }}
                 activeDot={{ r: 5 }}
                 connectNulls
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+/** 値に応じて濃淡を返す（低=濃い=良い、高=薄い=悪い） */
+function valOpacity(value: number, min: number, max: number): number {
+  const range = max - min || 1;
+  const t = Math.max(0, Math.min(1, (value - min) / range)); // 0=min(good), 1=max(bad)
+  return 1 - t * 0.7; // 1.0(濃) → 0.3(薄)
+}
+
+/** LapCenter 巡航速度・ミス率推移チャート */
+function LapCenterChart({ data }: { data: LapCenterPerformance[] }) {
+  const [chartRange, setChartRange] = useState<ChartRange>("2y");
+
+  const { chartData, hasForest, hasSprint, forestCount, sprintCount, speedMin, speedMax, missMin, missMax } = useMemo(() => {
+    const cutoff = getChartCutoff(chartRange);
+    const filtered = data
+      .filter((d) => !cutoff || d.d >= cutoff)
+      .sort((a, b) => a.d.localeCompare(b.d));
+
+    // 同日同イベントは1つにまとめる（Forest/Sprint別）
+    const dateMap = new Map<string, {
+      date: string;
+      fSpeed?: number; sSpeed?: number;
+      fMiss?: number; sMiss?: number;
+      fName?: string; sName?: string;
+    }>();
+
+    let fCount = 0;
+    let sCount = 0;
+
+    for (const p of filtered) {
+      const key = `${p.d}:${p.t}`;
+      if (!dateMap.has(p.d)) dateMap.set(p.d, { date: p.d });
+      const entry = dateMap.get(p.d)!;
+
+      if (p.t === "forest") {
+        entry.fSpeed = p.s;
+        entry.fMiss = p.m;
+        entry.fName = p.e;
+        fCount++;
+      } else {
+        entry.sSpeed = p.s;
+        entry.sMiss = p.m;
+        entry.sName = p.e;
+        sCount++;
+      }
+    }
+
+    const sorted = [...dateMap.values()].sort((a, b) => a.date.localeCompare(b.date));
+    const speeds = sorted.flatMap((d) => [d.fSpeed, d.sSpeed].filter((v): v is number => v != null));
+    const misses = sorted.flatMap((d) => [d.fMiss, d.sMiss].filter((v): v is number => v != null));
+
+    // 3点移動平均を計算
+    const ma = (arr: (number | undefined)[]): (number | undefined)[] =>
+      arr.map((_, i) => {
+        const vals = arr.slice(Math.max(0, i - 2), i + 1).filter((v): v is number => v != null);
+        return vals.length >= 2 ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length * 10) / 10 : undefined;
+      });
+
+    const fSpeedArr = sorted.map((d) => d.fSpeed);
+    const sSpeedArr = sorted.map((d) => d.sSpeed);
+    const fMissArr = sorted.map((d) => d.fMiss);
+    const sMissArr = sorted.map((d) => d.sMiss);
+    const fSpeedMa = ma(fSpeedArr);
+    const sSpeedMa = ma(sSpeedArr);
+    const fMissMa = ma(fMissArr);
+    const sMissMa = ma(sMissArr);
+
+    const withMa = sorted.map((d, i) => ({
+      ...d,
+      fSpeedMa: fSpeedMa[i],
+      sSpeedMa: sSpeedMa[i],
+      fMissMa: fMissMa[i],
+      sMissMa: sMissMa[i],
+    }));
+
+    return {
+      chartData: withMa,
+      hasForest: fCount > 0,
+      hasSprint: sCount > 0,
+      forestCount: fCount,
+      sprintCount: sCount,
+      speedMin: speeds.length > 0 ? Math.min(...speeds) : 0,
+      speedMax: speeds.length > 0 ? Math.max(...speeds) : 100,
+      missMin: misses.length > 0 ? Math.min(...misses) : 0,
+      missMax: misses.length > 0 ? Math.max(...misses) : 100,
+    };
+  }, [data, chartRange]);
+
+  if (chartData.length < 2) return null;
+
+  const sharedXAxis = (
+    <XAxis
+      dataKey="date"
+      tick={{ fontSize: 10, fill: "#888" }}
+      tickFormatter={(v) => v.slice(5)}
+      axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
+    />
+  );
+
+  const sharedGrid = (
+    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+  );
+
+  const tooltipStyle = {
+    backgroundColor: "#1a2332",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: "8px",
+    fontSize: 12,
+  };
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">
+          巡航速度・ミス率推移
+          <span className="ml-1 text-[9px] font-normal">(LapCenter)</span>
+        </h3>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1">
+            {CHART_RANGES.map((r) => (
+              <button
+                key={r.value}
+                onClick={() => setChartRange(r.value)}
+                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                  chartRange === r.value
+                    ? "bg-primary/20 text-primary"
+                    : "text-muted hover:text-foreground"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-3 text-[10px]">
+            {hasForest && (
+              <span className="flex items-center gap-1 text-green-400">
+                <span className="inline-block h-2 w-2 rounded-full bg-green-400" />
+                Forest ({forestCount})
+              </span>
+            )}
+            {hasSprint && (
+              <span className="flex items-center gap-1 text-blue-400">
+                <span className="inline-block h-2 w-2 rounded-full bg-blue-400" />
+                Sprint ({sprintCount})
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 巡航速度チャート */}
+      <p className="mb-1 text-[10px] text-muted">巡航速度 (%)</p>
+      <div className="h-44">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData}>
+            {sharedGrid}
+            {sharedXAxis}
+            <YAxis
+              tick={{ fontSize: 10, fill: "#888" }}
+              axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
+              domain={["auto", "auto"]}
+            />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              labelFormatter={(_, payload) => {
+                const p = payload?.[0]?.payload;
+                if (!p) return "";
+                const parts: string[] = [p.date];
+                if (p.fName) parts.push(`F: ${p.fName}`);
+                if (p.sName) parts.push(`S: ${p.sName}`);
+                return parts.join(" | ");
+              }}
+              formatter={(value, name) => {
+                if (String(name).includes("Ma")) return [null as any, null];
+                return [`${Number(value).toFixed(1)}%`, name === "fSpeed" ? "Forest" : "Sprint"];
+              }}
+            />
+            {hasForest && (
+              <Line
+                name="fSpeed"
+                type="monotone"
+                dataKey="fSpeed"
+                stroke="#4ade80"
+                strokeWidth={2}
+                dot={({ cx, cy, payload }: any) => {
+                  const v = payload.fSpeed;
+                  if (v == null) return <></>;
+                  const op = valOpacity(v, speedMin, speedMax);
+                  return <circle cx={cx} cy={cy} r={3.5} fill={`rgba(74,222,128,${op})`} />;
+                }}
+                activeDot={{ r: 5, fill: "#4ade80" }}
+                connectNulls
+              />
+            )}
+            {hasSprint && (
+              <Line
+                name="sSpeed"
+                type="monotone"
+                dataKey="sSpeed"
+                stroke="#60a5fa"
+                strokeWidth={2}
+                dot={({ cx, cy, payload }: any) => {
+                  const v = payload.sSpeed;
+                  if (v == null) return <></>;
+                  const op = valOpacity(v, speedMin, speedMax);
+                  return <circle cx={cx} cy={cy} r={3.5} fill={`rgba(96,165,250,${op})`} />;
+                }}
+                activeDot={{ r: 5, fill: "#60a5fa" }}
+                connectNulls
+              />
+            )}
+            {hasForest && (
+              <Line
+                name="fSpeedMa"
+                type="monotone"
+                dataKey="fSpeedMa"
+                stroke="rgba(74,222,128,0.4)"
+                strokeWidth={1.5}
+                dot={false}
+                activeDot={false}
+                connectNulls
+                legendType="none"
+              />
+            )}
+            {hasSprint && (
+              <Line
+                name="sSpeedMa"
+                type="monotone"
+                dataKey="sSpeedMa"
+                stroke="rgba(96,165,250,0.3)"
+                strokeWidth={1.5}
+                dot={false}
+                activeDot={false}
+                connectNulls
+                legendType="none"
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* ミス率チャート */}
+      <p className="mb-1 mt-4 text-[10px] text-muted">ミス率 (%)</p>
+      <div className="h-44">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData}>
+            {sharedGrid}
+            {sharedXAxis}
+            <YAxis
+              tick={{ fontSize: 10, fill: "#888" }}
+              axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
+              domain={[0, "auto"]}
+            />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              labelFormatter={(_, payload) => {
+                const p = payload?.[0]?.payload;
+                if (!p) return "";
+                const parts: string[] = [p.date];
+                if (p.fName) parts.push(`F: ${p.fName}`);
+                if (p.sName) parts.push(`S: ${p.sName}`);
+                return parts.join(" | ");
+              }}
+              formatter={(value, name) => {
+                if (String(name).includes("Ma")) return [null as any, null];
+                return [`${Number(value).toFixed(1)}%`, name === "fMiss" ? "Forest" : "Sprint"];
+              }}
+            />
+            {hasForest && (
+              <Line
+                name="fMiss"
+                type="monotone"
+                dataKey="fMiss"
+                stroke="#4ade80"
+                strokeWidth={2}
+                dot={({ cx, cy, payload }: any) => {
+                  const v = payload.fMiss;
+                  if (v == null) return <></>;
+                  const op = valOpacity(v, missMin, missMax);
+                  return <circle cx={cx} cy={cy} r={3.5} fill={`rgba(74,222,128,${op})`} />;
+                }}
+                activeDot={{ r: 5, fill: "#4ade80" }}
+                connectNulls
+              />
+            )}
+            {hasSprint && (
+              <Line
+                name="sMiss"
+                type="monotone"
+                dataKey="sMiss"
+                stroke="#60a5fa"
+                strokeWidth={2}
+                dot={({ cx, cy, payload }: any) => {
+                  const v = payload.sMiss;
+                  if (v == null) return <></>;
+                  const op = valOpacity(v, missMin, missMax);
+                  return <circle cx={cx} cy={cy} r={3.5} fill={`rgba(96,165,250,${op})`} />;
+                }}
+                activeDot={{ r: 5, fill: "#60a5fa" }}
+                connectNulls
+              />
+            )}
+            {hasForest && (
+              <Line
+                name="fMissMa"
+                type="monotone"
+                dataKey="fMissMa"
+                stroke="rgba(74,222,128,0.4)"
+                strokeWidth={1.5}
+                dot={false}
+                activeDot={false}
+                connectNulls
+                legendType="none"
+              />
+            )}
+            {hasSprint && (
+              <Line
+                name="sMissMa"
+                type="monotone"
+                dataKey="sMissMa"
+                stroke="rgba(96,165,250,0.3)"
+                strokeWidth={1.5}
+                dot={false}
+                activeDot={false}
+                connectNulls
+                legendType="none"
               />
             )}
           </LineChart>

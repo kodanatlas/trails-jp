@@ -60,6 +60,21 @@ export interface ClubProfile {
   sprintCount: number;
 }
 
+/** LapCenter パフォーマンスデータ (巡航速度・ミス率) */
+export interface LapCenterPerformance {
+  d: string;         // date "YYYY-MM-DD"
+  e: string;         // event name
+  c: string;         // class name (MA, WA, etc.)
+  s: number;         // cruising speed (%)
+  m: number;         // miss rate (%)
+  t: "forest" | "sprint";
+}
+
+export interface LapCenterIndex {
+  athletes: Record<string, LapCenterPerformance[]>;
+  generatedAt: string;
+}
+
 export interface AthleteIndex {
   athletes: Record<string, AthleteSummary>;
   generatedAt: string;

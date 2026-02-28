@@ -6,6 +6,21 @@ export interface LapCenterEvent {
   date: string;
 }
 
+export interface LapCenterClass {
+  classId: number;
+  className: string;
+  distance: string;
+}
+
+export interface LapCenterRunnerStat {
+  name: string;
+  club: string;
+  rank: number;
+  result: string;
+  speed: number;    // 巡航速度 (%)
+  missRate: number;  // ミス率 (%)
+}
+
 const BASE_URL = "https://mulka2.com/lapcenter";
 
 // ---------------------------------------------------------------------------
@@ -237,4 +252,97 @@ export async function matchLapCenterEvents<
   }
 
   return { matched, total: joeEvents.length, lcEventsCount: lcEvents.length };
+}
+
+// ---------------------------------------------------------------------------
+// イベント内クラス一覧を取得
+// ---------------------------------------------------------------------------
+
+export async function fetchEventClasses(eventId: number): Promise<LapCenterClass[]> {
+  const url = `${BASE_URL}/lapcombat2/index.jsp?event=${eventId}&file=1`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "trails.jp/1.0 (lapcenter sync)" },
+  });
+  if (!res.ok) return [];
+
+  const html = await res.text();
+  const $ = cheerio.load(html);
+  const classes: LapCenterClass[] = [];
+
+  $("table.table-condensed tr").each((_, tr) => {
+    const tds = $(tr).find("td");
+    if (tds.length < 2) return;
+
+    // クラス名: <b>MA</b>
+    const className = tds.eq(0).find("b").first().text().trim();
+    if (!className) return;
+
+    // 距離: <span>4.0km</span>
+    const distSpan = tds.eq(0).find("span").first().text().trim();
+    const distance = distSpan || "";
+
+    // classId: result-list.jsp?event=...&class=N のNを抽出
+    const link = tds.eq(1).find('a[href*="class="]').first().attr("href") || "";
+    const classMatch = link.match(/class=(\d+)/);
+    if (!classMatch) return;
+
+    classes.push({
+      classId: parseInt(classMatch[1], 10),
+      className,
+      distance,
+    });
+  });
+
+  return classes;
+}
+
+// ---------------------------------------------------------------------------
+// split-list.jsp から全ランナーの巡航速度・ミス率を取得
+// ---------------------------------------------------------------------------
+
+export async function fetchSplitList(
+  eventId: number,
+  classId: number
+): Promise<LapCenterRunnerStat[]> {
+  const url = `${BASE_URL}/lapcombat2/split-list.jsp?event=${eventId}&file=1&class=${classId}`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "trails.jp/1.0 (lapcenter sync)" },
+  });
+  if (!res.ok) return [];
+
+  const html = await res.text();
+  const runners: LapCenterRunnerStat[] = [];
+
+  // JS 埋め込みデータをパース: runnerData['key'] = 'value'; ... runnerList.push(runnerData);
+  const blocks = html.split("runnerList.push(runnerData);");
+  for (const block of blocks) {
+    const get = (key: string): string => {
+      const m = block.match(new RegExp(`runnerData\\['${key}'\\]\\s*=\\s*'([^']*)';`));
+      return m ? m[1] : "";
+    };
+
+    const name = get("runnerName");
+    if (!name) continue;
+
+    const speedStr = get("speed");
+    const lossRateStr = get("lossRate");
+    const speed = parseFloat(speedStr);
+    const missRate = parseFloat(lossRateStr);
+    if (isNaN(speed) || isNaN(missRate)) continue;
+
+    const rankStr = get("rank");
+    const rank = parseInt(rankStr, 10);
+    if (isNaN(rank)) continue; // MP/DISQ/DNS はスキップ
+
+    runners.push({
+      name,
+      club: get("clubName"),
+      rank,
+      result: get("result"),
+      speed,
+      missRate,
+    });
+  }
+
+  return runners;
 }
