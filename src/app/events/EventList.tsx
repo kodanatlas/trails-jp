@@ -11,7 +11,7 @@ interface EventListProps {
 const ENTRY_STYLES = {
   open: { bg: "bg-green-500/15", text: "text-green-400", label: "受付中" },
   closed: { bg: "bg-white/5", text: "text-muted", label: "締切済" },
-  none: { bg: "bg-white/5", text: "text-muted", label: "-" },
+  none: { bg: "", text: "", label: "" },
 };
 
 /** 日付範囲の選択肢 */
@@ -191,9 +191,11 @@ export function EventList({ events }: EventListProps) {
                         {event.update_label || "更新"}
                       </span>
                     )}
-                    <span className={`rounded px-2 py-0.5 text-[10px] font-medium ${entry.bg} ${entry.text}`}>
-                      {entry.label}
-                    </span>
+                    {entry.label && (
+                      <span className={`rounded px-2 py-0.5 text-[10px] font-medium ${entry.bg} ${entry.text}`}>
+                        {entry.label}
+                      </span>
+                    )}
                     {event.tags.map((tag) => (
                       <span key={tag} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-muted">
                         {tag}
