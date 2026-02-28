@@ -308,7 +308,7 @@ for (const profile of Object.values(athletes)) {
 
 const clubs: Record<string, ClubProfile> = {};
 for (const [name, data] of clubMap) {
-  const memberList = [...data.members.values()].sort((a, b) => a.bestRank - b.bestRank);
+  const memberList = [...data.members.values()].sort((a, b) => b.bestPoints - a.bestPoints);
   const activeCount = memberList.filter((m) => m.isActive).length;
   const avgPoints =
     memberList.length > 0

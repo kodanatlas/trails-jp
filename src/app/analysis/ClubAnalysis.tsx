@@ -13,6 +13,7 @@ const INITIAL_SHOW = 5;
 interface Props {
   clubIndex: ClubIndex;
   athleteIndex: AthleteIndex;
+  onSelectAthlete?: (name: string) => void;
 }
 
 const typeBadgeColors: Record<string, string> = {
@@ -22,7 +23,7 @@ const typeBadgeColors: Record<string, string> = {
   unknown: "bg-white/10 text-muted",
 };
 
-export function ClubAnalysis({ clubIndex }: Props) {
+export function ClubAnalysis({ clubIndex, onSelectAthlete }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("active");
   const [expandedClub, setExpandedClub] = useState<string | null>(null);
@@ -103,6 +104,7 @@ export function ClubAnalysis({ clubIndex }: Props) {
             onToggle={() =>
               setExpandedClub(expandedClub === club.name ? null : club.name)
             }
+            onSelectAthlete={onSelectAthlete}
           />
         ))}
         {clubs.length > 50 && (
@@ -119,10 +121,12 @@ function ClubCard({
   club,
   isExpanded,
   onToggle,
+  onSelectAthlete,
 }: {
   club: ClubProfile;
   isExpanded: boolean;
   onToggle: () => void;
+  onSelectAthlete?: (name: string) => void;
 }) {
   const [showAll, setShowAll] = useState(false);
   const totalType = club.forestCount + club.sprintCount;
@@ -213,7 +217,7 @@ function ClubCard({
 
           <div className="space-y-1">
             {visibleMembers.map((m) => (
-              <MemberRow key={m.name} member={m} />
+              <MemberRow key={m.name} member={m} onSelect={onSelectAthlete} />
             ))}
           </div>
 
@@ -241,9 +245,11 @@ function ClubCard({
   );
 }
 
-function MemberRow({ member: m }: { member: ClubMember }) {
+function MemberRow({ member: m, onSelect }: { member: ClubMember; onSelect?: (name: string) => void }) {
   return (
-    <div className="flex items-center gap-1.5 rounded bg-white/[0.03] p-2">
+    <button
+      onClick={() => onSelect?.(m.name)}
+      className="flex w-full items-center gap-1.5 rounded bg-white/[0.03] p-2 text-left transition-colors hover:bg-white/[0.08]">
       {/* Rank */}
       <span className="w-7 flex-shrink-0 text-center text-xs font-bold text-primary">
         {m.bestRank}
@@ -298,6 +304,6 @@ function MemberRow({ member: m }: { member: ClubMember }) {
       <span className="w-14 flex-shrink-0 text-right font-mono text-xs font-bold text-primary">
         {m.bestPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
       </span>
-    </div>
+    </button>
   );
 }

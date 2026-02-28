@@ -169,7 +169,18 @@ export function AnalysisHub() {
 
       {/* Clubs Tab */}
       {activeTab === "clubs" && (
-        <ClubAnalysis clubIndex={clubIndex} athleteIndex={athleteIndex} />
+        <ClubAnalysis
+          clubIndex={clubIndex}
+          athleteIndex={athleteIndex}
+          onSelectAthlete={(name) => {
+            const athlete = athleteIndex.athletes[name];
+            if (athlete) {
+              setActiveTab("athlete");
+              setSearchQuery(name);
+              setSelectedAthlete(athlete);
+            }
+          }}
+        />
       )}
 
       {/* Compare Tab */}
