@@ -541,6 +541,16 @@ function LapCenterChart({ data }: { data: LapCenterPerformance[] }) {
       <div className="h-44">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
+            <defs>
+              <linearGradient id="lcLineF" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#4ade80" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#4ade80" stopOpacity={1} />
+              </linearGradient>
+              <linearGradient id="lcLineS" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#60a5fa" stopOpacity={1} />
+              </linearGradient>
+            </defs>
             {sharedGrid}
             {sharedXAxis}
             <YAxis
@@ -568,7 +578,7 @@ function LapCenterChart({ data }: { data: LapCenterPerformance[] }) {
                 name="fSpeed"
                 type="monotone"
                 dataKey="fSpeed"
-                stroke="#4ade80"
+                stroke="url(#lcLineF)"
                 strokeWidth={2}
                 dot={({ cx, cy, payload }: any) => {
                   const v = payload.fSpeed;
@@ -585,7 +595,7 @@ function LapCenterChart({ data }: { data: LapCenterPerformance[] }) {
                 name="sSpeed"
                 type="monotone"
                 dataKey="sSpeed"
-                stroke="#60a5fa"
+                stroke="url(#lcLineS)"
                 strokeWidth={2}
                 dot={({ cx, cy, payload }: any) => {
                   const v = payload.sSpeed;
@@ -632,6 +642,16 @@ function LapCenterChart({ data }: { data: LapCenterPerformance[] }) {
       <div className="h-44">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
+            <defs>
+              <linearGradient id="lcLineFm" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#4ade80" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#4ade80" stopOpacity={1} />
+              </linearGradient>
+              <linearGradient id="lcLineSm" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#60a5fa" stopOpacity={1} />
+              </linearGradient>
+            </defs>
             {sharedGrid}
             {sharedXAxis}
             <YAxis
@@ -659,7 +679,7 @@ function LapCenterChart({ data }: { data: LapCenterPerformance[] }) {
                 name="fMiss"
                 type="monotone"
                 dataKey="fMiss"
-                stroke="#4ade80"
+                stroke="url(#lcLineFm)"
                 strokeWidth={2}
                 dot={({ cx, cy, payload }: any) => {
                   const v = payload.fMiss;
@@ -676,7 +696,7 @@ function LapCenterChart({ data }: { data: LapCenterPerformance[] }) {
                 name="sMiss"
                 type="monotone"
                 dataKey="sMiss"
-                stroke="#60a5fa"
+                stroke="url(#lcLineSm)"
                 strokeWidth={2}
                 dot={({ cx, cy, payload }: any) => {
                   const v = payload.sMiss;
