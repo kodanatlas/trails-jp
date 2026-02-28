@@ -27,8 +27,9 @@ export function AthleteDetail({ summary }: Props) {
   useEffect(() => {
     setLoading(true);
     const loadProfile = loadAthleteDetail(summary).then((p) => setProfile(p));
-    const loadLc = fetch("/data/lapcenter-runners.json")
+    const loadLc = fetch("/api/lapcenter-runners")
       .then((r) => r.ok ? r.json() : null)
+      .then((json) => json ?? fetch("/data/lapcenter-runners.json").then((r) => r.ok ? r.json() : null))
       .then((json) => {
         if (json?.athletes?.[summary.name]) {
           setLcData(json.athletes[summary.name] as LapCenterPerformance[]);
@@ -462,17 +463,16 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
 
     for (const p of data) {
       if (cutoff && p.d < cutoff) continue;
+
+      // タイプ判定: JOYランキング日付マッチ（日付一致 + 名前近似一致 or 同日1タイプ）
+      let type: "forest" | "sprint" | null = null;
       const candidates = joyByDate.get(p.d);
       if (!candidates) continue; // JOYにない日付はスキップ
 
-      // JOYイベントとタイプ判定: 日付一致 + 名前近似一致（または同日1タイプのみ）
-      let type: "forest" | "sprint" | null = null;
       const types = new Set(candidates.map((c) => c.type));
       if (types.size === 1) {
-        // 同日に1タイプのみ → そのタイプを採用
         type = candidates[0].type;
       } else {
-        // 同日にforest+sprintが両方ある → 名前で判定
         for (const c of candidates) {
           if (eventFuzzyMatch(p.e, c.name)) { type = c.type; break; }
         }
@@ -499,11 +499,11 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
     const speeds = sorted.flatMap((d) => [d.fSpeed, d.sSpeed].filter((v): v is number => v != null));
     const misses = sorted.flatMap((d) => [d.fMiss, d.sMiss].filter((v): v is number => v != null));
 
-    // 3点移動平均を計算
+    // 5点移動平均を計算
     const ma = (arr: (number | undefined)[]): (number | undefined)[] =>
       arr.map((_, i) => {
-        const vals = arr.slice(Math.max(0, i - 2), i + 1).filter((v): v is number => v != null);
-        return vals.length >= 2 ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length * 10) / 10 : undefined;
+        const vals = arr.slice(Math.max(0, i - 4), i + 1).filter((v): v is number => v != null);
+        return vals.length >= 3 ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length * 10) / 10 : undefined;
       });
 
     const fSpeedArr = sorted.map((d) => d.fSpeed);
@@ -561,7 +561,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">
+        <h3 className="text-xs font-semibold tracking-wider text-muted">
           巡航速度・ミス率推移
           <span className="ml-1 text-[9px] font-normal">(LapCenter)</span>
         </h3>

@@ -118,12 +118,36 @@ async function main() {
     }
   }
 
+  // JOYランキング対象イベントの日付を収集（優先スクレイプ対象）
+  const RANKINGS_DIR = path.resolve(__dirname, "../public/data/rankings");
+  const joyDates = new Set<string>();
+  for (const fn of fs.readdirSync(RANKINGS_DIR).filter((f) => f.endsWith(".json"))) {
+    const raw: Array<{ event_scores: { event_name: string }[] }> = JSON.parse(
+      fs.readFileSync(path.join(RANKINGS_DIR, fn), "utf-8")
+    );
+    for (const athlete of raw) {
+      for (const ev of athlete.event_scores) {
+        const match = ev.event_name.trim().match(/^(\d{4}-\d{2}-\d{2})/);
+        if (match) joyDates.add(match[1]);
+      }
+    }
+  }
+  console.log(`JOY ranking dates: ${joyDates.size}`);
+
   const toProcess = lcEvents
     .filter((e) => !existingEventKeys.has(`${e.date}:${e.name}`))
-    .sort((a, b) => b.date.localeCompare(a.date)) // 新しいイベントから
+    .sort((a, b) => {
+      // JOYランキング日付を最優先
+      const aJoy = joyDates.has(a.date) ? 0 : 1;
+      const bJoy = joyDates.has(b.date) ? 0 : 1;
+      if (aJoy !== bJoy) return aJoy - bJoy;
+      // 同じ優先度なら新しい日付順
+      return b.date.localeCompare(a.date);
+    })
     .slice(0, limit);
 
-  console.log(`Events to process: ${toProcess.length}\n`);
+  const joyCount = toProcess.filter((e) => joyDates.has(e.date)).length;
+  console.log(`Events to process: ${toProcess.length} (${joyCount} JOY ranking events)\n`);
 
   let totalRunners = 0;
   let totalClasses = 0;
@@ -166,6 +190,9 @@ async function main() {
           lcClubs.some((lc) => joyClubs.some((joy) => lc === joy || lc.includes(joy) || joy.includes(lc)));
 
         if (!clubMatch) continue;
+
+        // speed=100 & miss=0 は基準ランナー（1人クラス等）で無意味なデータ
+        if (r.speed === 100 && r.missRate === 0) continue;
 
         if (!existing[entry.joyName]) existing[entry.joyName] = [];
         existing[entry.joyName].push({
