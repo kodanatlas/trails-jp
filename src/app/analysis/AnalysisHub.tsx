@@ -42,7 +42,9 @@ export function AnalysisHub() {
   }, []);
 
   const searchResults = useMemo(() => {
-    if (!athleteIndex || !searchQuery || searchQuery.length < 2) return [];
+    if (!athleteIndex || !searchQuery) return [];
+    const isAsciiOnly = /^[\x00-\x7F]+$/.test(searchQuery);
+    if (isAsciiOnly && searchQuery.length < 2) return [];
     const q = searchQuery.toLowerCase();
     return Object.values(athleteIndex.athletes)
       .filter(
@@ -114,7 +116,7 @@ export function AnalysisHub() {
           </div>
 
           {/* Search Results */}
-          {searchQuery.length >= 2 && !selectedAthlete && (
+          {searchQuery.length >= 1 && !selectedAthlete && searchResults.length >= 0 && (
             <div className="mb-4 space-y-1">
               {searchResults.length === 0 && (
                 <p className="py-8 text-center text-sm text-muted">該当する選手がいません</p>
