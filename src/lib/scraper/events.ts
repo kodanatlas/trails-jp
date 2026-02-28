@@ -36,15 +36,89 @@ export async function scrapeEvents(): Promise<JOEEvent[]> {
 
 /**
  * japan-o-entry.com アーカイブページから過去イベントを取得
+ * URL: /event/archive/YYYY
  */
 export async function scrapeArchive(year?: number): Promise<JOEEvent[]> {
-  const url = year ? `${BASE_URL}/event/archive?year=${year}` : `${BASE_URL}/event/archive`;
+  const url = year ? `${BASE_URL}/event/archive/${year}` : `${BASE_URL}/event/archive`;
   const res = await fetch(url, {
     headers: { "User-Agent": "trails.jp/1.0 (event sync)" },
     next: { revalidate: 0 },
   });
   const html = await res.text();
-  return parseEventList(html);
+  return parseArchiveList(html);
+}
+
+/**
+ * アーカイブページのHTML（table.indexではない2列テーブル）をパース
+ */
+function parseArchiveList(html: string): JOEEvent[] {
+  const $ = cheerio.load(html);
+  const events: JOEEvent[] = [];
+
+  $("table tr").each((_, row) => {
+    const $row = $(row);
+    const cells = $row.find("td");
+    if (cells.length < 2) return;
+
+    const link = $row.find("a[href*='/event/view/']");
+    if (!link.length) return;
+
+    const href = link.attr("href") ?? "";
+    const idMatch = href.match(/\/event\/view\/(\d+)/);
+    if (!idMatch) return;
+
+    const joe_event_id = parseInt(idMatch[1], 10);
+    const name = link.text().trim();
+
+    // 日付: "2024/ 1/2 (火) " or "2024/ 1/7 - 3/20"
+    const dateText = cells.eq(0).text().trim();
+    const { date, end_date } = parseArchiveDate(dateText);
+    if (!date) return;
+
+    // 場所: リンクの後のテキスト (e.g. " 東京都青梅市")
+    const cellHtml = cells.eq(1).text().trim();
+    const nameEnd = cellHtml.lastIndexOf(name);
+    let location = "";
+    if (nameEnd >= 0) {
+      location = cellHtml.slice(nameEnd + name.length).trim();
+    }
+    // clean up leading/trailing special chars
+    location = location.replace(/^[)）\s]+/, "").trim();
+
+    events.push({
+      joe_event_id,
+      name,
+      date,
+      end_date,
+      prefecture: location,
+      venue: location,
+      entry_status: "closed",
+      tags: [],
+      joe_url: `${BASE_URL}/event/view/${joe_event_id}`,
+    });
+  });
+
+  return events;
+}
+
+function parseArchiveDate(text: string): { date: string; end_date?: string } {
+  // "2024/ 1/2 (火) " → "2024-01-02"
+  // "2024/ 1/7 - 3/20" → date: "2024-01-07", end_date: "2024-03-20"
+  const match = text.match(/(\d{4})\s*\/\s*(\d{1,2})\s*\/\s*(\d{1,2})/);
+  if (!match) return { date: "" };
+
+  const [, y, m, d] = match;
+  const date = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+
+  // Check for end date: " - M/D"
+  const rangeMatch = text.match(/-\s*(\d{1,2})\/(\d{1,2})/);
+  let end_date: string | undefined;
+  if (rangeMatch) {
+    const [, em, ed] = rangeMatch;
+    end_date = `${y}-${em.padStart(2, "0")}-${ed.padStart(2, "0")}`;
+  }
+
+  return { date, end_date };
 }
 
 function parseEventList(html: string): JOEEvent[] {
