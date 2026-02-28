@@ -108,7 +108,12 @@ function parseFilename(file: string): { type: string; className: string } | null
 function normalizeClubName(raw: string): string {
   let name = raw.trim();
 
-  // --- 0. 大文字小文字の事前統一 ---
+  // --- 0. 全角英数字→半角に統一 ---
+  name = name.replace(/[\uFF21-\uFF3A]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFF21 + 0x41));
+  name = name.replace(/[\uFF41-\uFF5A]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFF41 + 0x61));
+  name = name.replace(/[\uFF10-\uFF19]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFF10 + 0x30));
+
+  // --- 0b. 大文字小文字の事前統一 ---
   name = name.replace(/olc/gi, "OLC");
 
   // --- 1. 大学OLC略称の明示的マッピング ---
