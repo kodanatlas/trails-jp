@@ -73,7 +73,9 @@ function AthleteSearchSlot({
   const [focused, setFocused] = useState(false);
 
   const results = useMemo(() => {
-    if (!query || query.length < 2) return [];
+    if (!query) return [];
+    const isAsciiOnly = /^[\x00-\x7F]+$/.test(query);
+    if (isAsciiOnly && query.length < 2) return [];
     const q = query.toLowerCase();
     return Object.values(athleteIndex.athletes)
       .filter((a) => a.name.toLowerCase().includes(q) || a.clubs.some((c) => c.toLowerCase().includes(q)))
