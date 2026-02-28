@@ -499,12 +499,19 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
     const speeds = sorted.flatMap((d) => [d.fSpeed, d.sSpeed].filter((v): v is number => v != null));
     const misses = sorted.flatMap((d) => [d.fMiss, d.sMiss].filter((v): v is number => v != null));
 
-    // 5点移動平均を計算
-    const ma = (arr: (number | undefined)[]): (number | undefined)[] =>
-      arr.map((_, i) => {
-        const vals = arr.slice(Math.max(0, i - 4), i + 1).filter((v): v is number => v != null);
-        return vals.length >= 3 ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length * 10) / 10 : undefined;
-      });
+    // 5点移動平均を計算（値のあるポイントだけでカウント）
+    const ma = (arr: (number | undefined)[]): (number | undefined)[] => {
+      const indices = arr.map((v, i) => v != null ? i : -1).filter((i) => i >= 0);
+      const result: (number | undefined)[] = new Array(arr.length).fill(undefined);
+      for (let k = 0; k < indices.length; k++) {
+        const window = indices.slice(Math.max(0, k - 4), k + 1);
+        const vals = window.map((i) => arr[i] as number);
+        if (vals.length >= 3) {
+          result[indices[k]] = Math.round(vals.reduce((s, v) => s + v, 0) / vals.length * 10) / 10;
+        }
+      }
+      return result;
+    };
 
     const fSpeedArr = sorted.map((d) => d.fSpeed);
     const sSpeedArr = sorted.map((d) => d.sSpeed);
