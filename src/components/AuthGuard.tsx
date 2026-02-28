@@ -67,10 +67,16 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     setError("");
     setSending(true);
 
+    const siteUrl =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "https://trailsjp.vercel.app";
+
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email,
       options: {
         data: { display_name: displayName.trim() },
+        emailRedirectTo: `${siteUrl}/upload`,
       },
     });
 
@@ -85,8 +91,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   };
 
   const handleVerify = async () => {
-    if (!code || code.length < 6) {
-      setError("6桁の確認コードを入力してください");
+    if (!code || code.length < 8) {
+      setError("8桁の確認コードを入力してください");
       return;
     }
     setError("");
@@ -216,7 +222,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       </div>
       <h2 className="text-xl font-bold">確認コードを入力</h2>
       <p className="mt-3 text-sm text-muted">
-        <span className="font-medium text-foreground">{email}</span> に6桁の確認コードを送信しました
+        <span className="font-medium text-foreground">{email}</span> に8桁の確認コードを送信しました
       </p>
 
       <div className="mt-8 space-y-4">
@@ -226,11 +232,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             type="text"
             inputMode="numeric"
             value={code}
-            onChange={(e) => { setCode(e.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }}
+            onChange={(e) => { setCode(e.target.value.replace(/\D/g, "").slice(0, 8)); setError(""); }}
             onKeyDown={(e) => { if (e.key === "Enter") handleVerify(); }}
-            placeholder="000000"
-            maxLength={6}
-            className="w-full rounded-lg border border-border bg-surface px-4 py-3 text-center font-mono text-2xl tracking-[0.5em] outline-none focus:border-primary"
+            placeholder="00000000"
+            maxLength={8}
+            className="w-full rounded-lg border border-border bg-surface px-4 py-3 text-center font-mono text-2xl tracking-[0.3em] outline-none focus:border-primary"
             autoFocus
           />
           {error && <p className="mt-1.5 text-xs text-red-400">{error}</p>}
@@ -238,7 +244,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
         <button
           onClick={handleVerify}
-          disabled={verifying || code.length < 6}
+          disabled={verifying || code.length < 8}
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
         >
           {verifying ? (

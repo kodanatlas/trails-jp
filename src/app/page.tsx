@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapIcon, CalendarDays, Trophy, ArrowRight, Radio, ExternalLink } from "lucide-react";
+import { MapIcon, CalendarDays, Trophy, ArrowRight, Radio, ExternalLink, BarChart3 } from "lucide-react";
 import { sampleMaps } from "@/lib/sample-data";
 import type { JOEEvent } from "@/lib/scraper/events";
 import eventsJson from "@/data/events.json";
@@ -67,6 +67,13 @@ export default function Home() {
               <Trophy className="h-4 w-4" />
               ランキング
             </Link>
+            <Link
+              href="/analysis"
+              className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-6 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
+            >
+              <BarChart3 className="h-4 w-4" />
+              選手分析
+            </Link>
           </div>
         </div>
       </section>
@@ -94,12 +101,13 @@ export default function Home() {
       {/* Features */}
       <section className="border-b border-border py-12 sm:py-16">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {[
               { icon: MapIcon, title: "地図ライブラリ", desc: "全国のOL地図を地図上で検索・閲覧・登録", href: "/maps", color: "text-[#f97316]" },
               { icon: Radio, title: "GPS追跡・ルート分析", desc: "ライブ追跡、リプレイ、スプリット比較", href: "/tracking", color: "text-[#69f0ae]" },
               { icon: CalendarDays, title: "イベント", desc: "JOY連携で最新大会情報を自動取得・Lap Center連携", href: "/events", color: "text-[#00e5ff]" },
               { icon: Trophy, title: "ランキング", desc: "JOYランキング全カテゴリ対応", href: "/rankings", color: "text-[#ffab00]" },
+              { icon: BarChart3, title: "選手分析", desc: "成績傾向・特性分類・クラブ統計・選手比較", href: "/analysis", color: "text-[#e040fb]" },
             ].map((f) => (
               <Link
                 key={f.title}

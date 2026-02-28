@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import type { JOEEvent } from "@/lib/scraper/events";
 import { Bell } from "lucide-react";
 import { EventList } from "./EventList";
-import eventsJson from "@/data/events.json";
+import { readEvents } from "@/lib/events-store";
+
+export const revalidate = 3600; // 1時間ごとに再検証
 
 export const metadata: Metadata = {
   title: "イベント",
   description: "JOYと連携した全国のオリエンテーリングイベント情報。",
 };
 
-export default function EventsPage() {
-  const events = eventsJson as JOEEvent[];
+export default async function EventsPage() {
+  const events = await readEvents();
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">

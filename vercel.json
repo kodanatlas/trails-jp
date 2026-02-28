@@ -5,12 +5,8 @@
       "schedule": "0 18 * * *"
     },
     {
-      "path": "/api/cron/sync-rankings",
-      "schedule": "0 18 * * 2"
-    },
-    {
       "path": "/api/cron/sync-lapcenter",
-      "schedule": "0 19 * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }

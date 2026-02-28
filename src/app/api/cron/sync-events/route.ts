@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { scrapeEvents, enrichEventsWithCoordinates } from "@/lib/scraper/events";
 import type { JOEEvent } from "@/lib/scraper/events";
-import eventsJson from "@/data/events.json";
+import { readEvents, writeEvents } from "@/lib/events-store";
+import { scrapeAllRankings } from "@/lib/scraper/rankings";
 
-// Vercel Cron: 日次 03:00 JST (18:00 UTC前日)
+// Vercel Cron: 日次 03:00 JST (18:00 UTC)
+// 水曜日はランキング同期も実行
 // vercel.json: { "path": "/api/cron/sync-events", "schedule": "0 18 * * *" }
 
 export async function GET(request: Request) {
-  // Verify cron secret in production
   const authHeader = request.headers.get("authorization");
   if (
     process.env.CRON_SECRET &&
@@ -17,11 +18,12 @@ export async function GET(request: Request) {
   }
 
   try {
+    // ---- イベント同期 ----
     const freshEvents = await scrapeEvents();
 
     // 既存データから座標・Lap Center情報を引き継ぎ
     const stored = new Map(
-      (eventsJson as JOEEvent[]).map((e) => [e.joe_event_id, e])
+      (await readEvents()).map((e) => [e.joe_event_id, e])
     );
 
     for (const event of freshEvents) {
@@ -39,12 +41,40 @@ export async function GET(request: Request) {
     // 座標未取得のイベントをバッチ処理（50件/回、500ms間隔）
     const coordResult = await enrichEventsWithCoordinates(freshEvents, 50, 500);
 
-    // In production: upsert to Supabase / write to file
+    // Supabaseに保存
+    await writeEvents(freshEvents);
+
+    // ---- ランキング同期（水曜のみ） ----
+    let rankingsResult = null;
+    const jstHour = new Date().getUTCHours() + 9;
+    const jstDay = new Date(
+      Date.now() + 9 * 60 * 60 * 1000
+    ).getUTCDay();
+
+    if (jstDay === 3) {
+      // 水曜日
+      try {
+        const rankings = await scrapeAllRankings();
+        rankingsResult = {
+          rankings_count: rankings.length,
+          total_entries: rankings.reduce(
+            (sum, r) => sum + r.entries.length,
+            0
+          ),
+        };
+      } catch (rankErr) {
+        console.error("Rankings sync failed:", rankErr);
+        rankingsResult = { error: String(rankErr) };
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      count: freshEvents.length,
-      coordinates: coordResult,
-      events: freshEvents,
+      events: {
+        count: freshEvents.length,
+        coordinates: coordResult,
+      },
+      rankings: rankingsResult,
       synced_at: new Date().toISOString(),
     });
   } catch (error) {

@@ -4,8 +4,7 @@ import { ArrowLeft, MapPin, Ruler, Mountain, Calendar, Users, ExternalLink } fro
 import { sampleMaps } from "@/lib/sample-data";
 import { TERRAIN_LABELS } from "@/lib/utils";
 import { findEventsForMap } from "@/lib/map-event-matcher";
-import type { JOEEvent } from "@/lib/scraper/events";
-import eventsJson from "@/data/events.json";
+import { readEvents } from "@/lib/events-store";
 import { MapViewer } from "./MapViewer";
 import { EditButton } from "./MapDetailClient";
 
@@ -34,7 +33,8 @@ export default async function MapDetailPage({ params }: Props) {
     );
   }
 
-  const matchedEvents = findEventsForMap(map, eventsJson as JOEEvent[]);
+  const events = await readEvents();
+  const matchedEvents = findEventsForMap(map, events);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -44,9 +44,21 @@ export default async function MapDetailPage({ params }: Props) {
       </Link>
 
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{map.name}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{map.name}</h1>
+          {map.isSample && (
+            <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+              サンプル
+            </span>
+          )}
+        </div>
         <EditButton map={map} />
       </div>
+      {map.isSample && (
+        <p className="mt-1 text-xs text-amber-600">
+          このO-mapはサンプルデータです。実際のデータではありません。
+        </p>
+      )}
       {map.description && <p className="mt-1.5 text-sm text-muted">{map.description}</p>}
 
       {/* Map Viewer */}

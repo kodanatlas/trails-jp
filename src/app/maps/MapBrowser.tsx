@@ -289,6 +289,13 @@ export function MapBrowser({ maps }: MapBrowserProps) {
           ))}
         </div>
 
+        {/* Sample data notice */}
+        {filtered.some((m) => m.isSample) && (
+          <div className="border-b border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] text-amber-700">
+            現在のO-mapはサンプルデータです。「O-mapを登録する」から実データを追加できます。
+          </div>
+        )}
+
         {/* Map List */}
         <div className="flex-1 overflow-y-auto">
           {filtered.map((m) => (
@@ -313,6 +320,11 @@ export function MapBrowser({ maps }: MapBrowserProps) {
                   <span className="truncate text-sm font-medium text-blue-700 hover:underline">
                     {m.name}
                   </span>
+                  {m.isSample && (
+                    <span className="flex-shrink-0 rounded bg-gray-200 px-1 py-0.5 text-[9px] font-medium leading-none text-gray-500">
+                      サンプル
+                    </span>
+                  )}
                 </div>
               </button>
 
@@ -397,6 +409,11 @@ export function MapBrowser({ maps }: MapBrowserProps) {
                     style={{ backgroundColor: getTerrainColor(selectedMap.terrain_type), boxShadow: "0 0 0 1px rgba(0,0,0,0.15)" }}
                   />
                   <h3 className="text-sm font-bold text-gray-900">{selectedMap.name}</h3>
+                  {selectedMap.isSample && (
+                    <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
+                      サンプル
+                    </span>
+                  )}
                 </div>
                 {selectedMap.description && (
                   <p className="mt-1 text-xs leading-relaxed text-gray-500">

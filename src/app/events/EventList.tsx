@@ -145,7 +145,7 @@ export function EventList({ events }: EventListProps) {
             ))}
           </select>
         </div>
-        <div className="flex gap-px overflow-hidden rounded-lg border border-border">
+        <div className="flex w-fit gap-px overflow-hidden rounded-lg border border-border">
           <button
             onClick={() => setViewMode("list")}
             className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "list" ? "bg-primary text-white" : "bg-card text-muted hover:text-foreground"}`}

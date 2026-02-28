@@ -22,4 +22,5 @@ export interface OrienteeringMap {
   center: { lat: number; lng: number };
   tags: string[];
   description?: string;
+  isSample?: boolean;
 }

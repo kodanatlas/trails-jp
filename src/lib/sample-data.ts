@@ -18,6 +18,7 @@ export const sampleMaps: OrienteeringMap[] = [
     center: { lat: 35.5175, lng: 140.23 },
     tags: ["森林", "千葉", "インカレ"],
     description: "千葉市南部に位置する都市近郊の森林公園。起伏に富んだテレインで、インカレ会場としても使用。",
+    isSample: true,
   },
   {
     id: "2",
@@ -35,6 +36,7 @@ export const sampleMaps: OrienteeringMap[] = [
     center: { lat: 36.245, lng: 139.7 },
     tags: ["遊水地", "平坦", "全日本"],
     description: "広大な遊水地エリア。平坦地形で藪のナビゲーションが要求される独特のテレイン。",
+    isSample: true,
   },
   {
     id: "3",
@@ -52,6 +54,7 @@ export const sampleMaps: OrienteeringMap[] = [
     center: { lat: 35.671, lng: 139.694 },
     tags: ["スプリント", "公園", "都市"],
     description: "都心のスプリント会場。複雑な歩道ネットワークと植生がナビゲーションの鍵。",
+    isSample: true,
   },
   {
     id: "4",
@@ -69,6 +72,7 @@ export const sampleMaps: OrienteeringMap[] = [
     center: { lat: 36.5225, lng: 138.335 },
     tags: ["高原", "森林", "全日本"],
     description: "標高1300mの高原テレイン。針葉樹と広葉樹の混交林で走りやすく、ロングディスタンスに最適。",
+    isSample: true,
   },
   {
     id: "5",
@@ -86,6 +90,7 @@ export const sampleMaps: OrienteeringMap[] = [
     center: { lat: 35.54, lng: 134.235 },
     tags: ["砂丘", "特殊テレイン"],
     description: "日本最大の砂丘をフィールドにした唯一無二のテレイン。砂地での移動と高低差が特徴。",
+    isSample: true,
   },
   {
     id: "6",
@@ -103,6 +108,7 @@ export const sampleMaps: OrienteeringMap[] = [
     center: { lat: 35.865, lng: 139.325 },
     tags: ["森林", "トレイル", "首都圏"],
     description: "首都圏からアクセス良好な丘陵森林。急斜面と尾根・谷のパターンが特徴的。",
+    isSample: true,
   },
   {
     id: "7",
@@ -121,6 +127,7 @@ export const sampleMaps: OrienteeringMap[] = [
     center: { lat: 35.186, lng: 136.901 },
     tags: ["スプリント", "公園", "城"],
     description: "名古屋城に隣接する都市公園。城壁や堀を含む複合的なスプリントテレイン。",
+    isSample: true,
   },
   {
     id: "8",
@@ -138,6 +145,7 @@ export const sampleMaps: OrienteeringMap[] = [
     center: { lat: 37.7575, lng: 140.255 },
     tags: ["山岳", "森林", "東北"],
     description: "東北を代表する山岳テレイン。変化に富んだ植生と急峻な地形が上級者を試す。",
+    isSample: true,
   },
 ];
 

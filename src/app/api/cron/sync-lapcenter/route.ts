@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { matchLapCenterEvents } from "@/lib/scraper/lapcenter";
-import eventsJson from "@/data/events.json";
-import type { JOEEvent } from "@/lib/scraper/events";
+import { readEvents, writeEvents } from "@/lib/events-store";
 
-// Vercel Cron: 日次 04:00 JST (19:00 UTC前日) — Hobbyプラン制約
-// Pro化後は "*/15 * * * *" に変更可能
-// vercel.json: { "path": "/api/cron/sync-lapcenter", "schedule": "0 19 * * *" }
+// Vercel Cron: 日次 12:00 JST (03:00 UTC)
+// vercel.json: { "path": "/api/cron/sync-lapcenter", "schedule": "0 3 * * *" }
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -17,19 +15,25 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Work with a copy of the events data
-    const events = (eventsJson as JOEEvent[]).map((e) => ({ ...e }));
+    // Supabase から最新イベントデータを取得
+    const events = (await readEvents()).map((e) => ({ ...e }));
 
-    // Count events without Lap Center links before matching
-    const beforeUnmatched = events.filter((e) => !e.lapcenter_event_id).length;
+    const beforeUnmatched = events.filter(
+      (e) => !e.lapcenter_event_id
+    ).length;
 
     const result = await matchLapCenterEvents(events);
 
-    const afterUnmatched = events.filter((e) => !e.lapcenter_event_id).length;
+    const afterUnmatched = events.filter(
+      (e) => !e.lapcenter_event_id
+    ).length;
     const newMatches = beforeUnmatched - afterUnmatched;
 
-    // In production: persist updated events to database / write to file
-    // For now: return the result summary
+    // マッチ結果を Supabase に保存
+    if (newMatches > 0) {
+      await writeEvents(events);
+    }
+
     return NextResponse.json({
       success: true,
       new_matches: newMatches,

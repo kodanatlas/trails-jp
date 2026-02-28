@@ -12,6 +12,7 @@ const navItems = [
   { href: "/tracking", label: "GPS追跡" },
   { href: "/events", label: "イベント" },
   { href: "/rankings", label: "ランキング" },
+  { href: "/analysis", label: "分析" },
 ];
 
 export function Header() {
