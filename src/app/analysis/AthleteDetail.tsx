@@ -614,6 +614,7 @@ function LapCenterChart({ data }: { data: LapCenterPerformance[] }) {
                 dataKey="fSpeedMa"
                 stroke="rgba(74,222,128,0.4)"
                 strokeWidth={1.5}
+                strokeDasharray="4 3"
                 dot={false}
                 activeDot={false}
                 connectNulls
@@ -627,6 +628,7 @@ function LapCenterChart({ data }: { data: LapCenterPerformance[] }) {
                 dataKey="sSpeedMa"
                 stroke="rgba(96,165,250,0.3)"
                 strokeWidth={1.5}
+                strokeDasharray="4 3"
                 dot={false}
                 activeDot={false}
                 connectNulls
@@ -715,6 +717,7 @@ function LapCenterChart({ data }: { data: LapCenterPerformance[] }) {
                 dataKey="fMissMa"
                 stroke="rgba(74,222,128,0.4)"
                 strokeWidth={1.5}
+                strokeDasharray="4 3"
                 dot={false}
                 activeDot={false}
                 connectNulls
@@ -728,6 +731,7 @@ function LapCenterChart({ data }: { data: LapCenterPerformance[] }) {
                 dataKey="sMissMa"
                 stroke="rgba(96,165,250,0.3)"
                 strokeWidth={1.5}
+                strokeDasharray="4 3"
                 dot={false}
                 activeDot={false}
                 connectNulls
