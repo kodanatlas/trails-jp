@@ -394,26 +394,60 @@ function valOpacity(value: number, min: number, max: number): number {
   return 1 - t * 0.7; // 1.0(濃) → 0.3(薄)
 }
 
+/** イベント名ノイズ除去 (JOY↔LapCenter 近似一致用) */
+function stripEventNoise(s: string): string {
+  let r = s;
+  r = r.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+  r = r.replace(/20\d{2}年度?/g, "");
+  r = r.replace(/20\d{2}/g, "");
+  r = r.replace(/第\s*[0-9一二三四五六七八九十百千]+\s*回/g, "");
+  r = r.replace(/(令和|平成)\s*[0-9一-九十]+\s*年度?/g, "");
+  r = r.replace(/[（(][^)）]*[)）]/g, "");
+  r = r.replace(/【[^】]*】/g, "");
+  for (const w of ["大会", "地区", "年度", "兼", "in", "IN", "の", "・", "\u3000"]) r = r.replaceAll(w, "");
+  r = r.replace(/[\s\-\/\\.,、。!！?？:：;；&＆'"_＿~～|｜\[\]［］{}]/g, "");
+  return r.toLowerCase();
+}
+
+function eventFuzzyMatch(a: string, b: string): boolean {
+  const na = stripEventNoise(a);
+  const nb = stripEventNoise(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  const shorter = na.length <= nb.length ? na : nb;
+  const longer = na.length <= nb.length ? nb : na;
+  if (shorter.length >= 3 && longer.includes(shorter)) return true;
+  if (shorter.length >= 4 && longer.length >= 4) {
+    const trigrams = new Set<string>();
+    for (let i = 0; i <= shorter.length - 3; i++) trigrams.add(shorter.substring(i, i + 3));
+    let common = 0;
+    for (let i = 0; i <= longer.length - 3; i++) {
+      if (trigrams.has(longer.substring(i, i + 3))) common++;
+    }
+    if (common / trigrams.size >= 0.6 && common >= 3) return true;
+  }
+  return false;
+}
+
 /** LapCenter 巡航速度・ミス率推移チャート */
 function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profile: AthleteProfile }) {
   const [chartRange, setChartRange] = useState<ChartRange>("2y");
 
   const { chartData, hasForest, hasSprint, forestCount, sprintCount, speedMin, speedMax, missMin, missMax } = useMemo(() => {
-    // JOYランキングからイベント日付→type マッピングを構築
-    const joyTypeByDate = new Map<string, "forest" | "sprint">();
+    // JOYランキングからイベント情報を収集: date → [{type, name}]
+    const joyByDate = new Map<string, Array<{ type: "forest" | "sprint"; name: string }>>();
     for (const r of profile.rankings) {
       const t = r.type.includes("forest") ? "forest" as const : r.type.includes("sprint") ? "sprint" as const : null;
       if (!t) continue;
       for (const e of r.events) {
-        if (e.date) joyTypeByDate.set(e.date, t);
+        if (!e.date) continue;
+        if (!joyByDate.has(e.date)) joyByDate.set(e.date, []);
+        const arr = joyByDate.get(e.date)!;
+        if (!arr.some((x) => x.type === t)) arr.push({ type: t, name: e.eventName });
       }
     }
 
     const cutoff = getChartCutoff(chartRange);
-    // JOYで判定できるイベントのみ
-    const filtered = data
-      .filter((d) => joyTypeByDate.has(d.d) && (!cutoff || d.d >= cutoff))
-      .sort((a, b) => a.d.localeCompare(b.d));
 
     // 同日同イベントは1つにまとめる（Forest/Sprint別）
     const dateMap = new Map<string, {
@@ -426,8 +460,24 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
     let fCount = 0;
     let sCount = 0;
 
-    for (const p of filtered) {
-      const type = joyTypeByDate.get(p.d)!;
+    for (const p of data) {
+      if (cutoff && p.d < cutoff) continue;
+      const candidates = joyByDate.get(p.d);
+      if (!candidates) continue; // JOYにない日付はスキップ
+
+      // JOYイベントと近似一致させてタイプ判定
+      let type: "forest" | "sprint" | null = null;
+      if (candidates.length === 1) {
+        // 1つだけなら名前マッチ確認
+        if (eventFuzzyMatch(p.e, candidates[0].name)) type = candidates[0].type;
+      } else {
+        // 複数ある場合は名前で最良マッチを選択
+        for (const c of candidates) {
+          if (eventFuzzyMatch(p.e, c.name)) { type = c.type; break; }
+        }
+      }
+      if (!type) continue; // マッチしない場合はスキップ
+
       if (!dateMap.has(p.d)) dateMap.set(p.d, { date: p.d });
       const entry = dateMap.get(p.d)!;
 
