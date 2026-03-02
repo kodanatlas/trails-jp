@@ -227,23 +227,25 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
   const [chartRange, setChartRange] = useState<ChartRange>("1y");
 
   const { forestEvents, sprintEvents, chartData, hasForest, hasSprint } = useMemo(() => {
-    const fEvents: { date: string; eventName: string; points: number }[] = [];
-    const sEvents: { date: string; eventName: string; points: number }[] = [];
-    const seenF = new Set<string>();
-    const seenS = new Set<string>();
+    // 同一イベントが複数ランキング(elite/age)に存在する場合、最大スコアを採用
+    const fMap = new Map<string, { date: string; eventName: string; points: number }>();
+    const sMap = new Map<string, { date: string; eventName: string; points: number }>();
 
     for (const r of profile.rankings) {
       const isForest = r.type.includes("forest");
       for (const e of r.events) {
         if (!e.date) continue;
         const key = `${e.date}:${e.eventName}`;
-        if (isForest) {
-          if (!seenF.has(key)) { seenF.add(key); fEvents.push(e); }
-        } else {
-          if (!seenS.has(key)) { seenS.add(key); sEvents.push(e); }
+        const map = isForest ? fMap : sMap;
+        const existing = map.get(key);
+        if (!existing || e.points > existing.points) {
+          map.set(key, e);
         }
       }
     }
+
+    const fEvents = [...fMap.values()];
+    const sEvents = [...sMap.values()];
 
     // 日付でまとめる
     const dateMap = new Map<string, { date: string; forest?: number; sprint?: number; fName?: string; sName?: string }>();
@@ -610,7 +612,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
       </div>
 
       {/* 巡航速度チャート */}
-      <p className="mb-1 text-[10px] text-muted">巡航速度 (%)</p>
+      <p className="mb-1 text-[10px] text-muted">巡航速度</p>
       <div className="h-44">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
@@ -643,7 +645,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
               }}
               formatter={(value, name) => {
                 if (String(name).includes("Ma")) return [null as any, null];
-                return [`${Number(value).toFixed(1)}%`, name === "fSpeed" ? "Forest" : "Sprint"];
+                return [Number(value).toFixed(1), name === "fSpeed" ? "Forest" : "Sprint"];
               }}
             />
             {hasForest && (
@@ -844,8 +846,8 @@ function RecentEvents({ profile }: { profile: AthleteProfile }) {
   const levelColors = {
     excellent: { bar: "bg-green-400/70", text: "text-green-400", dot: "bg-green-400", bg: "bg-green-500/5" },
     good:      { bar: "bg-emerald-400/50", text: "text-emerald-400", dot: "bg-emerald-400", bg: "" },
-    average:   { bar: "bg-primary/40", text: "text-primary", dot: "bg-primary", bg: "" },
-    below:     { bar: "bg-amber-400/50", text: "text-amber-400", dot: "bg-amber-400", bg: "" },
+    average:   { bar: "bg-yellow-400/50", text: "text-yellow-400", dot: "bg-yellow-400", bg: "" },
+    below:     { bar: "bg-orange-400/50", text: "text-orange-400", dot: "bg-orange-400", bg: "" },
     poor:      { bar: "bg-red-400/50", text: "text-red-400", dot: "bg-red-400", bg: "bg-red-500/5" },
   };
 

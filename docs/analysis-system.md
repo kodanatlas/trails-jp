@@ -75,7 +75,7 @@ trails.jp の分析機能は、日本オリエンテーリング界の2つの主
 | クラス一覧 | `/lapcenter/lapcombat2/index.jsp?event={id}&file=1` | イベント内のクラスとコース距離 |
 | スプリットデータ | `/lapcenter/lapcombat2/split-list.jsp?event={id}&file=1&class={classId}` | 巡航速度・ミス率・順位 |
 
-**巡航速度** (cruising speed): 最適タイムに対する走行速度の割合（%）。高いほど良い。
+**巡航速度** (cruising speed): LapCenter が算出する走行速度指標。低いほど速い。
 **ミス率** (miss rate): ナビゲーションエラーによるタイムロスの割合（%）。低いほど良い。
 
 ---
