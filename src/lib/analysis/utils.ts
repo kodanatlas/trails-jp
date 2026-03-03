@@ -90,10 +90,8 @@ export function calcConsistency(events: EventScore[]): number {
   return Math.round(Math.max(0, Math.min(100, (1 - cv / 0.3) * 100)));
 }
 
-/**
- * 最近の調子: 直近3大会の平均 vs 全体平均 (%)
- */
-export function calcRecentForm(events: EventScore[]): number {
+/** 単一種目の recentForm を算出 */
+function calcRecentFormForEvents(events: EventScore[]): number {
   if (events.length < 2) return 0;
   const sorted = [...events]
     .filter((e) => e.date)
@@ -107,6 +105,56 @@ export function calcRecentForm(events: EventScore[]): number {
 }
 
 /**
+ * 最近の調子: 種目別に計算（ビルドスクリプトと同一ロジック）
+ * - Forester → Forest のみ
+ * - Sprinter → Sprint のみ
+ * - Allrounder/Unknown → 両方の平均
+ */
+export function calcRecentForm(
+  events: EventScore[],
+  athleteType?: AthleteSummary["type"],
+  profile?: AthleteProfile,
+): number {
+  if (!athleteType || !profile) {
+    // フォールバック: 全イベント混合
+    return calcRecentFormForEvents(events);
+  }
+  const forestEvents = getEventsByDiscipline(profile, "forest");
+  const sprintEvents = getEventsByDiscipline(profile, "sprint");
+
+  if (athleteType === "forester") return calcRecentFormForEvents(forestEvents);
+  if (athleteType === "sprinter") return calcRecentFormForEvents(sprintEvents);
+  // allrounder / unknown
+  const f = calcRecentFormForEvents(forestEvents);
+  const s = calcRecentFormForEvents(sprintEvents);
+  if (f !== 0 && s !== 0) return Math.round((f + s) / 2);
+  return f || s;
+}
+
+/** 種目別にイベントを取得（重複排除済み） */
+function getEventsByDiscipline(
+  profile: AthleteProfile,
+  discipline: "forest" | "sprint",
+): EventScore[] {
+  const map = new Map<string, EventScore>();
+  for (const r of profile.rankings) {
+    const isTarget = discipline === "sprint"
+      ? r.type.includes("sprint")
+      : !r.type.includes("sprint");
+    if (!isTarget) continue;
+    for (const e of r.events) {
+      if (!e.date) continue;
+      const key = `${e.date}:${e.eventName.replace(/大会$/, "")}`;
+      const existing = map.get(key);
+      if (!existing || e.points > existing.points) {
+        map.set(key, e);
+      }
+    }
+  }
+  return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
  * 全イベントスコアを日付順にまとめる（カテゴリ横断、重複排除）
  */
 export function getAllEvents(profile: AthleteProfile): EventScore[] {
@@ -114,7 +162,7 @@ export function getAllEvents(profile: AthleteProfile): EventScore[] {
   for (const r of profile.rankings) {
     for (const e of r.events) {
       if (!e.date) continue;
-      const key = `${e.date}:${e.eventName}`;
+      const key = `${e.date}:${e.eventName.replace(/大会$/, "")}`;
       const existing = map.get(key);
       if (!existing || e.points > existing.points) {
         map.set(key, e);

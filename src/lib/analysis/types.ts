@@ -29,6 +29,7 @@ export interface AthleteSummary {
   forestCount: number;
   sprintCount: number;
   type: "sprinter" | "forester" | "allrounder" | "unknown";
+  recentForm: number; // 直近3大会 vs 全体平均 (%), 種目別算出
 }
 
 /** 詳細プロフィール (個別ロード用) */

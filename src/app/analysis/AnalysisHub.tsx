@@ -1,19 +1,22 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Search, User, Users, GitCompareArrows, Loader2, ArrowLeft } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Search, User, Users, GitCompareArrows, Heart, Loader2, ArrowLeft } from "lucide-react";
 import type { AthleteIndex, ClubIndex, AthleteSummary } from "@/lib/analysis/types";
 import { AthleteDetail } from "./AthleteDetail";
 import { ClubAnalysis } from "./ClubAnalysis";
-import { CompareAthletes } from "./CompareAthletes";
+import { CompareAthletes, COMPARE_COLORS } from "./CompareAthletes";
+import type { CompareEntry } from "./CompareAthletes";
 import { AthleteDistribution } from "./DistributionCharts";
+import { SupportTab } from "./SupportTab";
 
-type Tab = "athlete" | "clubs" | "compare";
+type Tab = "athlete" | "clubs" | "compare" | "support";
 
 const tabs: { id: Tab; label: string; icon: typeof User }[] = [
   { id: "athlete", label: "選手分析", icon: User },
   { id: "clubs", label: "クラブ", icon: Users },
   { id: "compare", label: "比較", icon: GitCompareArrows },
+  { id: "support", label: "応援", icon: Heart },
 ];
 
 export function AnalysisHub() {
@@ -26,12 +29,15 @@ export function AnalysisHub() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAthlete, setSelectedAthlete] = useState<AthleteSummary | null>(null);
 
-  // クラブから選手へ遷移した場合の戻り先
+  // 他タブから選手へ遷移した場合の戻り先
   const [fromClub, setFromClub] = useState<string | null>(null);
+  const [fromSupport, setFromSupport] = useState(false);
 
   // 比較用
-  const [compareA, setCompareA] = useState<AthleteSummary | null>(null);
-  const [compareB, setCompareB] = useState<AthleteSummary | null>(null);
+  const [compareEntries, setCompareEntries] = useState<CompareEntry[]>([
+    { id: "1", athlete: null, color: COMPARE_COLORS[0] },
+    { id: "2", athlete: null, color: COMPARE_COLORS[1] },
+  ]);
 
   useEffect(() => {
     Promise.all([
@@ -43,6 +49,35 @@ export function AnalysisHub() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
+
+  // ブラウザ戻るボタン対応
+  const handlePopState = useCallback((e: PopStateEvent) => {
+    const state = e.state;
+    if (state?.tab === "clubs" && state?.club) {
+      setActiveTab("clubs");
+      setFromClub(state.club);
+      setFromSupport(false);
+      setSelectedAthlete(null);
+      setSearchQuery("");
+    } else if (state?.tab === "support") {
+      setActiveTab("support");
+      setFromSupport(false);
+      setFromClub(null);
+      setSelectedAthlete(null);
+      setSearchQuery("");
+    } else if (state?.tab) {
+      setActiveTab(state.tab);
+      setSelectedAthlete(null);
+      setSearchQuery("");
+      setFromClub(null);
+      setFromSupport(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [handlePopState]);
 
   const searchResults = useMemo(() => {
     if (!athleteIndex || !searchQuery) return [];
@@ -88,6 +123,7 @@ export function AnalysisHub() {
               setSelectedAthlete(null);
               setSearchQuery("");
               setFromClub(null);
+              setFromSupport(false);
             }}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === tab.id
@@ -160,14 +196,23 @@ export function AnalysisHub() {
               {fromClub && (
                 <button
                   onClick={() => {
-                    setActiveTab("clubs");
-                    setSelectedAthlete(null);
-                    setSearchQuery("");
+                    history.back();
                   }}
                   className="mb-3 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted transition-colors hover:bg-card hover:text-foreground"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
                   {fromClub} に戻る
+                </button>
+              )}
+              {fromSupport && (
+                <button
+                  onClick={() => {
+                    history.back();
+                  }}
+                  className="mb-3 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted transition-colors hover:bg-card hover:text-foreground"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  応援に戻る
                 </button>
               )}
               <AthleteDetail summary={selectedAthlete} />
@@ -195,10 +240,14 @@ export function AnalysisHub() {
           onSelectAthlete={(name, clubName) => {
             const athlete = athleteIndex.athletes[name];
             if (athlete) {
+              // 戻る先としてクラブタブの状態を履歴に記録
+              history.replaceState({ tab: "clubs", club: clubName }, "");
+              history.pushState({ tab: "athlete", athlete: name, fromClub: clubName }, "");
               setFromClub(clubName ?? null);
               setActiveTab("athlete");
               setSearchQuery(name);
               setSelectedAthlete(athlete);
+              window.scrollTo({ top: 0 });
             }
           }}
         />
@@ -208,10 +257,25 @@ export function AnalysisHub() {
       {activeTab === "compare" && (
         <CompareAthletes
           athleteIndex={athleteIndex}
-          compareA={compareA}
-          compareB={compareB}
-          onSelectA={setCompareA}
-          onSelectB={setCompareB}
+          entries={compareEntries}
+          onEntriesChange={setCompareEntries}
+        />
+      )}
+
+      {/* Support Tab */}
+      {activeTab === "support" && (
+        <SupportTab
+          athleteIndex={athleteIndex}
+          onSelectAthlete={(athlete) => {
+            history.replaceState({ tab: "support" }, "");
+            history.pushState({ tab: "athlete", athlete: athlete.name, fromSupport: true }, "");
+            setFromSupport(true);
+            setFromClub(null);
+            setActiveTab("athlete");
+            setSearchQuery(athlete.name);
+            setSelectedAthlete(athlete);
+            window.scrollTo({ top: 0 });
+          }}
         />
       )}
     </div>

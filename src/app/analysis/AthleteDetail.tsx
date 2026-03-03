@@ -146,7 +146,7 @@ function TypeBadge({ profile }: { profile: AthleteProfile }) {
 function StatsCards({ profile }: { profile: AthleteProfile }) {
   const allEvents = useMemo(() => getAllEvents(profile), [profile]);
   const consistency = calcConsistency(allEvents);
-  const recentForm = calcRecentForm(allEvents);
+  const recentForm = calcRecentForm(allEvents, profile.type, profile);
   const best = allEvents.length > 0
     ? allEvents.reduce((max, e) => (e.points > max.points ? e : max))
     : null;
@@ -224,31 +224,26 @@ function getChartCutoff(range: ChartRange): string {
 
 /** スコア推移チャート — Forest / Sprint 分離 */
 function ScoreChart({ profile }: { profile: AthleteProfile }) {
-  const [chartRange, setChartRange] = useState<ChartRange>("1y");
+  const [chartRange, setChartRange] = useState<ChartRange>("2y");
 
   const { forestEvents, sprintEvents, chartData, hasForest, hasSprint } = useMemo(() => {
-    // 同一イベントが複数ランキング(elite/age)に存在する場合、最大スコアを採用
-    const fMap = new Map<string, { date: string; eventName: string; points: number }>();
-    const sMap = new Map<string, { date: string; eventName: string; points: number }>();
+    // 年齢別・無差別のみ使用（エリートとの混在を防ぐ）
+    const fEvents: { date: string; eventName: string; points: number }[] = [];
+    const sEvents: { date: string; eventName: string; points: number }[] = [];
 
     for (const r of profile.rankings) {
-      const isForest = r.type.includes("forest");
+      const isF = r.type === "age_forest" && (r.className === "無差別" || r.className === "女子無差別");
+      const isS = r.type === "age_sprint" && (r.className === "S_無差別" || r.className === "S_女子無差別");
+      if (!isF && !isS) continue;
       for (const e of r.events) {
         if (!e.date) continue;
-        const key = `${e.date}:${e.eventName}`;
-        const map = isForest ? fMap : sMap;
-        const existing = map.get(key);
-        if (!existing || e.points > existing.points) {
-          map.set(key, e);
-        }
+        if (isF) fEvents.push(e);
+        else sEvents.push(e);
       }
     }
 
-    const fEvents = [...fMap.values()];
-    const sEvents = [...sMap.values()];
-
     // 日付でまとめる
-    const dateMap = new Map<string, { date: string; forest?: number; sprint?: number; fName?: string; sName?: string }>();
+    const dateMap = new Map<string, { date: string; forest?: number; sprint?: number; fName?: string; sName?: string; forestMa?: number; sprintMa?: number }>();
     for (const e of fEvents) {
       if (!dateMap.has(e.date)) dateMap.set(e.date, { date: e.date });
       const d = dateMap.get(e.date)!;
@@ -263,9 +258,35 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
     }
 
     const cutoff = getChartCutoff(chartRange);
-    const data = [...dateMap.values()]
+    const sorted = [...dateMap.values()]
       .filter((d) => !cutoff || d.date >= cutoff)
       .sort((a, b) => a.date.localeCompare(b.date));
+
+    // 線形回帰（最小二乗法）
+    const linReg = (arr: (number | undefined)[]): (number | undefined)[] => {
+      const pts = arr.map((v, i) => (v != null ? { x: i, y: v } : null)).filter((p): p is { x: number; y: number } => p != null);
+      if (pts.length < 2) return new Array(arr.length).fill(undefined);
+      const n = pts.length;
+      const sx = pts.reduce((s, p) => s + p.x, 0);
+      const sy = pts.reduce((s, p) => s + p.y, 0);
+      const sxy = pts.reduce((s, p) => s + p.x * p.y, 0);
+      const sxx = pts.reduce((s, p) => s + p.x * p.x, 0);
+      const a = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+      const b = (sy - a * sx) / n;
+      const result: (number | undefined)[] = new Array(arr.length).fill(undefined);
+      result[pts[0].x] = Math.round((a * pts[0].x + b) * 10) / 10;
+      result[pts[n - 1].x] = Math.round((a * pts[n - 1].x + b) * 10) / 10;
+      return result;
+    };
+
+    const fTrend = linReg(sorted.map((d) => d.forest));
+    const sTrend = linReg(sorted.map((d) => d.sprint));
+    const data = sorted.map((d, i) => ({
+      ...d,
+      forestMa: fTrend[i],
+      sprintMa: sTrend[i],
+    }));
+
     return {
       forestEvents: fEvents,
       sprintEvents: sEvents,
@@ -321,7 +342,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
           </div>
         </div>
       </div>
-      <div className="h-56">
+      <div className="h-56 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -351,6 +372,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
                 return parts.join(" | ");
               }}
               formatter={(value, name) => {
+                if (String(name).includes("Ma")) return [null as any, null];
                 const label = name === "forest" ? "Forest" : "Sprint";
                 return [Number(value).toLocaleString(), label];
               }}
@@ -381,6 +403,34 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
                 dot={{ fill: "#60a5fa", r: 3 }}
                 activeDot={{ r: 5 }}
                 connectNulls
+              />
+            )}
+            {hasForest && (
+              <Line
+                name="forestMa"
+                type="linear"
+                dataKey="forestMa"
+                stroke="rgba(74,222,128,0.4)"
+                strokeWidth={1.5}
+                strokeDasharray="4 3"
+                dot={false}
+                activeDot={false}
+                connectNulls
+                legendType="none"
+              />
+            )}
+            {hasSprint && (
+              <Line
+                name="sprintMa"
+                type="linear"
+                dataKey="sprintMa"
+                stroke="rgba(96,165,250,0.3)"
+                strokeWidth={1.5}
+                strokeDasharray="4 3"
+                dot={false}
+                activeDot={false}
+                connectNulls
+                legendType="none"
               />
             )}
           </LineChart>
@@ -613,7 +663,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
 
       {/* 巡航速度チャート */}
       <p className="mb-1 text-[10px] text-muted">巡航速度</p>
-      <div className="h-44">
+      <div className="h-44 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
             <defs>
@@ -716,7 +766,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
 
       {/* ミス率チャート */}
       <p className="mb-1 mt-4 text-[10px] text-muted">ミス率 (%)</p>
-      <div className="h-44">
+      <div className="h-44 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
             <defs>
@@ -844,8 +894,8 @@ function RecentEvents({ profile }: { profile: AthleteProfile }) {
   }
 
   const levelColors = {
-    excellent: { bar: "bg-green-400/70", text: "text-green-400", dot: "bg-green-400", bg: "bg-green-500/5" },
-    good:      { bar: "bg-emerald-400/50", text: "text-emerald-400", dot: "bg-emerald-400", bg: "" },
+    excellent: { bar: "bg-cyan-400/70", text: "text-cyan-400", dot: "bg-cyan-400", bg: "bg-cyan-500/5" },
+    good:      { bar: "bg-green-400/50", text: "text-green-400", dot: "bg-green-400", bg: "" },
     average:   { bar: "bg-yellow-400/50", text: "text-yellow-400", dot: "bg-yellow-400", bg: "" },
     below:     { bar: "bg-orange-400/50", text: "text-orange-400", dot: "bg-orange-400", bg: "" },
     poor:      { bar: "bg-red-400/50", text: "text-red-400", dot: "bg-red-400", bg: "bg-red-500/5" },

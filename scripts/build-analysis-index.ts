@@ -33,6 +33,7 @@ interface AthleteSummary {
   forestCount: number;
   sprintCount: number;
   type: "sprinter" | "forester" | "allrounder" | "unknown";
+  recentForm: number;
 }
 
 interface ClubMember {
@@ -159,7 +160,11 @@ function normalizeClubName(raw: string): string {
   // --- 5. 末尾のスペース+数字を除去 (e.g. "金沢大学 3" → "金沢大学") ---
   name = name.replace(/\s+\d+$/, "");
 
-  // --- 5. 一般的な正規化 ---
+  // --- 5b. 日本語名の末尾数字を除去 (e.g. "青葉会18" → "青葉会", "越王会'14" → "越王会") ---
+  // 漢字・ひらがな・カタカナの後に続く '? + 数字 を除去（英字のみのクラブ名は対象外）
+  name = name.replace(/([\u3000-\u9FFF\uF900-\uFAFF])'?\d+$/, "$1");
+
+  // --- 6. 一般的な正規化 ---
   name = name.replace(/OLクラブ$/, "OLC");
 
   if (name === "ES関東" || name === "ES関東クラブ") {
@@ -173,6 +178,9 @@ function normalizeClubName(raw: string): string {
     "大阪": "大阪OLC",
     "練馬": "練馬OLC",
     "レオ": "OLCレオ",
+    "新潟": "新潟大学",
+    "金沢": "金沢大学",
+    "神戸": "神戸大学",
   };
   if (aliasMap[name]) name = aliasMap[name];
 
@@ -187,6 +195,7 @@ interface ParsedEvent {
   date: string;
   eventName: string;
   points: number;
+  discipline: "forest" | "sprint";
 }
 
 const athleteMap = new Map<string, {
@@ -241,20 +250,26 @@ for (const file of files) {
     });
 
     // イベントスコア収集
+    const discipline: "forest" | "sprint" = type.includes("sprint") ? "sprint" : "forest";
     for (const es of entry.event_scores) {
       const { date, eventName } = parseEventName(es.event_name);
       if (date) {
-        data.allEvents.push({ date, eventName, points: es.points });
+        data.allEvents.push({ date, eventName, points: es.points, discipline });
       }
     }
   }
 }
 
 // 選手ごとのイベント重複排除 + 統計計算用ヘルパー
+/** イベント名を正規化（末尾の「大会」を除去して名寄せ） */
+function normalizeEventName(name: string): string {
+  return name.replace(/大会$/, "").trim();
+}
+
 function dedupeEvents(events: ParsedEvent[]): ParsedEvent[] {
   const map = new Map<string, ParsedEvent>();
   for (const e of events) {
-    const key = `${e.date}:${e.eventName}`;
+    const key = `${e.discipline}:${e.date}:${normalizeEventName(e.eventName)}`;
     const existing = map.get(key);
     if (!existing || e.points > existing.points) {
       map.set(key, e);
@@ -273,7 +288,7 @@ function calcConsistency(events: ParsedEvent[]): number {
   return Math.round(Math.max(0, Math.min(100, (1 - cv / 0.3) * 100)));
 }
 
-function calcRecentForm(events: ParsedEvent[]): number {
+function calcRecentFormForDiscipline(events: ParsedEvent[]): number {
   if (events.length < 2) return 0;
   const sorted = [...events].sort((a, b) => b.date.localeCompare(a.date));
   const recent = sorted.slice(0, 3);
@@ -281,6 +296,23 @@ function calcRecentForm(events: ParsedEvent[]): number {
   const allAvg = sorted.reduce((s, e) => s + e.points, 0) / sorted.length;
   if (allAvg === 0) return 0;
   return Math.round(((recentAvg - allAvg) / allAvg) * 100);
+}
+
+function calcRecentForm(events: ParsedEvent[], athleteType: AthleteSummary["type"]): number {
+  const forest = events.filter((e) => e.discipline === "forest");
+  const sprint = events.filter((e) => e.discipline === "sprint");
+
+  if (athleteType === "forester") {
+    return calcRecentFormForDiscipline(forest);
+  }
+  if (athleteType === "sprinter") {
+    return calcRecentFormForDiscipline(sprint);
+  }
+  // allrounder / unknown: 両方計算して平均（片方しかなければそちらのみ）
+  const fForm = calcRecentFormForDiscipline(forest);
+  const sForm = calcRecentFormForDiscipline(sprint);
+  if (fForm !== 0 && sForm !== 0) return Math.round((fForm + sForm) / 2);
+  return fForm || sForm;
 }
 
 // Build AthleteSummary records
@@ -315,6 +347,7 @@ for (const [name, data] of athleteMap) {
     forestCount,
     sprintCount,
     type: classifyType(data.appearances),
+    recentForm: 0,
   };
   athleteCount++;
 }
@@ -329,11 +362,19 @@ const athleteStats = new Map<string, {
 
 for (const [name, data] of athleteMap) {
   const events = dedupeEvents(data.allEvents);
+  const athleteType = athletes[name]?.type ?? "unknown";
   athleteStats.set(name, {
     events,
-    recentForm: calcRecentForm(events),
+    recentForm: calcRecentForm(events, athleteType),
     consistency: calcConsistency(events),
   });
+}
+
+// recentForm を athletes に後付け
+for (const [name, stats] of athleteStats) {
+  if (athletes[name]) {
+    athletes[name].recentForm = stats.recentForm;
+  }
 }
 
 const clubMap = new Map<string, {

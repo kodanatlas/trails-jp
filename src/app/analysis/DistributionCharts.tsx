@@ -14,46 +14,66 @@ const TYPE_COLORS: Record<string, string> = {
   unknown: "#666",
 };
 
+/** 年齢別無差別のポイントを取得 */
+function getOpenPoints(a: AthleteSummary): { forest: number; sprint: number } | null {
+  const isFemale = a.appearances.some((r) => r.className === "女子無差別" || r.className === "S_女子無差別");
+  const fClass = isFemale ? "女子無差別" : "無差別";
+  const sClass = isFemale ? "S_女子無差別" : "S_無差別";
+  const fPts = a.appearances.find((r) => r.type === "age_forest" && r.className === fClass)?.totalPoints;
+  const sPts = a.appearances.find((r) => r.type === "age_sprint" && r.className === sClass)?.totalPoints;
+  if (fPts == null || sPts == null) return null;
+  return { forest: Math.round(fPts), sprint: Math.round(sPts) };
+}
+
 /** 選手分布: Forest vs Sprint ポイント散布図 */
 export function AthleteDistribution({
   athleteIndex,
   selectedAthlete,
+  highlightAthletes,
 }: {
   athleteIndex: AthleteIndex;
-  selectedAthlete: AthleteSummary | null;
+  selectedAthlete?: AthleteSummary | null;
+  highlightAthletes?: { name: string; color: string }[];
 }) {
-  const { data, selectedPoint } = useMemo(() => {
+  const highlightNames = useMemo(
+    () => new Map((highlightAthletes ?? []).map((h) => [h.name, h.color])),
+    [highlightAthletes]
+  );
+
+  const { data, selectedPoint, highlightPoints } = useMemo(() => {
     const points: {
       name: string;
       forest: number;
       sprint: number;
       type: string;
       isSelected: boolean;
+      highlightColor?: string;
     }[] = [];
     let sel: { forest: number; sprint: number; name: string } | null = null;
+    const hlPts: { forest: number; sprint: number; name: string; color: string }[] = [];
 
     for (const a of Object.values(athleteIndex.athletes)) {
-      const fApps = a.appearances.filter((r) => r.type.includes("forest"));
-      const sApps = a.appearances.filter((r) => r.type.includes("sprint"));
-      if (fApps.length === 0 || sApps.length === 0) continue;
+      const pts = getOpenPoints(a);
+      if (!pts) continue;
 
-      const fPts = Math.max(...fApps.map((r) => r.totalPoints));
-      const sPts = Math.max(...sApps.map((r) => r.totalPoints));
       const isSelected = selectedAthlete?.name === a.name;
+      const hlColor = highlightNames.get(a.name);
 
       points.push({
         name: a.name,
-        forest: Math.round(fPts),
-        sprint: Math.round(sPts),
+        forest: pts.forest,
+        sprint: pts.sprint,
         type: a.type,
-        isSelected,
+        isSelected: isSelected || !!hlColor,
+        highlightColor: hlColor,
       });
 
-      if (isSelected) sel = { forest: Math.round(fPts), sprint: Math.round(sPts), name: a.name };
+      if (isSelected) sel = { forest: pts.forest, sprint: pts.sprint, name: a.name };
+      if (hlColor) hlPts.push({ forest: pts.forest, sprint: pts.sprint, name: a.name, color: hlColor });
     }
 
-    return { data: points, selectedPoint: sel };
-  }, [athleteIndex, selectedAthlete]);
+    return { data: points, selectedPoint: sel, highlightPoints: hlPts };
+  }, [athleteIndex, selectedAthlete, highlightNames]);
 
   // Type counts for legend
   const typeCounts = useMemo(() => {
@@ -93,7 +113,7 @@ export function AthleteDistribution({
         ))}
       </div>
 
-      <div className="h-64 sm:h-72">
+      <div className="h-64 overflow-hidden sm:h-72">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 5, right: 10, bottom: 25, left: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -136,40 +156,36 @@ export function AthleteDistribution({
             {/* Crosshair lines for selected athlete */}
             {selectedPoint && (
               <>
-                <ReferenceLine
-                  x={selectedPoint.forest}
-                  stroke="#fbbf24"
-                  strokeDasharray="4 4"
-                  strokeOpacity={0.6}
-                />
-                <ReferenceLine
-                  y={selectedPoint.sprint}
-                  stroke="#fbbf24"
-                  strokeDasharray="4 4"
-                  strokeOpacity={0.6}
-                >
-                  <Label
-                    value={selectedPoint.name}
-                    position="insideTopRight"
-                    fill="#fbbf24"
-                    fontSize={11}
-                    fontWeight="bold"
-                    offset={8}
-                  />
+                <ReferenceLine x={selectedPoint.forest} stroke="#fbbf24" strokeDasharray="4 4" strokeOpacity={0.6} />
+                <ReferenceLine y={selectedPoint.sprint} stroke="#fbbf24" strokeDasharray="4 4" strokeOpacity={0.6}>
+                  <Label value={selectedPoint.name} position="insideTopRight" fill="#fbbf24" fontSize={11} fontWeight="bold" offset={8} />
                 </ReferenceLine>
               </>
             )}
+            {/* Crosshair lines for compared athletes */}
+            {highlightPoints.map((hp) => (
+              <ReferenceLine key={`hl-y-${hp.name}`} y={hp.sprint} stroke={hp.color} strokeDasharray="4 4" strokeOpacity={0.5}>
+                <Label value={hp.name} position="insideTopRight" fill={hp.color} fontSize={11} fontWeight="bold" offset={8} />
+              </ReferenceLine>
+            ))}
+            {highlightPoints.map((hp) => (
+              <ReferenceLine key={`hl-x-${hp.name}`} x={hp.forest} stroke={hp.color} strokeDasharray="4 4" strokeOpacity={0.5} />
+            ))}
             <Scatter data={data} shape="circle">
-              {data.map((entry, i) => (
-                <Cell
-                  key={i}
-                  fill={entry.isSelected ? "#fbbf24" : TYPE_COLORS[entry.type] ?? "#666"}
-                  fillOpacity={entry.isSelected ? 1 : selectedPoint ? 0.15 : 0.4}
-                  stroke={entry.isSelected ? "#fbbf24" : "none"}
-                  strokeWidth={entry.isSelected ? 3 : 0}
-                  r={entry.isSelected ? 8 : undefined}
-                />
-              ))}
+              {data.map((entry, i) => {
+                const hlColor = entry.highlightColor;
+                const anyHighlight = selectedPoint || highlightPoints.length > 0;
+                return (
+                  <Cell
+                    key={i}
+                    fill={hlColor ?? (entry.isSelected ? "#fbbf24" : TYPE_COLORS[entry.type] ?? "#666")}
+                    fillOpacity={entry.isSelected ? 1 : anyHighlight ? 0.15 : 0.4}
+                    stroke={entry.isSelected ? (hlColor ?? "#fbbf24") : "none"}
+                    strokeWidth={entry.isSelected ? 3 : 0}
+                    r={entry.isSelected ? 8 : undefined}
+                  />
+                );
+              })}
             </Scatter>
           </ScatterChart>
         </ResponsiveContainer>
@@ -245,7 +261,7 @@ export function ClubDistribution({
         横軸: 所属人数、縦軸: 平均ポイント、色: Forest↔Sprint比率
       </p>
 
-      <div className="h-64 sm:h-72">
+      <div className="h-64 overflow-hidden sm:h-72">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 5, right: 10, bottom: 25, left: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -330,7 +346,7 @@ export function ClubDistribution({
         <span className="flex items-center gap-1">
           <span className="inline-block h-2 w-2 rounded-full bg-blue-400" /> Sprint寄り
         </span>
-        <span>ドットサイズ = アクティブ人数</span>
+        <span>ドットサイズ = アクティブ人数（半年以内に参加実績有り）</span>
       </div>
     </div>
   );

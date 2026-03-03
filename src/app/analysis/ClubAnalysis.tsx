@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Search, ChevronDown, ChevronUp, Users, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { AthleteIndex, ClubIndex, ClubProfile, ClubMember } from "@/lib/analysis/types";
 import { typeLabel } from "@/lib/analysis/utils";
@@ -28,6 +28,20 @@ export function ClubAnalysis({ clubIndex, onSelectAthlete, initialExpandedClub }
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("active");
   const [expandedClub, setExpandedClub] = useState<string | null>(initialExpandedClub ?? null);
+  const expandedRef = useRef<HTMLDivElement>(null);
+
+  // 展開クラブが変わったとき、そのクラブカードが画面上部に来るようスクロール
+  useEffect(() => {
+    if (expandedClub && expandedRef.current) {
+      // レンダー完了を待ってからスクロール（上部に余白を残す）
+      requestAnimationFrame(() => {
+        const el = expandedRef.current;
+        if (!el) return;
+        const top = el.getBoundingClientRect().top + window.scrollY - 80;
+        window.scrollTo({ top, behavior: "smooth" });
+      });
+    }
+  }, [expandedClub]);
 
   const clubs = useMemo(() => {
     let list = Object.values(clubIndex.clubs);
@@ -97,22 +111,19 @@ export function ClubAnalysis({ clubIndex, onSelectAthlete, initialExpandedClub }
 
       {/* Club List */}
       <div className="space-y-1.5">
-        {clubs.slice(0, 50).map((club) => (
-          <ClubCard
-            key={club.name}
-            club={club}
-            isExpanded={expandedClub === club.name}
-            onToggle={() =>
-              setExpandedClub(expandedClub === club.name ? null : club.name)
-            }
-            onSelectAthlete={onSelectAthlete}
-          />
+        {clubs.map((club) => (
+          <div key={club.name} ref={expandedClub === club.name ? expandedRef : undefined}>
+            <ClubCard
+              club={club}
+              isExpanded={expandedClub === club.name}
+              onToggle={() => {
+                const next = expandedClub === club.name ? null : club.name;
+                setExpandedClub(next);
+              }}
+              onSelectAthlete={onSelectAthlete}
+            />
+          </div>
         ))}
-        {clubs.length > 50 && (
-          <p className="py-4 text-center text-xs text-muted">
-            上位50クラブを表示中。検索で絞り込んでください。
-          </p>
-        )}
       </div>
     </div>
   );
