@@ -29,7 +29,7 @@ interface AthleteSummary {
   clubs: string[];
   appearances: RankingRef[];
   bestRank: number;
-  bestPoints: number;
+  avgTotalPoints: number;
   forestCount: number;
   sprintCount: number;
   type: "sprinter" | "forester" | "allrounder" | "unknown";
@@ -39,7 +39,7 @@ interface AthleteSummary {
 interface ClubMember {
   name: string;
   bestRank: number;
-  bestPoints: number;
+  avgTotalPoints: number;
   rankingType: string;
   className: string;
   athleteType: "sprinter" | "forester" | "allrounder" | "unknown";
@@ -62,26 +62,40 @@ interface ClubProfile {
 
 // --- Helpers ---
 /**
- * Forest / Sprint の最高ポイントを比較して特性を判定。
- * 15%以上の差があれば得意な方に分類、それ以下はオールラウンダー。
+ * 年齢別無差別カテゴリの totalPoints を z-score で正規化して特性を判定。
+ * 母集団の平均・標準偏差で正規化し、z-score 差が 0.3 以上で分類。
+ * 両方の無差別カテゴリに出場 → z-score 比較。
+ * 片方のみ出場 → その種目に分類。
+ * どちらも未出場 → appearances の forestCount/sprintCount で判定。
  */
 function classifyType(
-  appearances: { type: string; totalPoints: number }[]
+  appearances: RankingRef[],
+  popStats: { forestMean: number; forestStd: number; sprintMean: number; sprintStd: number },
 ): AthleteSummary["type"] {
-  const forestApps = appearances.filter((r) => r.type.includes("forest"));
-  const sprintApps = appearances.filter((r) => r.type.includes("sprint"));
+  const isFemale = appearances.some((r) => r.className === "女子無差別" || r.className === "S_女子無差別");
+  const fClass = isFemale ? "女子無差別" : "無差別";
+  const sClass = isFemale ? "S_女子無差別" : "S_無差別";
+  const fApp = appearances.find((r) => r.type === "age_forest" && r.className === fClass);
+  const sApp = appearances.find((r) => r.type === "age_sprint" && r.className === sClass);
 
-  if (forestApps.length === 0 && sprintApps.length === 0) return "unknown";
-  if (forestApps.length === 0) return "sprinter";
-  if (sprintApps.length === 0) return "forester";
+  if (fApp && sApp) {
+    const fZ = (fApp.totalPoints - popStats.forestMean) / popStats.forestStd;
+    const sZ = (sApp.totalPoints - popStats.sprintMean) / popStats.sprintStd;
+    const diff = fZ - sZ;
+    if (diff > 0.3) return "forester";
+    if (diff < -0.3) return "sprinter";
+    return "allrounder";
+  }
+  if (fApp) return "forester";
+  if (sApp) return "sprinter";
 
-  const bestForestPts = Math.max(...forestApps.map((r) => r.totalPoints));
-  const bestSprintPts = Math.max(...sprintApps.map((r) => r.totalPoints));
-
-  const ratio = bestForestPts / bestSprintPts;
-  if (ratio > 1.15) return "forester";
-  if (ratio < 1 / 1.15) return "sprinter";
-  return "allrounder";
+  // 無差別カテゴリなし → appearances の種目で判定
+  const hasForest = appearances.some((r) => r.type.includes("forest"));
+  const hasSprint = appearances.some((r) => r.type.includes("sprint"));
+  if (hasForest && !hasSprint) return "forester";
+  if (hasSprint && !hasForest) return "sprinter";
+  if (hasForest && hasSprint) return "allrounder";
+  return "unknown";
 }
 
 function parseFilename(file: string): { type: string; className: string } | null {
@@ -204,6 +218,114 @@ const athleteMap = new Map<string, {
   allEvents: ParsedEvent[]; // 全イベントスコア（重複排除前）
 }>();
 
+// --- 無差別4クラスをJOYから最新取得してJSON上書き ---
+import { execFileSync } from "child_process";
+import * as cheerio from "cheerio";
+
+const OPEN_CLASSES = [
+  { typeId: 1, classId: 1, file: "age_forest_無差別.json" },
+  { typeId: 1, classId: 20, file: "age_forest_女子無差別.json" },
+  { typeId: 15, classId: 47, file: "age_sprint_S_無差別.json" },
+  { typeId: 15, classId: 66, file: "age_sprint_S_女子無差別.json" },
+];
+
+function parsePage(html: string): RawEntry[] {
+  const $ = cheerio.load(html);
+  const entries: RawEntry[] = [];
+  const eventHeaders: string[] = [];
+  $("table thead th, table tr:first-child th").each((i, th) => {
+    if (i > 3) eventHeaders.push($(th).text().trim());
+  });
+  $("table tbody tr").each((_, row) => {
+    const cells = $(row).find("td");
+    if (cells.length < 4) return;
+    const rank = parseInt(cells.eq(0).text().trim(), 10);
+    if (isNaN(rank)) return;
+    const athlete_name = cells.eq(1).text().trim();
+    if (!athlete_name) return;
+    const club = cells.eq(2).text().trim();
+    const total_points = parseFloat(cells.eq(3).text().trim()) || 0;
+    const rowClass = $(row).attr("class") ?? "";
+    const is_active = !rowClass.includes("out_ranker");
+    const event_scores: { event_name: string; points: number }[] = [];
+    cells.each((i, cell) => {
+      if (i > 3 && eventHeaders[i - 4]) {
+        const pts = parseFloat($(cell).text().trim());
+        if (!isNaN(pts) && pts > 0) event_scores.push({ event_name: eventHeaders[i - 4], points: pts });
+      }
+    });
+    entries.push({ rank, athlete_name, club, total_points, is_active, event_scores });
+  });
+  return entries;
+}
+
+function fetchFreshRankings() {
+  const BASE = "https://japan-o-entry.com/ranking/ranking/ranking_index";
+
+  for (const cls of OPEN_CLASSES) {
+    try {
+      // 全ページ取得（ページネーション対応）
+      const allFresh: RawEntry[] = [];
+      const seen = new Set<string>();
+      for (let page = 0; ; page++) {
+        const url = page === 0
+          ? `${BASE}/${cls.typeId}/${cls.classId}`
+          : `${BASE}/${cls.typeId}/${cls.classId}/${page}`;
+
+        const html = execFileSync("curl", [
+          "-s", "--max-time", "10",
+          "-H", "User-Agent: trails.jp/1.0 (build sync)",
+          url,
+        ], { encoding: "utf-8", timeout: 15000 });
+
+        const entries = parsePage(html);
+        if (entries.length === 0) break;
+
+        let added = 0;
+        for (const e of entries) {
+          const key = `${e.rank}:${e.athlete_name}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            allFresh.push(e);
+            added++;
+          }
+        }
+        if (added === 0) break;
+        process.stdout.write(page === 0 ? `${added}` : `+${added}`);
+      }
+
+      // 既存データのイベントスコアをマージ（JOYは直近~1年分のみ）
+      const filePath = path.join(RANKINGS_DIR, cls.file);
+      let existing: RawEntry[] = [];
+      try {
+        existing = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      } catch { /* first run */ }
+
+      const existingScores = new Map<string, { event_name: string; points: number }[]>();
+      for (const e of existing) {
+        existingScores.set(e.athlete_name, e.event_scores || []);
+      }
+      for (const entry of allFresh) {
+        const oldScores = existingScores.get(entry.athlete_name);
+        if (oldScores && oldScores.length > 0) {
+          const scoreMap = new Map<string, { event_name: string; points: number }>();
+          for (const s of oldScores) scoreMap.set(s.event_name, s);
+          for (const s of entry.event_scores) scoreMap.set(s.event_name, s);
+          entry.event_scores = [...scoreMap.values()];
+        }
+      }
+
+      fs.writeFileSync(filePath, JSON.stringify(allFresh, null, 2));
+      console.log(` → ${cls.file}: ${allFresh.length} entries`);
+    } catch (e) {
+      console.warn(`  Failed ${cls.file}: using local file`);
+    }
+  }
+}
+
+console.log("Fetching fresh open-class rankings from JOY...");
+try { fetchFreshRankings(); } catch (e) { console.warn("Ranking fetch failed, using local files:", e); }
+
 const files = fs.readdirSync(RANKINGS_DIR).filter((f) => f.endsWith(".json"));
 console.log(`Reading ${files.length} ranking files...`);
 
@@ -315,6 +437,25 @@ function calcRecentForm(events: ParsedEvent[], athleteType: AthleteSummary["type
   return fForm || sForm;
 }
 
+// 母集団統計を計算（z-score 正規化用: 年齢別無差別カテゴリの totalPoints）
+const popForest: number[] = [];
+const popSprint: number[] = [];
+for (const data of athleteMap.values()) {
+  const isFemale = data.appearances.some((r) => r.className === "女子無差別" || r.className === "S_女子無差別");
+  const fClass = isFemale ? "女子無差別" : "無差別";
+  const sClass = isFemale ? "S_女子無差別" : "S_無差別";
+  const fApp = data.appearances.find((r) => r.type === "age_forest" && r.className === fClass);
+  const sApp = data.appearances.find((r) => r.type === "age_sprint" && r.className === sClass);
+  if (fApp) popForest.push(fApp.totalPoints);
+  if (sApp) popSprint.push(sApp.totalPoints);
+}
+const popMean = (arr: number[]) => arr.reduce((s, v) => s + v, 0) / arr.length;
+const popStd = (arr: number[]) => { const m = popMean(arr); return Math.sqrt(arr.reduce((s, v) => s + (v - m) ** 2, 0) / arr.length); };
+const popStats = {
+  forestMean: popMean(popForest), forestStd: popStd(popForest),
+  sprintMean: popMean(popSprint), sprintStd: popStd(popSprint),
+};
+
 // Build AthleteSummary records
 const athletes: Record<string, AthleteSummary> = {};
 let athleteCount = 0;
@@ -331,11 +472,11 @@ for (const [name, data] of athleteMap) {
   const openSprintClass = isFemale ? "S_女子無差別" : "S_無差別";
   const forestPts = data.appearances.find((r) => r.type === "age_forest" && r.className === openForestClass)?.totalPoints;
   const sprintPts = data.appearances.find((r) => r.type === "age_sprint" && r.className === openSprintClass)?.totalPoints;
-  let bestPoints: number;
+  let avgTotalPoints: number;
   if (forestPts != null && sprintPts != null) {
-    bestPoints = Math.round(((forestPts + sprintPts) / 2) * 10) / 10;
+    avgTotalPoints = Math.round(((forestPts + sprintPts) / 2) * 10) / 10;
   } else {
-    bestPoints = forestPts ?? sprintPts ?? Math.max(...data.appearances.map((r) => r.totalPoints));
+    avgTotalPoints = forestPts ?? sprintPts ?? Math.max(...data.appearances.map((r) => r.totalPoints));
   }
 
   athletes[name] = {
@@ -343,10 +484,10 @@ for (const [name, data] of athleteMap) {
     clubs: [...data.clubs],
     appearances: data.appearances,
     bestRank,
-    bestPoints,
+    avgTotalPoints,
     forestCount,
     sprintCount,
-    type: classifyType(data.appearances),
+    type: classifyType(data.appearances, popStats),
     recentForm: 0,
   };
   athleteCount++;
@@ -398,7 +539,7 @@ for (const profile of Object.values(athletes)) {
       c.members.set(profile.name, {
         name: profile.name,
         bestRank: profile.bestRank,
-        bestPoints: profile.bestPoints,
+        avgTotalPoints: profile.avgTotalPoints,
         rankingType: bestApp.type,
         className: bestApp.className,
         athleteType: profile.type,
@@ -424,11 +565,11 @@ for (const profile of Object.values(athletes)) {
 
 const clubs: Record<string, ClubProfile> = {};
 for (const [name, data] of clubMap) {
-  const memberList = [...data.members.values()].sort((a, b) => b.bestPoints - a.bestPoints);
+  const memberList = [...data.members.values()].sort((a, b) => b.avgTotalPoints - a.avgTotalPoints);
   const activeCount = memberList.filter((m) => m.isActive).length;
   const avgPoints =
     memberList.length > 0
-      ? memberList.reduce((s, m) => s + m.bestPoints, 0) / memberList.length
+      ? memberList.reduce((s, m) => s + m.avgTotalPoints, 0) / memberList.length
       : 0;
 
   clubs[name] = {

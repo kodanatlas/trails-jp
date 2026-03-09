@@ -2,19 +2,19 @@ import { NextResponse } from "next/server";
 import { scrapeEvents, scrapeArchive, enrichEventsWithCoordinates } from "@/lib/scraper/events";
 import type { JOEEvent } from "@/lib/scraper/events";
 import { readEvents, writeEvents } from "@/lib/events-store";
-import { scrapeAllRankings } from "@/lib/scraper/rankings";
 import { matchLapCenterEvents } from "@/lib/scraper/lapcenter";
 
 // Vercel Cron: 日次 03:00 JST (18:00 UTC)
-// 水曜日はランキング同期も実行
+// イベント同期 + LapCenterマッチング
+// 水曜のみ: Vercel再デプロイをトリガー（ビルド時にランキング最新取得）
 // vercel.json: { "path": "/api/cron/sync-events", "schedule": "0 18 * * *" }
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (
-    process.env.CRON_SECRET &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 });
+  }
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -70,8 +70,8 @@ export async function GET(request: Request) {
     // 日付順ソート
     freshEvents.sort((a, b) => a.date.localeCompare(b.date));
 
-    // 座標未取得のイベントをバッチ処理（50件/回、500ms間隔）
-    const coordResult = await enrichEventsWithCoordinates(freshEvents, 50, 500);
+    // 座標補完はスキップ（Hobby 10秒制限対応。新イベントの座標は次回デプロイ時にローカルで補完）
+    const coordResult = { enriched: 0, skipped: "timeout_mitigation" };
 
     // ---- Lap Center マッチング ----
     let lapcenterResult = null;
@@ -90,27 +90,43 @@ export async function GET(request: Request) {
     // Supabaseに保存
     await writeEvents(freshEvents);
 
-    // ---- ランキング同期（水曜のみ） ----
-    let rankingsResult = null;
-    const jstHour = new Date().getUTCHours() + 9;
+    // ---- 水曜のみ: 再デプロイトリガー（火曜のJOYランキング更新を反映） ----
+    let deployResult = null;
     const jstDay = new Date(
-      Date.now() + 9 * 60 * 60 * 1000
-    ).getUTCDay();
-
-    if (jstDay === 3) {
-      // 水曜日
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })
+    ).getDay();
+    if (jstDay === 3 && process.env.VERCEL_DEPLOY_TOKEN) {
       try {
-        const rankings = await scrapeAllRankings();
-        rankingsResult = {
-          rankings_count: rankings.length,
-          total_entries: rankings.reduce(
-            (sum, r) => sum + r.entries.length,
-            0
-          ),
+        const deployRes = await fetch(
+          "https://api.vercel.com/v13/deployments",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${process.env.VERCEL_DEPLOY_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: "trails_jp",
+              project: process.env.VERCEL_PROJECT_ID,
+              target: "production",
+              gitSource: {
+                type: "github",
+                org: process.env.GITHUB_ORG,
+                repo: process.env.GITHUB_REPO,
+                ref: "main",
+              },
+            }),
+          }
+        );
+        const deployData = await deployRes.json();
+        deployResult = {
+          triggered: true,
+          id: deployData.id,
+          status: deployData.readyState,
         };
-      } catch (rankErr) {
-        console.error("Rankings sync failed:", rankErr);
-        rankingsResult = { error: String(rankErr) };
+      } catch (deployErr) {
+        console.error("Deploy trigger failed:", deployErr);
+        deployResult = { triggered: false, error: String(deployErr) };
       }
     }
 
@@ -121,13 +137,13 @@ export async function GET(request: Request) {
         coordinates: coordResult,
       },
       lapcenter: lapcenterResult,
-      rankings: rankingsResult,
+      deploy: deployResult,
       synced_at: new Date().toISOString(),
     });
   } catch (error) {
     console.error("Event sync failed:", error);
     return NextResponse.json(
-      { error: "Sync failed", details: String(error) },
+      { error: "Sync failed" },
       { status: 500 }
     );
   }

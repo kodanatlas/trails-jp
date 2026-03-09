@@ -179,7 +179,7 @@ export function AnalysisHub() {
                   </div>
                   <div className="text-right">
                     <p className="font-mono text-sm font-bold text-primary">
-                      {a.bestPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                      {a.avgTotalPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                     </p>
                     <p className="text-[10px] text-muted">
                       {a.appearances.length} カテゴリ

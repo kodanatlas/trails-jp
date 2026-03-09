@@ -9,29 +9,38 @@ function hashIp(ip: string): string {
   return createHash("sha256").update(`${ip}${SALT}${day}`).digest("hex");
 }
 
-/** POST: いいね送信 */
+/** POST: いいね送信（単体 or 一括） */
 export async function POST(req: NextRequest) {
   try {
-    const { athleteName, sessionId } = await req.json();
-    if (!athleteName || !sessionId) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    const body = await req.json();
+    const sessionId = body.sessionId;
+    if (!sessionId) {
+      return NextResponse.json({ error: "Missing sessionId" }, { status: 400 });
     }
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
     const ipHash = hashIp(ip);
 
-    const { error } = await supabaseAdmin
-      .from("likes")
-      .insert({ athlete_name: athleteName, session_id: sessionId, ip_hash: ipHash });
-
-    if (error) {
-      if (error.code === "23505") {
-        return NextResponse.json({ error: "Already liked" }, { status: 409 });
-      }
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    // 一括: athleteNames 配列
+    const names: string[] = body.athleteNames ?? (body.athleteName ? [body.athleteName] : []);
+    if (names.length === 0) {
+      return NextResponse.json({ error: "Missing athlete name(s)" }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true });
+    let inserted = 0;
+    for (const name of names.slice(0, 100)) {
+      const { error } = await supabaseAdmin
+        .from("likes")
+        .insert({ athlete_name: name, session_id: sessionId, ip_hash: ipHash });
+      if (!error) inserted++;
+      // 23505 (unique violation) はスキップ
+    }
+
+    if (names.length === 1 && inserted === 0) {
+      return NextResponse.json({ error: "Already liked" }, { status: 409 });
+    }
+
+    return NextResponse.json({ ok: true, inserted });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

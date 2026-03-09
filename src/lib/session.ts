@@ -29,3 +29,15 @@ export function addLikedAthlete(name: string): void {
   set.add(name);
   localStorage.setItem(LIKED_KEY, JSON.stringify([...set]));
 }
+
+/** グループ応援済みかチェック */
+export function hasCheeredGroup(key: string): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(`trails_cheered_${key}`) === "1";
+}
+
+/** グループ応援済みに設定 */
+export function setCheeredGroup(key: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(`trails_cheered_${key}`, "1");
+}

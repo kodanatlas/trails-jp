@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState, useEffect, useCallback } from "react";
-import { TrendingUp, TrendingDown, TreePine, Zap, Heart, Trophy } from "lucide-react";
+import { TrendingUp, TrendingDown, TreePine, Zap } from "lucide-react";
 import type { AthleteIndex, AthleteSummary } from "@/lib/analysis/types";
-import { LikeButton } from "./LikeButton";
+import { LikeDisplay, GroupCheerButton } from "./LikeButton";
 
 interface SupportTabProps {
   athleteIndex: AthleteIndex;
@@ -27,16 +27,10 @@ export function SupportTab({ athleteIndex, onSelectAthlete }: SupportTabProps) {
     () => [...rising, ...falling].map((a) => a.name),
     [rising, falling],
   );
-  const likeCounts = useLikeCounts(allNames);
+  const { counts: likeCounts, refetch: refetchLikes } = useLikeCounts(allNames);
 
-  // いいねランキング
-  const [topLiked, setTopLiked] = useState<{ athlete_name: string; like_count: number }[]>([]);
-  useEffect(() => {
-    fetch("/api/likes/top?limit=10")
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setTopLiked)
-      .catch(() => {});
-  }, []);
+  const risingNames = useMemo(() => rising.map((a) => a.name), [rising]);
+  const fallingNames = useMemo(() => falling.map((a) => a.name), [falling]);
 
   return (
     <div className="space-y-6">
@@ -47,7 +41,8 @@ export function SupportTab({ athleteIndex, onSelectAthlete }: SupportTabProps) {
           <h2 className="text-sm font-bold">調子上昇中</h2>
           <span className="text-[10px] text-muted">直近3大会の伸び率上位20名</span>
         </div>
-        <div className="space-y-1">
+        <GroupCheerButton groupKey="rising" athleteNames={risingNames} onCheered={refetchLikes} />
+        <div className="mt-2 space-y-1">
           {rising.map((a, i) => (
             <AthleteCheerCard
               key={a.name}
@@ -67,7 +62,8 @@ export function SupportTab({ athleteIndex, onSelectAthlete }: SupportTabProps) {
           <h2 className="text-sm font-bold">調子下降中</h2>
           <span className="text-[10px] text-muted">直近3大会の伸び率下位20名</span>
         </div>
-        <div className="space-y-1">
+        <GroupCheerButton groupKey="falling" athleteNames={fallingNames} onCheered={refetchLikes} />
+        <div className="mt-2 space-y-1">
           {falling.map((a, i) => (
             <AthleteCheerCard
               key={a.name}
@@ -80,49 +76,12 @@ export function SupportTab({ athleteIndex, onSelectAthlete }: SupportTabProps) {
         </div>
       </section>
 
-      {/* いいねランキング */}
-      {topLiked.length > 0 && (
-        <section>
-          <div className="mb-3 flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-amber-400" />
-            <h2 className="text-sm font-bold">いいねランキング</h2>
-          </div>
-          <div className="space-y-1">
-            {topLiked.map((row, i) => {
-              const athlete = athleteIndex.athletes[row.athlete_name];
-              return (
-                <button
-                  key={row.athlete_name}
-                  onClick={() => athlete && onSelectAthlete?.(athlete)}
-                  className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-all hover:border-primary/30 hover:bg-card-hover"
-                >
-                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-[10px] font-bold text-amber-400">
-                    {i + 1}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">{row.athlete_name}</p>
-                    {athlete && (
-                      <p className="truncate text-[10px] text-muted">
-                        {athlete.clubs.join(" / ")}
-                      </p>
-                    )}
-                  </div>
-                  <div className="inline-flex items-center gap-1 text-pink-400">
-                    <Heart className="h-3 w-3 fill-pink-400" />
-                    <span className="text-sm font-bold">{row.like_count}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
 
 /** 複数選手のいいね数を一括取得するフック */
-function useLikeCounts(names: string[]): Record<string, number> {
+function useLikeCounts(names: string[]): { counts: Record<string, number>; refetch: () => void } {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const key = names.join(",");
 
@@ -140,7 +99,7 @@ function useLikeCounts(names: string[]): Record<string, number> {
     fetchCounts();
   }, [fetchCounts]);
 
-  return counts;
+  return { counts, refetch: fetchCounts };
 }
 
 const TYPE_STYLES: Record<AthleteSummary["type"], { badge: string; text: string; bar: string }> = {
@@ -212,7 +171,7 @@ function AthleteCheerCard({
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-semibold">{athlete.name}</p>
           <DisciplineBadge type={athlete.type} />
-          <LikeButton athleteName={athlete.name} initialCount={likeCount} />
+          <LikeDisplay count={likeCount} />
         </div>
         <p className="truncate text-[10px] text-muted">
           {athlete.clubs.join(" / ")}
@@ -225,7 +184,7 @@ function AthleteCheerCard({
           {formStr}
         </p>
         <p className="text-[10px] text-muted">
-          {athlete.bestPoints.toLocaleString(undefined, {
+          {athlete.avgTotalPoints.toLocaleString(undefined, {
             maximumFractionDigits: 1,
           })}
           pt

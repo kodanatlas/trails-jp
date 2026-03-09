@@ -155,17 +155,18 @@ function getEventsByDiscipline(
 }
 
 /**
- * 全イベントスコアを日付順にまとめる（カテゴリ横断、重複排除）
+ * 全イベントスコアを日付順にまとめる（カテゴリ横断、重複排除、種目タグ付き）
  */
-export function getAllEvents(profile: AthleteProfile): EventScore[] {
-  const map = new Map<string, EventScore>();
+export function getAllEvents(profile: AthleteProfile): (EventScore & { discipline: "forest" | "sprint" })[] {
+  const map = new Map<string, EventScore & { discipline: "forest" | "sprint" }>();
   for (const r of profile.rankings) {
+    const discipline: "forest" | "sprint" = r.type.includes("sprint") ? "sprint" : "forest";
     for (const e of r.events) {
       if (!e.date) continue;
       const key = `${e.date}:${e.eventName.replace(/大会$/, "")}`;
       const existing = map.get(key);
       if (!existing || e.points > existing.points) {
-        map.set(key, e);
+        map.set(key, { ...e, discipline });
       }
     }
   }

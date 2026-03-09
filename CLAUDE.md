@@ -36,7 +36,7 @@ trails_jp/
 │   │   ├── rankings/      ← ランキング
 │   │   ├── tracking/      ← GPS追跡
 │   │   ├── upload/        ← O-map登録
-│   │   └── api/cron/      ← 日次バッチ（sync-events, sync-lapcenter, sync-rankings）
+│   │   └── api/cron/      ← 日次バッチ（sync-events, sync-lapcenter）
 │   ├── components/        ← UIコンポーネント
 │   │   ├── Header.tsx
 │   │   ├── Footer.tsx
@@ -65,27 +65,28 @@ trails_jp/
 ## 外部サービス設定
 
 ### Supabase (trails-jp)
-- プロジェクトRef: `mlbyohpbembeoutaakkr`
+- プロジェクトRef: `.env.local` を参照
 - 認証: Email OTP (8桁コード)
 - メールテンプレート: カスタム日本語テンプレート適用済み
 - Site URL: `https://trailsjp.vercel.app`
 - Redirect URLs: `https://trailsjp.vercel.app/**`
 
 ### Formspree
-- フォームID: `xlgwaknv`
-- 送信先: `kodan1126@gmail.com`
+- フォームID: `.env.local` を参照
+- 送信先: `.env.local` を参照
 
 ### Vercel
 - プロジェクト: `trails_jp`
-- Cron: 日次 03:00 JST（sync-events, sync-lapcenter, sync-rankings）
-- Hobby プラン（Cron 1日1回制限）
+- Cron: 日次 03:00 JST (sync-events), 12:00 JST (sync-lapcenter)
+- 水曜 Cron で自動再デプロイ → ビルド時にJOYランキング最新取得
+- Hobby プラン（Cron 1日1回制限、Function 10秒制限）
 
 ## データフロー
 
-- **JOYイベント**: 日次Cron → scrape → events.json（座標は50件/日ずつ補完）
+- **JOYイベント**: 日次Cron → scrape → events.json
 - **O-map↔イベント紐づけ**: bounds + 3km圏内の座標マッチ
 - **Lap Center**: 日次Cron → 成績ページリンク付与
-- **ランキング**: 日次Cron → public/data/rankings/ にJSON保存
+- **ランキング**: ビルド時にJOYから無差別4クラス全ページ取得（水曜自動再デプロイ）
 
 ## 注意事項
 
@@ -100,3 +101,9 @@ trails_jp/
 - コンポーネントは機能単位で分離
 - サーバーコンポーネント優先、必要な場合のみ "use client"
 - 地図関連は `lib/map/` に集約
+
+## レビューワークフロー
+
+1. **Claude Code (Opus 4.6)** でコードレビュー → `review_report.md` に出力
+2. **Cursor Agent (GPT-5.4)** で `review_report.md` をクロスチェック
+3. 指摘の誤り修正・見落とし追加を反映

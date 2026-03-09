@@ -314,7 +314,7 @@ function MemberRow({ member: m, onSelect }: { member: ClubMember; onSelect?: (na
 
       {/* Points */}
       <span className="w-14 flex-shrink-0 text-right font-mono text-xs font-bold text-primary">
-        {m.bestPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+        {m.avgTotalPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
       </span>
     </button>
   );

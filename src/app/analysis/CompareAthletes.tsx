@@ -236,10 +236,22 @@ function CompareView({
       });
       setProfiles(map);
     });
+    const athleteNames = entries.map((e) => e.athlete.name);
     const loadLc = fetch("/api/lapcenter-runners")
       .then((r) => (r.ok ? r.json() : null))
-      .then((json) => json ?? fetch("/data/lapcenter-runners.json").then((r) => (r.ok ? r.json() : null)))
-      .then((json) => setLcAll(json?.athletes ?? null))
+      .then(async (apiJson) => {
+        const staticJson = await fetch("/data/lapcenter-runners.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        const apiAthletes = apiJson?.athletes ?? {};
+        const staticAthletes = staticJson?.athletes ?? {};
+        // 選手ごとにレコード数が多い方を採用してマージ
+        const merged: Record<string, LapCenterPerformance[]> = { ...staticAthletes };
+        for (const [name, records] of Object.entries(apiAthletes) as [string, LapCenterPerformance[]][]) {
+          if (!merged[name] || records.length > merged[name].length) {
+            merged[name] = records;
+          }
+        }
+        setLcAll(merged);
+      })
       .catch(() => setLcAll(null));
     Promise.all([loadProfiles, loadLc]).then(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -318,11 +330,11 @@ function CompareView({
 
             <div className="space-y-2">
               <CompareRow
-                label="最高ポイント"
-                values={athleteStats.map((s) => s.profile.bestPoints)}
+                label="F・S平均ポイント"
+                values={athleteStats.map((s) => s.profile.avgTotalPoints)}
                 colors={athleteStats.map((s) => s.entry.color)}
                 format={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 1 })}
-                bestSet={makeBestSet(athleteStats.map((s) => s.profile.bestPoints), true)}
+                bestSet={makeBestSet(athleteStats.map((s) => s.profile.avgTotalPoints), true)}
               />
               <CompareRow
                 label="最高ランク"
@@ -577,6 +589,18 @@ function CompareCharts({
     };
   }, [entries, profiles, cutoff, mode]);
 
+  const scoreDataWithTrend = useMemo(() => {
+    if (scoreData.length < 2) return scoreData;
+    const copy = scoreData.map((d) => ({ ...d }));
+    for (const entry of entries) {
+      const vals = copy.map((d) => d[entry.id] as number | undefined);
+      const trend = linReg(vals);
+      trend.forEach((v, i) => { if (v != null) copy[i][`sc_${entry.id}`] = v; });
+    }
+    return copy;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scoreData, entries.map((e) => e.id).join(",")]);
+
   // --- LC data ---
   const athleteLcData = useMemo(() => {
     const result = new Map<string, ReturnType<typeof classifyLcData>>();
@@ -748,21 +772,23 @@ function CompareCharts({
           </p>
           <div className="h-48 overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={scoreData}>
+              <LineChart data={scoreDataWithTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#888" }} tickFormatter={(v: string) => v.slice(5)} axisLine={{ stroke: "rgba(255,255,255,0.1)" }} />
                 <YAxis tick={{ fontSize: 10, fill: "#888" }} axisLine={{ stroke: "rgba(255,255,255,0.1)" }} />
                 <Tooltip
                   content={({ payload, label }) => {
                     if (!payload?.length) return null;
-                    const active = payload.filter((p) => p.value != null);
+                    const active = (payload as Array<Record<string, unknown>>).filter(
+                      (p) => p.value != null && !(p.dataKey as string).startsWith("sc_"),
+                    );
                     if (!active.length) return null;
                     return (
                       <div className="rounded-lg border border-white/10 bg-[#1a2332] px-3 py-2 text-xs shadow-xl">
-                        <p className="mb-1 text-muted">{label}</p>
+                        <p className="mb-1 text-muted">{label as string}</p>
                         {active.map((p) => (
-                          <p key={p.dataKey as string} style={{ color: p.color }}>
-                            {p.name}: {Number(p.value).toLocaleString()}
+                          <p key={p.dataKey as string} style={{ color: p.color as string }}>
+                            {p.name as string}: {Number(p.value).toLocaleString()}
                           </p>
                         ))}
                       </div>
@@ -771,6 +797,9 @@ function CompareCharts({
                 />
                 {entries.map((entry) => (
                   <Line key={entry.id} name={profiles.get(entry.id)?.name ?? ""} type="monotone" dataKey={entry.id} stroke={entry.color} strokeWidth={strokeW} dot={{ r: dotR }} connectNulls />
+                ))}
+                {entries.map((entry) => (
+                  <Line key={`sc_${entry.id}`} dataKey={`sc_${entry.id}`} stroke={entry.color} strokeWidth={1} strokeDasharray="6 3" dot={false} connectNulls legendType="none" />
                 ))}
               </LineChart>
             </ResponsiveContainer>

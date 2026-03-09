@@ -26,8 +26,8 @@ const AGE_CLASSES = [
   "W50", "W55", "W60", "W65", "W70", "W75", "W80", "W85", "W90",
 ] as const;
 
-// 全ランキングカテゴリ定義
-export const RANKING_CONFIGS = [
+// 全ランキングカテゴリ定義（フル — ローカルビルド用）
+export const RANKING_CONFIGS_FULL = [
   {
     type: "elite_forest", label: "エリートフォレスト", typeId: 5,
     classes: [
@@ -49,6 +49,24 @@ export const RANKING_CONFIGS = [
   {
     type: "age_sprint", label: "年齢別スプリント", typeId: 15,
     classes: AGE_CLASSES.map((name, i) => ({ id: i + 47, name: "S_" + name, label: name })),
+  },
+];
+
+// Cron用: 無差別4クラスのみ（Hobby 10秒制限対応）
+export const RANKING_CONFIGS = [
+  {
+    type: "age_forest", label: "年齢別フォレスト", typeId: 1,
+    classes: [
+      { id: 1, name: "無差別", label: "無差別" },
+      { id: 20, name: "女子無差別", label: "女子無差別" },
+    ],
+  },
+  {
+    type: "age_sprint", label: "年齢別スプリント", typeId: 15,
+    classes: [
+      { id: 47, name: "S_無差別", label: "無差別" },
+      { id: 66, name: "S_女子無差別", label: "女子無差別" },
+    ],
   },
 ];
 
@@ -129,7 +147,7 @@ export async function scrapeAllRankings(): Promise<JOERanking[]> {
             synced_at: now,
           });
         }
-        await new Promise((r) => setTimeout(r, 1200));
+        await new Promise((r) => setTimeout(r, 500));
       } catch (e) {
         console.error(`Failed to scrape ${config.type}/${cls.name}:`, e);
       }

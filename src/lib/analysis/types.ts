@@ -25,7 +25,7 @@ export interface AthleteSummary {
   clubs: string[];
   appearances: RankingRef[]; // どのカテゴリに登場するか
   bestRank: number;
-  bestPoints: number;
+  avgTotalPoints: number;
   forestCount: number;
   sprintCount: number;
   type: "sprinter" | "forester" | "allrounder" | "unknown";
@@ -40,7 +40,7 @@ export interface AthleteProfile extends AthleteSummary {
 export interface ClubMember {
   name: string;
   bestRank: number;
-  bestPoints: number;
+  avgTotalPoints: number;
   rankingType: string; // "age_forest" etc. (best ranking's type)
   className: string;
   athleteType: "sprinter" | "forester" | "allrounder" | "unknown";

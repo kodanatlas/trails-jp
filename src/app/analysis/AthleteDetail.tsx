@@ -29,12 +29,16 @@ export function AthleteDetail({ summary }: Props) {
     const loadProfile = loadAthleteDetail(summary).then((p) => setProfile(p));
     const loadLc = fetch("/api/lapcenter-runners")
       .then((r) => r.ok ? r.json() : null)
-      .then((json) => json ?? fetch("/data/lapcenter-runners.json").then((r) => r.ok ? r.json() : null))
-      .then((json) => {
-        if (json?.athletes?.[summary.name]) {
-          setLcData(json.athletes[summary.name] as LapCenterPerformance[]);
+      .then(async (apiJson) => {
+        const apiRecords = apiJson?.athletes?.[summary.name] as LapCenterPerformance[] | undefined;
+        // 静的ファイルも取得して、レコード数が多い方を採用
+        const staticJson = await fetch("/data/lapcenter-runners.json").then((r) => r.ok ? r.json() : null).catch(() => null);
+        const staticRecords = staticJson?.athletes?.[summary.name] as LapCenterPerformance[] | undefined;
+
+        if (apiRecords && staticRecords) {
+          setLcData(apiRecords.length >= staticRecords.length ? apiRecords : staticRecords);
         } else {
-          setLcData(null);
+          setLcData(apiRecords ?? staticRecords ?? null);
         }
       })
       .catch(() => setLcData(null));
@@ -75,7 +79,7 @@ function ProfileHeader({ profile }: { profile: AthleteProfile }) {
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold text-primary">
-            {profile.bestPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+            {profile.avgTotalPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
           </p>
           <p className="text-[10px] text-muted">F・S 無差別平均</p>
         </div>
@@ -1008,6 +1012,13 @@ function RecentEvents({ profile }: { profile: AthleteProfile }) {
               <span className={`h-2 w-2 flex-shrink-0 rounded-full ${colors.dot}`} />
               <span className="w-20 flex-shrink-0 text-xs font-medium text-muted">
                 {dateStr}
+              </span>
+              <span className={`flex-shrink-0 rounded px-1 py-0.5 text-[9px] font-bold leading-none ${
+                e.discipline === "sprint"
+                  ? "bg-blue-500/15 text-blue-400"
+                  : "bg-green-500/15 text-green-400"
+              }`}>
+                {e.discipline === "sprint" ? "S" : "F"}
               </span>
               <span className="min-w-0 flex-1 truncate text-xs">{e.eventName}</span>
               <div className="hidden h-1.5 w-20 overflow-hidden rounded-full bg-white/5 sm:block">
