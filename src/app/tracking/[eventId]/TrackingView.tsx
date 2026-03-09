@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import type { TrackingEvent, TrackPoint } from "@/lib/tracking/types";
 import { parseGpx } from "@/lib/tracking/gpx-parser";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 const SPEEDS = [1, 2, 3, 5, 10, 20, 50, 100, 200];
 
@@ -244,8 +245,12 @@ export function TrackingView({ event }: Props) {
           label.textContent = p.name.split(" ")[0];
           dotEl.appendChild(circle);
           dotEl.appendChild(label);
+          // 初期位置: 選手のトラック開始地点（スタート位置に丸印を表示）
+          const startPos = p.track.length > 0
+            ? [p.track[0].lng, p.track[0].lat] as [number, number]
+            : [event.center[1], event.center[0]] as [number, number];
           const marker = new maplibregl.Marker({ element: dotEl, anchor: "center" })
-            .setLngLat([event.center[1], event.center[0]])
+            .setLngLat(startPos)
             .addTo(mlMap);
           markersRef.current.set(p.id, marker);
         });
@@ -338,13 +343,21 @@ export function TrackingView({ event }: Props) {
           }
         } catch { /* */ }
 
-        const pos = getPositionAtTime(p.track, participantTime);
         const marker = markersRef.current.get(p.id);
-        if (marker && pos) {
-          marker.setLngLat([pos.lng, pos.lat]);
-          marker.getElement().style.display = participantTime >= 0 ? "flex" : "none";
-        } else if (marker) {
-          marker.getElement().style.display = "none";
+        if (marker) {
+          if (participantTime >= 0) {
+            const pos = getPositionAtTime(p.track, participantTime);
+            if (pos) marker.setLngLat([pos.lng, pos.lat]);
+            marker.getElement().style.display = "flex";
+            marker.getElement().style.opacity = "1";
+          } else {
+            // 未スタート: スタート位置に半透明表示
+            if (p.track.length > 0) {
+              marker.setLngLat([p.track[0].lng, p.track[0].lat]);
+            }
+            marker.getElement().style.display = "flex";
+            marker.getElement().style.opacity = "0.4";
+          }
         }
       });
     },

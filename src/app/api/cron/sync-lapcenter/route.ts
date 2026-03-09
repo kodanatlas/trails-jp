@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { matchLapCenterEvents, fetchEventClasses, fetchSplitList } from "@/lib/scraper/lapcenter";
 import { readEvents, writeEvents } from "@/lib/events-store";
-import { readLCRunners, writeLCRunners, type LCPerformance } from "@/lib/lapcenter-runners-store";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -107,15 +107,16 @@ async function scrapeRunners(
     athleteLookup.set(name.replace(/\s+/g, ""), { joyName: name, clubs: summary.clubs || [] });
   }
 
-  // 既存データの読み込み
-  const existing = await readLCRunners();
-  const athletes = existing.athletes;
+  // 処理済みイベントキーをDBから取得
+  const { data: existingKeys } = await supabaseAdmin
+    .from("lc_performances")
+    .select("event_date, event_name")
+    .limit(10000);
 
-  // 処理済みイベントキー
   const processedKeys = new Set<string>();
-  for (const perfs of Object.values(athletes)) {
-    for (const p of perfs) {
-      processedKeys.add(`${p.d}:${p.e}`);
+  if (existingKeys) {
+    for (const row of existingKeys) {
+      processedKeys.add(`${row.event_date}:${row.event_name}`);
     }
   }
 
@@ -127,6 +128,15 @@ async function scrapeRunners(
 
   let totalRunners = 0;
   let totalClasses = 0;
+  const newRecords: Array<{
+    athlete_name: string;
+    event_date: string;
+    event_name: string;
+    class_name: string;
+    cruising_speed: number;
+    miss_rate: number;
+    race_type: string;
+  }> = [];
 
   for (const event of lcEvents) {
     const eventId = event.lapcenter_event_id!;
@@ -157,14 +167,14 @@ async function scrapeRunners(
         // speed=100 & miss=0 は基準ランナー（1人クラス等）で無意味なデータ
         if (r.speed === 100 && r.missRate === 0) continue;
 
-        if (!athletes[entry.joyName]) athletes[entry.joyName] = [];
-        athletes[entry.joyName].push({
-          d: event.date,
-          e: event.name,
-          c: cls.className,
-          s: r.speed,
-          m: r.missRate,
-          t: eventType,
+        newRecords.push({
+          athlete_name: entry.joyName,
+          event_date: event.date,
+          event_name: event.name,
+          class_name: cls.className,
+          cruising_speed: r.speed,
+          miss_rate: r.missRate,
+          race_type: eventType,
         });
         totalRunners++;
       }
@@ -172,17 +182,24 @@ async function scrapeRunners(
     }
   }
 
-  // Sort & save
-  for (const perfs of Object.values(athletes)) {
-    perfs.sort((a, b) => a.d.localeCompare(b.d));
+  // DBに保存（バッチ upsert）
+  let dbInserted = 0;
+  for (let i = 0; i < newRecords.length; i += 500) {
+    const batch = newRecords.slice(i, i + 500);
+    const { error } = await supabaseAdmin
+      .from("lc_performances")
+      .upsert(batch, { onConflict: "athlete_name,event_date,event_name,class_name" });
+    if (error) {
+      console.error("LC DB upsert failed:", error.message);
+    } else {
+      dbInserted += batch.length;
+    }
   }
-  existing.generatedAt = new Date().toISOString();
-  await writeLCRunners(existing);
 
   return {
     events_processed: lcEvents.length,
     classes_processed: totalClasses,
     tracked_runners: totalRunners,
-    total_athletes: Object.keys(athletes).length,
+    db_inserted: dbInserted,
   };
 }

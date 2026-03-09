@@ -1,7 +1,10 @@
-import { supabaseAdmin } from "./supabase-admin";
-
-const BUCKET = "app-data";
-const FILE_PATH = "lapcenter-runners.json";
+/**
+ * @deprecated Phase 1 DB移行により廃止。
+ * LC データは lc_performances テーブルに移行済み。
+ * - 読み取り: /api/lc/[name] (src/app/api/lc/[name]/route.ts)
+ * - 書き込み: sync-lapcenter Cron が supabaseAdmin.from("lc_performances").upsert()
+ * Phase 2 完了後にこのファイルを削除。
+ */
 
 export interface LCPerformance {
   d: string;  // date
@@ -15,49 +18,4 @@ export interface LCPerformance {
 export interface LCRunnersData {
   athletes: Record<string, LCPerformance[]>;
   generatedAt: string;
-}
-
-/**
- * Supabase Storage から LC ランナーデータを読み込む。
- * 取得できない場合は空データを返す。
- */
-export async function readLCRunners(): Promise<LCRunnersData> {
-  try {
-    const { data, error } = await supabaseAdmin.storage
-      .from(BUCKET)
-      .download(FILE_PATH);
-
-    if (!error && data) {
-      const text = await data.text();
-      return JSON.parse(text) as LCRunnersData;
-    }
-  } catch {
-    // Storage未設定 or ファイル未作成
-  }
-
-  return { athletes: {}, generatedAt: "" };
-}
-
-/**
- * LC ランナーデータを Supabase Storage に書き込む。
- */
-export async function writeLCRunners(data: LCRunnersData): Promise<void> {
-  // Ensure bucket exists
-  await supabaseAdmin.storage.createBucket(BUCKET, { public: false }).catch(() => {});
-
-  const blob = new Blob([JSON.stringify(data)], {
-    type: "application/json",
-  });
-
-  const { error } = await supabaseAdmin.storage
-    .from(BUCKET)
-    .upload(FILE_PATH, blob, {
-      upsert: true,
-      contentType: "application/json",
-    });
-
-  if (error) {
-    console.error("Failed to write LC runners to Supabase Storage:", error.message);
-    throw error;
-  }
 }

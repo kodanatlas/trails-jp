@@ -83,10 +83,21 @@ trails_jp/
 
 ## データフロー
 
-- **JOYイベント**: 日次Cron → scrape → events.json
+- **JOYイベント**: 日次Cron → scrape → Supabase Storage (events.json)
 - **O-map↔イベント紐づけ**: bounds + 3km圏内の座標マッチ
-- **Lap Center**: 日次Cron → 成績ページリンク付与
+- **LapCenter巡航速度・ミス率**: 水曜Cron → Supabase DB (`lc_performances` テーブル) → `/api/lc/[name]` API
 - **ランキング**: ビルド時にJOYから無差別4クラス全ページ取得（水曜自動再デプロイ）
+- **選手・クラブ**: ビルド時に `build-analysis-index.ts` → 静的JSON + Supabase DB (`athletes`, `athlete_appearances` テーブル)
+
+## DB構成 (Supabase PostgreSQL)
+
+| テーブル | 用途 | データ量 |
+|---------|------|---------|
+| `likes` | いいね機能 | - |
+| `athlete_like_counts` | いいね数集計ビュー | - |
+| `athletes` | 選手マスタ（検索・詳細用） | 2,418件 |
+| `athlete_appearances` | ランキング出場情報 | 8,750件 |
+| `lc_performances` | LapCenter巡航速度・ミス率 | 18,848件 |
 
 ## 注意事項
 

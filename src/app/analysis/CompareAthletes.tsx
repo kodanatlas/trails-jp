@@ -237,33 +237,20 @@ function CompareView({
       setProfiles(map);
     });
     const targetNames = entries.map((e) => e.athlete.name);
-    const loadLc = fetch("/api/lapcenter-runners")
-      .then((r) => (r.ok ? r.json() : null))
-      .then(async (apiJson) => {
-        const apiAthletes = apiJson?.athletes ?? {};
-        // API に対象選手全員のデータが十分あればそのまま使う
-        const allSufficient = targetNames.every((n) => (apiAthletes[n]?.length ?? 0) >= 2);
-        if (allSufficient) {
-          setLcAll(apiAthletes);
-          return;
-        }
-        // 不足時のみ静的ファイルから対象選手のみ抽出
-        const staticJson = await fetch("/data/lapcenter-runners.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
-        const staticAthletes = staticJson?.athletes ?? {};
-        const merged: Record<string, LapCenterPerformance[]> = {};
-        for (const name of targetNames) {
-          const api = apiAthletes[name] as LapCenterPerformance[] | undefined;
-          const stat = staticAthletes[name] as LapCenterPerformance[] | undefined;
-          if (api && stat) {
-            merged[name] = api.length >= stat.length ? api : stat;
-          } else {
-            const records = api ?? stat;
-            if (records) merged[name] = records;
-          }
-        }
-        setLcAll(merged);
-      })
-      .catch(() => setLcAll(null));
+    const loadLc = Promise.all(
+      targetNames.map((name) =>
+        fetch(`/api/lc/${encodeURIComponent(name)}`)
+          .then((r) => r.ok ? r.json() as Promise<LapCenterPerformance[]> : null)
+          .then((records) => [name, records] as const)
+          .catch(() => [name, null] as const)
+      )
+    ).then((results) => {
+      const merged: Record<string, LapCenterPerformance[]> = {};
+      for (const [name, records] of results) {
+        if (records && records.length > 0) merged[name] = records;
+      }
+      setLcAll(Object.keys(merged).length > 0 ? merged : null);
+    });
     Promise.all([loadProfiles, loadLc]).then(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries.map((e) => e.athlete.name).join(",")]);
