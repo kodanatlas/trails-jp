@@ -31,15 +31,15 @@ export function AthleteDetail({ summary }: Props) {
       .then((r) => r.ok ? r.json() : null)
       .then(async (apiJson) => {
         const apiRecords = apiJson?.athletes?.[summary.name] as LapCenterPerformance[] | undefined;
-        // 静的ファイルも取得して、レコード数が多い方を採用
+        // API に十分なレコードがあればそのまま使う
+        if (apiRecords && apiRecords.length >= 2) {
+          setLcData(apiRecords);
+          return;
+        }
+        // 不足時のみ静的ファイルにフォールバック
         const staticJson = await fetch("/data/lapcenter-runners.json").then((r) => r.ok ? r.json() : null).catch(() => null);
         const staticRecords = staticJson?.athletes?.[summary.name] as LapCenterPerformance[] | undefined;
-
-        if (apiRecords && staticRecords) {
-          setLcData(apiRecords.length >= staticRecords.length ? apiRecords : staticRecords);
-        } else {
-          setLcData(apiRecords ?? staticRecords ?? null);
-        }
+        setLcData(staticRecords && staticRecords.length > (apiRecords?.length ?? 0) ? staticRecords : apiRecords ?? null);
       })
       .catch(() => setLcData(null));
     Promise.all([loadProfile, loadLc]).then(() => setLoading(false));

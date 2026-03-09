@@ -236,18 +236,29 @@ function CompareView({
       });
       setProfiles(map);
     });
-    const athleteNames = entries.map((e) => e.athlete.name);
+    const targetNames = entries.map((e) => e.athlete.name);
     const loadLc = fetch("/api/lapcenter-runners")
       .then((r) => (r.ok ? r.json() : null))
       .then(async (apiJson) => {
-        const staticJson = await fetch("/data/lapcenter-runners.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
         const apiAthletes = apiJson?.athletes ?? {};
+        // API に対象選手全員のデータが十分あればそのまま使う
+        const allSufficient = targetNames.every((n) => (apiAthletes[n]?.length ?? 0) >= 2);
+        if (allSufficient) {
+          setLcAll(apiAthletes);
+          return;
+        }
+        // 不足時のみ静的ファイルから対象選手のみ抽出
+        const staticJson = await fetch("/data/lapcenter-runners.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
         const staticAthletes = staticJson?.athletes ?? {};
-        // 選手ごとにレコード数が多い方を採用してマージ
-        const merged: Record<string, LapCenterPerformance[]> = { ...staticAthletes };
-        for (const [name, records] of Object.entries(apiAthletes) as [string, LapCenterPerformance[]][]) {
-          if (!merged[name] || records.length > merged[name].length) {
-            merged[name] = records;
+        const merged: Record<string, LapCenterPerformance[]> = {};
+        for (const name of targetNames) {
+          const api = apiAthletes[name] as LapCenterPerformance[] | undefined;
+          const stat = staticAthletes[name] as LapCenterPerformance[] | undefined;
+          if (api && stat) {
+            merged[name] = api.length >= stat.length ? api : stat;
+          } else {
+            const records = api ?? stat;
+            if (records) merged[name] = records;
           }
         }
         setLcAll(merged);

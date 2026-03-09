@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { scrapeEvents, scrapeArchive, enrichEventsWithCoordinates } from "@/lib/scraper/events";
+import { scrapeEvents, scrapeArchive } from "@/lib/scraper/events";
 import type { JOEEvent } from "@/lib/scraper/events";
 import { readEvents, writeEvents } from "@/lib/events-store";
 import { matchLapCenterEvents } from "@/lib/scraper/lapcenter";

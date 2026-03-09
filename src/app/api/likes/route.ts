@@ -28,15 +28,26 @@ export async function POST(req: NextRequest) {
     }
 
     let inserted = 0;
+    let duplicates = 0;
+    const errors: string[] = [];
     for (const name of names.slice(0, 100)) {
       const { error } = await supabaseAdmin
         .from("likes")
         .insert({ athlete_name: name, session_id: sessionId, ip_hash: ipHash });
-      if (!error) inserted++;
-      // 23505 (unique violation) はスキップ
+      if (!error) {
+        inserted++;
+      } else if (error.code === "23505") {
+        duplicates++;
+      } else {
+        errors.push(error.message);
+      }
     }
 
-    if (names.length === 1 && inserted === 0) {
+    if (errors.length > 0) {
+      return NextResponse.json({ error: "Insert failed", inserted, errors }, { status: 500 });
+    }
+
+    if (names.length === 1 && duplicates === 1) {
       return NextResponse.json({ error: "Already liked" }, { status: 409 });
     }
 
