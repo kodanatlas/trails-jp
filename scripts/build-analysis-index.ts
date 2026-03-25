@@ -219,7 +219,6 @@ const athleteMap = new Map<string, {
 }>();
 
 // --- 無差別4クラスをJOYから最新取得してJSON上書き ---
-import { execFileSync } from "child_process";
 import * as cheerio from "cheerio";
 
 const OPEN_CLASSES = [
@@ -259,24 +258,40 @@ function parsePage(html: string): RawEntry[] {
   return entries;
 }
 
-function fetchFreshRankings() {
-  const BASE = "https://japan-o-entry.com/ranking/ranking/ranking_index";
+/** 1ページ分のHTMLを取得（プロキシ → JOY直接 のフォールバック） */
+async function fetchRankingPage(typeId: number, classId: number, page: number): Promise<string> {
+  const secret = process.env.CRON_SECRET;
 
+  // 1. プロキシ経由（Vercelビルド環境からJOY直接が失敗するため）
+  if (secret) {
+    try {
+      const proxyUrl = `https://trailsjp.vercel.app/api/rankings/proxy?typeId=${typeId}&classId=${classId}&page=${page}`;
+      const res = await fetch(proxyUrl, {
+        headers: { Authorization: `Bearer ${secret}` },
+        signal: AbortSignal.timeout(15000),
+      });
+      if (res.ok) return await res.text();
+    } catch { /* fall through */ }
+  }
+
+  // 2. JOY直接（ローカルビルド時はこちらが成功する）
+  const joyUrl = page === 0
+    ? `https://japan-o-entry.com/ranking/ranking/ranking_index/${typeId}/${classId}`
+    : `https://japan-o-entry.com/ranking/ranking/ranking_index/${typeId}/${classId}/${page}`;
+  const res = await fetch(joyUrl, {
+    headers: { "User-Agent": "trails.jp/1.0 (build sync)" },
+    signal: AbortSignal.timeout(15000),
+  });
+  return await res.text();
+}
+
+async function fetchFreshRankings() {
   for (const cls of OPEN_CLASSES) {
     try {
-      // 全ページ取得（ページネーション対応）
       const allFresh: RawEntry[] = [];
       const seen = new Set<string>();
       for (let page = 0; ; page++) {
-        const url = page === 0
-          ? `${BASE}/${cls.typeId}/${cls.classId}`
-          : `${BASE}/${cls.typeId}/${cls.classId}/${page}`;
-
-        const html = execFileSync("curl", [
-          "-s", "--max-time", "10",
-          "-H", "User-Agent: trails.jp/1.0 (build sync)",
-          url,
-        ], { encoding: "utf-8", timeout: 15000 });
+        const html = await fetchRankingPage(cls.typeId, cls.classId, page);
 
         const entries = parsePage(html);
         if (entries.length === 0) break;
@@ -323,8 +338,11 @@ function fetchFreshRankings() {
   }
 }
 
+// --- メイン処理（async fetch後に同期処理を続行） ---
+async function main() {
+
 console.log("Fetching fresh open-class rankings from JOY...");
-try { fetchFreshRankings(); } catch (e) { console.warn("Ranking fetch failed, using local files:", e); }
+await fetchFreshRankings().catch((e: unknown) => console.warn("Ranking fetch failed, using local files:", e));
 
 const files = fs.readdirSync(RANKINGS_DIR).filter((f) => f.endsWith(".json"));
 console.log(`Reading ${files.length} ranking files...`);
@@ -349,7 +367,8 @@ for (const file of files) {
   );
 
   for (const entry of raw) {
-    const key = entry.athlete_name;
+    // スペース有無の表記ゆれを統一（例: "佐藤 遼平" → "佐藤遼平"）
+    const key = entry.athlete_name.replace(/\s+/g, "");
     if (!athleteMap.has(key)) {
       athleteMap.set(key, { clubs: new Set(), appearances: [], allEvents: [] });
     }
@@ -595,3 +614,6 @@ fs.writeFileSync(path.join(OUTPUT_DIR, "club-stats.json"), clubJson);
 
 console.log(`✓ athlete-index.json: ${athleteCount} athletes (${(athleteJson.length / 1024).toFixed(0)} KB)`);
 console.log(`✓ club-stats.json: ${clubMap.size} clubs (${(clubJson.length / 1024).toFixed(0)} KB)`);
+
+} // end main()
+main().catch((e) => { console.error(e); process.exit(1); });

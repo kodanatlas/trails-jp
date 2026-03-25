@@ -128,8 +128,8 @@ JOY のイベントと LapCenter のイベントを紐づけるために `matchL
 
 | 出力ファイル | 内容 | サイズ目安 |
 |---|---|---|
-| `public/data/athlete-index.json` | 全選手の軽量プロフィール（検索・一覧用） | ~2,400 選手 |
-| `public/data/club-stats.json` | クラブ別統計 | ~380 クラブ |
+| `public/data/athlete-index.json` | 全選手の軽量プロフィール（検索・一覧用） | ~4,400 選手 |
+| `public/data/club-stats.json` | クラブ別統計 | ~400 クラブ |
 
 **選手プロフィール (`AthleteSummary`) の構成:**
 
@@ -162,6 +162,8 @@ interface AthleteSummary {
 **avgTotalPoints の算出:**
 
 年齢別無差別カテゴリ（`age_forest/無差別` と `age_sprint/S_無差別`）のポイントの平均値。女子選手は `女子無差別` / `S_女子無差別` を使用。どちらか一方しかない場合はその値をそのまま使用。
+
+各カテゴリの totalPoints は、JOY ランキング規則に基づき**上位3大会の獲得点の合計**で算出される。ProfileHeader で展開すると、どの大会が上位3に該当するか確認できる。
 
 **クラブ名の名寄せ (`normalizeClubName`):**
 
@@ -261,13 +263,17 @@ Vercel Hobby プラン（1 日 1 回制限）で 2 つの Cron ジョブを運�
 2. 既存データとマージ（座標・LC リンクを引き継ぎ）
 3. LapCenter イベントマッチング
 4. Supabase Storage に保存
-5. 水曜日のみ: Vercel Deployments API で再デプロイをトリガー（`VERCEL_DEPLOY_TOKEN` 使用）
+5. 水曜日のみ: Vercel Deploy Hook で再デプロイをトリガー（`VERCEL_DEPLOY_HOOK` 使用）
+6. 実行結果を Supabase `cron_log` テーブルに記録
 
 **ランキング更新の自動化:**
 - JOY ランキングは火曜更新 → 水曜 03:00 JST に Cron が再デプロイをトリガー
-- ビルド時に `build-analysis-index.ts` が JOY から無差別4クラスを全ページ取得
+- ビルド時に `build-analysis-index.ts` がランキングを取得:
+  - Proxy API (`/api/rankings/proxy`) 経由で JOY から無差別4クラスを全ページ取得
+  - Vercel ビルド環境から JOY への直接 curl が失敗するため、前回デプロイの Serverless Function をプロキシとして使用
+  - プロキシ失敗時は JOY 直接 fetch にフォールバック
 - 既存データとマージ（過去のイベントスコアを保持）
-- 手動作業は不要（完全自動化）
+- 手動作業は不要（完全自動化、PC 起動不要）
 
 ### 4.2 LapCenter 同期 (`/api/cron/sync-lapcenter`)
 
@@ -292,7 +298,7 @@ Vercel Hobby プラン（1 日 1 回制限）で 2 つの Cron ジョブを運�
 
 | テーブル | 説明 | データ量 |
 |---|---|---|
-| `athletes` | 選手マスタ（名前、クラブ、ポイント、特性分類等） | 2,418件 |
+| `athletes` | 選手マスタ（名前、クラブ、ポイント、特性分類等） | 4,388件 |
 | `athlete_appearances` | ランキング出場情報（カテゴリ、順位、ポイント） | 8,750件 |
 | `lc_performances` | LapCenter巡航速度・ミス率（選手×イベント×クラス） | 18,848件 |
 
@@ -303,9 +309,15 @@ Vercel Hobby プラン（1 日 1 回制限）で 2 つの Cron ジョブを運�
 | `likes` | いいねデータ（session_id + IP hash で重複防止） |
 | `athlete_like_counts` | 選手別いいね数集計ビュー |
 
-RLS 有効: SELECT は誰でも可能。INSERT/UPDATE/DELETE は service role のみ（分析データ）、誰でも可能（likes）。
+#### 運用監視
 
-SQL定義: `docs/sql/001_likes.sql`, `docs/sql/002_analysis_tables.sql`
+| テーブル | 説明 |
+|---|---|
+| `cron_log` | Cron ジョブ実行ログ（job_name, status, result, duration_ms, created_at） |
+
+RLS 有効: SELECT は誰でも可能。INSERT/UPDATE/DELETE は service role のみ（分析データ・cron_log）、誰でも可能（likes）。
+
+SQL定義: `docs/sql/001_likes.sql`, `docs/sql/002_analysis_tables.sql`, `supabase/migrations/20260325_create_cron_log.sql`
 
 ### 5.2 Supabase Storage
 
@@ -332,6 +344,7 @@ SQL定義: `docs/sql/001_likes.sql`, `docs/sql/002_analysis_tables.sql`
 
 | パス | 説明 | データソース |
 |---|---|---|
+| `GET /api/rankings/proxy` | JOY ランキングページのプロキシ（ビルド時使用、CRON_SECRET 認証） | JOY 直接 fetch |
 | `GET /api/lc/[name]` | 1選手のLC巡航速度・ミス率全履歴 | DB (`lc_performances`) |
 | `GET /api/athletes/search?q=xxx` | 選手名・クラブ名で検索（上位20件） | DB (`athletes`) |
 | `GET /api/athletes/[name]` | 1選手の詳細情報（appearances含む） | DB (`athletes` + `athlete_appearances`) |
@@ -415,7 +428,7 @@ b = (Σy - a·Σx) / n
 
 `AthleteDetail` は以下のセクションで構成:
 
-1. **ProfileHeader**: 選手名、クラブ、F・S 無差別平均ポイント
+1. **ProfileHeader**: 選手名、クラブ、F・S 無差別平均ポイント（展開で上位3大会の内訳・計算式を表示）
 2. **TypeBadge**: 特性分類（スプリンター/フォレスター/オールラウンダー）+ Forest vs Sprint バー
 3. **StatsCards**: 安定性 / 最近の調子 / ベストスコア の 3 カード
 4. **ScoreChart**: JOY ポイント推移チャート（Forest=緑, Sprint=青）。年齢別無差別クラス（`age_forest/無差別`, `age_sprint/S_無差別`、女子は `女子無差別` / `S_女子無差別`）のスコアのみを使用し、エリートランキングとの重複を排除。
@@ -448,13 +461,13 @@ LapCenter チャートはデータが 2 件以上ある選手にのみ表示。
 
 ```
 JOY (イベント)  ──→  sync-events Cron  ──→  Supabase Storage (events.json)
-                          │
+                          │                         + cron_log に記録
                           ├─→  LapCenter マッチング
-                          └─→  水曜: Vercel再デプロイトリガー
+                          └─→  水曜: Deploy Hook で再デプロイトリガー
                                        │
                                  build-analysis-index.ts（ビルド時実行）
                                        │
-                                       ├─→  JOY から無差別4クラス全ページ取得 → rankings/*.json 更新
+                                       ├─→  Proxy API 経由で JOY から無差別4クラス全ページ取得 → rankings/*.json 更新
                                        │
                                        ├───────────────────────────┐
                                        ▼                           ▼
@@ -480,8 +493,8 @@ LapCenter (成績)  ──→  sync-lapcenter Cron  ──→  Supabase DB (lc_p
 | Vercel Function タイムアウト | Hobby プランは 10 秒制限。ランキング取得はビルド時に実行（45分制限内） |
 | LapCenter データ欠損 | 一部イベントはLapCenter側にクラスデータなし（例: 中高選手権） |
 | Forest/Sprint 分類 | JOY ランキングに出現しない日付のLapCenterデータはチャートに表示されない |
-| デプロイ | `npx vercel --prod` での手動デプロイ、または水曜 Cron による自動再デプロイ |
-| GitHub Actions | PAT に `workflow` スコープがないため `.github/workflows/` のプッシュが未完了 |
+| デプロイ | `npx vercel --prod` での手動デプロイ、または水曜 Cron による自動再デプロイ（Deploy Hook） |
+| ランキング取得 | Vercel ビルド環境から JOY への直接 curl が失敗するため、Proxy API 経由で取得。初回デプロイ時はプロキシ未配置のためフォールバック動作 |
 
 ---
 

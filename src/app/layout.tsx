@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,6 +22,19 @@ export const metadata: Metadata = {
   },
   description:
     "日本のオリエンテーリング・トレイルランのための地図データベース、イベント情報、GPS追跡、ランキングを統合したプラットフォーム。",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "trails.jp",
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.svg",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f97316",
 };
 
 export default function RootLayout({
@@ -33,6 +47,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col font-sans antialiased`}
       >
+        <ServiceWorkerRegistration />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

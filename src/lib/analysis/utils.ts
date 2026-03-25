@@ -31,7 +31,7 @@ export async function loadAthleteDetail(
         const res = await fetch(`/data/rankings/${key}.json`);
         if (!res.ok) return;
         const entries: JOERankingEntry[] = await res.json();
-        const entry = entries.find((e) => e.athlete_name === summary.name);
+        const entry = entries.find((e) => e.athlete_name.replace(/\s+/g, "") === summary.name);
         if (!entry) return;
 
         const parts = key.split("_");

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
-import { Loader2, TrendingUp, TrendingDown, Minus, Target, Zap, Calendar } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Minus, Target, Zap, Calendar, ChevronDown } from "lucide-react";
 import type { AthleteSummary, AthleteProfile, LapCenterPerformance } from "@/lib/analysis/types";
 import {
   loadAthleteDetail,
@@ -59,6 +59,26 @@ export function AthleteDetail({ summary }: Props) {
 
 /** ヘッダー: 名前・クラブ・カテゴリ数 */
 function ProfileHeader({ profile }: { profile: AthleteProfile }) {
+  const [showBreakdown, setShowBreakdown] = useState(false);
+
+  // 無差別クラスのランキングを特定（ビルドスクリプトと同一ロジック）
+  const isFemale = profile.appearances.some(
+    (r) => r.className === "女子無差別" || r.className === "S_女子無差別"
+  );
+  const openForestClass = isFemale ? "女子無差別" : "無差別";
+  const openSprintClass = isFemale ? "S_女子無差別" : "S_無差別";
+
+  const forestRanking = profile.rankings.find(
+    (r) => r.type === "age_forest" && r.className === openForestClass
+  );
+  const sprintRanking = profile.rankings.find(
+    (r) => r.type === "age_sprint" && r.className === openSprintClass
+  );
+
+  const forestPts = forestRanking?.totalPoints;
+  const sprintPts = sprintRanking?.totalPoints;
+  const hasBoth = forestPts != null && sprintPts != null;
+
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center justify-between">
@@ -70,8 +90,155 @@ function ProfileHeader({ profile }: { profile: AthleteProfile }) {
           <p className="text-2xl font-bold text-primary">
             {profile.avgTotalPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
           </p>
-          <p className="text-[10px] text-muted">F・S 無差別平均</p>
+          <button
+            onClick={() => setShowBreakdown((v) => !v)}
+            className="inline-flex items-center gap-0.5 text-[10px] text-muted hover:text-foreground transition-colors"
+          >
+            F・S 無差別平均
+            <ChevronDown className={`h-3 w-3 transition-transform ${showBreakdown ? "rotate-180" : ""}`} />
+          </button>
         </div>
+      </div>
+
+      {showBreakdown && (
+        <div className="mt-3 border-t border-border pt-3 space-y-3">
+          {/* 計算式 */}
+          <div className="rounded bg-surface p-2.5 text-xs text-muted">
+            <p className="mb-1 text-[9px] text-muted/60">
+              各種目の上位3大会の合計 = totalPoints（JOYランキング規則）
+            </p>
+            <div className="font-mono">
+              {hasBoth ? (
+                <>
+                  (<span className="text-green-400">{forestPts!.toLocaleString()}</span>
+                  <span className="text-muted/60 text-[9px]"> {openForestClass}</span>
+                  <span className="mx-1">+</span>
+                  <span className="text-blue-400">{sprintPts!.toLocaleString()}</span>
+                  <span className="text-muted/60 text-[9px]"> {openSprintClass}</span>
+                  ) / 2 ={" "}
+                  <span className="font-bold text-primary">
+                    {profile.avgTotalPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                  </span>
+                </>
+              ) : forestPts != null ? (
+                <>
+                  Forest {openForestClass}のみ:{" "}
+                  <span className="font-bold text-primary">{forestPts.toLocaleString()}</span>
+                </>
+              ) : sprintPts != null ? (
+                <>
+                  Sprint {openSprintClass}のみ:{" "}
+                  <span className="font-bold text-primary">{sprintPts.toLocaleString()}</span>
+                </>
+              ) : (
+                <>全カテゴリ最大値: <span className="font-bold text-primary">{profile.avgTotalPoints.toLocaleString()}</span></>
+              )}
+            </div>
+          </div>
+
+          {/* Forest 内訳 */}
+          {forestRanking && (
+            <PointBreakdownTable
+              label={`Forest ${openForestClass}`}
+              color="green"
+              ranking={forestRanking}
+            />
+          )}
+
+          {/* Sprint 内訳 */}
+          {sprintRanking && (
+            <PointBreakdownTable
+              label={`Sprint ${openSprintClass}`}
+              color="blue"
+              ranking={sprintRanking}
+            />
+          )}
+
+          {!forestRanking && !sprintRanking && (
+            <p className="text-[10px] text-muted">無差別クラスのランキングデータがありません</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** ポイント内訳テーブル: 上位3大会を強調、残りは折りたたみ */
+function PointBreakdownTable({
+  label,
+  color,
+  ranking,
+}: {
+  label: string;
+  color: "green" | "blue";
+  ranking: import("@/lib/analysis/types").RankingAppearance;
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const colorClass = color === "green" ? "text-green-400" : "text-blue-400";
+  const bgTop = color === "green" ? "bg-green-500/20 border border-green-500/30" : "bg-blue-500/20 border border-blue-500/30";
+  const bgRest = color === "green" ? "bg-green-500/5" : "bg-blue-500/5";
+
+  // ポイント降順で上位3大会を特定
+  const withDate = ranking.events.filter((e) => e.date);
+  const byPoints = [...withDate].sort((a, b) => b.points - a.points);
+  const top3 = byPoints.slice(0, 3);
+  const rest = byPoints.slice(3);
+  const top3Sum = top3.reduce((s, e) => s + e.points, 0);
+
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between">
+        <span className={`text-[10px] font-bold ${colorClass}`}>{label}</span>
+        <span className="text-[10px] text-muted">
+          {ranking.rank}位 / 上位3計{" "}
+          <span className={`font-bold ${colorClass}`}>
+            {top3Sum.toLocaleString()}
+          </span>
+          <span className="text-muted/60"> ({withDate.length}大会中)</span>
+        </span>
+      </div>
+      <div className="space-y-0.5">
+        {top3.map((e, i) => (
+          <div
+            key={`top-${e.date}-${i}`}
+            className={`flex items-center gap-2 rounded px-2 py-1.5 text-[10px] ${bgTop}`}
+          >
+            <span className={`w-4 flex-shrink-0 font-bold ${colorClass}`}>
+              {i + 1}
+            </span>
+            <span className="w-[4.5rem] flex-shrink-0 font-mono text-muted">{e.date}</span>
+            <span className="min-w-0 flex-1 truncate">{e.eventName}</span>
+            <span className={`flex-shrink-0 font-mono font-bold ${colorClass}`}>
+              {e.points.toLocaleString()}
+            </span>
+          </div>
+        ))}
+        {rest.length > 0 && (
+          <>
+            <button
+              onClick={() => setShowAll((v) => !v)}
+              className="flex w-full items-center justify-center gap-1 rounded px-2 py-1 text-[9px] text-muted/60 hover:text-muted transition-colors"
+            >
+              {showAll ? "閉じる" : `他 ${rest.length} 大会を表示`}
+              <ChevronDown className={`h-2.5 w-2.5 transition-transform ${showAll ? "rotate-180" : ""}`} />
+            </button>
+            {showAll && rest.map((e, i) => (
+              <div
+                key={`rest-${e.date}-${i}`}
+                className={`flex items-center gap-2 rounded px-2 py-1 text-[10px] ${bgRest}`}
+              >
+                <span className="w-4 flex-shrink-0 text-muted/40 font-mono">
+                  {i + 4}
+                </span>
+                <span className="w-[4.5rem] flex-shrink-0 font-mono text-muted/60">{e.date}</span>
+                <span className="min-w-0 flex-1 truncate text-muted/80">{e.eventName}</span>
+                <span className="flex-shrink-0 font-mono text-muted/60">
+                  {e.points.toLocaleString()}
+                </span>
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );

@@ -21,8 +21,10 @@ CREATE UNIQUE INDEX likes_ip_athlete_day_idx ON public.likes (ip_hash, athlete_n
 CREATE INDEX likes_athlete_idx ON public.likes (athlete_name);
 
 -- RLS
+-- INSERT は全て supabaseAdmin (service_role key) 経由のため RLS バイパス。
+-- anon key での直接 INSERT を防止するため authenticated のみ許可。(2026-03-11)
 ALTER TABLE public.likes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Anyone can insert likes" ON public.likes FOR INSERT WITH CHECK (true);
+CREATE POLICY "Authenticated users can insert likes" ON public.likes FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "Anyone can read likes" ON public.likes FOR SELECT USING (true);
 
 -- いいね数集計ビュー

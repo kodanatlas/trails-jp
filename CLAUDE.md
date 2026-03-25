@@ -61,6 +61,9 @@ trails_jp/
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase プロジェクトURL | Vercel + .env.local |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Anon Key | Vercel + .env.local |
 | `NEXT_PUBLIC_FORMSPREE_ID` | Formspreeフォーム ID | Vercel |
+| `SUPABASE_SECRET_KEY` | Supabase service_role key | Vercel + .env.local |
+| `CRON_SECRET` | Cron認証トークン | Vercel |
+| `VERCEL_DEPLOY_HOOK` | 水曜再デプロイ用Deploy Hook URL | Vercel |
 
 ## 外部サービス設定
 
@@ -78,7 +81,8 @@ trails_jp/
 ### Vercel
 - プロジェクト: `trails_jp`
 - Cron: 日次 03:00 JST (sync-events), 12:00 JST (sync-lapcenter)
-- 水曜 Cron で自動再デプロイ → ビルド時にJOYランキング最新取得
+- 水曜 Cron で Deploy Hook による自動再デプロイ → ビルド時に Proxy API 経由で JOY ランキング最新取得
+- Cron 実行ログ: Supabase `cron_log` テーブルに記録
 - Hobby プラン（Cron 1日1回制限、Function 10秒制限）
 
 ## データフロー
@@ -86,7 +90,7 @@ trails_jp/
 - **JOYイベント**: 日次Cron → scrape → Supabase Storage (events.json)
 - **O-map↔イベント紐づけ**: bounds + 3km圏内の座標マッチ
 - **LapCenter巡航速度・ミス率**: 水曜Cron → Supabase DB (`lc_performances` テーブル) → `/api/lc/[name]` API
-- **ランキング**: ビルド時にJOYから無差別4クラス全ページ取得（水曜自動再デプロイ）
+- **ランキング**: ビルド時に Proxy API (`/api/rankings/proxy`) 経由で JOY から無差別4クラス全ページ取得（水曜自動再デプロイ、PC起動不要）
 - **選手・クラブ**: ビルド時に `build-analysis-index.ts` → 静的JSON + Supabase DB (`athletes`, `athlete_appearances` テーブル)
 
 ## DB構成 (Supabase PostgreSQL)
@@ -95,9 +99,23 @@ trails_jp/
 |---------|------|---------|
 | `likes` | いいね機能 | - |
 | `athlete_like_counts` | いいね数集計ビュー | - |
-| `athletes` | 選手マスタ（検索・詳細用） | 2,418件 |
-| `athlete_appearances` | ランキング出場情報 | 8,750件 |
-| `lc_performances` | LapCenter巡航速度・ミス率 | 18,848件 |
+| `athletes` | 選手マスタ（検索・詳細用） | ~2,500件 |
+| `athlete_appearances` | ランキング出場情報 | ~8,750件 |
+| `lc_performances` | LapCenter巡航速度・ミス率 | ~19,000件 |
+| `cron_log` | Cronジョブ実行ログ（稼働監視） | - |
+
+## RLS (Row Level Security) ポリシー
+
+全テーブルで RLS 有効。書き込みは全て `supabaseAdmin` (service_role key) 経由で RLS バイパス。
+
+| テーブル | SELECT | INSERT | UPDATE/DELETE |
+|---------|--------|--------|---------------|
+| `athletes` | public (anon OK) | - (service_role のみ) | - (service_role のみ) |
+| `athlete_appearances` | public (anon OK) | - (service_role のみ) | - (service_role のみ) |
+| `lc_performances` | public (anon OK) | - (service_role のみ) | - (service_role のみ) |
+| `likes` | public (anon OK) | authenticated のみ | - (service_role のみ) |
+
+マイグレーション: `supabase/migrations/20260311_fix_security_policies.sql`
 
 ## 注意事項
 

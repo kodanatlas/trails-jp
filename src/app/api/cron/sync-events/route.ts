@@ -3,6 +3,7 @@ import { scrapeEvents, scrapeArchive } from "@/lib/scraper/events";
 import type { JOEEvent } from "@/lib/scraper/events";
 import { readEvents, writeEvents } from "@/lib/events-store";
 import { matchLapCenterEvents } from "@/lib/scraper/lapcenter";
+import { logCron } from "@/lib/cron-logger";
 
 // Vercel Cron: 日次 03:00 JST (18:00 UTC)
 // イベント同期 + LapCenterマッチング
@@ -18,6 +19,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const start = Date.now();
   try {
     // ---- イベント同期 ----
     // トップページ + 今年 + 過去年のアーカイブを取得
@@ -95,42 +97,20 @@ export async function GET(request: Request) {
     const jstDay = new Date(
       new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })
     ).getDay();
-    if (jstDay === 3 && process.env.VERCEL_DEPLOY_TOKEN) {
+    if (jstDay === 3 && process.env.VERCEL_DEPLOY_HOOK) {
       try {
-        const deployRes = await fetch(
-          "https://api.vercel.com/v13/deployments",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${process.env.VERCEL_DEPLOY_TOKEN}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              name: "trails_jp",
-              project: process.env.VERCEL_PROJECT_ID,
-              target: "production",
-              gitSource: {
-                type: "github",
-                org: process.env.GITHUB_ORG,
-                repo: process.env.GITHUB_REPO,
-                ref: "main",
-              },
-            }),
-          }
-        );
+        const deployRes = await fetch(process.env.VERCEL_DEPLOY_HOOK, {
+          method: "POST",
+        });
         const deployData = await deployRes.json();
-        deployResult = {
-          triggered: true,
-          id: deployData.id,
-          status: deployData.readyState,
-        };
+        deployResult = { triggered: true, job: deployData.job?.id };
       } catch (deployErr) {
         console.error("Deploy trigger failed:", deployErr);
         deployResult = { triggered: false, error: String(deployErr) };
       }
     }
 
-    return NextResponse.json({
+    const payload = {
       success: true,
       events: {
         count: freshEvents.length,
@@ -139,9 +119,12 @@ export async function GET(request: Request) {
       lapcenter: lapcenterResult,
       deploy: deployResult,
       synced_at: new Date().toISOString(),
-    });
+    };
+    await logCron("sync-events", "success", payload, Date.now() - start);
+    return NextResponse.json(payload);
   } catch (error) {
     console.error("Event sync failed:", error);
+    await logCron("sync-events", "error", { error: String(error) }, Date.now() - start);
     return NextResponse.json(
       { error: "Sync failed" },
       { status: 500 }

@@ -56,14 +56,15 @@ CREATE INDEX idx_lc_date ON public.lc_performances(event_date DESC);
 -- ============================================================
 -- RLS
 -- ============================================================
+-- 書き込みは全て service_role key 経由（RLS バイパス）のため、
+-- SELECT のみ許可するポリシーで十分。
+-- ※ 旧 "Service role can manage ..." ポリシーは roles={public} で
+--   anon key からも ALL 操作可能な脆弱性があったため削除済み (2026-03-11)
 ALTER TABLE public.athletes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can read athletes" ON public.athletes FOR SELECT USING (true);
-CREATE POLICY "Service role can manage athletes" ON public.athletes FOR ALL USING (true) WITH CHECK (true);
 
 ALTER TABLE public.athlete_appearances ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can read appearances" ON public.athlete_appearances FOR SELECT USING (true);
-CREATE POLICY "Service role can manage appearances" ON public.athlete_appearances FOR ALL USING (true) WITH CHECK (true);
 
 ALTER TABLE public.lc_performances ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can read lc" ON public.lc_performances FOR SELECT USING (true);
-CREATE POLICY "Service role can manage lc" ON public.lc_performances FOR ALL USING (true) WITH CHECK (true);

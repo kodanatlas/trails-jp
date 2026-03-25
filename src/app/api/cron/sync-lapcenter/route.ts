@@ -3,6 +3,7 @@ import { matchLapCenterEvents, fetchEventClasses, fetchSplitList } from "@/lib/s
 import { readEvents, writeEvents } from "@/lib/events-store";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { readFileSync } from "fs";
+import { logCron } from "@/lib/cron-logger";
 import { join } from "path";
 
 // Vercel Cron: 日次 12:00 JST (03:00 UTC)
@@ -50,6 +51,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const start = Date.now();
   try {
     // ---- LapCenter イベントマッチング (日次) ----
     const events = (await readEvents()).map((e) => ({ ...e }));
@@ -75,7 +77,7 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json({
+    const payload = {
       success: true,
       matching: {
         new_matches: newMatches,
@@ -85,9 +87,12 @@ export async function GET(request: Request) {
       },
       runners: runnersResult,
       synced_at: new Date().toISOString(),
-    });
+    };
+    await logCron("sync-lapcenter", "success", payload, Date.now() - start);
+    return NextResponse.json(payload);
   } catch (error) {
     console.error("Lap Center sync failed:", error);
+    await logCron("sync-lapcenter", "error", { error: String(error) }, Date.now() - start);
     return NextResponse.json(
       { error: "Sync failed" },
       { status: 500 }
