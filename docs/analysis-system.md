@@ -298,7 +298,7 @@ Vercel Hobby プラン（1 日 1 回制限）で 2 つの Cron ジョブを運�
 
 | テーブル | 説明 | データ量 |
 |---|---|---|
-| `athletes` | 選手マスタ（名前、クラブ、ポイント、特性分類等） | 4,388件 |
+| `athletes` | 選手マスタ（名前、クラブ、ポイント、特性分類等） | ~2,500件 |
 | `athlete_appearances` | ランキング出場情報（カテゴリ、順位、ポイント） | 8,750件 |
 | `lc_performances` | LapCenter巡航速度・ミス率（選手×イベント×クラス） | 18,848件 |
 
@@ -309,15 +309,19 @@ Vercel Hobby プラン（1 日 1 回制限）で 2 つの Cron ジョブを運�
 | `likes` | いいねデータ（session_id + IP hash で重複防止） |
 | `athlete_like_counts` | 選手別いいね数集計ビュー |
 
-#### 運用監視
+#### 運用監視・スナップショット
 
 | テーブル | 説明 |
 |---|---|
 | `cron_log` | Cron ジョブ実行ログ（job_name, status, result, duration_ms, created_at） |
+| `club_stats_snapshot` | クラブ統計月次スナップショット（前月比・前年比算出用） |
+| `ranking_snapshot` | ランキング月次スナップショット（順位・ポイント変動算出用） |
 
-RLS 有効: SELECT は誰でも可能。INSERT/UPDATE/DELETE は service role のみ（分析データ・cron_log）、誰でも可能（likes）。
+ビルド時に現月のスナップショットを保存し、前月・前年のスナップショットと比較してdeltaを算出。クラブ一覧とランキングページに増減を表示。
 
-SQL定義: `docs/sql/001_likes.sql`, `docs/sql/002_analysis_tables.sql`, `supabase/migrations/20260325_create_cron_log.sql`
+RLS 有効: SELECT は誰でも可能。INSERT/UPDATE/DELETE は service role のみ（分析データ・cron_log・スナップショット）、誰でも可能（likes）。
+
+SQL定義: `docs/sql/001_likes.sql`, `docs/sql/002_analysis_tables.sql`, `supabase/migrations/20260325_create_cron_log.sql`, `supabase/migrations/20260327_create_club_stats_snapshot.sql`
 
 ### 5.2 Supabase Storage
 
@@ -514,18 +518,3 @@ LapCenter (成績)  ──→  sync-lapcenter Cron  ──→  Supabase DB (lc_p
 | ハート表示 | 実装済み | LikeDisplay（表示のみ、クリック不可）。カウントは一括取得 |
 | 応援アニメーション | 実装済み | GroupCelebrationOverlay: 20名の名前を5秒間表示、パーティクル演出 |
 
-### 10.3 今後の構想（Phase 3: 寄付金プール分配）
-
-個人への直接寄付（PayPay送金リンク型）は廃止。代わりにプール型分配モデルを採用。
-
-**仕組み:**
-- 閲覧者からの寄付金は運営の一か所（寄付リンク）に集約
-- 半年ごと（4月・10月など）に集計期間のハート数で按分して各選手に分配
-- 分配額 = プール総額 × (選手のハート数 / 全選手ハート数合計)
-- 分配方法: 管理者が手動で各選手に送金（選手の受取情報は別途収集）
-- 透明性: 分配結果をサイト上で公開（総額・各選手のハート数・分配額）
-
-**メリット:**
-- 個人間の寄付額格差が表面化しない（本人の気持ちを守る）
-- 本人確認・PayPay リンク登録が不要（運営が一括管理）
-- シンプルな運用（寄付受付口座1つ + 半年ごとの集計・送金）

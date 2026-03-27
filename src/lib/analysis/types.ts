@@ -51,6 +51,11 @@ export interface ClubMember {
   eventCount: number; // 大会数
 }
 
+export interface ClubDelta {
+  mom: number | null; // 前月比
+  yoy: number | null; // 前年比
+}
+
 export interface ClubProfile {
   name: string;
   memberCount: number;
@@ -59,6 +64,11 @@ export interface ClubProfile {
   members: ClubMember[]; // 全メンバー (rank順)
   forestCount: number;
   sprintCount: number;
+  delta?: {
+    memberCount: ClubDelta;
+    activeCount: ClubDelta;
+    avgPoints: ClubDelta;
+  };
 }
 
 /** LapCenter パフォーマンスデータ (巡航速度・ミス率) */

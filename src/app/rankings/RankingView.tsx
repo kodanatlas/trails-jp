@@ -193,6 +193,7 @@ export function RankingView({ rankingConfigs }: RankingViewProps) {
                   } ${!entry.is_active ? "opacity-50" : ""}`}
                 >
                   <RankBadge rank={entry.rank} />
+                  <RankDelta delta={entry.rank_delta} />
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -208,8 +209,11 @@ export function RankingView({ rankingConfigs }: RankingViewProps) {
                     <PointsBar points={entry.total_points} maxPoints={maxPoints} />
                   </div>
 
-                  <div className="block font-mono text-sm font-bold text-primary sm:hidden">
-                    {entry.total_points.toLocaleString(undefined, { minimumFractionDigits: 1 })}
+                  <div className="text-right">
+                    <div className="block font-mono text-sm font-bold text-primary sm:hidden">
+                      {entry.total_points.toLocaleString(undefined, { minimumFractionDigits: 1 })}
+                    </div>
+                    <PointsDelta delta={entry.points_delta} />
                   </div>
 
                   {expandedRank === entry.rank
@@ -282,5 +286,49 @@ export function RankingView({ rankingConfigs }: RankingViewProps) {
         </>
       )}
     </div>
+  );
+}
+
+/** 順位変動表示 (↑3 ↓2 等) */
+function RankDelta({ delta }: { delta?: { mom: number | null; yoy: number | null } }) {
+  if (!delta) return null;
+  const v = delta.mom ?? delta.yoy;
+  if (v == null || v === 0) return null;
+  return (
+    <span className={`flex-shrink-0 text-[9px] font-mono font-bold ${v > 0 ? "text-green-400" : "text-red-400"}`} title={`前月比: ${delta.mom ?? "—"} / 前年比: ${delta.yoy ?? "—"}`}>
+      {v > 0 ? `↑${v}` : `↓${Math.abs(v)}`}
+    </span>
+  );
+}
+
+/** ポイント変動表示 */
+function PointsDelta({ delta }: { delta?: { mom: number | null; yoy: number | null } }) {
+  if (!delta) return null;
+  const { mom, yoy } = delta;
+  if (mom == null && yoy == null) return null;
+
+  const fmt = (v: number) => {
+    const s = Math.abs(v).toFixed(1);
+    return v > 0 ? `+${s}` : `-${s}`;
+  };
+  const color = (v: number) =>
+    v > 0 ? "text-green-400" : v < 0 ? "text-red-400" : "text-muted/50";
+
+  return (
+    <span className="text-[8px] font-mono">
+      {mom != null && (
+        <span className={color(mom)} title="前月比">
+          {fmt(mom)}
+          <span className="text-muted/40">月</span>
+        </span>
+      )}
+      {mom != null && yoy != null && <span className="text-muted/30"> </span>}
+      {yoy != null && (
+        <span className={color(yoy)} title="前年比">
+          {fmt(yoy)}
+          <span className="text-muted/40">年</span>
+        </span>
+      )}
+    </span>
   );
 }

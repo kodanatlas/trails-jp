@@ -58,6 +58,11 @@ interface ClubProfile {
   members: ClubMember[];
   forestCount: number;
   sprintCount: number;
+  delta?: {
+    memberCount: { mom: number | null; yoy: number | null };
+    activeCount: { mom: number | null; yoy: number | null };
+    avgPoints: { mom: number | null; yoy: number | null };
+  };
 }
 
 // --- Helpers ---
@@ -130,6 +135,7 @@ function normalizeClubName(raw: string): string {
 
   // --- 0b. 大文字小文字の事前統一 ---
   name = name.replace(/olc/gi, "OLC");
+  name = name.replace(/olk/gi, "OLK");
 
   // --- 1. 大学OLC略称の明示的マッピング ---
   const universityMap: Record<string, string> = {
@@ -156,6 +162,21 @@ function normalizeClubName(raw: string): string {
     "HUOLC": "北海道大学",
     "阪大30期": "大阪大学",
     "阪大2011入学": "大阪大学",
+    "東京科学大OLT": "東京科学大学",
+    "神大OLK": "神戸大学",
+    "一橋OLK": "一橋大学",
+    "日大OLK": "日本大学",
+    "神戸大学オリエンテーリングクラブ": "神戸大学",
+    "筑波大学オリエンテーリング部": "筑波大学",
+    "筑波大学体育会オリエンテーリング部": "筑波大学",
+    "東北大学農学部": "東北大学",
+    "磨くっちゃ漢@東北大OLC": "東北大学",
+    "十文字女子大学": "十文字学園女子大学",
+    "大阪OLCおろしの会": "大阪OLC",
+    "東京農業大学（オホーツク）4": "東京農業大学オホーツク",
+    "OLK35th": "東大OLK",
+    "慶應義塾": "慶應義塾大学",
+    "中央大学附属高等学校WILDLIFE": "中央大学附属高等学校",
   };
   if (universityMap[name]) return universityMap[name];
 
@@ -195,6 +216,16 @@ function normalizeClubName(raw: string): string {
     "新潟": "新潟大学",
     "金沢": "金沢大学",
     "神戸": "神戸大学",
+    "いずもOLC": "いづもOLC",
+    "MOXINA OK": "Moxina OK",
+    "ふるはうす": "OLCふるはうす",
+    "サンスーシ": "OLCサンスーシ",
+    "ルーパー": "OLCルーパー",
+    "京葉OL": "京葉OLC",
+    "横浜OL": "横浜OLC",
+    "晴れの国岡山OLC": "晴れの国岡山",
+    "札幌農学校OLC": "札幌農学校",
+    "トータス金沢支部": "トータス",
   };
   if (aliasMap[name]) name = aliasMap[name];
 
@@ -375,8 +406,16 @@ for (const file of files) {
     const data = athleteMap.get(key)!;
 
     if (entry.club && entry.club !== "-") {
-      // "/"、全角スペース、"、" で区切られている場合、各クラブを個別に登録 + 名寄せ
-      const clubNames = entry.club.split(/[\/\u3000、]/).map((c) => normalizeClubName(c)).filter(Boolean);
+      // 区切り文字なしの複合クラブ名を事前分割
+      const CLUB_SPLIT: Record<string, string[]> = {
+        "法政大OLCOB上尾OLC": ["法政大学", "上尾OLC"],
+        "丘の上尾OLC": ["丘の上", "上尾OLC"],
+      };
+      const raw = entry.club.trim();
+      const parts = CLUB_SPLIT[raw]
+        ? CLUB_SPLIT[raw]
+        : raw.split(/[\/\u3000、]/);
+      const clubNames = parts.map((c) => normalizeClubName(c)).filter(Boolean);
       for (const cn of clubNames) {
         data.clubs.add(cn);
       }
@@ -600,6 +639,154 @@ for (const [name, data] of clubMap) {
     forestCount: data.forestCount,
     sprintCount: data.sprintCount,
   };
+}
+
+// ---- クラブ統計の前月比・前年比算出 ----
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SECRET_KEY;
+
+if (supabaseUrl && supabaseKey) {
+  try {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const prevMonth = (() => {
+      const d = new Date(now); d.setMonth(d.getMonth() - 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    })();
+    const prevYear = `${now.getFullYear() - 1}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+    // 現月スナップショットを保存
+    const snapshot: Record<string, { m: number; a: number; p: number }> = {};
+    for (const [name, club] of Object.entries(clubs)) {
+      snapshot[name] = { m: club.memberCount, a: club.activeCount, p: club.avgPoints };
+    }
+    const headers = {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${supabaseKey}`,
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates",
+    };
+    await fetch(`${supabaseUrl}/rest/v1/club_stats_snapshot`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ month: currentMonth, stats: snapshot }),
+    });
+
+    // 前月・前年のスナップショットを取得
+    const fetchSnapshot = async (month: string) => {
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/club_stats_snapshot?month=eq.${month}&select=stats`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+      );
+      const rows = await res.json() as { stats: Record<string, { m: number; a: number; p: number }> }[];
+      return rows[0]?.stats ?? null;
+    };
+    const [prevMonthStats, prevYearStats] = await Promise.all([
+      fetchSnapshot(prevMonth),
+      fetchSnapshot(prevYear),
+    ]);
+
+    // delta算出
+    for (const [name, club] of Object.entries(clubs)) {
+      const pm = prevMonthStats?.[name];
+      const py = prevYearStats?.[name];
+      club.delta = {
+        memberCount: {
+          mom: pm ? club.memberCount - pm.m : null,
+          yoy: py ? club.memberCount - py.m : null,
+        },
+        activeCount: {
+          mom: pm ? club.activeCount - pm.a : null,
+          yoy: py ? club.activeCount - py.a : null,
+        },
+        avgPoints: {
+          mom: pm ? Math.round((club.avgPoints - pm.p) * 10) / 10 : null,
+          yoy: py ? Math.round((club.avgPoints - py.p) * 10) / 10 : null,
+        },
+      };
+    }
+    console.log(`✓ club deltas: mom=${prevMonthStats ? "yes" : "no data"}, yoy=${prevYearStats ? "yes" : "no data"}`);
+  } catch (e) {
+    console.warn("Club snapshot/delta failed:", e);
+  }
+} else {
+  console.warn("⚠ Supabase not configured, skipping club deltas");
+}
+
+// ---- ランキング順位・ポイントの前月比・前年比算出 ----
+if (supabaseUrl && supabaseKey) {
+  const DELTA_FILES = [
+    "age_forest_無差別.json",
+    "age_forest_女子無差別.json",
+    "age_sprint_S_無差別.json",
+    "age_sprint_S_女子無差別.json",
+  ];
+  try {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const prevMonth = (() => {
+      const d = new Date(now); d.setMonth(d.getMonth() - 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    })();
+    const prevYear = `${now.getFullYear() - 1}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const sbHeaders = {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${supabaseKey}`,
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates",
+    };
+
+    for (const fileName of DELTA_FILES) {
+      const filePath = path.join(RANKINGS_DIR, fileName);
+      if (!fs.existsSync(filePath)) continue;
+      const entries: RawEntry[] = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      const fileKey = fileName.replace(".json", "");
+
+      // スナップショット保存: { "選手名": { r: rank, p: total_points } }
+      const snap: Record<string, { r: number; p: number }> = {};
+      for (const e of entries) {
+        snap[e.athlete_name] = { r: e.rank, p: e.total_points };
+      }
+      await fetch(`${supabaseUrl}/rest/v1/ranking_snapshot`, {
+        method: "POST",
+        headers: sbHeaders,
+        body: JSON.stringify({ month: currentMonth, file_key: fileKey, stats: snap }),
+      });
+
+      // 前月・前年を取得
+      const fetchSnap = async (month: string) => {
+        const res = await fetch(
+          `${supabaseUrl}/rest/v1/ranking_snapshot?month=eq.${month}&file_key=eq.${fileKey}&select=stats`,
+          { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+        );
+        const rows = await res.json() as { stats: Record<string, { r: number; p: number }> }[];
+        return rows[0]?.stats ?? null;
+      };
+      const [pmSnap, pySnap] = await Promise.all([fetchSnap(prevMonth), fetchSnap(prevYear)]);
+
+      // delta付与
+      let deltaCount = 0;
+      for (const e of entries) {
+        const pm = pmSnap?.[e.athlete_name];
+        const py = pySnap?.[e.athlete_name];
+        if (pm || py) {
+          (e as any).rank_delta = {
+            mom: pm ? pm.r - e.rank : null,  // 前月より順位が上がった→正の値
+            yoy: py ? py.r - e.rank : null,
+          };
+          (e as any).points_delta = {
+            mom: pm ? Math.round((e.total_points - pm.p) * 10) / 10 : null,
+            yoy: py ? Math.round((e.total_points - py.p) * 10) / 10 : null,
+          };
+          deltaCount++;
+        }
+      }
+      fs.writeFileSync(filePath, JSON.stringify(entries, null, 2));
+      if (deltaCount > 0) console.log(`✓ ranking deltas: ${fileKey} (${deltaCount} athletes)`);
+    }
+  } catch (e) {
+    console.warn("Ranking snapshot/delta failed:", e);
+  }
 }
 
 // Write output

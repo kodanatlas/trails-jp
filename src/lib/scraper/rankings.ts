@@ -7,6 +7,8 @@ export interface JOERankingEntry {
   total_points: number;
   is_active: boolean;
   event_scores: { event_name: string; points: number }[];
+  rank_delta?: { mom: number | null; yoy: number | null };
+  points_delta?: { mom: number | null; yoy: number | null };
 }
 
 export interface JOERanking {

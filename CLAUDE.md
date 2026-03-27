@@ -103,6 +103,8 @@ trails_jp/
 | `athlete_appearances` | ランキング出場情報 | ~8,750件 |
 | `lc_performances` | LapCenter巡航速度・ミス率 | ~19,000件 |
 | `cron_log` | Cronジョブ実行ログ（稼働監視） | - |
+| `club_stats_snapshot` | クラブ統計月次スナップショット（前月比・前年比算出） | - |
+| `ranking_snapshot` | ランキング月次スナップショット（順位・ポイント変動算出） | - |
 
 ## RLS (Row Level Security) ポリシー
 

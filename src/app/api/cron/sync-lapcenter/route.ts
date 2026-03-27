@@ -20,6 +20,7 @@ const CLUB_ALIASES: Record<string, string> = {
   "岡大": "岡山大学", "広大": "広島大学", "熊大": "熊本大学",
   "信大": "信州大学", "静大": "静岡大学",
   "大阪": "大阪OLC", "練馬": "練馬OLC", "レオ": "OLCレオ",
+  "東京科学大OLT": "東京科学大学",
 };
 
 function normalizeClub(club: string): string {

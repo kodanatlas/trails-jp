@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Search, ChevronDown, ChevronUp, Users, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import type { AthleteIndex, ClubIndex, ClubProfile, ClubMember } from "@/lib/analysis/types";
+import type { AthleteIndex, ClubIndex, ClubProfile, ClubMember, ClubDelta } from "@/lib/analysis/types";
 import { typeLabel } from "@/lib/analysis/utils";
 import { ClubDistribution } from "./DistributionCharts";
 
@@ -165,7 +165,11 @@ function ClubCard({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{club.name}</p>
           <p className="text-[10px] text-muted">
-            {club.memberCount}名 · アクティブ {club.activeCount}名
+            {club.memberCount}名
+            <DeltaInline delta={club.delta?.memberCount} />
+            {" · アクティブ "}
+            {club.activeCount}名
+            <DeltaInline delta={club.delta?.activeCount} />
           </p>
         </div>
 
@@ -189,8 +193,15 @@ function ClubCard({
           </div>
         )}
 
-        <span className="font-mono text-sm font-bold text-primary">
-          {club.avgPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+        <span className="text-right">
+          <span className="font-mono text-sm font-bold text-primary">
+            {club.avgPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+          </span>
+          {club.delta?.avgPoints && (
+            <span className="block">
+              <DeltaInline delta={club.delta.avgPoints} decimal />
+            </span>
+          )}
         </span>
 
         {isExpanded ? (
@@ -317,5 +328,37 @@ function MemberRow({ member: m, onSelect }: { member: ClubMember; onSelect?: (na
         {m.avgTotalPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
       </span>
     </button>
+  );
+}
+
+/** 前月比・前年比のインライン表示 */
+function DeltaInline({ delta, decimal }: { delta?: ClubDelta; decimal?: boolean }) {
+  if (!delta) return null;
+  const { mom, yoy } = delta;
+  if (mom == null && yoy == null) return null;
+
+  const fmt = (v: number) => {
+    const s = decimal ? Math.abs(v).toFixed(1) : String(Math.abs(v));
+    return v > 0 ? `+${s}` : v < 0 ? `-${s}` : "±0";
+  };
+  const color = (v: number) =>
+    v > 0 ? "text-green-400" : v < 0 ? "text-red-400" : "text-muted/50";
+
+  return (
+    <span className="ml-1 text-[8px] font-mono">
+      {mom != null && (
+        <span className={color(mom)} title="前月比">
+          {fmt(mom)}
+          <span className="text-muted/40">月</span>
+        </span>
+      )}
+      {mom != null && yoy != null && <span className="text-muted/30"> </span>}
+      {yoy != null && (
+        <span className={color(yoy)} title="前年比">
+          {fmt(yoy)}
+          <span className="text-muted/40">年</span>
+        </span>
+      )}
+    </span>
   );
 }
