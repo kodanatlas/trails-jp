@@ -177,6 +177,13 @@ function normalizeClubName(raw: string): string {
     "OLK35th": "東大OLK",
     "慶應義塾": "慶應義塾大学",
     "中央大学附属高等学校WILDLIFE": "中央大学附属高等学校",
+    "麻布学園オリエンテーリング部": "麻布学園OLK",
+    "麻布高等学校": "麻布学園OLK",
+    "朱雀オリエンテーリングクラブ": "朱雀OK",
+    "京葉オリエンテーリングクラブ": "京葉OLC",
+    "多摩オリエンテーリングクラブ": "多摩OL",
+    "福島県オリエンテーリング協会": "福島県協会",
+    "福島県OL協会": "福島県協会",
   };
   if (universityMap[name]) return universityMap[name];
 

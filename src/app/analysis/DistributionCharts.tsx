@@ -201,13 +201,15 @@ export function AthleteDistribution({
 export function ClubDistribution({
   clubIndex,
   expandedClub,
+  minMembers = 2,
 }: {
   clubIndex: ClubIndex;
   expandedClub: string | null;
+  minMembers?: number;
 }) {
   const data = useMemo(() => {
     return Object.values(clubIndex.clubs)
-      .filter((c) => c.memberCount >= 2) // 2名以上のクラブのみ
+      .filter((c) => c.memberCount >= minMembers)
       .map((c) => {
         const totalType = c.forestCount + c.sprintCount;
         const forestRatio = totalType > 0 ? c.forestCount / totalType : 0.5;
@@ -220,7 +222,7 @@ export function ClubDistribution({
           isSelected: c.name === expandedClub,
         };
       });
-  }, [clubIndex, expandedClub]);
+  }, [clubIndex, expandedClub, minMembers]);
 
   // Show labels for clubs that don't overlap, prioritized by avgPoints
   const labeledClubs = useMemo(() => {
@@ -255,13 +257,13 @@ export function ClubDistribution({
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">
           クラブ分布
         </h3>
-        <span className="text-[10px] text-muted">{data.length} クラブ（2名以上）</span>
+        <span className="text-[10px] text-muted">{data.length} クラブ（{minMembers}名以上）</span>
       </div>
       <p className="mb-3 text-[10px] text-muted">
         横軸: 所属人数、縦軸: 平均ポイント、色: Forest↔Sprint比率
       </p>
 
-      <div className="h-64 overflow-hidden sm:h-72">
+      <div className="h-44 overflow-hidden sm:h-52">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 5, right: 10, bottom: 25, left: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />

@@ -24,11 +24,15 @@ const typeBadgeColors: Record<string, string> = {
   unknown: "bg-white/10 text-muted",
 };
 
+const DEFAULT_MIN_MEMBERS = 5;
+
 export function ClubAnalysis({ clubIndex, onSelectAthlete, initialExpandedClub }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortKey>("active");
+  const [sortBy, setSortBy] = useState<SortKey>("avgPoints");
+  const [minMembers, setMinMembers] = useState(DEFAULT_MIN_MEMBERS);
   const [expandedClub, setExpandedClub] = useState<string | null>(initialExpandedClub ?? null);
   const expandedRef = useRef<HTMLDivElement>(null);
+  const maxMembers = useMemo(() => Math.max(...Object.values(clubIndex.clubs).map((c) => c.memberCount)), [clubIndex]);
 
   // 展開クラブが変わったとき、そのクラブカードが画面上部に来るようスクロール
   useEffect(() => {
@@ -54,6 +58,11 @@ export function ClubAnalysis({ clubIndex, onSelectAthlete, initialExpandedClub }
       );
     }
 
+    // 平均点ソート時のみ人数フィルタ適用
+    if (sortBy === "avgPoints") {
+      list = list.filter((c) => c.memberCount >= minMembers);
+    }
+
     list.sort((a, b) => {
       switch (sortBy) {
         case "members": return b.memberCount - a.memberCount;
@@ -63,10 +72,15 @@ export function ClubAnalysis({ clubIndex, onSelectAthlete, initialExpandedClub }
     });
 
     return list;
-  }, [clubIndex, searchQuery, sortBy]);
+  }, [clubIndex, searchQuery, sortBy, minMembers]);
 
   return (
     <div>
+      {/* Distribution chart */}
+      <div className="mb-4">
+        <ClubDistribution clubIndex={clubIndex} expandedClub={expandedClub} minMembers={sortBy === "avgPoints" ? minMembers : 2} />
+      </div>
+
       {/* Search + Sort */}
       <div className="mb-4 flex items-center gap-3">
         <div className="relative flex-1">
@@ -82,8 +96,8 @@ export function ClubAnalysis({ clubIndex, onSelectAthlete, initialExpandedClub }
         <div className="flex gap-1">
           {([
             { key: "members" as SortKey, label: "人数" },
-            { key: "avgPoints" as SortKey, label: "平均点" },
             { key: "active" as SortKey, label: "アクティブ" },
+            { key: "avgPoints" as SortKey, label: "平均点" },
           ]).map((s) => (
             <button
               key={s.key}
@@ -100,13 +114,35 @@ export function ClubAnalysis({ clubIndex, onSelectAthlete, initialExpandedClub }
         </div>
       </div>
 
-      {/* Distribution chart */}
-      <div className="mb-5">
-        <ClubDistribution clubIndex={clubIndex} expandedClub={expandedClub} />
-      </div>
+      {/* Min members slider (平均点ソート時のみ) */}
+      {sortBy === "avgPoints" && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2">
+          <span className="text-[10px] text-muted whitespace-nowrap hidden sm:inline">所属人数フィルタ</span>
+          <span className="text-[10px] text-muted whitespace-nowrap sm:hidden leading-tight text-center">所属人数<br />フィルタ</span>
+          <div className="relative flex-1">
+            <input
+              type="range"
+              min={1}
+              max={Math.min(maxMembers, 50)}
+              value={minMembers}
+              onChange={(e) => setMinMembers(Number(e.target.value))}
+              className="w-full accent-primary"
+            />
+            <div className="mt-0.5 flex justify-between text-[8px] text-muted/50">
+              <span>1</span>
+              <span>10</span>
+              <span>20</span>
+              <span>30</span>
+              <span>40</span>
+              <span>50</span>
+            </div>
+          </div>
+          <span className="w-12 text-right font-mono text-xs font-bold text-primary">{minMembers}名〜</span>
+        </div>
+      )}
 
       <p className="mb-3 text-xs text-muted">
-        {clubs.length} クラブ / 全 {Object.keys(clubIndex.clubs).length} クラブ
+        {clubs.length} クラブ{clubs.length !== Object.keys(clubIndex.clubs).length && ` / 全 ${Object.keys(clubIndex.clubs).length} クラブ`}
       </p>
 
       {/* Club List */}
