@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { ChevronDown, ChevronUp, Trophy, Medal, Search, ExternalLink, BarChart3, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Trophy, Medal, Search, ExternalLink, BarChart3, Loader2, User } from "lucide-react";
+import Link from "next/link";
 import type { JOERankingEntry } from "@/lib/scraper/rankings";
 
 interface RankingConfig {
@@ -197,7 +198,13 @@ export function RankingView({ rankingConfigs }: RankingViewProps) {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-semibold">{entry.athlete_name}</span>
+                      <Link
+                        href={`/analysis?athlete=${encodeURIComponent(entry.athlete_name.replace(/\s+/g, ""))}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="truncate text-sm font-semibold hover:text-primary hover:underline"
+                      >
+                        {entry.athlete_name}
+                      </Link>
                       {!entry.is_active && (
                         <span className="flex-shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[9px] text-muted">対象外</span>
                       )}

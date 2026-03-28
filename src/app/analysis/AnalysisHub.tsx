@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Search, User, Users, GitCompareArrows, Heart, Loader2, ArrowLeft } from "lucide-react";
 import type { AthleteIndex, ClubIndex, AthleteSummary } from "@/lib/analysis/types";
 import { AthleteDetail } from "./AthleteDetail";
@@ -39,6 +39,8 @@ export function AnalysisHub() {
     { id: "2", athlete: null, color: COMPARE_COLORS[1] },
   ]);
 
+  const initialAthleteHandled = useRef(false);
+
   useEffect(() => {
     Promise.all([
       fetch("/data/athlete-index.json").then((r) => r.json()),
@@ -47,6 +49,21 @@ export function AnalysisHub() {
       setAthleteIndex(ai);
       setClubIndex(ci);
       setLoading(false);
+
+      // URLパラメータから選手を自動選択（ランキングページからの遷移等）
+      if (!initialAthleteHandled.current) {
+        const params = new URLSearchParams(window.location.search);
+        const athleteParam = params.get("athlete");
+        if (athleteParam && ai?.athletes) {
+          const summary = ai.athletes[athleteParam];
+          if (summary) {
+            setSelectedAthlete(summary);
+            setSearchQuery(athleteParam);
+            setActiveTab("athlete");
+          }
+        }
+        initialAthleteHandled.current = true;
+      }
     }).catch(() => setLoading(false));
   }, []);
 
