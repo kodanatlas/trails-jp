@@ -83,8 +83,29 @@ const STOP_WORDS = new Set([
   "パーク", "県民", "市民",
 ]);
 
+// 大学略称 → 正式名称（「〇〇大」が大学名の一部として使われるケース）
+const UNIVERSITY_ALIASES: Record<string, string> = {
+  "北大": "北海道大学", "東北大": "東北大学", "東大": "東京大学",
+  "名大": "名古屋大学", "京大": "京都大学", "阪大": "大阪大学",
+  "九大": "九州大学", "筑波大": "筑波大学", "千葉大": "千葉大学",
+  "横国大": "横浜国立大学", "金大": "金沢大学", "新大": "新潟大学",
+  "岡大": "岡山大学", "広大": "広島大学", "熊大": "熊本大学",
+  "信大": "信州大学", "静大": "静岡大学", "神大": "神戸大学",
+  "茨大": "茨城大学", "埼大": "埼玉大学", "群大": "群馬大学",
+};
+
+// イベント名の略称・頭字語 → 展開形
+const EVENT_ALIASES: [RegExp, string][] = [
+  [/\bBMO\b/gi, "忘年マウンテンオリエンテーリング"],
+  [/\bOMO\b/gi, "奥武蔵マウンテンオリエンテーリング"],
+  [/\bMAMM\b/gi, "南アルプスマウンテンマラソン"],
+  [/スプセレ/g, "スプリントセレクション"],
+  [/インカレ/g, "日本学生選手権"],
+];
+
 function normalize(name: string): string {
   let s = name;
+  // 全角→半角
   s = s.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) =>
     String.fromCharCode(c.charCodeAt(0) - 0xfee0)
   );
@@ -95,6 +116,21 @@ function normalize(name: string): string {
   s = s.replace(/20\d{6}/g, "");
   s = s.replace(/[（(][^)）]*[)）]/g, "");
   s = s.replace(/[・\-\s　&＆「」『』【】〜～/／\\.,、。!！?？:：;；#＃@＠+＋=＝_＿<>＜＞'"'"'"^`~|｜{}\[\]［］]/g, " ");
+
+  // 表記揺れ正規化
+  s = s.replace(/ウエ/g, "ウェ");
+
+  // 大学略称展開（「筑波大」→「筑波大学」等、ただし既に「大学」が続く場合はスキップ）
+  for (const [abbr, full] of Object.entries(UNIVERSITY_ALIASES)) {
+    const re = new RegExp(abbr + "(?!学)", "g");
+    s = s.replace(re, full);
+  }
+
+  // イベント名略称・頭字語の展開
+  for (const [pattern, replacement] of EVENT_ALIASES) {
+    s = s.replace(pattern, replacement);
+  }
+
   return s.trim();
 }
 
@@ -138,7 +174,7 @@ export function fuzzyMatch(name1: string, name2: string): boolean {
     if (core1 === core2) return true;
     const cShorter = core1.length <= core2.length ? core1 : core2;
     const cLonger = core1.length <= core2.length ? core2 : core1;
-    if (cShorter.length >= 4 && cLonger.includes(cShorter)) return true;
+    if (cShorter.length >= 3 && cLonger.includes(cShorter)) return true;
   }
 
   const tokens1 = extractSignificantTokens(norm1);
