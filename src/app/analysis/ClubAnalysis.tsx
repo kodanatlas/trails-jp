@@ -201,11 +201,9 @@ function ClubCard({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{club.name}</p>
           <p className="text-[10px] text-muted">
-            {club.memberCount}名
-            <DeltaInline delta={club.delta?.memberCount} />
+            {club.memberCount}名<DeltaInline delta={club.delta?.memberCount} />
             {" · アクティブ "}
-            {club.activeCount}名
-            <DeltaInline delta={club.delta?.activeCount} />
+            {club.activeCount}名<DeltaInline delta={club.delta?.activeCount} />
           </p>
         </div>
 
@@ -235,7 +233,7 @@ function ClubCard({
           </span>
           {club.delta?.avgPoints && (
             <span className="block">
-              <DeltaInline delta={club.delta.avgPoints} decimal />
+              <DeltaInlineDecimal delta={club.delta.avgPoints} />
             </span>
           )}
         </span>
@@ -367,10 +365,8 @@ function MemberRow({ member: m, onSelect }: { member: ClubMember; onSelect?: (na
   );
 }
 
-/** 前月比・前年比のインライン表示 */
-function DeltaInline({ delta, decimal }: { delta?: ClubDelta; decimal?: boolean }) {
-  if (!delta) return null;
-  const { mom, yoy } = delta;
+/** 前月比/前年比のインライン表示 (例: (+2前月/+5前年)) */
+function DeltaLabel({ mom, yoy, decimal }: { mom?: number | null; yoy?: number | null; decimal?: boolean }) {
   if (mom == null && yoy == null) return null;
 
   const fmt = (v: number) => {
@@ -381,20 +377,22 @@ function DeltaInline({ delta, decimal }: { delta?: ClubDelta; decimal?: boolean 
     v > 0 ? "text-green-400" : v < 0 ? "text-red-400" : "text-muted/50";
 
   return (
-    <span className="ml-1 text-[8px] font-mono">
-      {mom != null && (
-        <span className={color(mom)} title="前月比">
-          {fmt(mom)}
-          <span className="text-muted/40">(前月)</span>
-        </span>
-      )}
-      {mom != null && yoy != null && <span className="text-muted/30"> </span>}
-      {yoy != null && (
-        <span className={color(yoy)} title="前年比">
-          {fmt(yoy)}
-          <span className="text-muted/40">(前年)</span>
-        </span>
-      )}
+    <span className="ml-0.5 font-mono text-[8px]">
+      (
+      {mom != null && <><span className={color(mom)}>{fmt(mom)}</span><span className="text-muted/40">前月</span></>}
+      {mom != null && yoy != null && <span className="text-muted/30">/</span>}
+      {yoy != null && <><span className={color(yoy)}>{fmt(yoy)}</span><span className="text-muted/40">前年</span></>}
+      )
     </span>
   );
+}
+
+function DeltaInline({ delta }: { delta?: ClubDelta }) {
+  if (!delta) return null;
+  return <DeltaLabel mom={delta.mom} yoy={delta.yoy} />;
+}
+
+function DeltaInlineDecimal({ delta }: { delta?: ClubDelta }) {
+  if (!delta) return null;
+  return <DeltaLabel mom={delta.mom} yoy={delta.yoy} decimal />;
 }
