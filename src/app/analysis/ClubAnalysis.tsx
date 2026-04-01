@@ -385,14 +385,14 @@ function DeltaInline({ delta, decimal }: { delta?: ClubDelta; decimal?: boolean 
       {mom != null && (
         <span className={color(mom)} title="前月比">
           {fmt(mom)}
-          <span className="text-muted/40">月</span>
+          <span className="text-muted/40">(前月)</span>
         </span>
       )}
       {mom != null && yoy != null && <span className="text-muted/30"> </span>}
       {yoy != null && (
         <span className={color(yoy)} title="前年比">
           {fmt(yoy)}
-          <span className="text-muted/40">年</span>
+          <span className="text-muted/40">(前年)</span>
         </span>
       )}
     </span>
