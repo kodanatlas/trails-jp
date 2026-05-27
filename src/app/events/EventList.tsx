@@ -458,14 +458,12 @@ function EventEntries({ eventId, isOpen, state, openTeams, onToggle, onToggleTea
                             <span className="w-16 flex-shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-center text-[10px] font-medium text-primary">
                               {entry.className || "-"}
                             </span>
-                            <span className="min-w-0 flex-shrink-0 truncate">{entry.name}</span>
-                            {entry.members && (
-                              <span className="truncate text-[10px] text-muted">（{entry.members}）</span>
-                            )}
+                            <span className="flex-shrink-0">{entry.name}</span>
                             {entry.affiliation && (
-                              <span className="ml-auto min-w-0 truncate text-right text-[10px] text-muted">
-                                {entry.affiliation}
-                              </span>
+                              <span className="min-w-0 truncate text-[10px] text-muted">{entry.affiliation}</span>
+                            )}
+                            {entry.members && (
+                              <span className="flex-shrink-0 truncate text-[10px] text-muted">（{entry.members}）</span>
                             )}
                           </li>
                         ))}
