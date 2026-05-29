@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { RANKING_CONFIGS } from "@/lib/scraper/rankings";
 import { RankingView } from "./RankingView";
+import rankingsMeta from "@/data/rankings-meta.json";
 
 export const metadata: Metadata = {
   title: "ランキング",
@@ -17,7 +18,7 @@ export default function RankingsPage() {
         </span>
       </div>
       <p className="mb-6 text-xs text-muted">
-        JOY から週次（水曜 03:00 JST）自動取得。
+        JOY から週次（水曜 03:00 JST）自動取得。最終更新: {rankingsMeta.generatedAtJst} JST
       </p>
       <RankingView rankingConfigs={RANKING_CONFIGS} />
     </div>

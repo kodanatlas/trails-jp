@@ -478,6 +478,20 @@ async function main() {
 console.log(`Fetching fresh rankings from JOY (all ${ALL_CLASSES.length} categories)...`);
 await fetchFreshRankings().catch((e: unknown) => console.warn("Ranking fetch failed, using local files:", e));
 
+// ランキング取得時刻を記録（ランキングページの「最終更新」表示用）。
+// ビルド = 週次取得タイミングなので、ビルド時刻 ≒ データ取得時刻。
+{
+  const now = new Date();
+  const generatedAtJst = now.toLocaleString("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit",
+  });
+  const metaPath = path.resolve(__dirname, "../src/data/rankings-meta.json");
+  fs.writeFileSync(metaPath, JSON.stringify({ generatedAt: now.toISOString(), generatedAtJst }, null, 2));
+  console.log(`✓ rankings-meta.json: ${generatedAtJst}`);
+}
+
 const files = fs.readdirSync(RANKINGS_DIR).filter((f) => f.endsWith(".json"));
 console.log(`Reading ${files.length} ranking files...`);
 
