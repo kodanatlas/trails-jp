@@ -36,6 +36,26 @@ export async function readEvents(): Promise<JOEEvent[]> {
 }
 
 /**
+ * イベントデータの最終同期時刻（sync-events cron の最新成功時刻）を返す。
+ * cron_log テーブルから取得。取得できなければ null。
+ */
+export async function getEventsLastSync(): Promise<string | null> {
+  try {
+    const { data } = await supabaseAdmin
+      .from("cron_log")
+      .select("created_at")
+      .eq("job_name", "sync-events")
+      .eq("status", "success")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return (data as { created_at?: string } | null)?.created_at ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * イベントデータを Supabase Storage に書き込む。
  */
 export async function writeEvents(events: JOEEvent[]): Promise<void> {
