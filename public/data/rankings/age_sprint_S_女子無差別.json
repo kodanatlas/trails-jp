@@ -37,6 +37,10 @@
       {
         "event_name": "2025-03-29\n                パークO滋賀",
         "points": 2993
+      },
+      {
+        "event_name": "2026-05-09\n                長岡OLC",
+        "points": 2949
       }
     ]
   },
@@ -70,6 +74,18 @@
       {
         "event_name": "2025-05-18\n                第122回上尾OLC",
         "points": 2876
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2918
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2900
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2912
       }
     ]
   },
@@ -77,7 +93,7 @@
     "rank": 3,
     "athlete_name": "稲毛 日菜子",
     "club": "練馬OLC",
-    "total_points": 8856.8,
+    "total_points": 8859.3,
     "is_active": true,
     "event_scores": [
       {
@@ -107,6 +123,10 @@
       {
         "event_name": "2025-09-13\n                第124回上尾OLC",
         "points": 2980
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2917
       }
     ]
   },
@@ -114,7 +134,7 @@
     "rank": 4,
     "athlete_name": "松本 萌恵",
     "club": "OLP兵庫",
-    "total_points": 8823.6,
+    "total_points": 8818.9,
     "is_active": true,
     "event_scores": [
       {
@@ -148,48 +168,55 @@
       {
         "event_name": "2025-03-29\n                パークO滋賀",
         "points": 2876
-      }
-    ]
-  },
-  {
-    "rank": 5,
-    "athlete_name": "LINKUANYU",
-    "club": "-",
-    "total_points": 8812.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 3023
       },
       {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2985
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2832
       },
       {
-        "event_name": "補完1",
-        "points": 2804
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2881
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2869
       }
     ]
   },
   {
     "rank": 6,
-    "athlete_name": "増澤 すず",
-    "club": "Moxina OK",
-    "total_points": 8747.1,
+    "athlete_name": "柴﨑 愛有",
+    "club": "練馬OLC",
+    "total_points": 8739.4,
     "is_active": true,
     "event_scores": [
       {
+        "event_name": "2026-02-21\n                千葉大大会",
+        "points": 2729
+      },
+      {
         "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2969
+        "points": 2936
       },
       {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 2893
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2848
       },
       {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2886
+        "event_name": "2025-10-19\n                浦高記念大会",
+        "points": 2897
+      },
+      {
+        "event_name": "2025-09-13\n                第124回上尾OLC",
+        "points": 2862
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2906
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2822
       }
     ]
   },
@@ -220,11 +247,48 @@
   },
   {
     "rank": 8,
+    "athlete_name": "中舘 美卯",
+    "club": "KOLC",
+    "total_points": 8726,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2925
+      },
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2921
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2880
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2867
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2877
+      },
+      {
+        "event_name": "2025-05-18\n                第122回上尾OLC",
+        "points": 2857
+      }
+    ]
+  },
+  {
+    "rank": 9,
     "athlete_name": "小野塚 智美",
-    "club": "筑波大学3",
+    "club": "筑波大学",
     "total_points": 8711.1,
     "is_active": true,
     "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2763
+      },
       {
         "event_name": "2026-02-08\n                全日本スプリント",
         "points": 2948
@@ -260,39 +324,47 @@
     ]
   },
   {
-    "rank": 9,
-    "athlete_name": "柴﨑 愛有",
-    "club": "練馬OLC",
-    "total_points": 8695.6,
+    "rank": 10,
+    "athlete_name": "川瀬 智尋",
+    "club": "OLP兵庫/羅針盤",
+    "total_points": 8644.9,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-21\n                千葉大大会",
-        "points": 2729
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2760
       },
       {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2936
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2781
       },
       {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2848
+        "event_name": "2026-02-28\n                パークOin関西2025",
+        "points": 2835
       },
       {
-        "event_name": "2025-10-19\n                浦高記念大会",
-        "points": 2897
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2896
       },
       {
-        "event_name": "2025-09-13\n                第124回上尾OLC",
-        "points": 2862
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2874
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2875
+      },
+      {
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2798
       }
     ]
   },
   {
-    "rank": 10,
+    "rank": 11,
     "athlete_name": "阿部 悠",
     "club": "ES関東C",
-    "total_points": 8680.1,
+    "total_points": 8626.2,
     "is_active": true,
     "event_scores": [
       {
@@ -318,76 +390,118 @@
       {
         "event_name": "2025-05-03\n                島根2daysスプリント",
         "points": 2875
-      }
-    ]
-  },
-  {
-    "rank": 11,
-    "athlete_name": "中舘 美卯",
-    "club": "横浜国立大学3",
-    "total_points": 8678,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2921
       },
       {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2880
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2867
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2877
-      },
-      {
-        "event_name": "2025-05-18\n                第122回上尾OLC",
-        "points": 2857
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2810
       }
     ]
   },
   {
     "rank": 12,
-    "athlete_name": "川瀬 智尋",
-    "club": "奈良女子大学4",
-    "total_points": 8674.3,
+    "athlete_name": "鷲津 加子",
+    "club": "青葉会20",
+    "total_points": 8609.1,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-28\n                パークOin関西2025",
-        "points": 2835
-      },
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2896
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2834
       },
       {
         "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2874
+        "points": 2883
       },
       {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2875
+        "event_name": "2025-10-19\n                浦高記念大会",
+        "points": 2756
       },
       {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2798
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2892
       },
       {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2903
+        "event_name": "2025-06-07\n                あだたら高原前日大会",
+        "points": 2709
       }
     ]
   },
   {
     "rank": 13,
+    "athlete_name": "増澤 すず",
+    "club": "Moxina OK",
+    "total_points": 8591.9,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2969
+      },
+      {
+        "event_name": "2026-01-11\n                沖縄大会day2",
+        "points": 2893
+      },
+      {
+        "event_name": "2025-05-03\n                島根2daysスプリント",
+        "points": 2886
+      },
+      {
+        "event_name": "補完1",
+        "points": 2731
+      }
+    ]
+  },
+  {
+    "rank": 14,
+    "athlete_name": "皆川 美紀子",
+    "club": "みちの会",
+    "total_points": 8551.5,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2876
+      },
+      {
+        "event_name": "2025-09-13\n                第124回上尾OLC",
+        "points": 2819
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2856
+      }
+    ]
+  },
+  {
+    "rank": 15,
+    "athlete_name": "砂田 優萌子",
+    "club": "トータス/練馬OLC",
+    "total_points": 8538.1,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-21\n                千葉大大会",
+        "points": 2832
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2811
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2889
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2817
+      }
+    ]
+  },
+  {
+    "rank": 16,
     "athlete_name": "松尾 晴乃",
     "club": "OLP兵庫",
-    "total_points": 8666,
+    "total_points": 8536.1,
     "is_active": true,
     "event_scores": [
       {
@@ -425,142 +539,141 @@
       {
         "event_name": "2025-03-29\n                パークO滋賀",
         "points": 2829
-      }
-    ]
-  },
-  {
-    "rank": 14,
-    "athlete_name": "鷲津 加子",
-    "club": "青葉会20",
-    "total_points": 8609.1,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2834
       },
       {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2883
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2774
       },
       {
-        "event_name": "2025-10-19\n                浦高記念大会",
-        "points": 2756
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2892
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2709
-      }
-    ]
-  },
-  {
-    "rank": 15,
-    "athlete_name": "皆川 美紀子",
-    "club": "みちの会",
-    "total_points": 8551.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2876
-      },
-      {
-        "event_name": "2025-09-13\n                第124回上尾OLC",
-        "points": 2819
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2856
-      }
-    ]
-  },
-  {
-    "rank": 16,
-    "athlete_name": "砂田 優萌子",
-    "club": "東大OLK",
-    "total_points": 8538.1,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-21\n                千葉大大会",
-        "points": 2832
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2811
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2889
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2817
-      },
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2811
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2830
       }
     ]
   },
   {
     "rank": 17,
-    "athlete_name": "沼田 奈津",
-    "club": "京大OLC",
-    "total_points": 8483.5,
+    "athlete_name": "落合 英那",
+    "club": "OLCルーパー",
+    "total_points": 8457.3,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-28\n                パークOin関西2025",
-        "points": 2757
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2752
       },
       {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2717
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2792
       },
       {
         "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2613
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2772
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2714
-      },
-      {
-        "event_name": "2025-09-13\n                第124回上尾OLC",
-        "points": 2611
-      },
-      {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2859
-      },
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
         "points": 2760
       },
       {
-        "event_name": "2025-04-19\n                白石島スプリント",
-        "points": 2821
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2841
       },
       {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2803
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2824
       }
     ]
   },
   {
     "rank": 18,
+    "athlete_name": "中西 澄海",
+    "club": "東北大OLC",
+    "total_points": 8454.6,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2816
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2843
+      },
+      {
+        "event_name": "2025-09-13\n                第124回上尾OLC",
+        "points": 2787
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2671
+      },
+      {
+        "event_name": "2025-06-07\n                あだたら高原前日大会",
+        "points": 2662
+      },
+      {
+        "event_name": "2025-03-29\n                パークO滋賀",
+        "points": 2665
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2773
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2796
+      }
+    ]
+  },
+  {
+    "rank": 19,
+    "athlete_name": "杉田 瑠菜",
+    "club": "京大OLC",
+    "total_points": 8453.2,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-28\n                パークOin関西2025",
+        "points": 2793
+      },
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2782
+      },
+      {
+        "event_name": "2026-01-11\n                沖縄大会day2",
+        "points": 2830
+      },
+      {
+        "event_name": "2026-01-10\n                沖縄大会day1",
+        "points": 2668
+      },
+      {
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2711
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2713
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2715
+      },
+      {
+        "event_name": "2025-08-10\n                新潟大会2025レース1",
+        "points": 2632
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2689
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2830
+      }
+    ]
+  },
+  {
+    "rank": 20,
     "athlete_name": "黒澤 香穂",
     "club": "京大OLC",
-    "total_points": 8464.4,
+    "total_points": 8437.9,
     "is_active": true,
     "event_scores": [
       {
@@ -602,110 +715,101 @@
       {
         "event_name": "2025-03-29\n                パークO滋賀",
         "points": 2733
-      }
-    ]
-  },
-  {
-    "rank": 19,
-    "athlete_name": "中西 澄海",
-    "club": "東北大OLC",
-    "total_points": 8445.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2816
       },
       {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2843
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2697
       },
       {
-        "event_name": "2025-09-13\n                第124回上尾OLC",
-        "points": 2787
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2742
       },
       {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2671
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2662
-      },
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2665
-      }
-    ]
-  },
-  {
-    "rank": 20,
-    "athlete_name": "落合 英那",
-    "club": "京大OLC",
-    "total_points": 8425.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2760
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2841
-      },
-      {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2824
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2723
       }
     ]
   },
   {
     "rank": 21,
-    "athlete_name": "杉田 瑠菜",
-    "club": "京大OLC",
-    "total_points": 8404.5,
+    "athlete_name": "佐々木 結佳",
+    "club": "早大OC/ES関東C",
+    "total_points": 8408.7,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-28\n                パークOin関西2025",
-        "points": 2793
-      },
-      {
         "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2782
+        "points": 2773
       },
       {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 2830
-      },
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2668
-      },
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2711
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2713
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2851
       },
       {
         "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2715
+        "points": 2748
       },
       {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2632
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2701
       },
       {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2689
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2784
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2737
       }
     ]
   },
   {
     "rank": 22,
+    "athlete_name": "沼田 奈津",
+    "club": "朱雀OK",
+    "total_points": 8387.8,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2692
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2704
+      },
+      {
+        "event_name": "2026-02-28\n                パークOin関西2025",
+        "points": 2757
+      },
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2717
+      },
+      {
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2613
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2772
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2714
+      },
+      {
+        "event_name": "2025-09-13\n                第124回上尾OLC",
+        "points": 2611
+      },
+      {
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2859
+      }
+    ]
+  },
+  {
+    "rank": 23,
     "athlete_name": "片岡 明日香",
     "club": "千葉大学4",
     "total_points": 8385.5,
@@ -734,33 +838,16 @@
     ]
   },
   {
-    "rank": 23,
-    "athlete_name": "佐々木 結佳",
-    "club": "早大OC/ES関東C",
-    "total_points": 8372.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2773
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2851
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2748
-      }
-    ]
-  },
-  {
     "rank": 24,
     "athlete_name": "中野 友貴",
-    "club": "名椙OLC",
+    "club": "OLCルーパー",
     "total_points": 8371.5,
     "is_active": true,
     "event_scores": [
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2515
+      },
       {
         "event_name": "2026-02-08\n                全日本スプリント",
         "points": 2880
@@ -798,10 +885,14 @@
   {
     "rank": 25,
     "athlete_name": "鈴木 万結",
-    "club": "日本女子大学3",
+    "club": "早大OC",
     "total_points": 8339.1,
     "is_active": true,
     "event_scores": [
+      {
+        "event_name": "2026-05-09\n                長岡OLC",
+        "points": 2770
+      },
       {
         "event_name": "2026-02-08\n                全日本スプリント",
         "points": 2738
@@ -827,10 +918,18 @@
   {
     "rank": 26,
     "athlete_name": "佐藤 若葉",
-    "club": "東北大学2",
+    "club": "東北大OLC",
     "total_points": 8329.1,
     "is_active": true,
     "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2689
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2710
+      },
       {
         "event_name": "2026-02-21\n                千葉大大会",
         "points": 2703
@@ -867,59 +966,9 @@
   },
   {
     "rank": 27,
-    "athlete_name": "樋口 佳那",
-    "club": "筑波大学院",
-    "total_points": 8328,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2787
-      },
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2898
-      },
-      {
-        "event_name": "補完1",
-        "points": 2643
-      }
-    ]
-  },
-  {
-    "rank": 28,
-    "athlete_name": "黄宜瑾",
-    "club": "台湾魔神",
-    "total_points": 8316.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2626
-      },
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2736
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2828
-      },
-      {
-        "event_name": "2025-05-18\n                第122回上尾OLC",
-        "points": 2715
-      },
-      {
-        "event_name": "2025-04-19\n                白石島スプリント",
-        "points": 2753
-      }
-    ]
-  },
-  {
-    "rank": 29,
     "athlete_name": "高木 優彩",
     "club": "京女OLC",
-    "total_points": 8306.4,
+    "total_points": 8319.2,
     "is_active": true,
     "event_scores": [
       {
@@ -965,6 +1014,88 @@
       {
         "event_name": "2025-03-29\n                パークO滋賀",
         "points": 2687
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2771
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2734
+      }
+    ]
+  },
+  {
+    "rank": 28,
+    "athlete_name": "小林 祐子",
+    "club": "青葉会/トータス",
+    "total_points": 8312,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2774
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2770
+      },
+      {
+        "event_name": "2025-05-03\n                島根2daysスプリント",
+        "points": 2740
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2769
+      }
+    ]
+  },
+  {
+    "rank": 29,
+    "athlete_name": "早坂 佳夏",
+    "club": "新潟大学",
+    "total_points": 8296.3,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-09\n                長岡OLC",
+        "points": 2755
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2707
+      },
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2741
+      },
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2705
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2799
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2636
+      },
+      {
+        "event_name": "2025-08-10\n                新潟大会2025レース1",
+        "points": 2403
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2742
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2726
+      },
+      {
+        "event_name": "2025-06-07\n                あだたら高原前日大会",
+        "points": 2661
       }
     ]
   },
@@ -1011,8 +1142,37 @@
   },
   {
     "rank": 31,
+    "athlete_name": "黄 宜瑾",
+    "club": "台湾魔神",
+    "total_points": 8285.9,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2722
+      },
+      {
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2626
+      },
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2736
+      },
+      {
+        "event_name": "2025-06-07\n                あだたら高原前日大会",
+        "points": 2828
+      },
+      {
+        "event_name": "2025-05-18\n                第122回上尾OLC",
+        "points": 2715
+      }
+    ]
+  },
+  {
+    "rank": 32,
     "athlete_name": "山本 美沙",
-    "club": "筑波大学1",
+    "club": "筑波大学",
     "total_points": 8283.5,
     "is_active": true,
     "event_scores": [
@@ -1039,96 +1199,63 @@
     ]
   },
   {
-    "rank": 32,
-    "athlete_name": "小林 祐子",
-    "club": "青葉会/トータス",
-    "total_points": 8282.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2774
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2770
-      },
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2740
-      }
-    ]
-  },
-  {
     "rank": 33,
-    "athlete_name": "早坂 佳夏",
-    "club": "新潟大学2",
-    "total_points": 8282.8,
+    "athlete_name": "羽岡 美紀",
+    "club": "朱雀OK",
+    "total_points": 8239.5,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2741
+        "event_name": "2026-02-28\n                パークOin関西2025",
+        "points": 2756
       },
       {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2705
+        "event_name": "補完1",
+        "points": 2556
       },
       {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2799
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2773
       },
       {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2636
-      },
-      {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2403
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2742
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2726
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2661
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2710
       }
     ]
   },
   {
     "rank": 34,
-    "athlete_name": "大音 紗希",
-    "club": "北海道大学4",
-    "total_points": 8237,
+    "athlete_name": "樋口 佳那",
+    "club": "筑波大学院",
+    "total_points": 8232.5,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2752
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2648
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2787
       },
       {
         "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2749
+        "points": 2898
       },
       {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2736
+        "event_name": "補完1",
+        "points": 2643
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2756
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2690
       }
     ]
   },
   {
     "rank": 35,
     "athlete_name": "佐塚 真奈",
-    "club": "北海道大学3",
+    "club": "北大OLC",
     "total_points": 8229.4,
     "is_active": true,
     "event_scores": [
@@ -1189,6 +1316,10 @@
       {
         "event_name": "2025-06-07\n                あだたら高原前日大会",
         "points": 2781
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2590
       }
     ]
   },
@@ -1239,8 +1370,29 @@
   },
   {
     "rank": 39,
+    "athlete_name": "大石　遥",
+    "club": "静岡OLC",
+    "total_points": 8210,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-09\n                長岡OLC",
+        "points": 2655
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2785
+      },
+      {
+        "event_name": "2025-11-16\n                新潟大大会",
+        "points": 2769
+      }
+    ]
+  },
+  {
+    "rank": 40,
     "athlete_name": "牧 依瑠香",
-    "club": "早稲田大学4",
+    "club": "入間市OLC",
     "total_points": 8203.5,
     "is_active": true,
     "event_scores": [
@@ -1259,48 +1411,6 @@
       {
         "event_name": "2025-06-07\n                あだたら高原前日大会",
         "points": 2666
-      }
-    ]
-  },
-  {
-    "rank": 40,
-    "athlete_name": "LEUNGKAKI",
-    "club": "-",
-    "total_points": 8196,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 2757
-      },
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2841
-      },
-      {
-        "event_name": "補完1",
-        "points": 2599
-      }
-    ]
-  },
-  {
-    "rank": 41,
-    "athlete_name": "太田 来和",
-    "club": "大阪大学3",
-    "total_points": 8171.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2762
-      },
-      {
-        "event_name": "2025-04-19\n                白石島スプリント",
-        "points": 2820
-      },
-      {
-        "event_name": "補完1",
-        "points": 2591
       }
     ]
   },
@@ -1384,80 +1494,9 @@
   },
   {
     "rank": 44,
-    "athlete_name": "石井 百花",
-    "club": "OLP兵庫",
-    "total_points": 8156.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2654
-      },
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2621
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2700
-      },
-      {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2552
-      },
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2802
-      }
-    ]
-  },
-  {
-    "rank": 45,
-    "athlete_name": "大石 遥",
-    "club": "静岡OLC",
-    "total_points": 8131.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2785
-      },
-      {
-        "event_name": "2025-11-16\n                新潟大大会",
-        "points": 2769
-      },
-      {
-        "event_name": "補完1",
-        "points": 2577
-      }
-    ]
-  },
-  {
-    "rank": 46,
-    "athlete_name": "森下 遥",
-    "club": "京葉OLクラブ/静岡OLC",
-    "total_points": 8126,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2734
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2817
-      },
-      {
-        "event_name": "補完1",
-        "points": 2575
-      }
-    ]
-  },
-  {
-    "rank": 47,
     "athlete_name": "野村 優衣",
     "club": "奈良女OLC/OLP兵庫",
-    "total_points": 8110.8,
+    "total_points": 8128.1,
     "is_active": true,
     "event_scores": [
       {
@@ -1487,16 +1526,78 @@
       {
         "event_name": "2025-03-29\n                パークO滋賀",
         "points": 2624
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2588
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2715
       }
     ]
   },
   {
-    "rank": 48,
+    "rank": 45,
+    "athlete_name": "森下 遥",
+    "club": "京葉OLクラブ/静岡OLC",
+    "total_points": 8126,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2734
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2817
+      },
+      {
+        "event_name": "補完1",
+        "points": 2575
+      }
+    ]
+  },
+  {
+    "rank": 46,
+    "athlete_name": "堀田 祐子",
+    "club": "青葉会/トータス",
+    "total_points": 8107.7,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2831
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2707
+      },
+      {
+        "event_name": "補完1",
+        "points": 2569
+      }
+    ]
+  },
+  {
+    "rank": 47,
     "athlete_name": "杉野 舞",
-    "club": "東北大学2",
+    "club": "東北大OLC",
     "total_points": 8091,
     "is_active": true,
     "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2633
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2616
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2630
+      },
       {
         "event_name": "2026-02-21\n                千葉大大会",
         "points": 2650
@@ -1512,6 +1613,27 @@
       {
         "event_name": "2025-07-19\n                岩手大会Day1",
         "points": 2709
+      }
+    ]
+  },
+  {
+    "rank": 48,
+    "athlete_name": "大音 紗希",
+    "club": "北大OLC",
+    "total_points": 8089.9,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2689
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2752
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2648
       }
     ]
   },
@@ -1539,10 +1661,18 @@
   {
     "rank": 50,
     "athlete_name": "梅村 紗矢",
-    "club": "東北大学",
+    "club": "東北大OLC",
     "total_points": 8070.8,
     "is_active": true,
     "event_scores": [
+      {
+        "event_name": "2026-05-09\n                長岡OLC",
+        "points": 2595
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2621
+      },
       {
         "event_name": "2025-11-22\n                インカレスプリント",
         "points": 2724
@@ -1559,8 +1689,74 @@
   },
   {
     "rank": 51,
+    "athlete_name": "石井 百花",
+    "club": "OLP兵庫",
+    "total_points": 8059.8,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2654
+      },
+      {
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2621
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2700
+      },
+      {
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2552
+      },
+      {
+        "event_name": "2025-03-29\n                パークO滋賀",
+        "points": 2802
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2705
+      }
+    ]
+  },
+  {
+    "rank": 52,
+    "athlete_name": "寺岡 友愛",
+    "club": "奈良女OLC",
+    "total_points": 8050.6,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-28\n                パークOin関西2025",
+        "points": 2650
+      },
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2476
+      },
+      {
+        "event_name": "補完1",
+        "points": 2363
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2681
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2604
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2719
+      }
+    ]
+  },
+  {
+    "rank": 53,
     "athlete_name": "西村 美穂",
-    "club": "東京理科大学4",
+    "club": "ES関東クラブ",
     "total_points": 8038.4,
     "is_active": true,
     "event_scores": [
@@ -1579,12 +1775,119 @@
     ]
   },
   {
-    "rank": 52,
+    "rank": 54,
+    "athlete_name": "堀江 花歩",
+    "club": "京大OLC",
+    "total_points": 8033.9,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2555
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2583
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2644
+      },
+      {
+        "event_name": "2025-08-10\n                新潟大会2025レース1",
+        "points": 2606
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2672
+      },
+      {
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2642
+      },
+      {
+        "event_name": "2025-03-29\n                パークO滋賀",
+        "points": 2517
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2718
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2634
+      }
+    ]
+  },
+  {
+    "rank": 55,
+    "athlete_name": "萬年 環",
+    "club": "東北大OLC",
+    "total_points": 8025.2,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2605
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2579
+      },
+      {
+        "event_name": "2026-02-21\n                千葉大大会",
+        "points": 2562
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2673
+      },
+      {
+        "event_name": "2025-06-07\n                あだたら高原前日大会",
+        "points": 2748
+      }
+    ]
+  },
+  {
+    "rank": 56,
+    "athlete_name": "荒谷 萌音",
+    "club": "北海道大学",
+    "total_points": 8021.6,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2584
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2639
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2535
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2732
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2651
+      }
+    ]
+  },
+  {
+    "rank": 57,
     "athlete_name": "田谷 夏姫",
-    "club": "筑波大学2",
+    "club": "-",
     "total_points": 8020.3,
     "is_active": true,
     "event_scores": [
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2609
+      },
       {
         "event_name": "2026-02-21\n                千葉大大会",
         "points": 2611
@@ -1600,7 +1903,7 @@
     ]
   },
   {
-    "rank": 53,
+    "rank": 58,
     "athlete_name": "香西 彩名",
     "club": "東北大OLC",
     "total_points": 8019.6,
@@ -1621,9 +1924,42 @@
     ]
   },
   {
-    "rank": 54,
+    "rank": 59,
+    "athlete_name": "小林 美咲",
+    "club": "ES関東C/まめ",
+    "total_points": 8016.3,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-21\n                千葉大大会",
+        "points": 2750
+      },
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2590
+      },
+      {
+        "event_name": "2025-08-10\n                新潟大会2025レース1",
+        "points": 2531
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2555
+      },
+      {
+        "event_name": "2025-03-29\n                パークO滋賀",
+        "points": 2500
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2676
+      }
+    ]
+  },
+  {
+    "rank": 60,
     "athlete_name": "古谷 那奈",
-    "club": "千葉大学4",
+    "club": "千葉大OLC",
     "total_points": 8007.4,
     "is_active": true,
     "event_scores": [
@@ -1646,31 +1982,126 @@
     ]
   },
   {
-    "rank": 55,
-    "athlete_name": "萬年 環",
-    "club": "東北大学2",
-    "total_points": 7982.6,
+    "rank": 61,
+    "athlete_name": "小川 奈菜",
+    "club": "-",
+    "total_points": 8006.7,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-21\n                千葉大大会",
-        "points": 2562
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2774
       },
       {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2673
+        "event_name": "補完1",
+        "points": 2536
       },
       {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2748
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2697
       }
     ]
   },
   {
-    "rank": 56,
+    "rank": 62,
+    "athlete_name": "世良 史佳",
+    "club": "入間市OLC",
+    "total_points": 7994.3,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2753
+      },
+      {
+        "event_name": "補完1",
+        "points": 2531
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2710
+      }
+    ]
+  },
+  {
+    "rank": 63,
+    "athlete_name": "中西 彩寧",
+    "club": "紅萠会",
+    "total_points": 7994,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2674
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2663
+      },
+      {
+        "event_name": "2026-02-28\n                パークOin関西2025",
+        "points": 2552
+      },
+      {
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2614
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2657
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2598
+      },
+      {
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2655
+      }
+    ]
+  },
+  {
+    "rank": 64,
+    "athlete_name": "手塚 雛姫",
+    "club": "東北大OLC",
+    "total_points": 7991,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-03-22\n                第128回上尾OLC",
+        "points": 2674
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2604
+      },
+      {
+        "event_name": "補完1",
+        "points": 2439
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2599
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2635
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2670
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2647
+      }
+    ]
+  },
+  {
+    "rank": 65,
     "athlete_name": "須藤 友絵",
     "club": "入間市OLC",
-    "total_points": 7974.9,
+    "total_points": 7990.5,
     "is_active": true,
     "event_scores": [
       {
@@ -1688,11 +2119,19 @@
       {
         "event_name": "2025-05-03\n                島根2daysスプリント",
         "points": 2637
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2656
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2629
       }
     ]
   },
   {
-    "rank": 57,
+    "rank": 66,
     "athlete_name": "小島 優唯",
     "club": "-",
     "total_points": 7973,
@@ -1725,7 +2164,40 @@
     ]
   },
   {
-    "rank": 58,
+    "rank": 67,
+    "athlete_name": "齋藤 夢",
+    "club": "奈良女OLC/京都OLC",
+    "total_points": 7968.7,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2493
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2631
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2569
+      },
+      {
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2523
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2628
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2710
+      }
+    ]
+  },
+  {
+    "rank": 68,
     "athlete_name": "佐野 響",
     "club": "デジタル庁/桐嶺会",
     "total_points": 7968.3,
@@ -1758,75 +2230,17 @@
       {
         "event_name": "2025-05-18\n                第122回上尾OLC",
         "points": 2676
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2603
       }
     ]
   },
   {
-    "rank": 59,
-    "athlete_name": "堀江 花歩",
-    "club": "京大OLC",
-    "total_points": 7957.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2555
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2583
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2644
-      },
-      {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2606
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2672
-      },
-      {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2642
-      },
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2517
-      }
-    ]
-  },
-  {
-    "rank": 60,
-    "athlete_name": "荒谷 萌音",
-    "club": "北海道大学",
-    "total_points": 7955.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2584
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2639
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2535
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2732
-      }
-    ]
-  },
-  {
-    "rank": 61,
+    "rank": 69,
     "athlete_name": "徳倉 朋夏",
-    "club": "筑波大学体育会オリエンテーリング部",
+    "club": "筑波大学",
     "total_points": 7952.1,
     "is_active": true,
     "event_scores": [
@@ -1861,7 +2275,7 @@
     ]
   },
   {
-    "rank": 62,
+    "rank": 70,
     "athlete_name": "山添 葵",
     "club": "京女OLC",
     "total_points": 7947.6,
@@ -1894,44 +2308,15 @@
       {
         "event_name": "2025-04-19\n                白石島スプリント",
         "points": 2491
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2565
       }
     ]
   },
   {
-    "rank": 63,
-    "athlete_name": "中西 彩寧",
-    "club": "京都大学3",
-    "total_points": 7942.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-28\n                パークOin関西2025",
-        "points": 2552
-      },
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2614
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2657
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2598
-      },
-      {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2655
-      },
-      {
-        "event_name": "2025-04-19\n                白石島スプリント",
-        "points": 2630
-      }
-    ]
-  },
-  {
-    "rank": 64,
+    "rank": 71,
     "athlete_name": "冨田 明花",
     "club": "鳩の会/練馬OLC",
     "total_points": 7941.7,
@@ -1964,64 +2349,221 @@
     ]
   },
   {
-    "rank": 65,
-    "athlete_name": "久島 典子",
-    "club": "京大OLC",
-    "total_points": 7918.5,
+    "rank": 72,
+    "athlete_name": "尾本 絢子",
+    "club": "北大OLC",
+    "total_points": 7940.2,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2560
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2548
       },
       {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2483
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2682
       },
       {
-        "event_name": "2025-04-19\n                白石島スプリント",
-        "points": 2686
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2641
       },
       {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2672
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2595
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2618
       }
     ]
   },
   {
-    "rank": 66,
-    "athlete_name": "小林 美咲",
-    "club": "ES関東C/まめ",
-    "total_points": 7894.6,
+    "rank": 73,
+    "athlete_name": "柳田 紗希",
+    "club": "KOLC",
+    "total_points": 7914.1,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-21\n                千葉大大会",
-        "points": 2750
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2625
       },
       {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2590
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2622
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2597
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2595
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2666
+      }
+    ]
+  },
+  {
+    "rank": 75,
+    "athlete_name": "番場 洋子",
+    "club": "-",
+    "total_points": 7880.7,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-10-19\n                浦高記念大会",
+        "points": 2701
+      },
+      {
+        "event_name": "2025-05-18\n                第122回上尾OLC",
+        "points": 2686
+      },
+      {
+        "event_name": "補完1",
+        "points": 2494
+      }
+    ]
+  },
+  {
+    "rank": 76,
+    "athlete_name": "横井 里乃",
+    "club": "静岡OLC",
+    "total_points": 7875.4,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2597
+      },
+      {
+        "event_name": "補完1",
+        "points": 2397
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2633
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2645
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2593
+      }
+    ]
+  },
+  {
+    "rank": 77,
+    "athlete_name": "古荘 雪羽",
+    "club": "KOLC",
+    "total_points": 7873.4,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2657
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2658
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2558
+      }
+    ]
+  },
+  {
+    "rank": 78,
+    "athlete_name": "小畑 萌",
+    "club": "東大OLK",
+    "total_points": 7872.8,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2583
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2693
+      },
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2517
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2596
+      },
+      {
+        "event_name": "2025-10-19\n                浦高記念大会",
+        "points": 2500
+      },
+      {
+        "event_name": "2025-09-13\n                第124回上尾OLC",
+        "points": 2488
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2517
       },
       {
         "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2531
+        "points": 2369
       },
       {
         "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2555
+        "points": 2357
+      }
+    ]
+  },
+  {
+    "rank": 79,
+    "athlete_name": "佐藤 愛莉",
+    "club": "北大OLC",
+    "total_points": 7861.6,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2616
       },
       {
-        "event_name": "2025-03-29\n                パークO滋賀",
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2604
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2629
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2562
+      },
+      {
+        "event_name": "2025-05-03\n                島根2daysスプリント",
+        "points": 2631
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2616
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
         "points": 2500
       }
     ]
   },
   {
-    "rank": 67,
+    "rank": 80,
     "athlete_name": "溝端  昭子",
     "club": "入間市OLC",
-    "total_points": 7888,
+    "total_points": 7852.6,
     "is_active": true,
     "event_scores": [
       {
@@ -2047,52 +2589,300 @@
     ]
   },
   {
-    "rank": 68,
-    "athlete_name": "香取 瑞穂",
-    "club": "京葉OLクラブ",
-    "total_points": 7886.2,
+    "rank": 81,
+    "athlete_name": "山本 佳奈",
+    "club": "練馬OLC",
+    "total_points": 7850.4,
     "is_active": true,
     "event_scores": [
       {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2531
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2710
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2610
+      }
+    ]
+  },
+  {
+    "rank": 82,
+    "athlete_name": "山崎 有里彩",
+    "club": "慶應義塾大学4",
+    "total_points": 7848.5,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2643
+      },
+      {
+        "event_name": "2025-08-10\n                新潟大会2025レース1",
+        "points": 2648
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2558
+      }
+    ]
+  },
+  {
+    "rank": 83,
+    "athlete_name": "半田 博子",
+    "club": "-",
+    "total_points": 7841,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-28\n                パークOin関西2025",
+        "points": 2614
+      },
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2567
+      },
+      {
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2499
+      },
+      {
         "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2759
+        "points": 2660
+      },
+      {
+        "event_name": "2025-03-29\n                パークO滋賀",
+        "points": 2590
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2543
+      }
+    ]
+  },
+  {
+    "rank": 84,
+    "athlete_name": "金道 志野",
+    "club": "横浜OLクラブ",
+    "total_points": 7836.3,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2617
+      },
+      {
+        "event_name": "2026-01-11\n                沖縄大会day2",
+        "points": 2559
+      },
+      {
+        "event_name": "2026-01-10\n                沖縄大会day1",
+        "points": 2479
+      },
+      {
+        "event_name": "2025-09-13\n                第124回上尾OLC",
+        "points": 2593
+      },
+      {
+        "event_name": "2025-08-10\n                新潟大会2025レース1",
+        "points": 2627
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2496
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2559
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2516
+      }
+    ]
+  },
+  {
+    "rank": 85,
+    "athlete_name": "菊池 彩実",
+    "club": "横浜市立大学3",
+    "total_points": 7827.4,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2558
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2628
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2641
+      }
+    ]
+  },
+  {
+    "rank": 86,
+    "athlete_name": "吉澤 諒子",
+    "club": "千葉大OLC",
+    "total_points": 7825.5,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2624
+      },
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2537
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2205
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2419
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2584
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2617
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2558
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2563
+      }
+    ]
+  },
+  {
+    "rank": 87,
+    "athlete_name": "岩城 美奈",
+    "club": "青葉会20",
+    "total_points": 7795.8,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2642
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2688
+      },
+      {
+        "event_name": "補完1",
+        "points": 2465
+      }
+    ]
+  },
+  {
+    "rank": 88,
+    "athlete_name": "渡部 知優",
+    "club": "宮城学院女子大学4",
+    "total_points": 7789,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2418
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2540
+      },
+      {
+        "event_name": "2025-10-19\n                浦高記念大会",
+        "points": 2511
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2649
       },
       {
         "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2632
-      },
-      {
-        "event_name": "補完1",
-        "points": 2495
+        "points": 2600
       }
     ]
   },
   {
-    "rank": 69,
-    "athlete_name": "番場 洋子",
-    "club": "-",
-    "total_points": 7880.7,
+    "rank": 89,
+    "athlete_name": "小倉 歩実",
+    "club": "早大OC",
+    "total_points": 7770.1,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-10-19\n                浦高記念大会",
-        "points": 2701
-      },
-      {
-        "event_name": "2025-05-18\n                第122回上尾OLC",
-        "points": 2686
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2553
       },
       {
         "event_name": "補完1",
-        "points": 2494
+        "points": 2353
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2623
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2594
       }
     ]
   },
   {
-    "rank": 70,
+    "rank": 90,
+    "athlete_name": "辻 悠佳",
+    "club": "JDOA/入間市OLC",
+    "total_points": 7770.1,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-21\n                千葉大大会",
+        "points": 2594
+      },
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2417
+      },
+      {
+        "event_name": "2025-09-13\n                北大大会Day1",
+        "points": 2533
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2594
+      },
+      {
+        "event_name": "2025-05-18\n                第122回上尾OLC",
+        "points": 2582
+      },
+      {
+        "event_name": "2025-05-03\n                島根2daysスプリント",
+        "points": 2659
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2510
+      }
+    ]
+  },
+  {
+    "rank": 91,
     "athlete_name": "佐藤 奈穂",
     "club": "広大OLC",
-    "total_points": 7879.8,
+    "total_points": 7769.3,
     "is_active": true,
     "event_scores": [
       {
@@ -2122,293 +2912,93 @@
       {
         "event_name": "2025-04-19\n                白石島スプリント",
         "points": 2428
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2573
       }
     ]
   },
   {
-    "rank": 71,
-    "athlete_name": "佐藤 愛莉",
-    "club": "北大OLC",
-    "total_points": 7876.4,
+    "rank": 92,
+    "athlete_name": "中島 美結",
+    "club": "立命OLC",
+    "total_points": 7768.4,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2541
+      },
+      {
+        "event_name": "2025-08-10\n                新潟大会2025レース1",
+        "points": 2570
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2591
+      },
+      {
+        "event_name": "2025-04-19\n                白石島スプリント",
+        "points": 2492
+      },
+      {
+        "event_name": "2025-03-29\n                パークO滋賀",
+        "points": 2527
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2608
+      }
+    ]
+  },
+  {
+    "rank": 93,
+    "athlete_name": "和田 向日葵",
+    "club": "東大OLK",
+    "total_points": 7762.7,
     "is_active": true,
     "event_scores": [
       {
         "event_name": "2025-12-06\n                東北大前日",
-        "points": 2616
+        "points": 2683
       },
       {
         "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2604
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2629
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2562
-      },
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2631
-      }
-    ]
-  },
-  {
-    "rank": 72,
-    "athlete_name": "古荘 雪羽",
-    "club": "横浜市立大学3",
-    "total_points": 7873.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2657
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2658
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2558
-      }
-    ]
-  },
-  {
-    "rank": 73,
-    "athlete_name": "半田 博子",
-    "club": "-",
-    "total_points": 7864,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-28\n                パークOin関西2025",
-        "points": 2614
-      },
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2567
-      },
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2499
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2660
-      },
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2590
-      }
-    ]
-  },
-  {
-    "rank": 74,
-    "athlete_name": "谷川 理恵",
-    "club": "京都OLC",
-    "total_points": 7856.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2664
-      },
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2707
+        "points": 2626
       },
       {
         "event_name": "補完1",
-        "points": 2486
+        "points": 2454
       }
     ]
   },
   {
-    "rank": 75,
-    "athlete_name": "山本 佳奈",
-    "club": "東京理科大学4",
-    "total_points": 7850.4,
+    "rank": 94,
+    "athlete_name": "加納 尚子",
+    "club": "朱雀OK",
+    "total_points": 7761.3,
     "is_active": true,
     "event_scores": [
       {
         "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2531
+        "points": 2606
       },
       {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2710
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2610
-      }
-    ]
-  },
-  {
-    "rank": 76,
-    "athlete_name": "山崎 有里彩",
-    "club": "慶應義塾大学4",
-    "total_points": 7848.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2643
-      },
-      {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2648
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2558
-      }
-    ]
-  },
-  {
-    "rank": 77,
-    "athlete_name": "辻 悠佳",
-    "club": "JDOA/入間市OLC",
-    "total_points": 7847,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-21\n                千葉大大会",
-        "points": 2594
-      },
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2417
-      },
-      {
-        "event_name": "2025-09-13\n                北大大会Day1",
-        "points": 2533
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2594
-      },
-      {
-        "event_name": "2025-05-18\n                第122回上尾OLC",
-        "points": 2582
-      },
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2659
-      }
-    ]
-  },
-  {
-    "rank": 78,
-    "athlete_name": "金道 志野",
-    "club": "横浜OLクラブ",
-    "total_points": 7836.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2617
-      },
-      {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 2559
-      },
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2479
-      },
-      {
-        "event_name": "2025-09-13\n                第124回上尾OLC",
-        "points": 2593
-      },
-      {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2627
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2496
-      }
-    ]
-  },
-  {
-    "rank": 79,
-    "athlete_name": "菊池 彩実",
-    "club": "横浜市立大学3",
-    "total_points": 7827.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2558
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2628
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2641
-      }
-    ]
-  },
-  {
-    "rank": 80,
-    "athlete_name": "岩城 美奈",
-    "club": "青葉会20",
-    "total_points": 7795.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2642
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2688
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2701
       },
       {
         "event_name": "補完1",
-        "points": 2465
+        "points": 2454
       }
     ]
   },
   {
-    "rank": 81,
-    "athlete_name": "渡部 知優",
-    "club": "宮城学院女子大学4",
-    "total_points": 7789,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2418
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2540
-      },
-      {
-        "event_name": "2025-10-19\n                浦高記念大会",
-        "points": 2511
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2649
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2600
-      }
-    ]
-  },
-  {
-    "rank": 82,
+    "rank": 95,
     "athlete_name": "渡辺 円香",
     "club": "ES関東C",
-    "total_points": 7769.3,
+    "total_points": 7748.8,
     "is_active": true,
     "event_scores": [
       {
@@ -2446,53 +3036,19 @@
       {
         "event_name": "2025-05-03\n                島根2daysスプリント",
         "points": 2565
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2391
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2502
       }
     ]
   },
   {
-    "rank": 83,
-    "athlete_name": "和田 向日葵",
-    "club": "法政大学3",
-    "total_points": 7762.7,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2683
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2626
-      },
-      {
-        "event_name": "補完1",
-        "points": 2454
-      }
-    ]
-  },
-  {
-    "rank": 84,
-    "athlete_name": "加納 尚子",
-    "club": "朱雀OK",
-    "total_points": 7761.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2606
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2701
-      },
-      {
-        "event_name": "補完1",
-        "points": 2454
-      }
-    ]
-  },
-  {
-    "rank": 85,
+    "rank": 96,
     "athlete_name": "湯地 晶子",
     "club": "東大OLK",
     "total_points": 7746.5,
@@ -2517,128 +3073,173 @@
     ]
   },
   {
-    "rank": 86,
-    "athlete_name": "遠藤 睦実",
-    "club": "京都女子大学 3",
-    "total_points": 7735.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2469
-      },
-      {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2598
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2449
-      },
-      {
-        "event_name": "2025-04-19\n                白石島スプリント",
-        "points": 2669
-      }
-    ]
-  },
-  {
-    "rank": 87,
-    "athlete_name": "齋藤 夢",
-    "club": "奈良女OLC/京都OLC",
-    "total_points": 7722.8,
+    "rank": 97,
+    "athlete_name": "遠藤 永子",
+    "club": "千葉大OLC",
+    "total_points": 7731.7,
     "is_active": true,
     "event_scores": [
       {
         "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2493
+        "points": 2634
       },
       {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2631
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2569
-      },
-      {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2523
-      }
-    ]
-  },
-  {
-    "rank": 88,
-    "athlete_name": "手塚 雛姫",
-    "club": "東北大OLC",
-    "total_points": 7718.1,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-03-22\n                第128回上尾OLC",
-        "points": 2674
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2604
-      },
-      {
-        "event_name": "補完1",
-        "points": 2439
-      }
-    ]
-  },
-  {
-    "rank": 89,
-    "athlete_name": "中島 美結",
-    "club": "立命OLC",
-    "total_points": 7701.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2541
-      },
-      {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2570
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2591
-      },
-      {
-        "event_name": "2025-04-19\n                白石島スプリント",
-        "points": 2492
-      },
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2527
-      }
-    ]
-  },
-  {
-    "rank": 90,
-    "athlete_name": "柳田 紗希",
-    "club": "横浜国立大学2",
-    "total_points": 7692.1,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2595
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2182
       },
       {
         "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2666
+        "points": 2082
       },
       {
-        "event_name": "補完1",
-        "points": 2431
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2562
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2536
       }
     ]
   },
   {
-    "rank": 91,
+    "rank": 98,
+    "athlete_name": "南 美羽",
+    "club": "千葉大OLC",
+    "total_points": 7723.1,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2564
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2481
+      },
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2678
+      },
+      {
+        "event_name": "2025-05-18\n                第122回上尾OLC",
+        "points": 2130
+      }
+    ]
+  },
+  {
+    "rank": 99,
+    "athlete_name": "梅本 咲希",
+    "club": "静大OLC/静岡OLC",
+    "total_points": 7707.7,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2698
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2574
+      },
+      {
+        "event_name": "補完1",
+        "points": 2436
+      }
+    ]
+  },
+  {
+    "rank": 100,
+    "athlete_name": "吉岡 実沙音",
+    "club": "早大OC",
+    "total_points": 7703.8,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2528
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2522
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2431
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2654
+      }
+    ]
+  },
+  {
+    "rank": 102,
+    "athlete_name": "浅野 涼花",
+    "club": "名椙OLC",
+    "total_points": 7675.1,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2541
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2552
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2557
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2566
+      },
+      {
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2480
+      }
+    ]
+  },
+  {
+    "rank": 103,
+    "athlete_name": "森 彩葉",
+    "club": "東大OLK",
+    "total_points": 7675,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2571
+      },
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2567
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2537
+      },
+      {
+        "event_name": "2025-09-13\n                北大大会Day1",
+        "points": 2367
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2419
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2357
+      },
+      {
+        "event_name": "2025-06-07\n                あだたら高原前日大会",
+        "points": 2215
+      }
+    ]
+  },
+  {
+    "rank": 104,
     "athlete_name": "田中 志歩",
     "club": "東大OLK",
     "total_points": 7668.4,
@@ -2671,7 +3272,36 @@
     ]
   },
   {
-    "rank": 92,
+    "rank": 105,
+    "athlete_name": "高橋 民奈",
+    "club": "茨城大学",
+    "total_points": 7658.9,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2535
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2569
+      },
+      {
+        "event_name": "2025-09-13\n                第124回上尾OLC",
+        "points": 2555
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2433
+      },
+      {
+        "event_name": "2025-06-07\n                あだたら高原前日大会",
+        "points": 2453
+      }
+    ]
+  },
+  {
+    "rank": 106,
     "athlete_name": "木村 野乃子",
     "club": "北大OLC",
     "total_points": 7653.7,
@@ -2696,47 +3326,122 @@
     ]
   },
   {
-    "rank": 93,
-    "athlete_name": "小畑 萌",
-    "club": "東京大学2",
-    "total_points": 7630.7,
+    "rank": 107,
+    "athlete_name": "久島 典子",
+    "club": "京大OLC",
+    "total_points": 7634.2,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2517
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2560
       },
       {
         "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2596
+        "points": 2483
       },
       {
-        "event_name": "2025-10-19\n                浦高記念大会",
-        "points": 2500
+        "event_name": "2025-04-19\n                白石島スプリント",
+        "points": 2686
       },
       {
-        "event_name": "2025-09-13\n                第124回上尾OLC",
-        "points": 2488
+        "event_name": "2025-03-29\n                パークO滋賀",
+        "points": 2672
       },
       {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2517
-      },
-      {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2369
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2357
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2590
       }
     ]
   },
   {
-    "rank": 94,
+    "rank": 108,
+    "athlete_name": "皆上 直香",
+    "club": "鳩の会",
+    "total_points": 7626.4,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2431
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2518
+      },
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2477
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2418
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2565
+      },
+      {
+        "event_name": "2025-08-10\n                新潟大会2025レース1",
+        "points": 2473
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2543
+      }
+    ]
+  },
+  {
+    "rank": 109,
+    "athlete_name": "根本 莉子",
+    "club": "KOLC",
+    "total_points": 7625.6,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2550
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2667
+      },
+      {
+        "event_name": "補完1",
+        "points": 2409
+      }
+    ]
+  },
+  {
+    "rank": 110,
+    "athlete_name": "坂池 なつほ",
+    "club": "桐嶺会/トータス",
+    "total_points": 7616.3,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2540
+      },
+      {
+        "event_name": "補完1",
+        "points": 2340
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2584
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2492
+      }
+    ]
+  },
+  {
+    "rank": 111,
     "athlete_name": "橘 詩乃",
     "club": "ES関東C",
-    "total_points": 7623.3,
+    "total_points": 7611,
     "is_active": true,
     "event_scores": [
       {
@@ -2750,58 +3455,24 @@
       {
         "event_name": "2025-05-03\n                島根2daysスプリント",
         "points": 2596
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2584
       }
     ]
   },
   {
-    "rank": 95,
-    "athlete_name": "尾本 絢子",
-    "club": "北海道大学1",
-    "total_points": 7618.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2595
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2618
-      },
-      {
-        "event_name": "補完1",
-        "points": 2406
-      }
-    ]
-  },
-  {
-    "rank": 96,
-    "athlete_name": "木村 史依",
-    "club": "KOLA",
-    "total_points": 7615.6,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2526
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2559
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2531
-      }
-    ]
-  },
-  {
-    "rank": 97,
+    "rank": 112,
     "athlete_name": "諏訪 美海",
-    "club": "日本女子大学",
+    "club": "早大OC",
     "total_points": 7605.4,
     "is_active": true,
     "event_scores": [
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2507
+      },
       {
         "event_name": "2025-11-22\n                インカレスプリント",
         "points": 2541
@@ -2829,107 +3500,32 @@
     ]
   },
   {
-    "rank": 98,
-    "athlete_name": "浅野 涼花",
-    "club": "名古屋大学2",
-    "total_points": 7603.8,
+    "rank": 113,
+    "athlete_name": "高橋 友理奈",
+    "club": "長野県協会/青葉会",
+    "total_points": 7567.2,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2557
+        "event_name": "2026-01-10\n                沖縄大会day1",
+        "points": 2500
       },
       {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2566
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2474
       },
       {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2480
+        "event_name": "補完1",
+        "points": 2287
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2593
       }
     ]
   },
   {
-    "rank": 99,
-    "athlete_name": "皆上 直香",
-    "club": "千葉大学4",
-    "total_points": 7585.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2477
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2418
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2565
-      },
-      {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2473
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2543
-      }
-    ]
-  },
-  {
-    "rank": 100,
-    "athlete_name": "吉澤 諒子",
-    "club": "千葉大OLC",
-    "total_points": 7580.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2624
-      },
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2537
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2205
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2419
-      }
-    ]
-  },
-  {
-    "rank": 101,
-    "athlete_name": "高橋 民奈",
-    "club": "茨城大学3",
-    "total_points": 7576.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2569
-      },
-      {
-        "event_name": "2025-09-13\n                第124回上尾OLC",
-        "points": 2555
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2433
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2453
-      }
-    ]
-  },
-  {
-    "rank": 102,
+    "rank": 114,
     "athlete_name": "陳 子淳",
     "club": "横浜国立大学大学院2",
     "total_points": 7566.8,
@@ -2950,7 +3546,7 @@
     ]
   },
   {
-    "rank": 103,
+    "rank": 115,
     "athlete_name": "細井 美佑",
     "club": "-",
     "total_points": 7561.6,
@@ -2979,7 +3575,44 @@
     ]
   },
   {
-    "rank": 104,
+    "rank": 116,
+    "athlete_name": "石槫 朱莉",
+    "club": "東北大OLC",
+    "total_points": 7556.1,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2507
+      },
+      {
+        "event_name": "2025-06-07\n                あだたら高原前日大会",
+        "points": 2436
+      },
+      {
+        "event_name": "補完1",
+        "points": 2271
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2436
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2451
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2505
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2545
+      }
+    ]
+  },
+  {
+    "rank": 117,
     "athlete_name": "安部 紗也佳",
     "club": "ES関東C",
     "total_points": 7553.4,
@@ -3000,7 +3633,7 @@
     ]
   },
   {
-    "rank": 105,
+    "rank": 118,
     "athlete_name": "宮本 知江子",
     "club": "京葉OLクラブ/千葉OLK",
     "total_points": 7552.4,
@@ -3029,32 +3662,15 @@
       {
         "event_name": "2025-09-13\n                北大大会Day1",
         "points": 2446
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2379
       }
     ]
   },
   {
-    "rank": 106,
-    "athlete_name": "中村 茉菜",
-    "club": "ES関東クラブ",
-    "total_points": 7551.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2550
-      },
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2617
-      },
-      {
-        "event_name": "補完1",
-        "points": 2384
-      }
-    ]
-  },
-  {
-    "rank": 107,
+    "rank": 119,
     "athlete_name": "齋藤 梢",
     "club": "北海道大学3",
     "total_points": 7548.9,
@@ -3079,31 +3695,35 @@
     ]
   },
   {
-    "rank": 108,
-    "athlete_name": "桑野真弓",
-    "club": "-",
-    "total_points": 7543.2,
+    "rank": 120,
+    "athlete_name": "遠藤 睦実",
+    "club": "京都女子大学 3",
+    "total_points": 7515.1,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-28\n                パークOin関西2025",
-        "points": 2529
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2469
       },
       {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2494
+        "event_name": "2025-08-10\n                新潟大会2025レース1",
+        "points": 2598
       },
       {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2520
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2449
+      },
+      {
+        "event_name": "2025-04-19\n                白石島スプリント",
+        "points": 2669
       }
     ]
   },
   {
-    "rank": 109,
+    "rank": 121,
     "athlete_name": "小泉 陽菜乃",
-    "club": "横浜市立大学大学院4",
-    "total_points": 7525.6,
+    "club": "-",
+    "total_points": 7514.6,
     "is_active": true,
     "event_scores": [
       {
@@ -3125,48 +3745,11 @@
       {
         "event_name": "2025-08-09\n                スタジアムスプリントレース1",
         "points": 2408
-      },
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2502
       }
     ]
   },
   {
-    "rank": 110,
-    "athlete_name": "森 彩葉",
-    "club": "お茶の水女子大学3",
-    "total_points": 7522.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2567
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2537
-      },
-      {
-        "event_name": "2025-09-13\n                北大大会Day1",
-        "points": 2367
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2419
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2357
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2215
-      }
-    ]
-  },
-  {
-    "rank": 111,
+    "rank": 122,
     "athlete_name": "細野 泉",
     "club": "入間市OLC/杏友会",
     "total_points": 7508.4,
@@ -3187,28 +3770,36 @@
     ]
   },
   {
-    "rank": 112,
-    "athlete_name": "西川 真由",
-    "club": "ES関東C",
-    "total_points": 7501.8,
+    "rank": 123,
+    "athlete_name": "赤羽 舞香",
+    "club": "北大OLC",
+    "total_points": 7497.2,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2513
-      },
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2622
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2403
       },
       {
         "event_name": "補完1",
-        "points": 2367
+        "points": 2203
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2526
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2434
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2537
       }
     ]
   },
   {
-    "rank": 113,
+    "rank": 124,
     "athlete_name": "藤澤 ゆい",
     "club": "OLP兵庫",
     "total_points": 7496.2,
@@ -3229,9 +3820,9 @@
     ]
   },
   {
-    "rank": 114,
+    "rank": 125,
     "athlete_name": "梅基 結",
-    "club": "筑波大学3",
+    "club": "筑波大学",
     "total_points": 7493.8,
     "is_active": true,
     "event_scores": [
@@ -3250,28 +3841,32 @@
     ]
   },
   {
-    "rank": 115,
-    "athlete_name": "寺岡 友愛",
-    "club": "奈良女OLC",
-    "total_points": 7488.9,
+    "rank": 126,
+    "athlete_name": "渡邉 莉子",
+    "club": "東大OLK、一橋大学",
+    "total_points": 7470.2,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-28\n                パークOin関西2025",
-        "points": 2650
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2494
       },
       {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2476
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2482
       },
       {
-        "event_name": "補完1",
-        "points": 2363
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2494
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2289
       }
     ]
   },
   {
-    "rank": 116,
+    "rank": 127,
     "athlete_name": "湊 菜々子",
     "club": "茨城大学",
     "total_points": 7464.1,
@@ -3296,7 +3891,7 @@
     ]
   },
   {
-    "rank": 117,
+    "rank": 128,
     "athlete_name": "渡邉 陽与",
     "club": "東大OLK",
     "total_points": 7463.3,
@@ -3321,85 +3916,10 @@
     ]
   },
   {
-    "rank": 118,
-    "athlete_name": "松尾 晴菜",
-    "club": "茨城大学",
-    "total_points": 7449.2,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-21\n                千葉大大会",
-        "points": 2422
-      },
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2586
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2441
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2352
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2386
-      }
-    ]
-  },
-  {
-    "rank": 119,
-    "athlete_name": "高瀬 真緒",
-    "club": "千葉大OLC",
-    "total_points": 7441.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2564
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2426
-      },
-      {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2451
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2387
-      }
-    ]
-  },
-  {
-    "rank": 120,
-    "athlete_name": "小寺 珠穂",
-    "club": "横浜OLC/サンスーシ",
-    "total_points": 7431.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2393
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2492
-      },
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2546
-      }
-    ]
-  },
-  {
-    "rank": 121,
+    "rank": 129,
     "athlete_name": "北村 綾夏",
     "club": "東大OLK",
-    "total_points": 7421.7,
+    "total_points": 7459.3,
     "is_active": true,
     "event_scores": [
       {
@@ -3437,11 +3957,215 @@
       {
         "event_name": "2025-05-03\n                島根2daysスプリント",
         "points": 2440
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2455
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2407
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2373
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2478
       }
     ]
   },
   {
-    "rank": 122,
+    "rank": 130,
+    "athlete_name": "松尾 晴菜",
+    "club": "茨城大学",
+    "total_points": 7449.2,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-21\n                千葉大大会",
+        "points": 2422
+      },
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2586
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2441
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2352
+      },
+      {
+        "event_name": "2025-06-07\n                あだたら高原前日大会",
+        "points": 2386
+      }
+    ]
+  },
+  {
+    "rank": 131,
+    "athlete_name": "高瀬 真緒",
+    "club": "千葉大OLC",
+    "total_points": 7441.3,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2564
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2426
+      },
+      {
+        "event_name": "2025-08-10\n                新潟大会2025レース1",
+        "points": 2451
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2387
+      }
+    ]
+  },
+  {
+    "rank": 132,
+    "athlete_name": "長谷川 凜音",
+    "club": "早大OC",
+    "total_points": 7427.2,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-09\n                長岡OLC",
+        "points": 2420
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2440
+      },
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2567
+      }
+    ]
+  },
+  {
+    "rank": 133,
+    "athlete_name": "遠藤 有佳",
+    "club": "立命OLC",
+    "total_points": 7423.7,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2525
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2558
+      },
+      {
+        "event_name": "補完1",
+        "points": 2341
+      }
+    ]
+  },
+  {
+    "rank": 134,
+    "athlete_name": "大山 凛花",
+    "club": "KOLC",
+    "total_points": 7412.1,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2510
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2378
+      },
+      {
+        "event_name": "2025-09-13\n                北大大会Day1",
+        "points": 2462
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2441
+      }
+    ]
+  },
+  {
+    "rank": 135,
+    "athlete_name": "松崎 唯子",
+    "club": "東大OLK",
+    "total_points": 7409.7,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2536
+      },
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2537
+      },
+      {
+        "event_name": "補完1",
+        "points": 2337
+      }
+    ]
+  },
+  {
+    "rank": 136,
+    "athlete_name": "高橋 暖和",
+    "club": "早大OC",
+    "total_points": 7408.8,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-09\n                長岡OLC",
+        "points": 2447
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2541
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2421
+      }
+    ]
+  },
+  {
+    "rank": 137,
+    "athlete_name": "和田 美千代",
+    "club": "サン・スーシ",
+    "total_points": 7401.4,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2071
+      },
+      {
+        "event_name": "2025-09-13\n                第124回上尾OLC",
+        "points": 2446
+      },
+      {
+        "event_name": "2025-05-18\n                第122回上尾OLC",
+        "points": 2497
+      },
+      {
+        "event_name": "2026-05-09\n                長岡OLC",
+        "points": 2458
+      }
+    ]
+  },
+  {
+    "rank": 138,
     "athlete_name": "崎原 美咲紀",
     "club": "鳩の会",
     "total_points": 7395.2,
@@ -3462,7 +4186,7 @@
     ]
   },
   {
-    "rank": 123,
+    "rank": 139,
     "athlete_name": "栗山 ももこ",
     "club": "長野県協会/トータス",
     "total_points": 7383.7,
@@ -3483,28 +4207,32 @@
     ]
   },
   {
-    "rank": 124,
-    "athlete_name": "堀池 美穂",
-    "club": "京女OLC",
-    "total_points": 7378.8,
+    "rank": 140,
+    "athlete_name": "上島 乃英",
+    "club": "つるまいOLC",
+    "total_points": 7382.1,
     "is_active": true,
     "event_scores": [
       {
         "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2438
+        "points": 2470
       },
       {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2443
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2389
       },
       {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2498
+        "event_name": "補完1",
+        "points": 2229
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2523
       }
     ]
   },
   {
-    "rank": 125,
+    "rank": 141,
     "athlete_name": "大野 栞",
     "club": "東大OLK",
     "total_points": 7372.1,
@@ -3525,31 +4253,47 @@
     ]
   },
   {
-    "rank": 126,
-    "athlete_name": "堀口 奈保",
-    "club": "入間市OLC/青葉会",
-    "total_points": 7363.7,
+    "rank": 145,
+    "athlete_name": "小林 正子",
+    "club": "ES関東C",
+    "total_points": 7315.4,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2519
+        "event_name": "2026-02-21\n                千葉大大会",
+        "points": 2343
       },
       {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2523
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2429
       },
       {
-        "event_name": "補完1",
-        "points": 2321
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2407
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2331
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2431
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2316
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2455
       }
     ]
   },
   {
-    "rank": 127,
+    "rank": 146,
     "athlete_name": "清谷 千鶴",
     "club": "横浜OLクラブ",
-    "total_points": 7348.2,
+    "total_points": 7310.4,
     "is_active": true,
     "event_scores": [
       {
@@ -3571,35 +4315,135 @@
       {
         "event_name": "2025-05-03\n                島根2daysスプリント",
         "points": 2444
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2342
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2406
       }
     ]
   },
   {
-    "rank": 128,
-    "athlete_name": "TangPoWa",
-    "club": "-",
-    "total_points": 7345,
+    "rank": 147,
+    "athlete_name": "宮川 里弥",
+    "club": "京女OLC",
+    "total_points": 7305.3,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 2573
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2439
       },
       {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2457
+        "event_name": "2025-08-10\n                新潟大会2025レース1",
+        "points": 2367
       },
       {
-        "event_name": "補完1",
-        "points": 2315
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2499
+      },
+      {
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2360
       }
     ]
   },
   {
-    "rank": 129,
+    "rank": 149,
+    "athlete_name": "桂 万由子",
+    "club": "千葉大学",
+    "total_points": 7300.6,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2655
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2346
+      },
+      {
+        "event_name": "補完1",
+        "points": 2300
+      }
+    ]
+  },
+  {
+    "rank": 150,
+    "athlete_name": "林 希華",
+    "club": "早大OC",
+    "total_points": 7292.6,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2452
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2543
+      },
+      {
+        "event_name": "補完1",
+        "points": 2298
+      }
+    ]
+  },
+  {
+    "rank": 151,
+    "athlete_name": "坂本 瑠璃子",
+    "club": "龍谷大学4",
+    "total_points": 7285.8,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-28\n                パークOin関西2025",
+        "points": 2510
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2406
+      },
+      {
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2370
+      }
+    ]
+  },
+  {
+    "rank": 152,
+    "athlete_name": "高田 麻由",
+    "club": "-",
+    "total_points": 7284.5,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2465
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2341
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2207
+      },
+      {
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2478
+      }
+    ]
+  },
+  {
+    "rank": 153,
     "athlete_name": "高津 寿三鈴",
     "club": "Club阿闍梨",
-    "total_points": 7322.5,
+    "total_points": 7270.7,
     "is_active": true,
     "event_scores": [
       {
@@ -3625,275 +4469,115 @@
       {
         "event_name": "2025-05-03\n                島根2daysスプリント",
         "points": 2424
-      }
-    ]
-  },
-  {
-    "rank": 130,
-    "athlete_name": "宮川 里弥",
-    "club": "京女OLC",
-    "total_points": 7305.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2439
       },
       {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2367
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2277
       },
       {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2499
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2290
       },
       {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2360
-      }
-    ]
-  },
-  {
-    "rank": 131,
-    "athlete_name": "荘珮琪",
-    "club": "台湾魔神",
-    "total_points": 7302.6,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2494
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2508
-      },
-      {
-        "event_name": "補完1",
-        "points": 2301
-      }
-    ]
-  },
-  {
-    "rank": 132,
-    "athlete_name": "桂 万由子",
-    "club": "千葉大学",
-    "total_points": 7300.6,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2655
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "event_name": "2026-03-28\n                筑波大大会day1",
         "points": 2346
-      },
-      {
-        "event_name": "補完1",
-        "points": 2300
       }
     ]
   },
   {
-    "rank": 133,
-    "athlete_name": "林 希華",
-    "club": "日本女子大学2",
-    "total_points": 7292.6,
+    "rank": 154,
+    "athlete_name": "酒井 佳子",
+    "club": "札幌農学校",
+    "total_points": 7270.3,
     "is_active": true,
     "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2452
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2543
-      },
-      {
-        "event_name": "補完1",
-        "points": 2298
-      }
-    ]
-  },
-  {
-    "rank": 134,
-    "athlete_name": "坂本 瑠璃子",
-    "club": "龍谷大学4",
-    "total_points": 7285.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-28\n                パークOin関西2025",
-        "points": 2510
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2406
-      },
-      {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2370
-      }
-    ]
-  },
-  {
-    "rank": 135,
-    "athlete_name": "高田 麻由",
-    "club": "名椙OLC",
-    "total_points": 7284.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2465
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2341
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2207
-      },
-      {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2478
-      }
-    ]
-  },
-  {
-    "rank": 136,
-    "athlete_name": "大山 凛花",
-    "club": "横浜国立大学2",
-    "total_points": 7280.1,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2378
-      },
       {
         "event_name": "2025-09-13\n                北大大会Day1",
-        "points": 2462
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2441
-      }
-    ]
-  },
-  {
-    "rank": 137,
-    "athlete_name": "LauPikYi",
-    "club": "-",
-    "total_points": 7268.1,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 2494
-      },
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2485
+        "points": 2484
       },
       {
         "event_name": "補完1",
-        "points": 2289
+        "points": 2284
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2497
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2290
       }
     ]
   },
   {
-    "rank": 138,
-    "athlete_name": "高橋 友理奈",
-    "club": "長野県協会/青葉会",
-    "total_points": 7261.2,
+    "rank": 156,
+    "athlete_name": "長縄 美春",
+    "club": "入間市OLC",
+    "total_points": 7265,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2500
-      },
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2474
+        "event_name": "2026-03-22\n                第128回上尾OLC",
+        "points": 2512
       },
       {
         "event_name": "補完1",
-        "points": 2287
+        "points": 2288
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2464
       }
     ]
   },
   {
-    "rank": 139,
-    "athlete_name": "高橋 暖和",
-    "club": "日本女子大学2",
-    "total_points": 7242.6,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2541
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2421
-      },
-      {
-        "event_name": "補完1",
-        "points": 2281
-      }
-    ]
-  },
-  {
-    "rank": 140,
-    "athlete_name": "石槫 朱莉",
-    "club": "東北大OLC",
-    "total_points": 7213.4,
+    "rank": 157,
+    "athlete_name": "安江 舞莉",
+    "club": "京女OLC",
+    "total_points": 7247.5,
     "is_active": true,
     "event_scores": [
       {
         "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2507
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2436
+        "points": 2184
       },
       {
         "event_name": "補完1",
-        "points": 2271
+        "points": 1984
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2547
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2516
       }
     ]
   },
   {
-    "rank": 141,
-    "athlete_name": "小林 正子",
-    "club": "ES関東C",
-    "total_points": 7179.4,
+    "rank": 158,
+    "athlete_name": "宇野 美桜",
+    "club": "早大OC",
+    "total_points": 7179.1,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-21\n                千葉大大会",
-        "points": 2343
-      },
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2429
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2352
       },
       {
         "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2407
+        "points": 2360
       },
       {
         "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2331
+        "points": 2468
       }
     ]
   },
   {
-    "rank": 142,
+    "rank": 159,
     "athlete_name": "山嵜 日菜",
     "club": "北海道大学",
     "total_points": 7166.4,
@@ -3914,44 +4598,7 @@
     ]
   },
   {
-    "rank": 143,
-    "athlete_name": "上園 久美子",
-    "club": "JDOA/入間市OLC",
-    "total_points": 7160.6,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2331
-      },
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2360
-      },
-      {
-        "event_name": "2025-09-13\n                北大大会Day1",
-        "points": 2316
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2358
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 1968
-      },
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2293
-      },
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2443
-      }
-    ]
-  },
-  {
-    "rank": 144,
+    "rank": 160,
     "athlete_name": "寺嶋 貴美江",
     "club": "ES関東C",
     "total_points": 7157.6,
@@ -3972,7 +4619,7 @@
     ]
   },
   {
-    "rank": 145,
+    "rank": 161,
     "athlete_name": "藤井 香帆",
     "club": "名椙OLC",
     "total_points": 7133.4,
@@ -3993,7 +4640,7 @@
     ]
   },
   {
-    "rank": 146,
+    "rank": 162,
     "athlete_name": "櫻井 香帆",
     "club": "名椙OLC",
     "total_points": 7128.8,
@@ -4014,7 +4661,7 @@
     ]
   },
   {
-    "rank": 147,
+    "rank": 164,
     "athlete_name": "田切 香帆",
     "club": "-",
     "total_points": 7121.9,
@@ -4035,28 +4682,77 @@
     ]
   },
   {
-    "rank": 148,
-    "athlete_name": "上島 乃英",
-    "club": "つるまいOLC",
-    "total_points": 7088.5,
+    "rank": 165,
+    "athlete_name": "堀池 美穂",
+    "club": "京女OLC",
+    "total_points": 7120.6,
     "is_active": true,
     "event_scores": [
       {
         "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2470
+        "points": 2438
       },
       {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2389
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2443
+      },
+      {
+        "event_name": "2025-03-29\n                パークO滋賀",
+        "points": 2498
       },
       {
         "event_name": "補完1",
-        "points": 2229
+        "points": 2240
       }
     ]
   },
   {
-    "rank": 149,
+    "rank": 166,
+    "athlete_name": "上園 久美子",
+    "club": "入間市OLC/JDOA",
+    "total_points": 7118.8,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2387
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2264
+      },
+      {
+        "event_name": "2026-05-09\n                長岡OLC",
+        "points": 2286
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2372
+      },
+      {
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2331
+      },
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2360
+      },
+      {
+        "event_name": "2025-09-13\n                北大大会Day1",
+        "points": 2316
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 2358
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 1968
+      }
+    ]
+  },
+  {
+    "rank": 167,
     "athlete_name": "市岡 結",
     "club": "KOLC",
     "total_points": 7086.4,
@@ -4077,7 +4773,7 @@
     ]
   },
   {
-    "rank": 150,
+    "rank": 168,
     "athlete_name": "松塚 乃愛",
     "club": "お茶の水女子大学 4",
     "total_points": 7083.5,
@@ -4098,7 +4794,7 @@
     ]
   },
   {
-    "rank": 151,
+    "rank": 169,
     "athlete_name": "根岸 歩可",
     "club": "奈良女子大学3",
     "total_points": 7072.5,
@@ -4119,28 +4815,7 @@
     ]
   },
   {
-    "rank": 152,
-    "athlete_name": "石川 智花",
-    "club": "京都女子大学4",
-    "total_points": 7070.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2406
-      },
-      {
-        "event_name": "2025-04-19\n                白石島スプリント",
-        "points": 2441
-      },
-      {
-        "event_name": "補完1",
-        "points": 2224
-      }
-    ]
-  },
-  {
-    "rank": 153,
+    "rank": 170,
     "athlete_name": "猪股 珠々那",
     "club": "奈良女子大学2",
     "total_points": 7050.4,
@@ -4169,28 +4844,7 @@
     ]
   },
   {
-    "rank": 154,
-    "athlete_name": "宇野 美桜",
-    "club": "早稲田大学2",
-    "total_points": 7041.2,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2360
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2468
-      },
-      {
-        "event_name": "補完1",
-        "points": 2214
-      }
-    ]
-  },
-  {
-    "rank": 155,
+    "rank": 171,
     "athlete_name": "緒方 美智",
     "club": "奈良市",
     "total_points": 7033.4,
@@ -4243,53 +4897,40 @@
       {
         "event_name": "2025-05-03\n                島根2daysスプリント",
         "points": 2302
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2172
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2137
       }
     ]
   },
   {
-    "rank": 156,
-    "athlete_name": "和田 美千代",
-    "club": "サン・スーシ",
-    "total_points": 7014.2,
+    "rank": 173,
+    "athlete_name": "森安 恭子",
+    "club": "北大OLC",
+    "total_points": 7012.1,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2071
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2400
       },
       {
-        "event_name": "2025-09-13\n                第124回上尾OLC",
-        "points": 2446
-      },
-      {
-        "event_name": "2025-05-18\n                第122回上尾OLC",
-        "points": 2497
-      }
-    ]
-  },
-  {
-    "rank": 157,
-    "athlete_name": "坂巻 朱里",
-    "club": "ときわ走林会",
-    "total_points": 7013.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 2436
-      },
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2374
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2408
       },
       {
         "event_name": "補完1",
-        "points": 2205
+        "points": 2204
       }
     ]
   },
   {
-    "rank": 158,
+    "rank": 174,
     "athlete_name": "齋藤 まどか",
     "club": "川越OLC",
     "total_points": 7011.6,
@@ -4330,32 +4971,19 @@
       {
         "event_name": "2025-05-03\n                島根2daysスプリント",
         "points": 2282
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2166
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2232
       }
     ]
   },
   {
-    "rank": 159,
-    "athlete_name": "南 美羽",
-    "club": "千葉大学2",
-    "total_points": 7011.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2678
-      },
-      {
-        "event_name": "2025-05-18\n                第122回上尾OLC",
-        "points": 2130
-      },
-      {
-        "event_name": "補完1",
-        "points": 2204
-      }
-    ]
-  },
-  {
-    "rank": 160,
+    "rank": 175,
     "athlete_name": "西村 帆浬",
     "club": "奈良女OLC",
     "total_points": 7009.5,
@@ -4376,7 +5004,7 @@
     ]
   },
   {
-    "rank": 161,
+    "rank": 176,
     "athlete_name": "成田 美奈子",
     "club": "入間市OLC",
     "total_points": 6977.2,
@@ -4421,35 +5049,39 @@
       {
         "event_name": "2025-05-03\n                島根2daysスプリント",
         "points": 2168
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2172
       }
     ]
   },
   {
-    "rank": 162,
-    "athlete_name": "渡邉 莉子",
-    "club": "東大OLK",
-    "total_points": 6974,
+    "rank": 177,
+    "athlete_name": "荒町 美希",
+    "club": "-",
+    "total_points": 6967.9,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2494
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2379
       },
       {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2289
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2400
       },
       {
         "event_name": "補完1",
-        "points": 2191
+        "points": 2189
       }
     ]
   },
   {
-    "rank": 163,
+    "rank": 178,
     "athlete_name": "羽原 佑香",
     "club": "京女OLC",
-    "total_points": 6901.4,
+    "total_points": 6866.7,
     "is_active": true,
     "event_scores": [
       {
@@ -4467,61 +5099,15 @@
       {
         "event_name": "2025-03-29\n                パークO滋賀",
         "points": 2190
+      },
+      {
+        "event_name": "補完1",
+        "points": 2156
       }
     ]
   },
   {
-    "rank": 164,
-    "athlete_name": "遠藤 永子",
-    "club": "千葉大OLC",
-    "total_points": 6898.1,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2634
-      },
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2182
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2082
-      }
-    ]
-  },
-  {
-    "rank": 165,
-    "athlete_name": "長澤 静代",
-    "club": "横浜OLクラブ/入間市OLC",
-    "total_points": 6883.2,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2299
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2137
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2092
-      },
-      {
-        "event_name": "2025-05-18\n                第122回上尾OLC",
-        "points": 2217
-      },
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2367
-      }
-    ]
-  },
-  {
-    "rank": 166,
+    "rank": 179,
     "athlete_name": "源後 彩乃",
     "club": "みちの会",
     "total_points": 6860.4,
@@ -4542,7 +5128,7 @@
     ]
   },
   {
-    "rank": 167,
+    "rank": 180,
     "athlete_name": "村田 颯香",
     "club": "宮城学院女子大学2",
     "total_points": 6856.2,
@@ -4563,10 +5149,60 @@
     ]
   },
   {
-    "rank": 168,
+    "rank": 181,
+    "athlete_name": "菊池 こころ",
+    "club": "宮城学院女子大学4",
+    "total_points": 6832,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2336
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2150
+      },
+      {
+        "event_name": "2025-06-07\n                あだたら高原前日大会",
+        "points": 2346
+      }
+    ]
+  },
+  {
+    "rank": 182,
+    "athlete_name": "丸山 由美子",
+    "club": "越王会",
+    "total_points": 6824.4,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-08-10\n                新潟大会2025レース1",
+        "points": 2342
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2302
+      },
+      {
+        "event_name": "補完1",
+        "points": 2122
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2078
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2180
+      }
+    ]
+  },
+  {
+    "rank": 184,
     "athlete_name": "重吉 未来子",
     "club": "大阪OLC",
-    "total_points": 6848.6,
+    "total_points": 6816.3,
     "is_active": true,
     "event_scores": [
       {
@@ -4596,117 +5232,24 @@
     ]
   },
   {
-    "rank": 169,
-    "athlete_name": "菊池 こころ",
-    "club": "宮城学院女子大学4",
-    "total_points": 6832,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2336
-      },
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2150
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2346
-      }
-    ]
-  },
-  {
-    "rank": 170,
-    "athlete_name": "多田 朱里",
-    "club": "京女OLC",
-    "total_points": 6828.7,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2113
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2295
-      },
-      {
-        "event_name": "2025-04-19\n                白石島スプリント",
-        "points": 2420
-      }
-    ]
-  },
-  {
-    "rank": 171,
-    "athlete_name": "LiHeidi",
-    "club": "-",
-    "total_points": 6822.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 2509
-      },
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2173
-      },
-      {
-        "event_name": "補完1",
-        "points": 2141
-      }
-    ]
-  },
-  {
-    "rank": 172,
-    "athlete_name": "水谷 奈那美",
-    "club": "名椙OLC",
-    "total_points": 6804.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2516
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2153
-      },
-      {
-        "event_name": "補完1",
-        "points": 2135
-      }
-    ]
-  },
-  {
-    "rank": 173,
-    "athlete_name": "丸山 由美子",
-    "club": "越王会",
-    "total_points": 6767.1,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2342
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2302
-      },
-      {
-        "event_name": "補完1",
-        "points": 2122
-      }
-    ]
-  },
-  {
-    "rank": 174,
+    "rank": 185,
     "athlete_name": "三宅 裕子",
-    "club": "JDOA/入間市OLC",
-    "total_points": 6759.8,
+    "club": "入間市OLC/JDOA",
+    "total_points": 6813.6,
     "is_active": true,
     "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 1957
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 1847
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2278
+      },
       {
         "event_name": "2026-03-22\n                第128回上尾OLC",
         "points": 1903
@@ -4750,36 +5293,57 @@
       {
         "event_name": "2025-05-18\n                第122回上尾OLC",
         "points": 1916
-      },
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 1933
       }
     ]
   },
   {
-    "rank": 175,
-    "athlete_name": "加藤涼子",
-    "club": "-",
-    "total_points": 6728.4,
+    "rank": 186,
+    "athlete_name": "水谷 奈那美",
+    "club": "名椙OLC",
+    "total_points": 6804.8,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2368
+        "event_name": "2026-01-10\n                沖縄大会day1",
+        "points": 2516
       },
       {
         "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2251
+        "points": 2153
       },
       {
         "event_name": "補完1",
-        "points": 2109
+        "points": 2135
       }
     ]
   },
   {
-    "rank": 176,
+    "rank": 187,
+    "athlete_name": "泉田 みどり",
+    "club": "入間市OLC",
+    "total_points": 6744.5,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2252
+      },
+      {
+        "event_name": "補完1",
+        "points": 2052
+      },
+      {
+        "event_name": "2026-05-09\n                長岡OLC",
+        "points": 2267
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2226
+      }
+    ]
+  },
+  {
+    "rank": 189,
     "athlete_name": "古橋 歩実",
     "club": "京都女子大学 2",
     "total_points": 6723.7,
@@ -4800,9 +5364,9 @@
     ]
   },
   {
-    "rank": 177,
+    "rank": 190,
     "athlete_name": "山下 雪乃",
-    "club": "日本女子大学2",
+    "club": "早大OC",
     "total_points": 6676.7,
     "is_active": true,
     "event_scores": [
@@ -4821,7 +5385,7 @@
     ]
   },
   {
-    "rank": 178,
+    "rank": 191,
     "athlete_name": "村岡 民子",
     "club": "入間市OLC",
     "total_points": 6673.1,
@@ -4842,7 +5406,40 @@
     ]
   },
   {
-    "rank": 179,
+    "rank": 192,
+    "athlete_name": "長澤 静代",
+    "club": "横浜OLクラブ/入間市OLC",
+    "total_points": 6652.7,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2299
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 2137
+      },
+      {
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2092
+      },
+      {
+        "event_name": "2025-05-18\n                第122回上尾OLC",
+        "points": 2217
+      },
+      {
+        "event_name": "2025-05-03\n                島根2daysスプリント",
+        "points": 2367
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 1966
+      }
+    ]
+  },
+  {
+    "rank": 193,
     "athlete_name": "小池 響",
     "club": "名椙OLC",
     "total_points": 6650.5,
@@ -4863,7 +5460,7 @@
     ]
   },
   {
-    "rank": 180,
+    "rank": 194,
     "athlete_name": "長島 実里",
     "club": "阪大OLC",
     "total_points": 6635,
@@ -4892,9 +5489,9 @@
     ]
   },
   {
-    "rank": 181,
+    "rank": 195,
     "athlete_name": "友田 りさ",
-    "club": "筑波大学オリエンテーリング部",
+    "club": "筑波大学",
     "total_points": 6626.7,
     "is_active": true,
     "event_scores": [
@@ -4913,7 +5510,7 @@
     ]
   },
   {
-    "rank": 182,
+    "rank": 196,
     "athlete_name": "矢板橋 秋香",
     "club": "東大olk",
     "total_points": 6621.4,
@@ -4938,28 +5535,7 @@
     ]
   },
   {
-    "rank": 183,
-    "athlete_name": "CHIANGShengJung",
-    "club": "-",
-    "total_points": 6618.1,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 2426
-      },
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2119
-      },
-      {
-        "event_name": "補完1",
-        "points": 2073
-      }
-    ]
-  },
-  {
-    "rank": 184,
+    "rank": 198,
     "athlete_name": "岡野 美希",
     "club": "奈良女子大学3",
     "total_points": 6610.3,
@@ -4980,31 +5556,35 @@
     ]
   },
   {
-    "rank": 185,
-    "athlete_name": "大山 美菜子",
-    "club": "大阪大学4",
-    "total_points": 6577.8,
+    "rank": 199,
+    "athlete_name": "石井 遥花",
+    "club": "OLP兵庫",
+    "total_points": 6572.1,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2263
+        "event_name": "2026-02-28\n                パークOin関西2025",
+        "points": 2168
+      },
+      {
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2080
       },
       {
         "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2256
+        "points": 2080
       },
       {
-        "event_name": "補完1",
-        "points": 2059
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2324
       }
     ]
   },
   {
-    "rank": 186,
+    "rank": 200,
     "athlete_name": "山本 陽子",
     "club": "ES関東C",
-    "total_points": 6538.8,
+    "total_points": 6536.9,
     "is_active": true,
     "event_scores": [
       {
@@ -5058,11 +5638,19 @@
       {
         "event_name": "2025-03-29\n                パークO滋賀",
         "points": 2157
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 1917
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2018
       }
     ]
   },
   {
-    "rank": 187,
+    "rank": 201,
     "athlete_name": "奥村 優香",
     "club": "名椙OLC",
     "total_points": 6503.5,
@@ -5083,7 +5671,7 @@
     ]
   },
   {
-    "rank": 188,
+    "rank": 202,
     "athlete_name": "山田 幸希",
     "club": "お茶の水女子大学2",
     "total_points": 6502.9,
@@ -5104,31 +5692,80 @@
     ]
   },
   {
-    "rank": 189,
-    "athlete_name": "LyuLi-Sin",
-    "club": "-",
-    "total_points": 6502.2,
+    "rank": 204,
+    "athlete_name": "中森 恵美子",
+    "club": "ES関東C/JDOA",
+    "total_points": 6481.1,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 2251
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2041
       },
       {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2217
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2117
       },
       {
-        "event_name": "補完1",
-        "points": 2034
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 1637
+      },
+      {
+        "event_name": "2026-02-21\n                千葉大大会",
+        "points": 2156
+      },
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 1955
+      },
+      {
+        "event_name": "2025-12-20\n                パークO関西京都",
+        "points": 2209
+      },
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 1874
+      },
+      {
+        "event_name": "2025-10-19\n                浦高記念大会",
+        "points": 2022
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 1725
+      },
+      {
+        "event_name": "2025-07-19\n                岩手大会Day1",
+        "points": 2042
       }
     ]
   },
   {
-    "rank": 190,
+    "rank": 205,
+    "athlete_name": "丹羽 里歩子",
+    "club": "横浜国立大学 3",
+    "total_points": 6474.2,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2508
+      },
+      {
+        "event_name": "2025-08-17\n                関東・北信越スプセレ",
+        "points": 1941
+      },
+      {
+        "event_name": "補完1",
+        "points": 2025
+      }
+    ]
+  },
+  {
+    "rank": 207,
     "athlete_name": "高村 陽子",
     "club": "上尾OLクラブ",
-    "total_points": 6495.9,
+    "total_points": 6435,
     "is_active": true,
     "event_scores": [
       {
@@ -5158,94 +5795,44 @@
       {
         "event_name": "2025-03-29\n                パークO滋賀",
         "points": 2172
+      },
+      {
+        "event_name": "2026-05-09\n                長岡OLC",
+        "points": 2067
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2039
       }
     ]
   },
   {
-    "rank": 191,
-    "athlete_name": "丹羽 里歩子",
-    "club": "横浜国立大学 3",
-    "total_points": 6474.2,
+    "rank": 208,
+    "athlete_name": "多田 朱里",
+    "club": "京女OLC",
+    "total_points": 6412.5,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2508
+        "event_name": "2025-08-10\n                新潟大会2025レース1",
+        "points": 2113
       },
       {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 1941
+        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
+        "points": 2295
+      },
+      {
+        "event_name": "2025-04-19\n                白石島スプリント",
+        "points": 2420
       },
       {
         "event_name": "補完1",
-        "points": 2025
+        "points": 2004
       }
     ]
   },
   {
-    "rank": 192,
-    "athlete_name": "田口淳子",
-    "club": "-",
-    "total_points": 6446.6,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2184
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 2247
-      },
-      {
-        "event_name": "補完1",
-        "points": 2016
-      }
-    ]
-  },
-  {
-    "rank": 193,
-    "athlete_name": "中森 恵美子",
-    "club": "JDOA/ES関東C",
-    "total_points": 6430,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-21\n                千葉大大会",
-        "points": 2156
-      },
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 1955
-      },
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2209
-      },
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 1874
-      },
-      {
-        "event_name": "2025-10-19\n                浦高記念大会",
-        "points": 2022
-      },
-      {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 1725
-      },
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2042
-      },
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2065
-      }
-    ]
-  },
-  {
-    "rank": 194,
+    "rank": 209,
     "athlete_name": "大里 真理子",
     "club": "アークスキーチーム",
     "total_points": 6391.6,
@@ -5266,9 +5853,9 @@
     ]
   },
   {
-    "rank": 195,
+    "rank": 210,
     "athlete_name": "宮田 鈴子",
-    "club": "お茶の水女子大学4",
+    "club": "-",
     "total_points": 6390.8,
     "is_active": true,
     "event_scores": [
@@ -5287,70 +5874,32 @@
     ]
   },
   {
-    "rank": 196,
-    "athlete_name": "岡政 渚",
-    "club": "京女OLC",
-    "total_points": 6377.3,
+    "rank": 211,
+    "athlete_name": "尾形 歩美",
+    "club": "東大OLK",
+    "total_points": 6381.4,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2091
+        "event_name": "2026-02-21\n                千葉大大会",
+        "points": 2128
       },
       {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2187
-      },
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2100
-      }
-    ]
-  },
-  {
-    "rank": 197,
-    "athlete_name": "石井 遥花",
-    "club": "OLP兵庫",
-    "total_points": 6327.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-28\n                パークOin関西2025",
-        "points": 2168
-      },
-      {
-        "event_name": "2025-12-20\n                パークO関西京都",
-        "points": 2080
-      },
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2080
-      }
-    ]
-  },
-  {
-    "rank": 198,
-    "athlete_name": "?茵",
-    "club": "-",
-    "total_points": 6291.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 2264
-      },
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2063
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 1887
       },
       {
         "event_name": "補完1",
-        "points": 1964
+        "points": 1807
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2366
       }
     ]
   },
   {
-    "rank": 199,
+    "rank": 213,
     "athlete_name": "奥田 優希",
     "club": "京都女子大学",
     "total_points": 6240.8,
@@ -5371,7 +5920,7 @@
     ]
   },
   {
-    "rank": 200,
+    "rank": 214,
     "athlete_name": "千葉 愛莉",
     "club": "宮城学院女子大学3",
     "total_points": 6229.9,
@@ -5392,7 +5941,7 @@
     ]
   },
   {
-    "rank": 201,
+    "rank": 215,
     "athlete_name": "久保寺 芭名",
     "club": "横浜国立大学2",
     "total_points": 6225.9,
@@ -5413,7 +5962,7 @@
     ]
   },
   {
-    "rank": 202,
+    "rank": 216,
     "athlete_name": "井出 千尋",
     "club": "相模女子大学4",
     "total_points": 6223.9,
@@ -5434,7 +5983,32 @@
     ]
   },
   {
-    "rank": 203,
+    "rank": 217,
+    "athlete_name": "岡政 渚",
+    "club": "京女OLC",
+    "total_points": 6216.3,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2091
+      },
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2187
+      },
+      {
+        "event_name": "2025-03-29\n                パークO滋賀",
+        "points": 2100
+      },
+      {
+        "event_name": "補完1",
+        "points": 1939
+      }
+    ]
+  },
+  {
+    "rank": 218,
     "athlete_name": "東海林 雪乃",
     "club": "広大OLC",
     "total_points": 6213.7,
@@ -5455,7 +6029,7 @@
     ]
   },
   {
-    "rank": 204,
+    "rank": 219,
     "athlete_name": "植松 里咲子",
     "club": "入間市OLC",
     "total_points": 6199.1,
@@ -5476,7 +6050,32 @@
     ]
   },
   {
-    "rank": 205,
+    "rank": 221,
+    "athlete_name": "松尾 七彩",
+    "club": "GROK/杏友会",
+    "total_points": 6156.8,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-10-19\n                浦高記念大会",
+        "points": 1959
+      },
+      {
+        "event_name": "2025-09-20\n                信楽スプリント",
+        "points": 1940
+      },
+      {
+        "event_name": "補完1",
+        "points": 1749
+      },
+      {
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2258
+      }
+    ]
+  },
+  {
+    "rank": 222,
     "athlete_name": "加藤 里菜子",
     "club": "-",
     "total_points": 6154.3,
@@ -5497,7 +6096,7 @@
     ]
   },
   {
-    "rank": 206,
+    "rank": 223,
     "athlete_name": "八島 多佳子",
     "club": "宮城学院女子大学",
     "total_points": 6133.9,
@@ -5518,28 +6117,32 @@
     ]
   },
   {
-    "rank": 207,
-    "athlete_name": "加藤結子",
-    "club": "-",
-    "total_points": 5989.3,
+    "rank": 225,
+    "athlete_name": "村越 久子",
+    "club": "静岡OLC",
+    "total_points": 5947,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-08-10\n                新潟大会2025レース1",
-        "points": 2069
-      },
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2057
+        "event_name": "2025-03-29\n                パークO滋賀",
+        "points": 2137
       },
       {
         "event_name": "補完1",
-        "points": 1863
+        "points": 1849
+      },
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2052
+      },
+      {
+        "event_name": "2026-05-16\n                富山Day1",
+        "points": 2046
       }
     ]
   },
   {
-    "rank": 208,
+    "rank": 226,
     "athlete_name": "一条 理央",
     "club": "十文字女子大学4",
     "total_points": 5938,
@@ -5560,30 +6163,9 @@
     ]
   },
   {
-    "rank": 209,
-    "athlete_name": "尾形 歩美",
-    "club": "東大OLK",
-    "total_points": 5822.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-21\n                千葉大大会",
-        "points": 2128
-      },
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 1887
-      },
-      {
-        "event_name": "補完1",
-        "points": 1807
-      }
-    ]
-  },
-  {
-    "rank": 210,
+    "rank": 227,
     "athlete_name": "恩田 佳子",
-    "club": "津田塾大学",
+    "club": "東大OLK",
     "total_points": 5797.1,
     "is_active": true,
     "event_scores": [
@@ -5602,7 +6184,7 @@
     ]
   },
   {
-    "rank": 211,
+    "rank": 228,
     "athlete_name": "浦瀬 香子",
     "club": "ゾウガメOLK",
     "total_points": 5755.1,
@@ -5623,49 +6205,28 @@
     ]
   },
   {
-    "rank": 212,
-    "athlete_name": "松尾 七彩",
-    "club": "GROK/杏友会",
-    "total_points": 5647.6,
+    "rank": 229,
+    "athlete_name": "柴田 悠姫子",
+    "club": "早大OC",
+    "total_points": 5675.9,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-10-19\n                浦高記念大会",
-        "points": 1959
-      },
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 1940
+        "event_name": "2026-02-21\n                千葉大大会",
+        "points": 2017
       },
       {
         "event_name": "補完1",
-        "points": 1749
+        "points": 1759
+      },
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 1901
       }
     ]
   },
   {
-    "rank": 213,
-    "athlete_name": "新海由愛",
-    "club": "-",
-    "total_points": 5619.1,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 1967
-      },
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 1913
-      },
-      {
-        "event_name": "補完1",
-        "points": 1740
-      }
-    ]
-  },
-  {
-    "rank": 214,
+    "rank": 231,
     "athlete_name": "伊部 琴美",
     "club": "OLCルーパー",
     "total_points": 5601.8,
@@ -5682,109 +6243,45 @@
     ]
   },
   {
-    "rank": 215,
-    "athlete_name": "朱映柔",
-    "club": "HKIOF",
-    "total_points": 5465.7,
+    "rank": 233,
+    "athlete_name": "宮本 和奏",
+    "club": "桐嶺会/京葉OLクラブ",
+    "total_points": 5371.2,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2833
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2786
       },
       {
         "event_name": "補完1",
-        "points": 2633
+        "points": 2586
       }
     ]
   },
   {
-    "rank": 216,
-    "athlete_name": "小川 奈菜",
-    "club": "-",
-    "total_points": 5348.8,
+    "rank": 234,
+    "athlete_name": "太田 来和",
+    "club": "大阪大学3",
+    "total_points": 5323.4,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2774
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2762
+      },
+      {
+        "event_name": "2025-04-19\n                白石島スプリント",
+        "points": 2820
       },
       {
         "event_name": "補完1",
-        "points": 2574
+        "points": 2562
       }
     ]
   },
   {
-    "rank": 217,
-    "athlete_name": "羽岡 美紀",
-    "club": "朱雀OK",
-    "total_points": 5312.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-28\n                パークOin関西2025",
-        "points": 2756
-      },
-      {
-        "event_name": "補完1",
-        "points": 2556
-      }
-    ]
-  },
-  {
-    "rank": 218,
-    "athlete_name": "世良 史佳",
-    "club": "入間市OLC",
-    "total_points": 5305.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2753
-      },
-      {
-        "event_name": "補完1",
-        "points": 2553
-      }
-    ]
-  },
-  {
-    "rank": 219,
-    "athlete_name": "林弱水",
-    "club": "-",
-    "total_points": 5295.7,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2748
-      },
-      {
-        "event_name": "補完1",
-        "points": 2548
-      }
-    ]
-  },
-  {
-    "rank": 220,
-    "athlete_name": "カリナマリア",
-    "club": "BEST OC",
-    "total_points": 5164.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2682
-      },
-      {
-        "event_name": "補完1",
-        "points": 2482
-      }
-    ]
-  },
-  {
-    "rank": 221,
+    "rank": 237,
     "athlete_name": "山岸 夏希",
     "club": "桐嶺会/みちの会",
     "total_points": 5153.1,
@@ -5801,24 +6298,28 @@
     ]
   },
   {
-    "rank": 222,
-    "athlete_name": "根本 莉子",
-    "club": "横浜国立大学2",
-    "total_points": 5134.9,
+    "rank": 238,
+    "athlete_name": "谷川 理恵",
+    "club": "京都OLC",
+    "total_points": 5128.4,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2667
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2664
+      },
+      {
+        "event_name": "2025-03-29\n                パークO滋賀",
+        "points": 2707
       },
       {
         "event_name": "補完1",
-        "points": 2467
+        "points": 2464
       }
     ]
   },
   {
-    "rank": 223,
+    "rank": 239,
     "athlete_name": "久保田 結理",
     "club": "東北大OLC",
     "total_points": 5122.8,
@@ -5835,10 +6336,146 @@
     ]
   },
   {
-    "rank": 224,
+    "rank": 240,
+    "athlete_name": "大澤 貴子",
+    "club": "サン・スーシ/静岡OLC/Team白樺",
+    "total_points": 5113.6,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2657
+      },
+      {
+        "event_name": "補完1",
+        "points": 2457
+      }
+    ]
+  },
+  {
+    "rank": 241,
+    "athlete_name": "伊東 瑠実子",
+    "club": "京葉OLクラブ/農林走友会",
+    "total_points": 5102,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2651
+      },
+      {
+        "event_name": "補完1",
+        "points": 2451
+      }
+    ]
+  },
+  {
+    "rank": 242,
+    "athlete_name": "塚越 真悠子",
+    "club": "OLCふるはうす",
+    "total_points": 5087,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-05-18\n                第122回上尾OLC",
+        "points": 2644
+      },
+      {
+        "event_name": "補完1",
+        "points": 2444
+      }
+    ]
+  },
+  {
+    "rank": 243,
+    "athlete_name": "小竹 佳穂",
+    "club": "桐嶺会/KOLA",
+    "total_points": 5081.3,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2641
+      },
+      {
+        "event_name": "補完1",
+        "points": 2441
+      }
+    ]
+  },
+  {
+    "rank": 244,
+    "athlete_name": "平澤 葵",
+    "club": "トータス/方向音痴会",
+    "total_points": 5049.3,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-09-13\n                第124回上尾OLC",
+        "points": 2625
+      },
+      {
+        "event_name": "補完1",
+        "points": 2425
+      }
+    ]
+  },
+  {
+    "rank": 246,
+    "athlete_name": "藤井 春菜",
+    "club": "札幌OLC/札幌農学校",
+    "total_points": 5029,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-09-13\n                北大大会Day1",
+        "points": 2615
+      },
+      {
+        "event_name": "補完1",
+        "points": 2415
+      }
+    ]
+  },
+  {
+    "rank": 249,
+    "athlete_name": "宮津奈緒美",
+    "club": "青葉会20",
+    "total_points": 5013,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-12-06\n                東北大前日",
+        "points": 2607
+      },
+      {
+        "event_name": "補完1",
+        "points": 2407
+      }
+    ]
+  },
+  {
+    "rank": 250,
+    "athlete_name": "濱田 美咲妃",
+    "club": "-",
+    "total_points": 5008.5,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2604
+      },
+      {
+        "event_name": "補完1",
+        "points": 2404
+      }
+    ]
+  },
+  {
+    "rank": 251,
     "athlete_name": "石田 美代子",
     "club": "愛知OLC",
-    "total_points": 5110.1,
+    "total_points": 4998.7,
     "is_active": true,
     "event_scores": [
       {
@@ -5860,215 +6497,7 @@
     ]
   },
   {
-    "rank": 225,
-    "athlete_name": "吉岡 実沙音",
-    "club": "早稲田大学3",
-    "total_points": 5107.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2654
-      },
-      {
-        "event_name": "補完1",
-        "points": 2454
-      }
-    ]
-  },
-  {
-    "rank": 226,
-    "athlete_name": "塚越 真悠子",
-    "club": "-",
-    "total_points": 5087,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-05-18\n                第122回上尾OLC",
-        "points": 2644
-      },
-      {
-        "event_name": "補完1",
-        "points": 2444
-      }
-    ]
-  },
-  {
-    "rank": 227,
-    "athlete_name": "平澤 葵",
-    "club": "トータス/方向音痴会",
-    "total_points": 5049.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-09-13\n                第124回上尾OLC",
-        "points": 2625
-      },
-      {
-        "event_name": "補完1",
-        "points": 2425
-      }
-    ]
-  },
-  {
-    "rank": 228,
-    "athlete_name": "水嶋 直子",
-    "club": "入間市OLC",
-    "total_points": 5038.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2619
-      },
-      {
-        "event_name": "補完1",
-        "points": 2419
-      }
-    ]
-  },
-  {
-    "rank": 229,
-    "athlete_name": "河野 珠里亜",
-    "club": "越王会/長岡OLC",
-    "total_points": 5032.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-16\n                新潟大大会",
-        "points": 2616
-      },
-      {
-        "event_name": "補完1",
-        "points": 2416
-      }
-    ]
-  },
-  {
-    "rank": 230,
-    "athlete_name": "藤井 春菜",
-    "club": "札幌OLC/札幌農学校",
-    "total_points": 5029,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-09-13\n                北大大会Day1",
-        "points": 2615
-      },
-      {
-        "event_name": "補完1",
-        "points": 2415
-      }
-    ]
-  },
-  {
-    "rank": 231,
-    "athlete_name": "芳賀愛",
-    "club": "福島大学",
-    "total_points": 5021.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 1850
-      },
-      {
-        "event_name": "2025-06-07\n                あだたら高原前日大会",
-        "points": 1631
-      },
-      {
-        "event_name": "補完1",
-        "points": 1540
-      }
-    ]
-  },
-  {
-    "rank": 232,
-    "athlete_name": "上原 珠美",
-    "club": "京都OLC/くまのOLC",
-    "total_points": 5016.1,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 2608
-      },
-      {
-        "event_name": "補完1",
-        "points": 2408
-      }
-    ]
-  },
-  {
-    "rank": 233,
-    "athlete_name": "宮津奈緒美",
-    "club": "青葉会20",
-    "total_points": 5013,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2607
-      },
-      {
-        "event_name": "補完1",
-        "points": 2407
-      }
-    ]
-  },
-  {
-    "rank": 234,
-    "athlete_name": "濱田 美咲妃",
-    "club": "日本女子大学2",
-    "total_points": 5008.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2604
-      },
-      {
-        "event_name": "補完1",
-        "points": 2404
-      }
-    ]
-  },
-  {
-    "rank": 235,
-    "athlete_name": "横井 里乃",
-    "club": "静岡OLC",
-    "total_points": 4993.7,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2597
-      },
-      {
-        "event_name": "補完1",
-        "points": 2397
-      }
-    ]
-  },
-  {
-    "rank": 236,
-    "athlete_name": "盛合 美誉",
-    "club": "じゃじゃじゃOC",
-    "total_points": 4975.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2588
-      },
-      {
-        "event_name": "補完1",
-        "points": 2388
-      }
-    ]
-  },
-  {
-    "rank": 237,
+    "rank": 253,
     "athlete_name": "美濃部 康世",
     "club": "渋谷で走る会",
     "total_points": 4962.7,
@@ -6085,24 +6514,24 @@
     ]
   },
   {
-    "rank": 238,
-    "athlete_name": "梅本 咲希",
-    "club": "静岡大学2",
-    "total_points": 4947.7,
+    "rank": 254,
+    "athlete_name": "田辺 千紗",
+    "club": "-",
+    "total_points": 4945.6,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2574
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2573
       },
       {
         "event_name": "補完1",
-        "points": 2374
+        "points": 2373
       }
     ]
   },
   {
-    "rank": 239,
+    "rank": 255,
     "athlete_name": "高梨 史重",
     "club": "相模女子大学4",
     "total_points": 4943.1,
@@ -6119,41 +6548,7 @@
     ]
   },
   {
-    "rank": 240,
-    "athlete_name": "井上 千帆里",
-    "club": "-",
-    "total_points": 4931.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-05-18\n                第122回上尾OLC",
-        "points": 2566
-      },
-      {
-        "event_name": "補完1",
-        "points": 2366
-      }
-    ]
-  },
-  {
-    "rank": 241,
-    "athlete_name": "香取 菜穂",
-    "club": "鳩の会/京葉OLクラブ",
-    "total_points": 4923.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-09-13\n                第124回上尾OLC",
-        "points": 2562
-      },
-      {
-        "event_name": "補完1",
-        "points": 2362
-      }
-    ]
-  },
-  {
-    "rank": 242,
+    "rank": 258,
     "athlete_name": "末田 希歩",
     "club": "奈良女OLC",
     "total_points": 4917.4,
@@ -6170,24 +6565,24 @@
     ]
   },
   {
-    "rank": 243,
-    "athlete_name": "小倉 歩実",
-    "club": "早大OC",
-    "total_points": 4906.8,
+    "rank": 260,
+    "athlete_name": "中村 茉菜",
+    "club": "ES関東C",
+    "total_points": 4900.4,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-08-17\n                関東・北信越スプセレ",
-        "points": 2553
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2550
       },
       {
         "event_name": "補完1",
-        "points": 2353
+        "points": 2350
       }
     ]
   },
   {
-    "rank": 244,
+    "rank": 261,
     "athlete_name": "渡邉 すず",
     "club": "北大OLC",
     "total_points": 4896.2,
@@ -6204,24 +6599,7 @@
     ]
   },
   {
-    "rank": 245,
-    "athlete_name": "坂池 なつほ",
-    "club": "桐嶺会/トータス",
-    "total_points": 4880.6,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2540
-      },
-      {
-        "event_name": "補完1",
-        "points": 2340
-      }
-    ]
-  },
-  {
-    "rank": 246,
+    "rank": 262,
     "athlete_name": "西名 紗織",
     "club": "ときわ走林会/桐嶺会",
     "total_points": 4876.4,
@@ -6238,7 +6616,7 @@
     ]
   },
   {
-    "rank": 247,
+    "rank": 263,
     "athlete_name": "岡本 ひなの",
     "club": "OLP兵庫",
     "total_points": 4875.4,
@@ -6255,41 +6633,7 @@
     ]
   },
   {
-    "rank": 248,
-    "athlete_name": "奥村 友香",
-    "club": "大阪大学3",
-    "total_points": 4873.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-04-19\n                白石島スプリント",
-        "points": 2537
-      },
-      {
-        "event_name": "補完1",
-        "points": 2337
-      }
-    ]
-  },
-  {
-    "rank": 249,
-    "athlete_name": "松崎 唯子",
-    "club": "法政大学",
-    "total_points": 4873.6,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2537
-      },
-      {
-        "event_name": "補完1",
-        "points": 2337
-      }
-    ]
-  },
-  {
-    "rank": 250,
+    "rank": 264,
     "athlete_name": "朝間 璃衣紗",
     "club": "ES関東C",
     "total_points": 4872.2,
@@ -6306,24 +6650,7 @@
     ]
   },
   {
-    "rank": 251,
-    "athlete_name": "浦中 美里",
-    "club": "ES関東C",
-    "total_points": 4868.6,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2534
-      },
-      {
-        "event_name": "補完1",
-        "points": 2334
-      }
-    ]
-  },
-  {
-    "rank": 252,
+    "rank": 265,
     "athlete_name": "奈良崎 有香",
     "club": "横浜国立大学4",
     "total_points": 4846.6,
@@ -6340,7 +6667,7 @@
     ]
   },
   {
-    "rank": 253,
+    "rank": 266,
     "athlete_name": "小川 紗愛",
     "club": "名椙OLC",
     "total_points": 4846.6,
@@ -6357,7 +6684,7 @@
     ]
   },
   {
-    "rank": 254,
+    "rank": 267,
     "athlete_name": "三好 暢子",
     "club": "上尾OLC",
     "total_points": 4839.5,
@@ -6374,41 +6701,28 @@
     ]
   },
   {
-    "rank": 255,
-    "athlete_name": "佐藤 千尋",
-    "club": "青葉会21",
-    "total_points": 4830.4,
+    "rank": 269,
+    "athlete_name": "西川 真由",
+    "club": "ES関東C",
+    "total_points": 4825.3,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2515
+        "event_name": "2026-02-08\n                全日本スプリント",
+        "points": 2513
+      },
+      {
+        "event_name": "2025-05-03\n                島根2daysスプリント",
+        "points": 2622
       },
       {
         "event_name": "補完1",
-        "points": 2315
+        "points": 2313
       }
     ]
   },
   {
-    "rank": 256,
-    "athlete_name": "長縄 美春",
-    "club": "入間市OLC",
-    "total_points": 4824.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-03-22\n                第128回上尾OLC",
-        "points": 2512
-      },
-      {
-        "event_name": "補完1",
-        "points": 2312
-      }
-    ]
-  },
-  {
-    "rank": 257,
+    "rank": 270,
     "athlete_name": "大栗 由希",
     "club": "ときわ走林会",
     "total_points": 4816.5,
@@ -6425,26 +6739,9 @@
     ]
   },
   {
-    "rank": 258,
-    "athlete_name": "吉田莉子",
-    "club": "守山高校",
-    "total_points": 4814.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2507
-      },
-      {
-        "event_name": "補完1",
-        "points": 2307
-      }
-    ]
-  },
-  {
-    "rank": 259,
+    "rank": 271,
     "athlete_name": "清水 容子",
-    "club": "-",
+    "club": "入間市OLC",
     "total_points": 4813.4,
     "is_active": true,
     "event_scores": [
@@ -6459,7 +6756,7 @@
     ]
   },
   {
-    "rank": 260,
+    "rank": 273,
     "athlete_name": "木下 佳子",
     "club": "-",
     "total_points": 4810.9,
@@ -6476,7 +6773,24 @@
     ]
   },
   {
-    "rank": 261,
+    "rank": 274,
+    "athlete_name": "渡邊 心葉",
+    "club": "東大OLK",
+    "total_points": 4803.2,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2502
+      },
+      {
+        "event_name": "補完1",
+        "points": 2302
+      }
+    ]
+  },
+  {
+    "rank": 275,
     "athlete_name": "藤田 真央",
     "club": "奈良女子大学4",
     "total_points": 4798.8,
@@ -6493,7 +6807,7 @@
     ]
   },
   {
-    "rank": 262,
+    "rank": 276,
     "athlete_name": "吉田 しのぶ",
     "club": "ワンダラーズ",
     "total_points": 4782.2,
@@ -6510,7 +6824,7 @@
     ]
   },
   {
-    "rank": 263,
+    "rank": 277,
     "athlete_name": "関和 小菊",
     "club": "一橋大学3",
     "total_points": 4771,
@@ -6527,41 +6841,7 @@
     ]
   },
   {
-    "rank": 264,
-    "athlete_name": "酒井 佳子",
-    "club": "札幌農学校",
-    "total_points": 4767.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-09-13\n                北大大会Day1",
-        "points": 2484
-      },
-      {
-        "event_name": "補完1",
-        "points": 2284
-      }
-    ]
-  },
-  {
-    "rank": 265,
-    "athlete_name": "高橋 ひなの",
-    "club": "青葉会15",
-    "total_points": 4753.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2477
-      },
-      {
-        "event_name": "補完1",
-        "points": 2277
-      }
-    ]
-  },
-  {
-    "rank": 266,
+    "rank": 279,
     "athlete_name": "松村 穂咲奈",
     "club": "筑波大学",
     "total_points": 4744,
@@ -6578,7 +6858,7 @@
     ]
   },
   {
-    "rank": 267,
+    "rank": 280,
     "athlete_name": "宮川 葵衣",
     "club": "練馬OLC",
     "total_points": 4742.5,
@@ -6595,7 +6875,7 @@
     ]
   },
   {
-    "rank": 268,
+    "rank": 281,
     "athlete_name": "藤若 柚寿",
     "club": "奈良女子大学4",
     "total_points": 4727.1,
@@ -6612,7 +6892,7 @@
     ]
   },
   {
-    "rank": 269,
+    "rank": 282,
     "athlete_name": "近藤 久美",
     "club": "同志社大学3",
     "total_points": 4725,
@@ -6629,7 +6909,7 @@
     ]
   },
   {
-    "rank": 270,
+    "rank": 283,
     "athlete_name": "羽石 笑佳",
     "club": "新潟大学",
     "total_points": 4718.4,
@@ -6646,7 +6926,7 @@
     ]
   },
   {
-    "rank": 271,
+    "rank": 284,
     "athlete_name": "松尾 奏樂",
     "club": "東北大学2",
     "total_points": 4714.6,
@@ -6663,7 +6943,7 @@
     ]
   },
   {
-    "rank": 272,
+    "rank": 285,
     "athlete_name": "渡邊 絵万",
     "club": "金沢大学3",
     "total_points": 4688,
@@ -6680,7 +6960,7 @@
     ]
   },
   {
-    "rank": 273,
+    "rank": 286,
     "athlete_name": "坂林 千紘",
     "club": "慶應義塾大学2",
     "total_points": 4667.7,
@@ -6697,24 +6977,7 @@
     ]
   },
   {
-    "rank": 274,
-    "athlete_name": "石榑朱莉",
-    "club": "東北大学 3",
-    "total_points": 4663.7,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-11-22\n                インカレスプリント",
-        "points": 2432
-      },
-      {
-        "event_name": "補完1",
-        "points": 2232
-      }
-    ]
-  },
-  {
-    "rank": 275,
+    "rank": 288,
     "athlete_name": "福原 優果",
     "club": "広大OLC",
     "total_points": 4663.3,
@@ -6731,24 +6994,7 @@
     ]
   },
   {
-    "rank": 276,
-    "athlete_name": "針生 佳奈",
-    "club": "京葉OLクラブ",
-    "total_points": 4659.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-07-19\n                岩手大会Day1",
-        "points": 2430
-      },
-      {
-        "event_name": "補完1",
-        "points": 2230
-      }
-    ]
-  },
-  {
-    "rank": 277,
+    "rank": 290,
     "athlete_name": "内木 睦",
     "club": "KROK",
     "total_points": 4623.8,
@@ -6765,7 +7011,7 @@
     ]
   },
   {
-    "rank": 278,
+    "rank": 292,
     "athlete_name": "稲邊 穂乃香",
     "club": "-",
     "total_points": 4618.2,
@@ -6782,7 +7028,7 @@
     ]
   },
   {
-    "rank": 279,
+    "rank": 293,
     "athlete_name": "村上 瑠璃",
     "club": "立命館大学3",
     "total_points": 4618.1,
@@ -6799,7 +7045,28 @@
     ]
   },
   {
-    "rank": 280,
+    "rank": 294,
+    "athlete_name": "石川 智花",
+    "club": "京都女子大学4",
+    "total_points": 4611.9,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2025-11-22\n                インカレスプリント",
+        "points": 2406
+      },
+      {
+        "event_name": "2025-04-19\n                白石島スプリント",
+        "points": 2441
+      },
+      {
+        "event_name": "補完1",
+        "points": 2206
+      }
+    ]
+  },
+  {
+    "rank": 295,
     "athlete_name": "門井 愛子",
     "club": "京都女子大学3",
     "total_points": 4611.9,
@@ -6816,7 +7083,7 @@
     ]
   },
   {
-    "rank": 281,
+    "rank": 296,
     "athlete_name": "浦川 沙耶佳",
     "club": "筑波大学3",
     "total_points": 4610,
@@ -6833,24 +7100,24 @@
     ]
   },
   {
-    "rank": 282,
-    "athlete_name": "赤羽 舞香",
-    "club": "北大OLC",
-    "total_points": 4606.2,
+    "rank": 297,
+    "athlete_name": "椎名 皆咲",
+    "club": "中央大学附属高等学校WILDLIFE",
+    "total_points": 4583.7,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2403
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2392
       },
       {
         "event_name": "補完1",
-        "points": 2203
+        "points": 2192
       }
     ]
   },
   {
-    "rank": 283,
+    "rank": 298,
     "athlete_name": "飛田 優",
     "club": "大阪大学",
     "total_points": 4575.7,
@@ -6867,7 +7134,7 @@
     ]
   },
   {
-    "rank": 284,
+    "rank": 299,
     "athlete_name": "成澤 美侑",
     "club": "東北大学2",
     "total_points": 4549.9,
@@ -6884,41 +7151,24 @@
     ]
   },
   {
-    "rank": 285,
-    "athlete_name": "上迫穂香",
-    "club": "守山高校",
-    "total_points": 4536.2,
+    "rank": 300,
+    "athlete_name": "水嶋 直子",
+    "club": "入間市OLC/渋谷で走る会",
+    "total_points": 4531.5,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2368
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 2366
       },
       {
         "event_name": "補完1",
-        "points": 2168
+        "points": 2166
       }
     ]
   },
   {
-    "rank": 286,
-    "athlete_name": "矢倉 美励",
-    "club": "鳩の会",
-    "total_points": 4526.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2363
-      },
-      {
-        "event_name": "補完1",
-        "points": 2163
-      }
-    ]
-  },
-  {
-    "rank": 287,
+    "rank": 302,
     "athlete_name": "町田 千優",
     "club": "お茶の水女子大学3",
     "total_points": 4518.2,
@@ -6935,24 +7185,7 @@
     ]
   },
   {
-    "rank": 288,
-    "athlete_name": "木本 円花",
-    "club": "札幌農学校",
-    "total_points": 4505.6,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-09-13\n                北大大会Day1",
-        "points": 2353
-      },
-      {
-        "event_name": "補完1",
-        "points": 2153
-      }
-    ]
-  },
-  {
-    "rank": 289,
+    "rank": 304,
     "athlete_name": "圷 菜緒",
     "club": "北大OLC",
     "total_points": 4485.2,
@@ -6969,7 +7202,7 @@
     ]
   },
   {
-    "rank": 290,
+    "rank": 305,
     "athlete_name": "齊藤 由楽",
     "club": "早稲田大学",
     "total_points": 4478.7,
@@ -6986,7 +7219,7 @@
     ]
   },
   {
-    "rank": 291,
+    "rank": 306,
     "athlete_name": "亀田 万葉",
     "club": "東大OLK",
     "total_points": 4468.9,
@@ -7003,7 +7236,7 @@
     ]
   },
   {
-    "rank": 292,
+    "rank": 307,
     "athlete_name": "松本 和佳",
     "club": "同志社大学2",
     "total_points": 4447.4,
@@ -7020,7 +7253,7 @@
     ]
   },
   {
-    "rank": 293,
+    "rank": 308,
     "athlete_name": "大神田 さくら",
     "club": "千葉大学",
     "total_points": 4434.1,
@@ -7037,24 +7270,7 @@
     ]
   },
   {
-    "rank": 294,
-    "athlete_name": "山本奏空",
-    "club": "守山高校",
-    "total_points": 4421.7,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2311
-      },
-      {
-        "event_name": "補完1",
-        "points": 2111
-      }
-    ]
-  },
-  {
-    "rank": 295,
+    "rank": 309,
     "athlete_name": "吉田 真紘",
     "club": "名古屋大学2",
     "total_points": 4416.7,
@@ -7071,41 +7287,7 @@
     ]
   },
   {
-    "rank": 296,
-    "athlete_name": "直井萌香",
-    "club": "KOLA",
-    "total_points": 4407.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-09-13\n                第124回上尾OLC",
-        "points": 2304
-      },
-      {
-        "event_name": "補完1",
-        "points": 2104
-      }
-    ]
-  },
-  {
-    "rank": 297,
-    "athlete_name": "菅原美智子",
-    "club": "つるまいOLC",
-    "total_points": 4391.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2296
-      },
-      {
-        "event_name": "補完1",
-        "points": 2096
-      }
-    ]
-  },
-  {
-    "rank": 298,
+    "rank": 312,
     "athlete_name": "田中 紅音",
     "club": "ES関東C",
     "total_points": 4385.3,
@@ -7122,7 +7304,7 @@
     ]
   },
   {
-    "rank": 299,
+    "rank": 313,
     "athlete_name": "早川 菜都",
     "club": "相模女子大学",
     "total_points": 4377.6,
@@ -7139,7 +7321,7 @@
     ]
   },
   {
-    "rank": 300,
+    "rank": 314,
     "athlete_name": "酒井 香綸",
     "club": "千葉大学 2",
     "total_points": 4372.4,
@@ -7156,24 +7338,7 @@
     ]
   },
   {
-    "rank": 301,
-    "athlete_name": "大島裕子",
-    "club": "OLCレオ",
-    "total_points": 4346,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-09-20\n                信楽スプリント",
-        "points": 2273
-      },
-      {
-        "event_name": "補完1",
-        "points": 2073
-      }
-    ]
-  },
-  {
-    "rank": 302,
+    "rank": 317,
     "athlete_name": "宮井 沙絵",
     "club": "奈良女子大学 4",
     "total_points": 4341,
@@ -7190,7 +7355,7 @@
     ]
   },
   {
-    "rank": 303,
+    "rank": 318,
     "athlete_name": "小林 若菜",
     "club": "北大OLC",
     "total_points": 4331.8,
@@ -7207,24 +7372,45 @@
     ]
   },
   {
-    "rank": 304,
-    "athlete_name": "泉田 みどり",
-    "club": "入間市OLC",
-    "total_points": 4304.4,
+    "rank": 319,
+    "athlete_name": "大山 美菜子",
+    "club": "大阪大学4",
+    "total_points": 4325,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 2252
+        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
+        "points": 2263
+      },
+      {
+        "event_name": "2025-03-29\n                パークO滋賀",
+        "points": 2256
       },
       {
         "event_name": "補完1",
-        "points": 2052
+        "points": 2063
       }
     ]
   },
   {
-    "rank": 305,
+    "rank": 320,
+    "athlete_name": "竹川 知里",
+    "club": "新潟大学",
+    "total_points": 4318.1,
+    "is_active": true,
+    "event_scores": [
+      {
+        "event_name": "2026-05-09\n                長岡OLC",
+        "points": 2259
+      },
+      {
+        "event_name": "補完1",
+        "points": 2059
+      }
+    ]
+  },
+  {
+    "rank": 321,
     "athlete_name": "西川 そら",
     "club": "福島大学",
     "total_points": 4303.8,
@@ -7241,7 +7427,7 @@
     ]
   },
   {
-    "rank": 306,
+    "rank": 322,
     "athlete_name": "浅井 瑠那",
     "club": "名椙OLC",
     "total_points": 4298.9,
@@ -7258,7 +7444,7 @@
     ]
   },
   {
-    "rank": 307,
+    "rank": 323,
     "athlete_name": "松本 和美",
     "club": "徳島県OL協会",
     "total_points": 4286.3,
@@ -7275,24 +7461,7 @@
     ]
   },
   {
-    "rank": 308,
-    "athlete_name": "坂間 みく",
-    "club": "-",
-    "total_points": 4285.1,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-05-18\n                第122回上尾OLC",
-        "points": 2243
-      },
-      {
-        "event_name": "補完1",
-        "points": 2043
-      }
-    ]
-  },
-  {
-    "rank": 309,
+    "rank": 325,
     "athlete_name": "猪股 紗如",
     "club": "名護市/鳩の会",
     "total_points": 4274.5,
@@ -7309,9 +7478,9 @@
     ]
   },
   {
-    "rank": 310,
+    "rank": 326,
     "athlete_name": "齋藤 美咲",
-    "club": "千葉大学",
+    "club": "千葉大OLC",
     "total_points": 4254,
     "is_active": true,
     "event_scores": [
@@ -7326,7 +7495,7 @@
     ]
   },
   {
-    "rank": 311,
+    "rank": 328,
     "athlete_name": "尾形 咲穂",
     "club": "北大OLC",
     "total_points": 4219,
@@ -7343,7 +7512,7 @@
     ]
   },
   {
-    "rank": 312,
+    "rank": 329,
     "athlete_name": "山下 琉奈",
     "club": "千葉大学",
     "total_points": 4204.6,
@@ -7360,58 +7529,7 @@
     ]
   },
   {
-    "rank": 313,
-    "athlete_name": "三井 由美",
-    "club": "三河OLC",
-    "total_points": 4203.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2202
-      },
-      {
-        "event_name": "補完1",
-        "points": 2002
-      }
-    ]
-  },
-  {
-    "rank": 314,
-    "athlete_name": "杉本 真木",
-    "club": "無所属",
-    "total_points": 4176.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2188
-      },
-      {
-        "event_name": "補完1",
-        "points": 1988
-      }
-    ]
-  },
-  {
-    "rank": 315,
-    "athlete_name": "安江 舞莉",
-    "club": "京女OLC",
-    "total_points": 4168.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-08\n                全日本スプリント",
-        "points": 2184
-      },
-      {
-        "event_name": "補完1",
-        "points": 1984
-      }
-    ]
-  },
-  {
-    "rank": 316,
+    "rank": 331,
     "athlete_name": "吉村 菜那美",
     "club": "椙山女学園大学 2",
     "total_points": 4150.7,
@@ -7428,8 +7546,8 @@
     ]
   },
   {
-    "rank": 317,
-    "athlete_name": "山崎 春風",
+    "rank": 332,
+    "athlete_name": "山﨑 春風",
     "club": "日本女子大学 2",
     "total_points": 4147.6,
     "is_active": true,
@@ -7445,7 +7563,7 @@
     ]
   },
   {
-    "rank": 318,
+    "rank": 333,
     "athlete_name": "竹内 碧彩",
     "club": "奈良女OLC",
     "total_points": 4143.2,
@@ -7462,7 +7580,7 @@
     ]
   },
   {
-    "rank": 319,
+    "rank": 334,
     "athlete_name": "鈴木　夕紀子",
     "club": "静岡OLC",
     "total_points": 4142.9,
@@ -7479,7 +7597,7 @@
     ]
   },
   {
-    "rank": 320,
+    "rank": 335,
     "athlete_name": "寺本 遊林",
     "club": "KOLA",
     "total_points": 4139,
@@ -7496,7 +7614,7 @@
     ]
   },
   {
-    "rank": 321,
+    "rank": 336,
     "athlete_name": "高橋 明美",
     "club": "サン・スーシ",
     "total_points": 4103.8,
@@ -7513,24 +7631,7 @@
     ]
   },
   {
-    "rank": 322,
-    "athlete_name": "小栗彩瑚",
-    "club": "-",
-    "total_points": 4097,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2148
-      },
-      {
-        "event_name": "補完1",
-        "points": 1948
-      }
-    ]
-  },
-  {
-    "rank": 323,
+    "rank": 338,
     "athlete_name": "西野 楓香",
     "club": "奈良女子大学4",
     "total_points": 4083.8,
@@ -7547,7 +7648,7 @@
     ]
   },
   {
-    "rank": 324,
+    "rank": 339,
     "athlete_name": "大慈彌 陽翠",
     "club": "日本女子大学",
     "total_points": 4077.3,
@@ -7564,24 +7665,7 @@
     ]
   },
   {
-    "rank": 325,
-    "athlete_name": "村越 久子",
-    "club": "静岡OLC",
-    "total_points": 4073.2,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-03-29\n                パークO滋賀",
-        "points": 2137
-      },
-      {
-        "event_name": "補完1",
-        "points": 1937
-      }
-    ]
-  },
-  {
-    "rank": 326,
+    "rank": 340,
     "athlete_name": "青山 祥子",
     "club": "大阪大学4",
     "total_points": 4052.3,
@@ -7598,7 +7682,7 @@
     ]
   },
   {
-    "rank": 327,
+    "rank": 341,
     "athlete_name": "金柿 実日子",
     "club": "奈良女子大学 2",
     "total_points": 4033.8,
@@ -7615,41 +7699,7 @@
     ]
   },
   {
-    "rank": 328,
-    "athlete_name": "香取 由里子",
-    "club": "京葉OLクラブ/鳩の会",
-    "total_points": 4026.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-02-21\n                千葉大大会",
-        "points": 2113
-      },
-      {
-        "event_name": "補完1",
-        "points": 1913
-      }
-    ]
-  },
-  {
-    "rank": 329,
-    "athlete_name": "氏家敦子",
-    "club": "つるまいOLC",
-    "total_points": 4008.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2104
-      },
-      {
-        "event_name": "補完1",
-        "points": 1904
-      }
-    ]
-  },
-  {
-    "rank": 330,
+    "rank": 344,
     "athlete_name": "園山 美衣奈",
     "club": "奈良女子大学 2",
     "total_points": 3990.8,
@@ -7666,41 +7716,7 @@
     ]
   },
   {
-    "rank": 331,
-    "athlete_name": "玉木由佳",
-    "club": "-",
-    "total_points": 3962.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2081
-      },
-      {
-        "event_name": "補完1",
-        "points": 1881
-      }
-    ]
-  },
-  {
-    "rank": 332,
-    "athlete_name": "渡部菜々子",
-    "club": "-",
-    "total_points": 3931.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2066
-      },
-      {
-        "event_name": "補完1",
-        "points": 1866
-      }
-    ]
-  },
-  {
-    "rank": 333,
+    "rank": 346,
     "athlete_name": "小山 真鈴",
     "club": "奈良女子大学4",
     "total_points": 3907.1,
@@ -7717,24 +7733,7 @@
     ]
   },
   {
-    "rank": 334,
-    "athlete_name": "佐久間 千恵子",
-    "club": "博多OLC",
-    "total_points": 3899.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2050
-      },
-      {
-        "event_name": "補完1",
-        "points": 1850
-      }
-    ]
-  },
-  {
-    "rank": 335,
+    "rank": 347,
     "athlete_name": "佐藤 葉月",
     "club": "椙山女学園大学2",
     "total_points": 3893.2,
@@ -7751,41 +7750,7 @@
     ]
   },
   {
-    "rank": 336,
-    "athlete_name": "LinWanyi",
-    "club": "-",
-    "total_points": 3888.8,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-10\n                沖縄大会day1",
-        "points": 2044
-      },
-      {
-        "event_name": "補完1",
-        "points": 1844
-      }
-    ]
-  },
-  {
-    "rank": 337,
-    "athlete_name": "重吉芽衣",
-    "club": "-",
-    "total_points": 3878.2,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-08-09\n                スタジアムスプリントレース1",
-        "points": 2039
-      },
-      {
-        "event_name": "補完1",
-        "points": 1839
-      }
-    ]
-  },
-  {
-    "rank": 338,
+    "rank": 350,
     "athlete_name": "宮崎 麻実",
     "club": "津田塾大学",
     "total_points": 3869.5,
@@ -7802,58 +7767,41 @@
     ]
   },
   {
-    "rank": 339,
-    "athlete_name": "かせ谷美帆",
-    "club": "大阪大学1",
-    "total_points": 3842.4,
+    "rank": 351,
+    "athlete_name": "齋藤 泉",
+    "club": "十文字学園女子大学オリエンテーリング部",
+    "total_points": 3856,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-07-13\n                東海・関西・中九四スプセレ",
-        "points": 2021
+        "event_name": "2026-05-05\n                第129回上尾OLC別府沼",
+        "points": 2028
       },
       {
         "event_name": "補完1",
-        "points": 1821
+        "points": 1828
       }
     ]
   },
   {
-    "rank": 340,
-    "athlete_name": "柴田 悠姫子",
-    "club": "早大OC",
-    "total_points": 3833.1,
+    "rank": 353,
+    "athlete_name": "石下 瑠華",
+    "club": "金大OLC",
+    "total_points": 3819.8,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2026-02-21\n                千葉大大会",
-        "points": 2017
+        "event_name": "2026-05-17\n                富山Day2",
+        "points": 2010
       },
       {
         "event_name": "補完1",
-        "points": 1817
+        "points": 1810
       }
     ]
   },
   {
-    "rank": 341,
-    "athlete_name": "吉岡 康子",
-    "club": "OLC吉備路",
-    "total_points": 3825,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 2012
-      },
-      {
-        "event_name": "補完1",
-        "points": 1812
-      }
-    ]
-  },
-  {
-    "rank": 342,
+    "rank": 354,
     "athlete_name": "大塚 ふみ子",
     "club": "千葉OLK",
     "total_points": 3817.4,
@@ -7870,24 +7818,7 @@
     ]
   },
   {
-    "rank": 343,
-    "athlete_name": "池藍",
-    "club": "OLCルーパー",
-    "total_points": 3806,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-09-13\n                北大大会Day1",
-        "points": 2003
-      },
-      {
-        "event_name": "補完1",
-        "points": 1803
-      }
-    ]
-  },
-  {
-    "rank": 344,
+    "rank": 356,
     "athlete_name": "笛木 典子",
     "club": "西蒲OC",
     "total_points": 3791.1,
@@ -7904,7 +7835,7 @@
     ]
   },
   {
-    "rank": 345,
+    "rank": 357,
     "athlete_name": "井上 悠生",
     "club": "名椙OLC",
     "total_points": 3760.2,
@@ -7921,58 +7852,24 @@
     ]
   },
   {
-    "rank": 346,
-    "athlete_name": "中村莉子",
-    "club": "青葉会18",
-    "total_points": 3734.2,
+    "rank": 361,
+    "athlete_name": "青木 ことり",
+    "club": "中大附属中学校WILDLIFE",
+    "total_points": 3672,
     "is_active": true,
     "event_scores": [
       {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 1967
+        "event_name": "2026-03-28\n                筑波大大会day1",
+        "points": 1936
       },
       {
         "event_name": "補完1",
-        "points": 1767
+        "points": 1736
       }
     ]
   },
   {
-    "rank": 347,
-    "athlete_name": "高島恵美子",
-    "club": "-",
-    "total_points": 3724.5,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 1962
-      },
-      {
-        "event_name": "補完1",
-        "points": 1762
-      }
-    ]
-  },
-  {
-    "rank": 348,
-    "athlete_name": "佐塚由香",
-    "club": "札幌農学校",
-    "total_points": 3679.3,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-09-13\n                北大大会Day1",
-        "points": 1940
-      },
-      {
-        "event_name": "補完1",
-        "points": 1740
-      }
-    ]
-  },
-  {
-    "rank": 349,
+    "rank": 362,
     "athlete_name": "田中 晴菜",
     "club": "宮城学院女子大学 2",
     "total_points": 3654.8,
@@ -7989,7 +7886,7 @@
     ]
   },
   {
-    "rank": 350,
+    "rank": 363,
     "athlete_name": "山添 弥生",
     "club": "京都女子大学 2",
     "total_points": 3628.6,
@@ -8006,26 +7903,9 @@
     ]
   },
   {
-    "rank": 351,
-    "athlete_name": "白鳥 桂子",
-    "club": "水篶刈",
-    "total_points": 3619.2,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-09-13\n                北大大会Day1",
-        "points": 1910
-      },
-      {
-        "event_name": "補完1",
-        "points": 1710
-      }
-    ]
-  },
-  {
-    "rank": 352,
+    "rank": 365,
     "athlete_name": "木村 光里",
-    "club": "東京科学大学",
+    "club": "東京科学大OLT",
     "total_points": 3606,
     "is_active": true,
     "event_scores": [
@@ -8040,7 +7920,7 @@
     ]
   },
   {
-    "rank": 353,
+    "rank": 366,
     "athlete_name": "朝賀 せり乃",
     "club": "椙山女学園大学2",
     "total_points": 3604,
@@ -8057,58 +7937,7 @@
     ]
   },
   {
-    "rank": 354,
-    "athlete_name": "池ヶ谷牧",
-    "club": "方向音痴会",
-    "total_points": 3589.4,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-04-19\n                白石島スプリント",
-        "points": 1895
-      },
-      {
-        "event_name": "補完1",
-        "points": 1695
-      }
-    ]
-  },
-  {
-    "rank": 355,
-    "athlete_name": "大橋美咲",
-    "club": "-",
-    "total_points": 3569,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 1884
-      },
-      {
-        "event_name": "補完1",
-        "points": 1684
-      }
-    ]
-  },
-  {
-    "rank": 356,
-    "athlete_name": "HaungChingwen",
-    "club": "-",
-    "total_points": 3558.6,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2026-01-11\n                沖縄大会day2",
-        "points": 1879
-      },
-      {
-        "event_name": "補完1",
-        "points": 1679
-      }
-    ]
-  },
-  {
-    "rank": 357,
+    "rank": 368,
     "athlete_name": "砂川 七海",
     "club": "早大OC",
     "total_points": 3555.5,
@@ -8125,7 +7954,7 @@
     ]
   },
   {
-    "rank": 358,
+    "rank": 369,
     "athlete_name": "鈴木 聡実",
     "club": "東北大学",
     "total_points": 3542.9,
@@ -8142,7 +7971,7 @@
     ]
   },
   {
-    "rank": 359,
+    "rank": 370,
     "athlete_name": "川原 陽子",
     "club": "千葉大学",
     "total_points": 3483.3,
@@ -8155,74 +7984,6 @@
       {
         "event_name": "補完1",
         "points": 1642
-      }
-    ]
-  },
-  {
-    "rank": 360,
-    "athlete_name": "大橋愛美",
-    "club": "-",
-    "total_points": 3303.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 1752
-      },
-      {
-        "event_name": "補完1",
-        "points": 1552
-      }
-    ]
-  },
-  {
-    "rank": 361,
-    "athlete_name": "佐藤 汐子",
-    "club": "宮城学院女子大学",
-    "total_points": 3167,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-12-06\n                東北大前日",
-        "points": 1683
-      },
-      {
-        "event_name": "補完1",
-        "points": 1483
-      }
-    ]
-  },
-  {
-    "rank": 362,
-    "athlete_name": "大塚羽菜",
-    "club": "-",
-    "total_points": 3073.9,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-04-19\n                白石島スプリント",
-        "points": 1637
-      },
-      {
-        "event_name": "補完1",
-        "points": 1437
-      }
-    ]
-  },
-  {
-    "rank": 363,
-    "athlete_name": "杉本 若奈",
-    "club": "無所属",
-    "total_points": 3004.6,
-    "is_active": true,
-    "event_scores": [
-      {
-        "event_name": "2025-05-03\n                島根2daysスプリント",
-        "points": 1602
-      },
-      {
-        "event_name": "補完1",
-        "points": 1402
       }
     ]
   }

@@ -259,12 +259,21 @@ const athleteMap = new Map<string, {
 // --- 無差別4クラスをJOYから最新取得してJSON上書き ---
 import * as cheerio from "cheerio";
 
-const OPEN_CLASSES = [
-  { typeId: 1, classId: 1, file: "age_forest_無差別.json" },
-  { typeId: 1, classId: 20, file: "age_forest_女子無差別.json" },
-  { typeId: 15, classId: 47, file: "age_sprint_S_無差別.json" },
-  { typeId: 15, classId: 66, file: "age_sprint_S_女子無差別.json" },
-];
+// 全ランキングカテゴリを ranking-configs.json から導出してJOYから最新取得。
+// （2026-05 以前は無差別4クラスのみ更新 → 全77カテゴリに拡張）
+interface RankingClassRef { typeId: number; classId: number; file: string }
+const ALL_CLASSES: RankingClassRef[] = (() => {
+  const configPath = path.resolve(__dirname, "../src/data/ranking-configs.json");
+  const configs: { type: string; typeId: number; classes: { id: number; name: string }[] }[] =
+    JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  const list: RankingClassRef[] = [];
+  for (const t of configs) {
+    for (const c of t.classes) {
+      list.push({ typeId: t.typeId, classId: c.id, file: `${t.type}_${c.name}.json` });
+    }
+  }
+  return list;
+})();
 
 function parsePage(html: string): RawEntry[] {
   const $ = cheerio.load(html);
@@ -296,8 +305,25 @@ function parsePage(html: string): RawEntry[] {
   return entries;
 }
 
-/** 1ページ分のHTMLを取得（プロキシ → JOY直接 のフォールバック） */
-async function fetchRankingPage(typeId: number, classId: number, page: number): Promise<string> {
+// 全カテゴリ取得時のビルド時間/JOY負荷を抑えるための制御値
+const FETCH_CONCURRENCY = 4;   // 同時取得カテゴリ数
+const REQUEST_DELAY_MS = 150;  // 同一カテゴリ内のページ間スロットル
+const MAX_PAGES = 60;          // 1カテゴリあたりページ数の安全上限
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** ランキング表を含む正常応答かを判定（エラー/タイムアウト代替ページを弾く） */
+function isValidRankingHtml(html: string): boolean {
+  // JOYのランキングページは空クラスでも <table>（ヘッダ）を含む
+  if (!/<table/i.test(html)) return false;
+  if (/<title>[^<]*(40[0-9]|50[0-9]|Error|エラー|Not Found)/i.test(html)) return false;
+  return true;
+}
+
+/** 1ページ分を取得（プロキシ → JOY直接）。失敗時は例外を投げる。 */
+async function fetchRankingPageOnce(typeId: number, classId: number, page: number): Promise<string> {
   const secret = process.env.CRON_SECRET;
 
   // 1. プロキシ経由（Vercelビルド環境からJOY直接が失敗するため）
@@ -308,8 +334,11 @@ async function fetchRankingPage(typeId: number, classId: number, page: number): 
         headers: { Authorization: `Bearer ${secret}` },
         signal: AbortSignal.timeout(15000),
       });
-      if (res.ok) return await res.text();
-    } catch { /* fall through */ }
+      if (res.ok) {
+        const html = await res.text();
+        if (isValidRankingHtml(html)) return html;
+      }
+    } catch { /* fall through to direct */ }
   }
 
   // 2. JOY直接（ローカルビルド時はこちらが成功する）
@@ -320,66 +349,133 @@ async function fetchRankingPage(typeId: number, classId: number, page: number): 
     headers: { "User-Agent": "trails.jp/1.0 (build sync)" },
     signal: AbortSignal.timeout(15000),
   });
-  return await res.text();
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${joyUrl}`);
+  const html = await res.text();
+  if (!isValidRankingHtml(html)) throw new Error(`invalid ranking HTML ${joyUrl}`);
+  return html;
 }
 
-async function fetchFreshRankings() {
-  for (const cls of OPEN_CLASSES) {
+/**
+ * 1ページ分のHTMLを取得。一時的なエラー（JOYの500等）に備え指数的バックオフでリトライする。
+ * 全リトライ失敗時は例外を投げ、呼び出し側で「既存ファイル保持」に倒す。
+ */
+async function fetchRankingPage(typeId: number, classId: number, page: number): Promise<string> {
+  const MAX_RETRIES = 3;
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const allFresh: RawEntry[] = [];
-      const seen = new Set<string>();
-      for (let page = 0; ; page++) {
-        const html = await fetchRankingPage(cls.typeId, cls.classId, page);
-
-        const entries = parsePage(html);
-        if (entries.length === 0) break;
-
-        let added = 0;
-        for (const e of entries) {
-          const key = `${e.rank}:${e.athlete_name}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            allFresh.push(e);
-            added++;
-          }
-        }
-        if (added === 0) break;
-        process.stdout.write(page === 0 ? `${added}` : `+${added}`);
-      }
-
-      // 既存データのイベントスコアをマージ（JOYは直近~1年分のみ）
-      const filePath = path.join(RANKINGS_DIR, cls.file);
-      let existing: RawEntry[] = [];
-      try {
-        existing = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-      } catch { /* first run */ }
-
-      const existingScores = new Map<string, { event_name: string; points: number }[]>();
-      for (const e of existing) {
-        existingScores.set(e.athlete_name, e.event_scores || []);
-      }
-      for (const entry of allFresh) {
-        const oldScores = existingScores.get(entry.athlete_name);
-        if (oldScores && oldScores.length > 0) {
-          const scoreMap = new Map<string, { event_name: string; points: number }>();
-          for (const s of oldScores) scoreMap.set(s.event_name, s);
-          for (const s of entry.event_scores) scoreMap.set(s.event_name, s);
-          entry.event_scores = [...scoreMap.values()];
-        }
-      }
-
-      fs.writeFileSync(filePath, JSON.stringify(allFresh, null, 2));
-      console.log(` → ${cls.file}: ${allFresh.length} entries`);
+      return await fetchRankingPageOnce(typeId, classId, page);
     } catch (e) {
-      console.warn(`  Failed ${cls.file}: using local file`);
+      lastErr = e;
+      if (attempt < MAX_RETRIES - 1) await sleep(800 * (attempt + 1));
     }
   }
+  throw lastErr;
+}
+
+/** 既存スコアのマージキー（同姓同名の衝突回避のため所属も含める） */
+function scoreMergeKey(e: { athlete_name: string; club: string }): string {
+  return `${e.athlete_name} ${e.club}`;
+}
+
+/**
+ * 1カテゴリ分を全ページ取得してJSONを更新する。
+ * いずれかのページ取得が失敗した場合は例外が伝播し、呼び出し側で既存ファイルを保持する（原子的更新）。
+ * 戻り値は結果サマリ文字列。
+ */
+async function fetchCategory(cls: RankingClassRef): Promise<string> {
+  const allFresh: RawEntry[] = [];
+  const seen = new Set<string>();
+  let skipped = 0;
+  let consecutiveFailures = 0;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    let html: string;
+    try {
+      html = await fetchRankingPage(cls.typeId, cls.classId, page);
+    } catch (e) {
+      // 先頭ページの失敗はカテゴリ全体を中断（既存ファイル保持。途中順位から始まる不完全データを出さない）
+      if (page === 0) throw e;
+      // 中間ページの単発障害（JOY側の特定ページ500など）はスキップして次ページへ継続。
+      // 連続失敗が続く場合のみ終端/恒久障害とみなして打ち切る（暴走防止）。
+      skipped++;
+      consecutiveFailures++;
+      if (consecutiveFailures >= 3) break;
+      continue;
+    }
+    consecutiveFailures = 0;
+
+    const entries = parsePage(html);
+    if (entries.length === 0) break; // 空ページ＝ページネーション終端
+
+    let added = 0;
+    for (const e of entries) {
+      const key = `${e.rank}:${e.athlete_name}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        allFresh.push(e);
+        added++;
+      }
+    }
+    if (added === 0) break;
+    await sleep(REQUEST_DELAY_MS);
+  }
+
+  // 取得結果が空 → 既存ファイルを保持（空クラス or 一時的空応答でデータを消さない）
+  if (allFresh.length === 0) return `${cls.file}: 0 entries (kept existing)`;
+
+  // 既存データのイベントスコアをマージ（JOYは直近~1年分のみ返すため過去分を引き継ぐ）
+  const filePath = path.join(RANKINGS_DIR, cls.file);
+  let existing: RawEntry[] = [];
+  try {
+    existing = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  } catch { /* first run */ }
+
+  const existingScores = new Map<string, { event_name: string; points: number }[]>();
+  for (const e of existing) {
+    existingScores.set(scoreMergeKey(e), e.event_scores || []);
+  }
+  for (const entry of allFresh) {
+    const oldScores = existingScores.get(scoreMergeKey(entry));
+    if (oldScores && oldScores.length > 0) {
+      const scoreMap = new Map<string, { event_name: string; points: number }>();
+      for (const s of oldScores) scoreMap.set(s.event_name, s);
+      for (const s of entry.event_scores) scoreMap.set(s.event_name, s);
+      entry.event_scores = [...scoreMap.values()];
+    }
+  }
+
+  fs.writeFileSync(filePath, JSON.stringify(allFresh, null, 2));
+  return `${cls.file}: ${allFresh.length} entries${skipped ? ` (${skipped} page(s) skipped on error)` : ""}`;
+}
+
+/** 全カテゴリを並列度を絞って取得。失敗カテゴリは既存ファイルを保持する。 */
+async function fetchFreshRankings() {
+  const queue = [...ALL_CLASSES];
+  let updated = 0, kept = 0, failed = 0;
+
+  async function worker() {
+    for (;;) {
+      const cls = queue.shift();
+      if (!cls) return;
+      try {
+        const msg = await fetchCategory(cls);
+        if (msg.includes("kept existing")) kept++; else updated++;
+        console.log(` → ${msg}`);
+      } catch (e) {
+        failed++;
+        console.warn(`  Failed ${cls.file}: keeping existing file (${(e as Error).message})`);
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: FETCH_CONCURRENCY }, () => worker()));
+  console.log(`Rankings fetch done: ${updated} updated, ${kept} kept(empty), ${failed} failed(kept existing).`);
 }
 
 // --- メイン処理（async fetch後に同期処理を続行） ---
 async function main() {
 
-console.log("Fetching fresh open-class rankings from JOY...");
+console.log(`Fetching fresh rankings from JOY (all ${ALL_CLASSES.length} categories)...`);
 await fetchFreshRankings().catch((e: unknown) => console.warn("Ranking fetch failed, using local files:", e));
 
 const files = fs.readdirSync(RANKINGS_DIR).filter((f) => f.endsWith(".json"));

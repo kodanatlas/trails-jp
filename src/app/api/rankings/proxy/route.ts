@@ -27,6 +27,12 @@ export async function GET(request: Request) {
     headers: { "User-Agent": "trails.jp/1.0 (build sync)" },
   });
 
+  // 上流(JOY)のステータスを伝搬する。エラーページを正常HTMLとして
+  // ビルド側に渡すと既存ランキングを破壊しうるため、502として返す。
+  if (!res.ok) {
+    return new Response(`Upstream ${res.status}`, { status: 502 });
+  }
+
   return new Response(await res.text(), {
     headers: { "Content-Type": "text/html; charset=utf-8" },
   });
