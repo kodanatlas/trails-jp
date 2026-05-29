@@ -30,13 +30,16 @@ trails_jp/
 ├── src/
 │   ├── app/               ← App Router pages
 │   │   ├── about/         ← このサイトについて
+│   │   ├── admin/cron-status/ ← Cron稼働状況ステータス（公開・noindex）
 │   │   ├── contact/       ← お問い合わせ（Formspree）
-│   │   ├── events/        ← イベント一覧（JOY連携）
+│   │   ├── events/        ← イベント一覧（JOY連携・所属別エントリーリスト表示）
 │   │   ├── maps/          ← 地図データベース
 │   │   ├── rankings/      ← ランキング
 │   │   ├── tracking/      ← GPS追跡
 │   │   ├── upload/        ← O-map登録
-│   │   └── api/cron/      ← 日次バッチ（sync-events, sync-lapcenter）
+│   │   └── api/
+│   │       ├── cron/      ← 日次バッチ（sync-events, sync-lapcenter）
+│   │       └── events/[id]/entries ← エントリーリスト取得（オンデマンド+1hキャッシュ）
 │   ├── components/        ← UIコンポーネント
 │   │   ├── Header.tsx
 │   │   ├── Footer.tsx
@@ -45,7 +48,8 @@ trails_jp/
 │   │   ├── supabase.ts    ← Supabase クライアント
 │   │   ├── sample-data.ts ← サンプルO-map・ランキングデータ
 │   │   ├── map-event-matcher.ts ← O-map↔JOYイベント座標マッチング
-│   │   ├── scraper/       ← JOY/Lap Centerスクレイパー
+│   │   ├── club-normalize.ts ← クラブ名の名寄せ・分割（選手ページとエントリーリストで共有）
+│   │   ├── scraper/       ← JOY/Lap Center/エントリーリストスクレイパー
 │   │   └── utils.ts
 │   ├── data/
 │   │   └── events.json    ← JOYイベントキャッシュ（573件、438件座標付き）
@@ -64,6 +68,9 @@ trails_jp/
 | `SUPABASE_SECRET_KEY` | Supabase service_role key | Vercel + .env.local |
 | `CRON_SECRET` | Cron認証トークン | Vercel |
 | `VERCEL_DEPLOY_HOOK` | 水曜再デプロイ用Deploy Hook URL | Vercel |
+| `RESEND_API_KEY` | Cronエラー通知メール送信用 | Vercel + .env.local |
+| `NOTIFICATION_TO_EMAIL` | Cronエラー通知の宛先メールアドレス | Vercel + .env.local |
+| `NOTIFICATION_FROM_EMAIL` | (任意) 送信元メール。未設定なら `onboarding@resend.dev` | Vercel + .env.local |
 
 ## 外部サービス設定
 
@@ -92,6 +99,7 @@ trails_jp/
 - **LapCenter巡航速度・ミス率**: 水曜Cron → Supabase DB (`lc_performances` テーブル) → `/api/lc/[name]` API
 - **ランキング**: ビルド時に Proxy API (`/api/rankings/proxy`) 経由で JOY から無差別4クラス全ページ取得（水曜自動再デプロイ、PC起動不要）
 - **選手・クラブ**: ビルド時に `build-analysis-index.ts` → 静的JSON + Supabase DB (`athletes`, `athlete_appearances` テーブル)
+- **エントリーリスト**: `/events` で各イベントの JOY エントリー者を所属（クラブ）別に集計表示。`/api/events/[id]/entries` が `show_detail` をオンデマンド取得（1hキャッシュ）。名寄せは `club-normalize.ts`（選手ページと共有）。複数所属は分割して各クラブに計上（二重計上）、total は実人数。対象は受付中＋直近30日の締切済。
 
 ## DB構成 (Supabase PostgreSQL)
 
@@ -103,6 +111,7 @@ trails_jp/
 | `athlete_appearances` | ランキング出場情報 | ~8,750件 |
 | `lc_performances` | LapCenter巡航速度・ミス率 | ~19,000件 |
 | `cron_log` | Cronジョブ実行ログ（稼働監視） | - |
+| `cron_notification_log` | Cronエラー通知のデダブ記録（24h以内同種エラーは1通まで） | - |
 | `club_stats_snapshot` | クラブ統計月次スナップショット（前月比・前年比算出） | - |
 | `ranking_snapshot` | ランキング月次スナップショット（順位・ポイント変動算出） | - |
 
@@ -116,6 +125,8 @@ trails_jp/
 | `athlete_appearances` | public (anon OK) | - (service_role のみ) | - (service_role のみ) |
 | `lc_performances` | public (anon OK) | - (service_role のみ) | - (service_role のみ) |
 | `likes` | public (anon OK) | authenticated のみ | - (service_role のみ) |
+| `cron_log` | public (anon OK) | - (service_role のみ) | - (service_role のみ) |
+| `cron_notification_log` | - (service_role のみ) | - (service_role のみ) | - (service_role のみ) |
 
 マイグレーション: `supabase/migrations/20260311_fix_security_policies.sql`
 

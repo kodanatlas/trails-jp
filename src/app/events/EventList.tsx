@@ -1,8 +1,22 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { CalendarDays, MapPin, ChevronLeft, ChevronRight, ExternalLink, Search, Bell, BarChart3 } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { CalendarDays, MapPin, ChevronLeft, ChevronRight, ChevronDown, ExternalLink, Search, Bell, BarChart3, ListChecks, Users, Loader2 } from "lucide-react";
 import type { JOEEvent } from "@/lib/scraper/events";
+import type { EntryListResult } from "@/lib/scraper/entries";
+
+/** エントリーリストを表示する対象かどうかの判定（受付中 or 直近 N 日以内の大会） */
+const ENTRY_LIST_RECENT_DAYS = 30;
+
+function canShowEntries(e: JOEEvent): boolean {
+  if (e.entry_status === "open") return true;
+  if (!e.date) return false;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - ENTRY_LIST_RECENT_DAYS);
+  return e.date >= cutoff.toISOString().slice(0, 10);
+}
+
+type EntryState = EntryListResult | "loading" | "error" | undefined;
 
 interface EventListProps {
   events: JOEEvent[];
@@ -49,6 +63,47 @@ export function EventList({ events }: EventListProps) {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+
+  // エントリーリスト（所属別グループ）の開閉・キャッシュ
+  const [openEntryEvents, setOpenEntryEvents] = useState<Set<number>>(new Set());
+  const [entryCache, setEntryCache] = useState<Record<number, EntryState>>({});
+  const [openTeams, setOpenTeams] = useState<Set<string>>(new Set());
+
+  const toggleEntry = useCallback(
+    (eventId: number) => {
+      setOpenEntryEvents((prev) => {
+        const next = new Set(prev);
+        if (next.has(eventId)) {
+          next.delete(eventId);
+        } else {
+          next.add(eventId);
+          // 未取得ならオンデマンドで取得
+          setEntryCache((cache) => {
+            if (cache[eventId] !== undefined) return cache;
+            fetch(`/api/events/${eventId}/entries`)
+              .then((r) => r.json())
+              .then((data: EntryListResult) =>
+                setEntryCache((c) => ({ ...c, [eventId]: data }))
+              )
+              .catch(() => setEntryCache((c) => ({ ...c, [eventId]: "error" })));
+            return { ...cache, [eventId]: "loading" };
+          });
+        }
+        return next;
+      });
+    },
+    []
+  );
+
+  const toggleTeam = useCallback((eventId: number, affiliation: string) => {
+    const key = `${eventId}:${affiliation}`;
+    setOpenTeams((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
 
   const allTags = useMemo(
     () => [...new Set(events.flatMap((e) => e.tags))].sort(),
@@ -170,8 +225,9 @@ export function EventList({ events }: EventListProps) {
             return (
               <div
                 key={event.joe_event_id}
-                className="flex items-center gap-4 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover"
+                className="overflow-hidden rounded-lg border border-border bg-card transition-all hover:border-primary/30"
               >
+                <div className="flex items-center gap-4 p-4 transition-colors hover:bg-card-hover">
                 {/* Date */}
                 <div className="hidden w-16 flex-shrink-0 text-center sm:block">
                   <div className="text-lg font-bold text-primary">
@@ -239,6 +295,17 @@ export function EventList({ events }: EventListProps) {
                     </a>
                   )}
                 </div>
+                </div>
+                {canShowEntries(event) && (
+                  <EventEntries
+                    eventId={event.joe_event_id}
+                    isOpen={openEntryEvents.has(event.joe_event_id)}
+                    state={entryCache[event.joe_event_id]}
+                    openTeams={openTeams}
+                    onToggle={toggleEntry}
+                    onToggleTeam={toggleTeam}
+                  />
+                )}
               </div>
             );
           })}
@@ -313,6 +380,98 @@ export function EventList({ events }: EventListProps) {
                   <ExternalLink className="h-3 w-3 flex-shrink-0 text-muted" />
                 </a>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface EventEntriesProps {
+  eventId: number;
+  isOpen: boolean;
+  state: EntryState;
+  openTeams: Set<string>;
+  onToggle: (eventId: number) => void;
+  onToggleTeam: (eventId: number, affiliation: string) => void;
+}
+
+/** イベントカードに付随するエントリーリスト（所属一覧 → エントリー者の2段アコーディオン） */
+function EventEntries({ eventId, isOpen, state, openTeams, onToggle, onToggleTeam }: EventEntriesProps) {
+  const loaded = state && state !== "loading" && state !== "error" ? state : null;
+
+  return (
+    <div className="border-t border-border">
+      <button
+        onClick={() => onToggle(eventId)}
+        className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-xs font-medium text-muted transition-colors hover:bg-card-hover hover:text-foreground"
+        aria-expanded={isOpen}
+      >
+        <span className="flex items-center gap-1.5">
+          <ListChecks className="h-3.5 w-3.5" />
+          エントリーリスト
+          {loaded && <span className="font-semibold text-[#00e5ff]">{loaded.total}人</span>}
+        </span>
+        <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      {isOpen && (
+        <div className="px-4 pb-3">
+          {state === "loading" && (
+            <p className="flex items-center gap-1.5 py-3 text-xs text-muted">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              読み込み中...
+            </p>
+          )}
+          {state === "error" && (
+            <p className="py-3 text-xs text-red-400">エントリーリストを取得できませんでした</p>
+          )}
+          {loaded && loaded.teams.length === 0 && (
+            <p className="py-3 text-xs text-muted">エントリーはまだありません</p>
+          )}
+          {loaded && loaded.teams.length > 0 && (
+            <div className="space-y-1">
+              {loaded.teams.map((team) => {
+                const teamKey = `${eventId}:${team.affiliation}`;
+                const teamOpen = openTeams.has(teamKey);
+                return (
+                  <div key={teamKey} className="overflow-hidden rounded-md border border-border/60 bg-surface">
+                    <button
+                      onClick={() => onToggleTeam(eventId, team.affiliation)}
+                      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-card-hover"
+                      aria-expanded={teamOpen}
+                    >
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <ChevronRight className={`h-3 w-3 flex-shrink-0 text-muted transition-transform ${teamOpen ? "rotate-90" : ""}`} />
+                        <Users className="h-3 w-3 flex-shrink-0 text-muted" />
+                        <span className="truncate font-medium">{team.affiliation}</span>
+                      </span>
+                      <span className="flex-shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-muted">
+                        {team.count}人
+                      </span>
+                    </button>
+                    {teamOpen && (
+                      <ul className="border-t border-border/60 px-3 py-1">
+                        {team.entries.map((entry, i) => (
+                          <li key={i} className="flex items-center gap-2 py-1 text-xs">
+                            <span className="w-16 flex-shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-center text-[10px] font-medium text-primary">
+                              {entry.className || "-"}
+                            </span>
+                            <span className="flex-shrink-0">{entry.name}</span>
+                            {entry.affiliation && (
+                              <span className="min-w-0 truncate text-[10px] text-muted">{entry.affiliation}</span>
+                            )}
+                            {entry.members && (
+                              <span className="flex-shrink-0 truncate text-[10px] text-muted">（{entry.members}）</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
