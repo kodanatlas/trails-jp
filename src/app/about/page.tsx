@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Map, CalendarDays, BarChart3, Radio, Database } from "lucide-react";
+import { ArrowLeft, CalendarDays, BarChart3 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "このサイトについて | trails.jp",
@@ -20,7 +20,7 @@ export default function AboutPage() {
       <div className="mt-6 space-y-6 text-sm leading-relaxed text-muted">
         <p>
           <strong className="text-foreground">trails.jp</strong> は、日本のオリエンテーリング情報を一つに集約するプラットフォームです。
-          大会情報、テレイン（O-map）データベース、GPS追跡、ランキングなど、オリエンテーリングに関わる情報へのアクセスを提供します。
+          大会情報、ランキング、選手分析など、オリエンテーリングに関わる情報へのアクセスを提供します。
         </p>
 
         <div className="space-y-4">
@@ -32,16 +32,6 @@ export default function AboutPage() {
                 icon: CalendarDays,
                 title: "イベント",
                 desc: "JOY（日本オリエンテーリング協会）から大会情報を日次で自動取得。エントリー状況や開催地を一覧・カレンダーで確認できます。",
-              },
-              {
-                icon: Database,
-                title: "地図データベース",
-                desc: "全国のオリエンテーリング用地図（O-map）を地図上で検索・閲覧。ユーザー登録すれば誰でもO-mapを追加できます。",
-              },
-              {
-                icon: Radio,
-                title: "GPS追跡",
-                desc: "大会でのGPSトラッキングデータを地図上で可視化。選手の動きをリアルタイムで確認できます。",
               },
               {
                 icon: BarChart3,
@@ -65,7 +55,6 @@ export default function AboutPage() {
           <ul className="list-inside list-disc space-y-1 text-xs">
             <li>大会情報: <a href="https://orienteering.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">JOY (Japan O-entry)</a></li>
             <li>成績データ: <a href="https://mulka2.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Lap Center</a></li>
-            <li>地図タイル: 国土地理院 / OpenStreetMap</li>
           </ul>
         </div>
 

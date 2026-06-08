@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { MapIcon, CalendarDays, Trophy, ArrowRight, Radio, ExternalLink, BarChart3 } from "lucide-react";
-import { sampleMaps } from "@/lib/sample-data";
+import { CalendarDays, Trophy, ArrowRight, ExternalLink, BarChart3 } from "lucide-react";
 import type { JOEEvent } from "@/lib/scraper/events";
 import eventsJson from "@/data/events.json";
 import rankingsJson from "@/data/rankings.json";
-import { TERRAIN_LABELS } from "@/lib/utils";
 
 export default function Home() {
   const allEvents = eventsJson as JOEEvent[];
@@ -20,8 +18,6 @@ export default function Home() {
       .map((e) => e.athlete_name)
   ).size;
 
-  const latestMaps = sampleMaps.slice(0, 6);
-
   return (
     <div>
       {/* Hero */}
@@ -36,23 +32,9 @@ export default function Home() {
             ひとつの場所に
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base text-muted sm:text-lg">
-            地図データベース、GPS追跡、イベント情報、ランキングを統合
+            大会情報・ランキング・選手分析を、見やすく一箇所に
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/maps"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
-            >
-              <MapIcon className="h-4 w-4" />
-              地図データベース
-            </Link>
-            <Link
-              href="/tracking"
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
-            >
-              <Radio className="h-4 w-4" />
-              GPS追跡
-            </Link>
             <Link
               href="/events"
               className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
@@ -80,9 +62,8 @@ export default function Home() {
 
       {/* Stats */}
       <section className="border-b border-border bg-card">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-px sm:grid-cols-4">
+        <div className="mx-auto grid max-w-6xl grid-cols-3 gap-px">
           {[
-            { value: sampleMaps.length, label: "地図", suffix: "枚" },
             { value: allEvents.length, label: "イベント", suffix: "件" },
             { value: rankingAthletes.toLocaleString(), label: "選手ランキング", suffix: "人" },
             { value: "47", label: "対応都道府県", suffix: "" },
@@ -101,10 +82,8 @@ export default function Home() {
       {/* Features */}
       <section className="border-b border-border py-12 sm:py-16">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { icon: MapIcon, title: "地図ライブラリ", desc: "全国のOL地図を地図上で検索・閲覧・登録", href: "/maps", color: "text-[#f97316]" },
-              { icon: Radio, title: "GPS追跡・ルート分析", desc: "ライブ追跡、リプレイ、スプリット比較", href: "/tracking", color: "text-[#69f0ae]" },
               { icon: CalendarDays, title: "イベント", desc: "JOY連携で最新大会情報を自動取得・Lap Center連携", href: "/events", color: "text-[#00e5ff]" },
               { icon: Trophy, title: "ランキング", desc: "JOYランキング全カテゴリ対応", href: "/rankings", color: "text-[#ffab00]" },
               { icon: BarChart3, title: "選手分析", desc: "成績傾向・特性分類・クラブ統計・選手比較", href: "/analysis", color: "text-[#e040fb]" },
@@ -196,53 +175,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Latest Maps */}
-      <section className="py-12 sm:py-16">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold">最新の地図</h2>
-            <Link href="/maps" className="text-xs font-medium text-primary hover:underline">
-              すべて見る →
-            </Link>
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {latestMaps.map((map) => (
-              <Link
-                key={map.id}
-                href={`/maps/${map.id}`}
-                className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-all hover:border-primary/30 hover:bg-card-hover"
-              >
-                <div
-                  className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg text-lg font-bold text-white/60"
-                  style={{
-                    background: `linear-gradient(135deg, ${
-                      map.terrain_type === "forest"
-                        ? "#2d5a27, #4a8f3f"
-                        : map.terrain_type === "park"
-                        ? "#3d7a3d, #6ab06a"
-                        : map.terrain_type === "urban"
-                        ? "#5a5a7a, #8a8ab0"
-                        : map.terrain_type === "sand"
-                        ? "#c4a35a, #e0c878"
-                        : "#4a6a5a, #7a9a8a"
-                    })`,
-                  }}
-                >
-                  {map.name.charAt(0)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-sm font-semibold group-hover:text-primary">
-                    {map.name}
-                  </h3>
-                  <p className="text-xs text-muted">
-                    {map.prefecture} / {TERRAIN_LABELS[map.terrain_type]} / {map.scale}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

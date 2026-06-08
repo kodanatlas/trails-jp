@@ -1,7 +1,7 @@
 {
   "name": "trails.jp - 日本オリエンテーリング統合プラットフォーム",
   "short_name": "trails.jp",
-  "description": "地図データベース・GPSトラッキング・ルート分析",
+  "description": "オリエンテーリングのイベント情報・ランキング・選手分析",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f1720",

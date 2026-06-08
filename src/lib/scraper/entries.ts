@@ -105,13 +105,22 @@ export function parseEntryList(html: string, eventId: number): EntryListResult {
  * JOY大会詳細ページ（/event/view/{id}/show_detail）を取得してエントリーリストを返す。
  * 上流HTMLは1時間キャッシュ（Hobby 10秒制限内・JOY負荷軽減）。
  */
-export async function scrapeEntryList(eventId: number): Promise<EntryListResult> {
+export async function scrapeEntryList(
+  eventId: number,
+  opts: { signal?: AbortSignal; throwOnError?: boolean } = {},
+): Promise<EntryListResult> {
   const url = `${BASE_URL}/event/view/${eventId}/show_detail`;
   const res = await fetch(url, {
     headers: { "User-Agent": "trails.jp/1.0 (entry list)" },
     next: { revalidate: 3600 },
+    signal: opts.signal,
   });
   if (!res.ok) {
+    // 集計バッチ(cron)では「取得失敗」と「真に空」を区別する必要があるため throw。
+    // オンデマンドAPI(既存)は throwOnError 未指定 → 従来どおり空を返してグレースフルに継続。
+    if (opts.throwOnError) {
+      throw new Error(`entry fetch failed: ${res.status} (event ${eventId})`);
+    }
     return { eventId, total: 0, teams: [], fetchedAt: new Date().toISOString() };
   }
   const html = await res.text();

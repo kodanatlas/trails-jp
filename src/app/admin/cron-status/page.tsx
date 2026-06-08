@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 const HISTORY_LIMIT = 30;
-const JOB_NAMES: CronJobName[] = ["sync-events", "sync-lapcenter"];
+const JOB_NAMES: CronJobName[] = ["sync-events", "sync-lapcenter", "sync-entries"];
 
 async function fetchRecent(job: CronJobName): Promise<CronLogRow[]> {
   if (!isSupabaseConfigured) return [];
@@ -264,6 +264,15 @@ function summarizeResult(job: CronJobName, result: unknown): string {
       parts.push(`matched=${m.total_matched}/${m.total_events}`);
     if (runners?.tracked_runners != null) parts.push(`runners=${runners.tracked_runners}`);
     if (runners?.error) parts.push(`runners.error`);
+    return parts.join(" / ") || "—";
+  }
+
+  if (job === "sync-entries") {
+    const parts: string[] = [];
+    if (typeof r.targets === "number") parts.push(`targets=${r.targets}`);
+    if (typeof r.scraped === "number") parts.push(`scraped=${r.scraped}`);
+    if (typeof r.athletes === "number") parts.push(`athletes=${r.athletes}`);
+    if (typeof r.deferred === "number" && r.deferred > 0) parts.push(`deferred=${r.deferred}`);
     return parts.join(" / ") || "—";
   }
 

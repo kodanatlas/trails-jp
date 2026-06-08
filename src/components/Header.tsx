@@ -3,16 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Compass, MapPlus } from "lucide-react";
+import { Menu, X, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "ホーム" },
-  { href: "/maps", label: "地図" },
-  { href: "/tracking", label: "GPS追跡" },
   { href: "/events", label: "イベント" },
   { href: "/rankings", label: "ランキング" },
-  { href: "/analysis", label: "分析" },
+  { href: "/analysis", label: "選手分析" },
 ];
 
 export function Header() {
@@ -42,13 +40,6 @@ export function Header() {
               {item.label}
             </Link>
           ))}
-          <Link
-              href="/upload"
-              className="ml-2 flex items-center gap-1 rounded-md bg-[#f97316]/20 px-3 py-1.5 text-sm font-medium text-[#f97316] transition-colors hover:bg-[#f97316]/30"
-            >
-              <MapPlus className="h-3.5 w-3.5" />
-              O-map登録
-            </Link>
         </nav>
 
         <button
@@ -77,14 +68,6 @@ export function Header() {
               {item.label}
             </Link>
           ))}
-          <Link
-            href="/upload"
-            className="mt-1 flex items-center gap-1.5 rounded-md bg-[#f97316]/20 px-3 py-2 text-sm font-medium text-[#f97316]"
-            onClick={() => setIsOpen(false)}
-          >
-            <MapPlus className="h-3.5 w-3.5" />
-            O-map登録
-          </Link>
         </nav>
       )}
     </header>

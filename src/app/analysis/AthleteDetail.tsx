@@ -6,6 +6,7 @@ import {
 } from "recharts";
 import { Loader2, TrendingUp, TrendingDown, Minus, Target, Zap, Calendar, ChevronDown } from "lucide-react";
 import type { AthleteSummary, AthleteProfile, LapCenterPerformance } from "@/lib/analysis/types";
+import type { AthleteEntryRef } from "@/lib/entries/index-types";
 import {
   loadAthleteDetail,
   calcConsistency,
@@ -14,6 +15,7 @@ import {
   typeLabel,
   getBestRanks,
 } from "@/lib/analysis/utils";
+import { UpcomingEntries } from "./UpcomingEntries";
 
 interface Props {
   summary: AthleteSummary;
@@ -22,16 +24,42 @@ interface Props {
 export function AthleteDetail({ summary }: Props) {
   const [profile, setProfile] = useState<AthleteProfile | null>(null);
   const [lcData, setLcData] = useState<LapCenterPerformance[] | null>(null);
+  const [entryData, setEntryData] = useState<
+    { entries: AthleteEntryRef[]; generatedAt: string | null } | null
+  >(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // 選手切替時の stale レスポンス混入を防ぐガード（前選手の応答が後勝ちで上書きするのを防止）
+    let cancelled = false;
     setLoading(true);
-    const loadProfile = loadAthleteDetail(summary).then((p) => setProfile(p));
+    setEntryData(null);
+    const loadProfile = loadAthleteDetail(summary).then((p) => {
+      if (!cancelled) setProfile(p);
+    });
     const loadLc = fetch(`/api/lc/${encodeURIComponent(summary.name)}`)
-      .then((r) => r.ok ? r.json() as Promise<LapCenterPerformance[]> : null)
-      .then((records) => setLcData(records))
-      .catch(() => setLcData(null));
-    Promise.all([loadProfile, loadLc]).then(() => setLoading(false));
+      .then((r) => (r.ok ? (r.json() as Promise<LapCenterPerformance[]>) : null))
+      .then((records) => {
+        if (!cancelled) setLcData(records);
+      })
+      .catch(() => {
+        if (!cancelled) setLcData(null);
+      });
+    const loadEntries = fetch(`/api/athletes/${encodeURIComponent(summary.name)}/entries`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled)
+          setEntryData({ entries: d?.entries ?? [], generatedAt: d?.generatedAt ?? null });
+      })
+      .catch(() => {
+        if (!cancelled) setEntryData({ entries: [], generatedAt: null });
+      });
+    Promise.all([loadProfile, loadLc, loadEntries]).then(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [summary]);
 
   if (loading) {
@@ -53,6 +81,7 @@ export function AthleteDetail({ summary }: Props) {
       <ScoreChart profile={profile} />
       {lcData && lcData.length >= 2 && <LapCenterChart data={lcData} profile={profile} />}
       <RecentEvents profile={profile} />
+      <UpcomingEntries data={entryData} />
     </div>
   );
 }

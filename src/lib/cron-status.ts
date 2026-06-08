@@ -3,7 +3,7 @@
  * /admin/cron-status ページで使用。
  */
 
-export type CronJobName = "sync-events" | "sync-lapcenter";
+export type CronJobName = "sync-events" | "sync-lapcenter" | "sync-entries";
 export type Health = "green" | "yellow" | "red";
 
 export interface CronLogRow {
@@ -28,6 +28,7 @@ export interface JobAssessment {
 export const JOB_CONFIG: Record<CronJobName, { runHourJst: number; label: string }> = {
   "sync-events": { runHourJst: 3, label: "イベント同期" },
   "sync-lapcenter": { runHourJst: 12, label: "LapCenter同期" },
+  "sync-entries": { runHourJst: 4, label: "エントリー同期" },
 };
 
 const HOUR_MS = 3_600_000;

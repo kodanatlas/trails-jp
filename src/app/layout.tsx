@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s | trails.jp",
   },
   description:
-    "日本のオリエンテーリング・トレイルランのための地図データベース、イベント情報、GPS追跡、ランキングを統合したプラットフォーム。",
+    "日本のオリエンテーリング・トレイルランのためのイベント情報、ランキング、選手分析を集約したプラットフォーム。",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

@@ -1,0 +1,142 @@
+/**
+ * 選手別エントリーインデックスの構築。
+ * 対象大会のエントリーリストを並列スクレイプし、氏名(スペース除去)キーで集計する。
+ * sync-entries cron から呼ばれる。Vercel Hobby の10秒関数制限に収めるため、
+ * 連続供給型の並列プール + 全体ウォールクロック予算（超過時は in-flight も abort）で
+ * 経過時間を上限付きに保つ。予算切れ時は部分結果を返す（scrapedEventCount に反映）。
+ */
+import type { JOEEvent } from "@/lib/scraper/events";
+import { scrapeEntryList } from "@/lib/scraper/entries";
+import type { AthleteEntryRef, EntryIndex } from "./index-types";
+
+/** 全システム共通の氏名正準化（スペース除去） */
+const normName = (s: string): string => s.replace(/\s+/g, "");
+
+interface BuildOpts {
+  /** 同時スクレイプ数 */
+  concurrency?: number;
+  /** 1大会あたりのタイムアウト(ms) */
+  perEventTimeoutMs?: number;
+  /** スクレイプ全体のウォールクロック予算(ms)。超過後は新規開始も in-flight も打ち切る。 */
+  overallBudgetMs?: number;
+}
+
+interface ScrapedEvent {
+  ev: JOEEvent;
+  total: number;
+  /** 氏名+クラスで重複排除済みの生エントリー（複数所属の二重計上を排除） */
+  rows: { className: string; name: string; affiliation: string }[];
+}
+
+/** 1大会をタイムアウト付きでスクレイプ。失敗・タイムアウト・abort は null（スキップ）。 */
+async function scrapeOne(ev: JOEEvent, timeoutMs: number): Promise<ScrapedEvent | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    // throwOnError: 非2xx(403/500等)を「失敗」として throw させ、空データとして集計しない。
+    // → catch で null を返し scraped に数えない（古い良いインデックスを空で潰さない）。
+    const result = await scrapeEntryList(ev.joe_event_id, {
+      signal: controller.signal,
+      throwOnError: true,
+    });
+    // teams は所属別グループ（複数所属は二重計上）。氏名+クラスで重複排除して生エントリーに戻す。
+    const seen = new Set<string>();
+    const rows: ScrapedEvent["rows"] = [];
+    for (const team of result.teams) {
+      for (const row of team.entries) {
+        const nameKey = normName(row.name);
+        if (!nameKey || !row.className) continue; // 氏名/クラス欠落の不正行は除外（dedupeKey 衝突防止）
+        const dedupeKey = `${nameKey}|${row.className}`;
+        if (seen.has(dedupeKey)) continue;
+        seen.add(dedupeKey);
+        rows.push({ className: row.className, name: row.name, affiliation: row.affiliation });
+      }
+    }
+    return { ev, total: result.total, rows };
+  } catch {
+    return null; // abort / fetch error → スキップ
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * 対象大会群から選手別エントリーインデックスを生成する。
+ */
+export async function buildEntryIndex(
+  targetEvents: JOEEvent[],
+  opts: BuildOpts = {},
+): Promise<EntryIndex> {
+  const concurrency = opts.concurrency ?? 8;
+  const perEventTimeoutMs = opts.perEventTimeoutMs ?? 3500;
+  // 予算超過後も in-flight ワーカーの「fetch後の同期パース(cheerio)」は中断できないため、
+  // 6.5秒に抑えてパース末尾 + readEvents/writeEntryIndex/直列化のための余白(~3.5秒)を10秒制限内に残す。
+  const overallBudgetMs = opts.overallBudgetMs ?? 6500;
+  const startedAt = Date.now();
+
+  const athletes: Record<string, AthleteEntryRef[]> = {};
+  let scraped = 0;
+  let nextIdx = 0;
+
+  const ingest = (s: ScrapedEvent): void => {
+    scraped++;
+    const { ev, total, rows } = s;
+    const entryStatus = ev.entry_status; // "open" | "closed" | "none"（そのまま保持）
+    for (const row of rows) {
+      const key = normName(row.name);
+      if (!key) continue; // scrapeOne 側で保証済みだが念のため空キー除外
+      const ref: AthleteEntryRef = {
+        joe_event_id: ev.joe_event_id,
+        eventName: ev.name,
+        date: ev.date,
+        prefecture: ev.prefecture,
+        className: row.className,
+        affiliation: row.affiliation,
+        entryStatus,
+        joeUrl: ev.joe_url,
+        totalEntries: total,
+      };
+      (athletes[key] ??= []).push(ref);
+    }
+  };
+
+  // 連続供給型の並列プール: 各ワーカーは予算が残る限り次の大会を引き取る。
+  // 各スクレイプの実効タイムアウトは min(perEventTimeout, 残り予算) で、
+  // 予算到達時に in-flight も abort される → 全体経過 ≈ overallBudgetMs に収まる。
+  async function worker(): Promise<void> {
+    for (;;) {
+      const remaining = overallBudgetMs - (Date.now() - startedAt);
+      if (remaining <= 200) return; // 予算ほぼ消化 → 新規開始しない
+      const i = nextIdx++; // 単一スレッドJS: read→++ の間に await が無いため lock 不要
+      if (i >= targetEvents.length) return;
+      const ev = targetEvents[i];
+      let result = await scrapeOne(ev, Math.min(perEventTimeoutMs, remaining));
+      if (!result) {
+        // transient な JOY エラー(403/500/timeout)で取りこぼさないよう1回だけ即リトライ（予算が残れば）
+        const rem2 = overallBudgetMs - (Date.now() - startedAt);
+        if (rem2 > 400) result = await scrapeOne(ev, Math.min(perEventTimeoutMs, rem2));
+      }
+      if (result) ingest(result);
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.min(concurrency, targetEvents.length) },
+    () => worker(),
+  );
+  await Promise.all(workers);
+
+  // 各選手のエントリーを date 昇順（同日は大会名）でソート
+  for (const key of Object.keys(athletes)) {
+    athletes[key].sort(
+      (a, b) => a.date.localeCompare(b.date) || a.eventName.localeCompare(b.eventName),
+    );
+  }
+
+  return {
+    generatedAt: new Date().toISOString(),
+    targetEventCount: targetEvents.length,
+    scrapedEventCount: scraped,
+    athletes,
+  };
+}
