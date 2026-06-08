@@ -25,14 +25,12 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
         <div className="relative mx-auto max-w-6xl px-4 text-center">
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            日本の
-            <span className="text-primary">オリエンテーリング</span>
-            を、
+            <span className="text-primary">オリエンティア</span>を、ライバルを、
             <br className="hidden sm:inline" />
-            ひとつの場所に
+            データで読む。
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base text-muted sm:text-lg">
-            大会情報・ランキング・選手分析を、見やすく一箇所に
+            巡航速度・ミス率・調子まで、選手をまるごと分析。
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
