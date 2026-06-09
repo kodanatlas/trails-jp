@@ -4,6 +4,11 @@ import type { JOEEvent } from "@/lib/scraper/events";
 import { readEvents, writeEvents } from "@/lib/events-store";
 import { matchLapCenterEvents } from "@/lib/scraper/lapcenter";
 import { logCron } from "@/lib/cron-logger";
+import { notifyCronWarning } from "@/lib/cron-notifier";
+
+// トップページ取得分のうち日付が空の件数がこの値以上なら警告（JOY のフォーマット変更検知）。
+// 正常時はほぼ 0。年なし表記の補完が効かなくなる等の異常を無音にしないためのカナリア。
+const EMPTY_DATE_WARN_THRESHOLD = 5;
 
 // Vercel Cron: 日次 03:00 JST (18:00 UTC)
 // イベント同期 + LapCenterマッチング
@@ -33,6 +38,10 @@ export async function GET(request: Request) {
       scrapeEvents(),
       ...archiveYears.map((y) => scrapeArchive(y)),
     ]);
+
+    // トップページのライブ取得分で日付が空の件数（JOYフォーマット変更のカナリア）。
+    // マージ前の topEvents だけを見る（過去保持分の空dateに引きずられないため）。
+    const topEmptyDates = topEvents.filter((e) => !e.date).length;
 
     // 全イベントをマージ（ID重複排除、トップページ優先）
     const eventMap = new Map<number, JOEEvent>();
@@ -115,12 +124,30 @@ export async function GET(request: Request) {
       events: {
         count: freshEvents.length,
         coordinates: coordResult,
+        top_scraped: topEvents.length,
+        top_empty_dates: topEmptyDates,
       },
       lapcenter: lapcenterResult,
       deploy: deployResult,
       synced_at: new Date().toISOString(),
     };
     await logCron("sync-events", "success", payload, Date.now() - start);
+
+    // 日付パースの異常（JOYフォーマット変更等）を無音にしない。閾値超で警告メール（24hデダブ）。
+    if (topEvents.length > 0 && topEmptyDates >= EMPTY_DATE_WARN_THRESHOLD) {
+      await notifyCronWarning(
+        "sync-events",
+        "high_empty_dates",
+        {
+          warning: "high_empty_dates",
+          top_empty_dates: topEmptyDates,
+          top_scraped: topEvents.length,
+          hint: "JOYトップページの日付フォーマット変更の可能性。parseDateWithAttr を確認。",
+        },
+        Date.now() - start,
+      );
+    }
+
     return NextResponse.json(payload);
   } catch (error) {
     console.error("Event sync failed:", error);

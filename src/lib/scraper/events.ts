@@ -174,13 +174,16 @@ function parseEventList(html: string): JOEEvent[] {
     }
 
     // Entry status: 最後のセルから取得
+    // JOY は受付中の大会を「受付中」だけでなく締切カウントダウン「あと N 日」でも表示するため、
+    // これも open として扱う（さもないと締切間近の受付中大会が none＝バッジ非表示になる）。
     const statusCell = cells.eq(cells.length - 1);
     const statusText = statusCell.text().trim();
-    const entry_status = statusText.includes("受付中")
-      ? "open" as const
-      : statusText.includes("締切")
-      ? "closed" as const
-      : "none" as const;
+    const entry_status =
+      statusText.includes("受付中") || /あと\s*\d+\s*日/.test(statusText)
+        ? ("open" as const)
+        : statusText.includes("締切")
+        ? ("closed" as const)
+        : ("none" as const);
 
     events.push({
       joe_event_id,
@@ -196,6 +199,50 @@ function parseEventList(html: string): JOEEvent[] {
   });
 
   return events;
+}
+
+/**
+ * 年なし "M/D" 表記の年を推定する。
+ * JOY のトップページは直近〜半年の大会で年を省略（例: "6/14 (日)"）し、
+ * 半年より先・年跨ぎの大会のみ "2027/ 1/9" のように年を明示する。
+ * よって年なし日付は「今日に最も近い年（前年・今年・翌年）」を選べば一意に定まる
+ * （12月↔1月の跨ぎも双方向に正しく解決する）。基準は JST。
+ */
+function inferYearForMonthDay(month: number, day: number): number {
+  const nowJst = new Date(Date.now() + 9 * 3600 * 1000);
+  const cy = nowJst.getUTCFullYear();
+  const todayMs = Date.UTC(cy, nowJst.getUTCMonth(), nowJst.getUTCDate());
+  let best = cy;
+  let bestDiff = Infinity;
+  for (const y of [cy - 1, cy, cy + 1]) {
+    const diff = Math.abs(Date.UTC(y, month - 1, day) - todayMs);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = y;
+    }
+  }
+  return best;
+}
+
+/**
+ * 年なしの「年跨ぎレンジ」（終了月 < 開始月。例 "12/27 - 1/3"）の開始年を推定する。
+ * inferYearForMonthDay は開始日(12月)単体で最近接年を選ぶため、年央(6月など)では
+ * 前年12月の方が近く開始日を過去年に丸めてしまう。JOYは直近の大会のみ年を省くので、
+ * 「終了日(翌年 em/ed)が今日以降になる最小の開始年」を採れば、進行中・直近の年跨ぎ大会を正しく拾える。
+ * 基準は JST。
+ */
+function startYearForCrossingRange(
+  endMonth: number,
+  endDay: number,
+): number {
+  const nowJst = new Date(Date.now() + 9 * 3600 * 1000);
+  const cy = nowJst.getUTCFullYear();
+  const todayMs = Date.UTC(cy, nowJst.getUTCMonth(), nowJst.getUTCDate());
+  for (const sy of [cy - 1, cy, cy + 1]) {
+    // 終了は翌年（em < sm の年跨ぎ前提）
+    if (Date.UTC(sy + 1, endMonth - 1, endDay) >= todayMs) return sy;
+  }
+  return cy;
 }
 
 /**
@@ -222,6 +269,28 @@ function parseDateWithAttr(
     if (match) {
       const [, y, m, d] = match;
       date = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    } else {
+      // 4. 年なし "M/D"（JOYは直近〜半年の大会で年を省略: "6/14 (日)" / "6/20 - 21"）。
+      //    JOYが date 属性も廃止したため、ここで今日に最も近い年を推定して補完する。
+      //    これが無いと近接大会が date="" となり、エントリー集計(sync-entries)から脱落する。
+      const md = cellText.match(/(\d{1,2})\s*\/\s*(\d{1,2})/);
+      if (md) {
+        const m = parseInt(md[1], 10);
+        const d = parseInt(md[2], 10);
+        // 月>12・日>31 の不正値は採用しない（日付セルにノイズが混じった際の誤dateを防ぐ）
+        if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+          // 年跨ぎレンジ（終了月<開始月, 例 "12/27 - 1/3"）は開始日を最近接年で丸めると
+          // 過去年に倒れるため、終了日基準で開始年を決める。それ以外は最近接年。
+          const rm = cellText.match(/-\s*(\d{1,2})\/(\d{1,2})/);
+          const em = rm ? parseInt(rm[1], 10) : null;
+          const ed = rm ? parseInt(rm[2], 10) : null;
+          const y =
+            em !== null && ed !== null && em < m
+              ? startYearForCrossingRange(em, ed)
+              : inferYearForMonthDay(m, d);
+          date = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        }
+      }
     }
   }
 
@@ -236,7 +305,10 @@ function parseDateWithAttr(
   const rangeMatch = cellText.match(/-\s*(\d{1,2})\/(\d{1,2})/);
   if (rangeMatch) {
     const [, em, ed] = rangeMatch;
-    end_date = `${year}-${em.padStart(2, "0")}-${ed.padStart(2, "0")}`;
+    // 年跨ぎレンジ（例: 12/27 - 1/3）は終了側の年を繰り上げる
+    const endYear =
+      parseInt(em, 10) < parseInt(month, 10) ? String(Number(year) + 1) : year;
+    end_date = `${endYear}-${em.padStart(2, "0")}-${ed.padStart(2, "0")}`;
   } else {
     // "3/14-15" (same month, different day)
     const sameMoMatch = cellText.match(/(\d{1,2})\s*-\s*(\d{1,2})(?:\s|$|\))/);

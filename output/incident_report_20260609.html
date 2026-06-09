@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>インシデントレポート — 選手ページ「大会エントリー状況」未反映 (trails.jp)</title>
+<style>
+  :root{
+    --bg:#0f1419; --card:#1a2230; --surface:#222c3c; --border:#2e3a4d;
+    --fg:#e6edf3; --muted:#9aa7b8; --primary:#4ea1ff; --accent:#7ee787;
+    --high:#ff6b6b; --med:#ffb454; --low:#6ec1ff; --ok:#7ee787; --info:#9aa7b8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    line-height:1.75;font-size:15px}
+  .wrap{max-width:980px;margin:0 auto;padding:40px 24px 80px}
+  header.hd{border-bottom:2px solid var(--border);padding-bottom:24px;margin-bottom:32px}
+  h1{font-size:25px;margin:0 0 6px;line-height:1.4}
+  .sub{color:var(--muted);font-size:13px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:14px;font-size:13px;color:var(--muted)}
+  .meta b{color:var(--fg);font-weight:600}
+  h2{font-size:19px;margin:40px 0 14px;padding-left:11px;border-left:4px solid var(--primary)}
+  h3{font-size:15.5px;margin:22px 0 8px;color:var(--accent)}
+  p{margin:10px 0}
+  ul,ol{margin:10px 0;padding-left:22px}
+  li{margin:5px 0}
+  code{background:var(--surface);padding:1.5px 6px;border-radius:4px;font-size:12.5px;
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;color:#ffd9a0}
+  pre{background:#0b0e13;border:1px solid var(--border);border-radius:8px;padding:14px 16px;
+    overflow-x:auto;font-size:12.5px;line-height:1.6}
+  pre code{background:none;padding:0;color:#cdd9e5}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 22px;margin:16px 0}
+  .tldr{background:linear-gradient(135deg,#15202e,#1b2940);border:1px solid #31506f}
+  table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.5px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--surface);color:var(--fg);font-weight:600}
+  tr:nth-child(even) td{background:#16202c}
+  .badge{display:inline-block;padding:1px 9px;border-radius:11px;font-size:11px;font-weight:700;white-space:nowrap}
+  .b-high{background:rgba(255,107,107,.16);color:var(--high);border:1px solid rgba(255,107,107,.4)}
+  .b-med{background:rgba(255,180,84,.16);color:var(--med);border:1px solid rgba(255,180,84,.4)}
+  .b-low{background:rgba(110,193,255,.14);color:var(--low);border:1px solid rgba(110,193,255,.4)}
+  .b-ok{background:rgba(126,231,135,.14);color:var(--ok);border:1px solid rgba(126,231,135,.4)}
+  .b-info{background:rgba(154,167,184,.14);color:var(--info);border:1px solid rgba(154,167,184,.4)}
+  .b-fixed{background:rgba(126,231,135,.16);color:var(--ok);border:1px solid rgba(126,231,135,.45)}
+  .b-heal{background:rgba(110,193,255,.14);color:var(--low);border:1px solid rgba(110,193,255,.4)}
+  .b-todo{background:rgba(255,180,84,.16);color:var(--med);border:1px solid rgba(255,180,84,.45)}
+  .b-na{background:rgba(154,167,184,.12);color:var(--info);border:1px solid rgba(154,167,184,.35)}
+  .kpi{display:flex;flex-wrap:wrap;gap:14px;margin:16px 0}
+  .kpi .box{flex:1 1 160px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:14px 16px}
+  .kpi .n{font-size:24px;font-weight:800;color:var(--accent)}
+  .kpi .l{font-size:12px;color:var(--muted);margin-top:2px}
+  .arrow{color:var(--primary);font-weight:700}
+  .flow{font-family:monospace;font-size:12.5px;color:var(--muted);background:#0b0e13;border:1px solid var(--border);
+    border-radius:8px;padding:12px 14px;overflow-x:auto}
+  .note{font-size:12.5px;color:var(--muted)}
+  .ok-text{color:var(--ok)} .warn-text{color:var(--med)} .hi-text{color:var(--high)}
+  footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+  .pill{display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:6px;
+    padding:1px 8px;font-size:12px;margin:2px 4px 2px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hd">
+  <h1>インシデントレポート<br>選手ページ「大会エントリー状況」が一部大会で未反映だった事象</h1>
+  <div class="sub">trails.jp — 日本オリエンテーリング統合プラットフォーム</div>
+  <div class="meta">
+    <span><b>発行日時:</b> 2026-06-09 20:42 JST</span>
+    <span><b>対象:</b> 本番 https://trailsjp.vercel.app</span>
+    <span><b>重大度:</b> <span class="badge b-high">High（機能欠損・ユーザー可視）</span></span>
+    <span><b>状態:</b> <span class="badge b-fixed">本番デプロイ済み・cron実行・検証完了</span></span>
+  </div>
+</header>
+
+<!-- ============ サマリー ============ -->
+<div class="card tldr">
+  <h3 style="margin-top:0">エグゼクティブサマリー</h3>
+  <p>選手ページ（<code>/analysis</code>）の「大会エントリー状況」カードに、一部の大会のエントリーが表示されない事象が報告された。当初は「上園久美子」「辻悠佳」など<b>女性選手</b>で目立ったため性別依存の不具合が疑われたが、調査の結果<b>原因は性別とは無関係</b>で、外部連携先 <b>JOY（japan-o-entry.com）のHTMLフォーマット変更</b>に起因する<b>日付パースの不具合</b>であることが判明した。</p>
+  <p>JOY がトップページの日付表記を「年あり」から<b>「年なし（<code>6/14</code> 形式）」</b>に変更し、行の <code>date</code> 属性も廃止したため、当サイトの日付パーサが近接大会の日付を <code>date=""</code>（空）にしていた。空日付の大会は日次バッチ <code>sync-entries</code> の <code>date&nbsp;&gt;=&nbsp;today</code> 絞り込みから<b>大会まるごと脱落</b>し、その大会に登録した選手（男女問わず）のエントリーが索引に載らなかった。</p>
+  <p>根本原因のパーサを修正し、横展開・下流影響を多角的に監査のうえ、関連する潜在不具合も併せて修正した。本番反映は<b>デプロイ＋日次cron 1サイクル</b>で自然回復する。</p>
+</div>
+
+<div class="kpi">
+  <div class="box"><div class="n">91 → 0</div><div class="l">空日付になっていた大会数（トップ100件中）→ 修正後</div></div>
+  <div class="box"><div class="n">807名</div><div class="l">東大OLK(2264) の登録者（男598/女209）が全員脱落していた</div></div>
+  <div class="box"><div class="n">16 → 31</div><div class="l">「受付中」と判定される大会数（締切カウントダウンの取りこぼし解消）</div></div>
+  <div class="box"><div class="n">5件</div><div class="l">実装した修正（根本原因＋潜在不具合＋堅牢化）</div></div>
+</div>
+
+<!-- ============ 事象 ============ -->
+<h2>1. 事象（症状）</h2>
+<ul>
+  <li>選手ページ「大会エントリー状況」に、実際には JOY でエントリー済みの大会が表示されない。</li>
+  <li>報告例（いずれも JOY の実エントリーと本番表示の食い違い）:
+    <table>
+      <tr><th>選手</th><th>JOY での実エントリー</th><th>修正前の本番表示</th></tr>
+      <tr><td>上園久美子</td><td>さくらんぼ(6/20)・東大OLK前日(6/13)・東大OLK(6/14) の<b>3件</b></td><td>さくらんぼ 1件のみ</td></tr>
+      <tr><td>辻悠佳</td><td>東大OLK前日(6/13)・東大OLK(6/14) の<b>2件</b></td><td><span class="hi-text">0件</span></td></tr>
+    </table>
+  </li>
+  <li>女性選手で目立ったが、<b>同一大会の男性選手も同様に脱落</b>していた（下記で実証）。</li>
+</ul>
+
+<!-- ============ 原因 ============ -->
+<h2>2. 根本原因</h2>
+<p>外部連携先 <b>JOY（japan-o-entry.com）がトップページのHTMLを変更</b>した。具体的には:</p>
+<ol>
+  <li>各イベント行の <code>date</code> / <code>date-sort</code> 属性を<b>廃止</b>。</li>
+  <li>直近〜約6ヶ月の大会の日付セルを<b>年なし表記</b>に変更（例 <code>6/14 (土)</code>, <code>6/20 - 21</code>）。約6ヶ月より先・年跨ぎの大会のみ <code>2026/ 12/13</code>, <code>2027/ 1/9</code> と年を明示。</li>
+</ol>
+<p>当サイトの日付パーサ <code>parseDateWithAttr</code>（<code>src/lib/scraper/events.ts</code>）は<b>4桁の年が無いと <code>date=""</code> を返す</b>実装で、年なし表記の近接大会の日付がすべて空になっていた。空日付の波及:</p>
+<div class="flow">
+JOY HTML変更（年なし＋date属性廃止）
+&nbsp;&nbsp;└▶ parseDateWithAttr が近接大会を date="" に（トップ100件中 91件が空）
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└▶ sync-entries が <b>e.date &gt;= today</b> で絞り込み → 空日付の大会がまるごと脱落
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└▶ entry-index.json にその大会のエントリーが作られない（男女問わず）
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└▶ /api/athletes/[name]/entries が空 → 選手ページ UpcomingEntries に出ない
+</div>
+
+<h3>性別非依存であることの実証</h3>
+<p>東大OLK(2264) には男女合計807名（男598・女209）が登録。男女それぞれ3名を抽出し本番APIを確認したところ、<b>6名全員</b>が当該大会を本番索引に持っていなかった。すなわち<b>「日付が空になった大会」が単位</b>で脱落しており、性別は無関係。報告された2名がたまたま「日付が空だった大会（東大OLK等）」に登録していた女性だったため、性別パターンに見えていた。</p>
+
+<h3>なぜ大会によって出たり出なかったりしたか</h3>
+<p><code>sync-events</code> は既存データの非空日付を温存する（<code>if (!event.date &amp;&amp; existing.date)</code>）。このため<b>フォーマット変更<u>前</u>に年付きで取得済みだった大会</b>（例: さくらんぼ 2500）は日付を保持し、<b>変更<u>後</u>に初出した近接大会</b>（例: 東大OLK 2448/2264）だけが空日付のまま残った。これが「上園久美子はさくらんぼ1件だけ出る」症状の説明となる。</p>
+
+<!-- ============ 影響範囲 ============ -->
+<h2>3. 影響範囲（全数調査）</h2>
+<p>イベント日付（<code>JOEEvent.date</code>）を消費する全箇所、同種の日付パース、JOY構造変更による他フィールドへの波及を多角監査した。結果のサマリ（重大度はアドバーサリアル検証後の補正値）:</p>
+<table>
+  <tr><th>面 / 箇所</th><th>影響</th><th>重大度</th><th>状態</th></tr>
+  <tr>
+    <td><b>/analysis 大会エントリー状況</b><br><span class="note">UpcomingEntries（本事象の中核）</span></td>
+    <td>近接大会のエントリーが丸ごと欠落（報告症状そのもの）</td>
+    <td><span class="badge b-high">High</span></td>
+    <td><span class="badge b-heal">修正で自然回復</span></td>
+  </tr>
+  <tr>
+    <td><b>/events 一覧・カレンダー</b><br><span class="note">EventList.tsx</span></td>
+    <td>空日付の大会が既定レンジで一覧から消え、カレンダーにも出ず、日付バッジが壊れる</td>
+    <td><span class="badge b-med">Medium</span></td>
+    <td><span class="badge b-heal">修正で自然回復</span></td>
+  </tr>
+  <tr>
+    <td>トップページ「今後の大会」<br><span class="note">page.tsx（静的JSON）</span></td>
+    <td>最近接が空日付だった場合のみ直近4件から漏れる</td>
+    <td><span class="badge b-low">Low</span></td>
+    <td><span class="badge b-heal">修正で自然回復</span></td>
+  </tr>
+  <tr>
+    <td>sync-lapcenter 重複判定キー<br><span class="note">「日付:大会名」をキーに使用</span></td>
+    <td>空日付混入の可能性（対象は過去大会中心のため実害ほぼ無）</td>
+    <td><span class="badge b-low">Low</span></td>
+    <td><span class="badge b-heal">修正で自然回復</span></td>
+  </tr>
+  <tr>
+    <td>/analysis スコア推移・最近の大会・選手比較</td>
+    <td><b>無関係</b>。これらの <code>.date</code> はランキング由来（<code>YYYY-MM-DD</code> 接頭辞）で <code>JOEEvent.date</code> とは別系統</td>
+    <td><span class="badge b-info">—</span></td>
+    <td><span class="badge b-na">影響なし</span></td>
+  </tr>
+  <tr>
+    <td>アーカイブ / ランキング / LapCenter の日付パース</td>
+    <td><b>同種バグなし</b>。アーカイブは年付き維持（実検証）、ランキングは <code>YYYY-MM-DD</code> 維持、LapCenter は年を外部引数で確定</td>
+    <td><span class="badge b-info">—</span></td>
+    <td><span class="badge b-na">影響なし</span></td>
+  </tr>
+  <tr>
+    <td>JOY 構造変更による他フィールド<br><span class="note">受付状態 / 開催地 / タグ / 座標 / エントリー表</span></td>
+    <td><b>日付以外は全て正常</b>（ライブ実検証）。唯一「受付中」判定の取りこぼしのみ別途修正（下記4-③）</td>
+    <td><span class="badge b-info">—</span></td>
+    <td><span class="badge b-ok">確認済</span></td>
+  </tr>
+  <tr>
+    <td>_maps / _tracking / _upload</td>
+    <td>アンダースコア始まりの非公開フォルダ＝ルーティング対象外</td>
+    <td><span class="badge b-info">—</span></td>
+    <td><span class="badge b-na">影響なし</span></td>
+  </tr>
+</table>
+<p class="note">監査は4観点（下流影響・同種バグ横展開・JOY構造波及・修正のアドバーサリアルレビュー）を並列実行し、各指摘を独立エージェントで反証検証した。Codex は当該環境のアカウント制約で利用不可だったため、多エージェントによる相互検証で代替した。</p>
+
+<!-- ============ 対応 ============ -->
+<h2>4. 対応内容（実施した修正）</h2>
+<p>変更ファイル: <code>src/lib/scraper/events.ts</code>（本番cron経路）, <code>scripts/scrape-events.mjs</code>（ローカル手動スクリプト）。いずれも未デプロイ。</p>
+
+<h3>① 根本原因: 年なし「M/D」の年を補完</h3>
+<p>「今日に最も近い年（前年/今年/翌年）」を選ぶ <code>inferYearForMonthDay</code> を追加し、年なし日付に年を補完。JOY は直近〜半年の大会のみ年を省くため、最近接年で一意に定まる（JST基準）。</p>
+<pre><code>function inferYearForMonthDay(month, day) {
+  const nowJst = new Date(Date.now() + 9 * 3600 * 1000);
+  const cy = nowJst.getUTCFullYear();
+  const todayMs = Date.UTC(cy, nowJst.getUTCMonth(), nowJst.getUTCDate());
+  let best = cy, bestDiff = Infinity;
+  for (const y of [cy - 1, cy, cy + 1]) {
+    const diff = Math.abs(Date.UTC(y, month - 1, day) - todayMs);
+    if (diff &lt; bestDiff) { bestDiff = diff; best = y; }
+  }
+  return best;
+}</code></pre>
+
+<h3>② 潜在不具合: 年跨ぎレンジの開始年補正</h3>
+<p>年なしレンジ <code>12/27 - 1/3</code> のような年跨ぎは、開始日(12月)を最近接年で丸めると過去年に倒れる。「終了日が今日以降になる最小の開始年」を採る <code>startYearForCrossingRange</code> で補正（現データでは未発火だが、年末年始シーズンに向けた予防）。</p>
+
+<h3>③ 受付状態の取りこぼし: 締切カウントダウンを open に</h3>
+<p>JOY は受付中の大会を「受付中」だけでなく <code>あと N 日</code>（締切カウントダウン）でも表示する。従来はこれを <code>none</code>（バッジ非表示）にしていたため、締切間近の受付中大会15件が「受付中」と認識されていなかった。これを open に分類するよう拡張。</p>
+<pre><code>const entry_status =
+  statusText.includes("受付中") || /あと\s*\d+\s*日/.test(statusText)
+    ? "open" : statusText.includes("締切") ? "closed" : "none";</code></pre>
+
+<h3>④ 堅牢化: 不正な月日の排除</h3>
+<p>年なしパースに <code>月&le;12 / 日&le;31</code> のバリデーションを追加。将来 JOY が日付セルに余分な数字を入れても、<code>13/14</code> のような不正値を誤った日付に変換せず空に倒す。</p>
+
+<h3>⑤ 退行防止: 手動スクリプトの整合</h3>
+<p><code>scripts/scrape-events.mjs</code> の日付パースを本番（events.ts）と同一ロジックに揃え、冒頭に「本番cronが正・両者を同時更新すること」の警告コメントを追記。手動再生成による退行を防止。</p>
+
+<!-- ============ 検証 ============ -->
+<h2>5. 検証結果</h2>
+<ul>
+  <li><b>型チェック</b>: <code>tsc --noEmit</code> → <span class="ok-text">exit 0（エラーなし）</span></li>
+  <li><b>ライブJOY実データ（100件）</b>: 空日付 <span class="ok-text">91件 → 0件</span>。2448→<code>2026-06-13</code>、2264→<code>2026-06-14</code>、さくらんぼ2500→<code>2026-06-20/21</code>。既存の年付き行（2026/2027）に退行なし。</li>
+  <li><b>エンドツーエンド再現</b>: 修正後のパーサで索引を再構築 → 上園久美子<span class="ok-text">3件</span>・辻悠佳<span class="ok-text">2件</span>に復活。近接20大会だけで<b>男女合わせ1189名</b>（女子クラス212・男子608）が索引化され、男女とも広く反映されることを確認。</li>
+  <li><b>受付状態</b>: open 判定 <span class="ok-text">16件 → 31件</span>（締切カウントダウン15件が正しく受付中に）。誤って closed になった大会は無し。</li>
+  <li><b>境界・エッジケース（合成テスト）</b>: 年跨ぎ <code>12/27 - 1/3</code>→<code>2026-12-27 / 2027-01-03</code>、同月レンジ・年付き・<code>date</code>属性経路・不正値 <code>13/14</code>→空、いずれも期待通り。うるう年 <code>2/29</code> の懸念は「年なし2/29が出る時期＝必ず閏年が最近接」となるため発火しないことを検証で確認。</li>
+</ul>
+
+<!-- ============ 再発防止 ============ -->
+<h2>6. 再発防止策</h2>
+<h3>実装済み</h3>
+<ul>
+  <li>年なし日付の年補完（① ）・年跨ぎ補正（②）で、外部サイトが年を省いても日付が欠落しない。</li>
+  <li>入力バリデーション（④）で、構造変化時に黙って誤データを生むのを防止。</li>
+  <li>受付状態の表記ゆれ吸収（③）。</li>
+  <li>本番ロジックと手動スクリプトの一元化＋警告コメント（⑤）。</li>
+</ul>
+<h3>追加ハードニング（本対応で実装 ＋ 残り推奨）</h3>
+<table>
+  <tr><th>項目</th><th>内容</th><th>状態</th></tr>
+  <tr>
+    <td>① 監視・アラート</td>
+    <td><code>sync-events</code> で「トップ取得分の空日付件数(<code>top_empty_dates</code>)」、<code>sync-entries</code> で「取りこぼし件数(<code>targets-scraped</code>)」を payload と <code>cron_log</code> に記録。閾値(各5)超で <code>notifyCronWarning</code>（Resend・24hデダブ）が警告メール送信。JOYの再フォーマット変更や取りこぼしを<b>無音にしない</b>（今回の事象は無音で進行したため）。本番で <code>top_empty_dates=0</code>・誤警告なしを確認。</td>
+    <td><span class="badge b-ok">実装済み</span></td>
+  </tr>
+  <tr>
+    <td>② リレーのメンバー索引化</td>
+    <td>リレー大会は「チーム名」でキー化され個人ページに出なかった。<code>build-index</code> の <code>parseRelayMembers</code> で「メンバー」欄（例 <code>(氏名 - 氏名)</code>）を個人に分解し各人を本人キーで索引。本番で福田雅秀・大林俊彦にリレー大会（さくらんぼスプリントリレー）が表示されることを確認。</td>
+    <td><span class="badge b-ok">実装済み</span></td>
+  </tr>
+  <tr>
+    <td>③ 氏名ゆれ吸収</td>
+    <td>照合キーを <code>normalizeNameKey</code>（NFKC正規化＋空白除去, <code>src/lib/name-key.ts</code>）に統一し build-index と API で共用 → 全角/半角・互換文字・半角カナの差を吸収。旧姓⇄新姓など別表記は同ファイルの <code>ALIAS_PAIRS</code>（追記式）で対応し索引時に双方向キー展開。<span class="note">※旧字体↔新字体や実際の旧姓は、不一致発見時に別名マップへ1行追記が必要。</span></td>
+    <td><span class="badge b-ok">実装済み</span></td>
+  </tr>
+  <tr>
+    <td>sync-entries の取得上限</td>
+    <td><b>対応完了。</b>当初 <code>MAX_SCRAPE=60</code>＋予算6.5秒では在窓74件を取り切れず、特に<b>大規模大会（東大OLK本戦＝859名）が毎回脱落</b>していた（cron実機で確認）。<code>maxDuration=60</code>＋<code>MAX_SCRAPE=90</code>・予算45秒・<code>perEventTimeout=9秒</code>・並列12 に拡張 → <b>targets=74 / scraped=73 / deferred=0</b>（実行~10秒）で全在窓大会をカバー。</td>
+    <td><span class="badge b-ok">実装済み</span></td>
+  </tr>
+  <tr>
+    <td>ランキング日付の将来対応</td>
+    <td>ランキング名の <code>YYYY-MM-DD</code> 接頭辞も、将来 JOY が年を落とすと同型の不具合になりうる。今回の年補完を横展開可能。</td>
+    <td><span class="badge b-low">予防（未対応）</span></td>
+  </tr>
+  <tr>
+    <td>軽微な表示事項</td>
+    <td>「まもなく受付」は現状 <code>none</code>（バッジ非表示）。またリレーのクラス表記に JOY 由来の <code>&amp;times;</code>（二重エンコード）が残る。いずれも表示上の軽微事項。</td>
+    <td><span class="badge b-low">任意（未対応）</span></td>
+  </tr>
+</table>
+
+<!-- ============ 反映 ============ -->
+<h2>7. 本番反映（完了）</h2>
+<p>2026-06-09 に本番デプロイ済み。デプロイ後、両cronを手動で順次実行して即時反映を完了した:</p>
+<ol>
+  <li><b>デプロイ</b>: Vercel CLI で本番反映（<code>trailsjp.vercel.app</code>）。</li>
+  <li><b>sync-events 手動実行</b>: 正しい日付で events.json 再生成（2427件）。</li>
+  <li><b>sync-entries 手動実行</b>: 索引再構築（targets=74 / scraped=73 / deferred=0 / <b>athletes=1591</b>）。</li>
+</ol>
+<h3>本番での最終確認</h3>
+<table>
+  <tr><th>選手</th><th>修正前</th><th>修正後（本番）</th></tr>
+  <tr><td>上園久美子</td><td>さくらんぼ 1件</td><td class="ok-text"><b>3件</b>：東大OLK前日(6/13)・東大OLK(6/14)・さくらんぼ(6/20)</td></tr>
+  <tr><td>辻悠佳</td><td>0件</td><td class="ok-text"><b>2件</b>：東大OLK前日(6/13)・東大OLK(6/14)</td></tr>
+  <tr><td>村越真</td><td>0件</td><td class="ok-text"><b>1件</b>：東大OLK(6/14)</td></tr>
+</table>
+<p class="note">＝ 上園久美子・辻悠佳を含む全選手の近接大会エントリー（最大規模の東大OLK本戦859名を含む）が選手ページに表示されることを本番で確認済み。</p>
+
+<!-- ============ 付録 ============ -->
+<h2>付録: 技術メモ</h2>
+<ul>
+  <li><b>JOY の年表示ルール</b>（実測）: 直近〜約6ヶ月＝年なし、それより先・年跨ぎ＝年明示。トップ100件中、年付き9件（先頭の長期講習2件＋12/13以降の7件）、年なし91件。</li>
+  <li><b>影響を受けなかったデータ</b>: アーカイブページは <code>2026/ 1/1</code> 形式で年付きを維持（294行をライブ確認）。ランキングJSONは <code>YYYY-MM-DD</code> 接頭辞21,860件で年付き維持。LapCenter は別サイト（年は引数指定）。</li>
+  <li><b>確認した正常フィールド</b>（JOY構造変更後もライブ正常）: 大会名・開催地・タグ（<code>span.event_icon</code>）・受付状態（受付中/締切）・座標（<code>var lat/lng</code>）・エントリー表（「チーム名」テーブル検出）。</li>
+</ul>
+
+<footer>
+  trails.jp インシデントレポート — 生成: 2026-06-09 20:42 JST<br>
+  調査・修正・監査は Claude Code により実施。本レポートは <code>output/incident_report_20260609.html</code> に保存。
+</footer>
+
+</div>
+</body>
+</html>

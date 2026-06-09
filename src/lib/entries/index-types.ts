@@ -1,7 +1,8 @@
 /**
  * 選手別エントリーインデックスの型定義。
  * 日次 cron (sync-entries) が生成し、Supabase Storage (app-data/entry-index.json) に保存する。
- * 照合キーは「氏名のスペース除去」= 全システム共通の正準キー（utils.ts / build-analysis-index.ts と同一）。
+ * 照合キーは normalizeNameKey（NFKC正規化＋空白除去, src/lib/name-key.ts）。build-index と API で同一関数を使う。
+ * リレーのメンバー個人・別名（旧姓等）も索引側で個別キーに展開済み。
  */
 
 /** 選手1人の1エントリー（=ある大会への出場予定） */

@@ -3,13 +3,21 @@ import { readEvents } from "@/lib/events-store";
 import { buildEntryIndex } from "@/lib/entries/build-index";
 import { writeEntryIndex } from "@/lib/entry-index-store";
 import { logCron } from "@/lib/cron-logger";
+import { notifyCronWarning } from "@/lib/cron-notifier";
+
+// 対象(targets)のうち取得失敗がこの件数以上なら警告（取りこぼし＝選手エントリーの欠落に直結）。
+const SCRAPE_SHORTFALL_WARN_THRESHOLD = 5;
 
 // Vercel Cron: 日次 04:00 JST (19:00 UTC) — sync-events(03:00 JST) の1時間後
 // 受付中∪締切済かつ未開催の大会のエントリーリストを集計し、選手別インデックスを生成。
 // vercel.json: { "path": "/api/cron/sync-entries", "schedule": "0 19 * * *" }
 
-/** スクレイプ対象の上限（10秒制限のセーフティ）。超過分はサイレントに落とさず log に明示。 */
-const MAX_SCRAPE = 60;
+// 関数の最大実行時間（秒）。既定(短い)だと大規模大会(例: 800人超のエントリー表)を
+// スクレイプ予算内に取り切れず脱落するため明示的に延長する。
+export const maxDuration = 60;
+
+/** スクレイプ対象の上限。在窓(today〜HORIZON)の大会数をカバーできる値にする。 */
+const MAX_SCRAPE = 90;
 /** 未来の地平線（日数）。これより先の大会は対象外。 */
 const HORIZON_DAYS = 120;
 
@@ -49,12 +57,12 @@ export async function GET(request: Request) {
       targets = targets.slice(0, MAX_SCRAPE);
     }
 
-    // 10秒制限内に収めるためスクレイプ全体予算6.5秒。
-    // 残り~3.5秒を parse末尾(abort不可の同期処理) / writeEntryIndex / JSON直列化に確保。
+    // maxDuration=60s 内に収める。全体予算は書き込み/直列化の余白を残して 45 秒。
+    // perEventTimeout は 800人超の大規模エントリー表(数MB級HTML)も取り切れるよう余裕を持たせる。
     const index = await buildEntryIndex(targets, {
-      concurrency: 8,
-      perEventTimeoutMs: 3500,
-      overallBudgetMs: 6500,
+      concurrency: 12,
+      perEventTimeoutMs: 9000,
+      overallBudgetMs: 45000,
     });
 
     // 全件失敗（JOYのburst遮断・障害など）のときは既存の良いインデックスを空で上書きしない。
@@ -83,6 +91,26 @@ export async function GET(request: Request) {
       generated_at: index.generatedAt,
     };
     await logCron("sync-entries", "success", payload, Date.now() - start);
+
+    // 取りこぼし（scraped < targets）が大きいと、その大会のエントリーが選手ページから欠落する。
+    // 全失敗は上の error 経路で扱うため、ここは部分取りこぼしの警告（24hデダブ）。
+    const shortfall = targets.length - index.scrapedEventCount;
+    if (shortfall >= SCRAPE_SHORTFALL_WARN_THRESHOLD) {
+      await notifyCronWarning(
+        "sync-entries",
+        "high_scrape_shortfall",
+        {
+          warning: "high_scrape_shortfall",
+          targets: targets.length,
+          scraped: index.scrapedEventCount,
+          shortfall,
+          deferred,
+          hint: "JOY遅延/遮断、または予算(maxDuration/overallBudget)不足の可能性。",
+        },
+        Date.now() - start,
+      );
+    }
+
     return NextResponse.json(payload);
   } catch (error) {
     console.error("Entry index sync failed:", error);

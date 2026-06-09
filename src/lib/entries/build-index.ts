@@ -7,10 +7,31 @@
  */
 import type { JOEEvent } from "@/lib/scraper/events";
 import { scrapeEntryList } from "@/lib/scraper/entries";
+import { normalizeNameKey, expandAliasKeys } from "@/lib/name-key";
 import type { AthleteEntryRef, EntryIndex } from "./index-types";
 
-/** 全システム共通の氏名正準化（スペース除去） */
-const normName = (s: string): string => s.replace(/\s+/g, "");
+/**
+ * リレー等の「メンバー」欄から個人名を抽出する。
+ * 例: "(福田雅秀 - 大林俊彦)" → ["福田雅秀", "大林俊彦"]。
+ * 区切りは " - "(ハイフン両側に空白) / 読点 / カンマ / スラッシュ。中黒(・)は氏名内にも使うため区切りにしない。
+ * 妥当でないトークン（記号のみ・極端に長い等）は捨てる。索引は追加のみなので取りこぼしても無害。
+ */
+function parseRelayMembers(raw: string): string[] {
+  const stripped = raw
+    .trim()
+    .replace(/^[（(【\[]+/, "")
+    .replace(/[）)】\]]+$/, "")
+    .trim();
+  if (!stripped) return [];
+  const out: string[] = [];
+  for (const part of stripped.split(/\s+-\s+|[,、，/／]/)) {
+    const n = part.trim();
+    if (!n || n.length > 20) continue;
+    if (!/\p{L}/u.test(n)) continue; // 文字（漢字/かな/英字）を含まないトークンは除外
+    out.push(n);
+  }
+  return out;
+}
 
 interface BuildOpts {
   /** 同時スクレイプ数 */
@@ -44,12 +65,29 @@ async function scrapeOne(ev: JOEEvent, timeoutMs: number): Promise<ScrapedEvent 
     const rows: ScrapedEvent["rows"] = [];
     for (const team of result.teams) {
       for (const row of team.entries) {
-        const nameKey = normName(row.name);
-        if (!nameKey || !row.className) continue; // 氏名/クラス欠落の不正行は除外（dedupeKey 衝突防止）
-        const dedupeKey = `${nameKey}|${row.className}`;
-        if (seen.has(dedupeKey)) continue;
-        seen.add(dedupeKey);
-        rows.push({ className: row.className, name: row.name, affiliation: row.affiliation });
+        if (!row.className) continue; // クラス欠落の不正行は除外
+
+        // チーム名(個人なら本人名、リレーならチーム名)。従来挙動を保つため索引に追加する。
+        const teamKey = normalizeNameKey(row.name);
+        if (teamKey) {
+          const dedupeKey = `${teamKey}|${row.className}`;
+          if (!seen.has(dedupeKey)) {
+            seen.add(dedupeKey);
+            rows.push({ className: row.className, name: row.name, affiliation: row.affiliation });
+          }
+        }
+
+        // リレー等: メンバー欄の個人を本人名で索引する（チーム名キーは個人ページから引かれないため）。
+        if (row.members) {
+          for (const member of parseRelayMembers(row.members)) {
+            const mKey = normalizeNameKey(member);
+            if (!mKey) continue;
+            const mDedupe = `${mKey}|${row.className}`;
+            if (seen.has(mDedupe)) continue;
+            seen.add(mDedupe);
+            rows.push({ className: row.className, name: member, affiliation: row.affiliation });
+          }
+        }
       }
     }
     return { ev, total: result.total, rows };
@@ -83,8 +121,8 @@ export async function buildEntryIndex(
     const { ev, total, rows } = s;
     const entryStatus = ev.entry_status; // "open" | "closed" | "none"（そのまま保持）
     for (const row of rows) {
-      const key = normName(row.name);
-      if (!key) continue; // scrapeOne 側で保証済みだが念のため空キー除外
+      const baseKey = normalizeNameKey(row.name);
+      if (!baseKey) continue; // scrapeOne 側で保証済みだが念のため空キー除外
       const ref: AthleteEntryRef = {
         joe_event_id: ev.joe_event_id,
         eventName: ev.name,
@@ -96,7 +134,11 @@ export async function buildEntryIndex(
         joeUrl: ev.joe_url,
         totalEntries: total,
       };
-      (athletes[key] ??= []).push(ref);
+      // 別名（旧姓⇄新姓等）があれば両方のキーで索引（選手マスタ側の表記でも引けるように）。
+      // 別名が無ければ [baseKey] のみ＝従来挙動。
+      for (const key of expandAliasKeys(baseKey)) {
+        (athletes[key] ??= []).push(ref);
+      }
     }
   };
 

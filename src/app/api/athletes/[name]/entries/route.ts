@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { readEntryIndex } from "@/lib/entry-index-store";
+import { normalizeNameKey } from "@/lib/name-key";
 
 /**
  * GET /api/athletes/[name]/entries
  * 選手別エントリーインデックスから当該選手の出場予定大会を返す。
- * 照合キーは氏名のスペース除去（全システム共通の正準キー）。
+ * 照合キーは normalizeNameKey（NFKC正規化＋空白除去）。build-index と同一関数なので一致する。
+ * 別名（旧姓⇄新姓等）は索引側で両キーに展開済みのため、ここは正規化のみでよい。
  * インデックスは日次 cron (sync-entries) が生成。未生成時は空配列。
  */
 export async function GET(
@@ -13,7 +15,7 @@ export async function GET(
 ) {
   const { name } = await params;
   const decoded = decodeURIComponent(name);
-  const key = decoded.replace(/\s+/g, "");
+  const key = normalizeNameKey(decoded);
 
   if (!key) {
     return NextResponse.json({ name: decoded, entries: [], generatedAt: null });

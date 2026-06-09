@@ -1,6 +1,11 @@
 /**
  * japan-o-entry.com からイベントデータを全件取得して JSON に保存
  * 実行: node scripts/scrape-events.mjs
+ *
+ * 注意: 本番のイベント同期は cron (src/lib/scraper/events.ts → sync-events) が正であり、
+ * このスクリプトはローカル fallback/静的 JSON (src/data・public/data) の手動更新用。
+ * 日付パースは src/lib/scraper/events.ts と挙動を揃えてある（年なし"M/D"の最近接年推定＋年跨ぎレンジ）。
+ * ロジックを変える場合は両方を同時に更新すること。
  */
 import * as cheerio from "cheerio";
 import { writeFileSync, mkdirSync } from "fs";
@@ -129,11 +134,37 @@ async function scrapeArchive(year) {
   return events;
 }
 
+/** 年なし "M/D" の年を推定（src/lib/scraper/events.ts と同じ：今日に最も近い年）。JST 基準。 */
+function inferYearForMonthDay(month, day) {
+  const nowJst = new Date(Date.now() + 9 * 3600 * 1000);
+  const cy = nowJst.getUTCFullYear();
+  const todayMs = Date.UTC(cy, nowJst.getUTCMonth(), nowJst.getUTCDate());
+  let best = cy;
+  let bestDiff = Infinity;
+  for (const y of [cy - 1, cy, cy + 1]) {
+    const diff = Math.abs(Date.UTC(y, month - 1, day) - todayMs);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = y;
+    }
+  }
+  return best;
+}
+
+/** 年なし年跨ぎレンジ（終了月<開始月）の開始年：終了日が今日以降になる最小の年。JST 基準。 */
+function startYearForCrossingRange(endMonth, endDay) {
+  const nowJst = new Date(Date.now() + 9 * 3600 * 1000);
+  const cy = nowJst.getUTCFullYear();
+  const todayMs = Date.UTC(cy, nowJst.getUTCMonth(), nowJst.getUTCDate());
+  for (const sy of [cy - 1, cy, cy + 1]) {
+    if (Date.UTC(sy + 1, endMonth - 1, endDay) >= todayMs) return sy;
+  }
+  return cy;
+}
+
 /** 日付テキストをパース */
 function parseDate(text, defaultYear) {
   // "2026/ 1/7 - 3/20" or "2/28 (土)" or "2/28 - 26" or "2/25 - 26"
-  const now = new Date();
-  const year = defaultYear || now.getFullYear();
 
   // Full year format: "2026/ 1/7" or "2026/ 1/7 - 3/20"
   const fullMatch = text.match(/(\d{4})\s*\/\s*(\d{1,2})\s*\/\s*(\d{1,2})(?:\s*-\s*(?:(\d{1,2})\s*\/\s*)?(\d{1,2}))?/);
@@ -152,11 +183,23 @@ function parseDate(text, defaultYear) {
   const shortMatch = text.match(/(\d{1,2})\s*\/\s*(\d{1,2})(?:\s*-\s*(?:(\d{1,2})\s*\/\s*)?(\d{1,2}))?/);
   if (shortMatch) {
     const [, m, d, endM, endD] = shortMatch;
-    const date = `${year}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    const mi = parseInt(m, 10);
+    const di = parseInt(d, 10);
+    if (mi < 1 || mi > 12 || di < 1 || di > 31) return { date: "" };
+    // 終了月（"M/D - M/D" の M、"M/D - D" は同月）。年跨ぎ検出に使う。
+    const emi = endD ? (endM ? parseInt(endM, 10) : mi) : null;
+    // 年: アーカイブ(defaultYear)指定があればそれ、無ければ最近接年。年跨ぎレンジは終了日基準。
+    const startYear = defaultYear
+      ? defaultYear
+      : emi !== null && emi < mi
+      ? startYearForCrossingRange(emi, parseInt(endD, 10))
+      : inferYearForMonthDay(mi, di);
+    const date = `${startYear}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
     let end_date;
     if (endD) {
       const em = endM || m;
-      end_date = `${year}-${em.padStart(2, "0")}-${endD.padStart(2, "0")}`;
+      const endYear = parseInt(em, 10) < mi ? startYear + 1 : startYear;
+      end_date = `${endYear}-${em.padStart(2, "0")}-${endD.padStart(2, "0")}`;
     }
     return { date, end_date };
   }
