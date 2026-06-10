@@ -6,8 +6,11 @@ import { readFileSync } from "fs";
 import { logCron } from "@/lib/cron-logger";
 import { join } from "path";
 
+// 多クラスの大規模イベントでも壁時計予算内で処理できるよう実行時間上限を延長。
+export const maxDuration = 60;
+
 // Vercel Cron: 日次 12:00 JST (03:00 UTC)
-// 水曜日は巡航速度・ミス率スクレイプも実行
+// 巡航速度・ミス率スクレイプも毎日実行（壁時計予算内で新しい順に処理）
 // vercel.json: { "path": "/api/cron/sync-lapcenter", "schedule": "0 3 * * *" }
 
 const SPRINT_KEYWORDS = ["スプリント", "Sprint", "sprint", "パークO", "パーク・オリエンテーリング"];
@@ -40,8 +43,12 @@ function isSprint(eventName: string): boolean {
   return SPRINT_KEYWORDS.some((kw) => eventName.includes(kw));
 }
 
-const MAX_RUNNER_EVENTS = 3; // 1回のCronで処理する最大イベント数
+// 1回のCronで処理候補とするイベント数の上限（実処理数は下記の壁時計予算で決まる）
+const MAX_RUNNER_EVENTS = 40;
 const DELAY_MS = 800;
+// 新しいイベントへの着手を打ち切る経過時間（リクエスト開始からの ms）。
+// maxDuration=60s に対し、着手後に多クラスイベントが完走できる余裕(~30s)を残す。
+const START_EVENT_BEFORE_MS = 30_000;
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -65,17 +72,13 @@ export async function GET(request: Request) {
       await writeEvents(events);
     }
 
-    // ---- 巡航速度・ミス率スクレイプ (水曜のみ) ----
+    // ---- 巡航速度・ミス率スクレイプ (毎日・壁時計予算内で新しい順に処理) ----
     let runnersResult = null;
-    const jstDay = new Date(Date.now() + 9 * 60 * 60 * 1000).getUTCDay();
-
-    if (jstDay === 3) {
-      try {
-        runnersResult = await scrapeRunners(events);
-      } catch (err) {
-        console.error("LC runner scrape failed:", err);
-        runnersResult = { error: String(err) };
-      }
+    try {
+      runnersResult = await scrapeRunners(events, start);
+    } catch (err) {
+      console.error("LC runner scrape failed:", err);
+      runnersResult = { error: String(err) };
     }
 
     const payload = {
@@ -102,7 +105,8 @@ export async function GET(request: Request) {
 }
 
 async function scrapeRunners(
-  events: Array<{ joe_event_id: number; name: string; date: string; lapcenter_event_id?: number }>
+  events: Array<{ joe_event_id: number; name: string; date: string; lapcenter_event_id?: number }>,
+  requestStart: number
 ) {
   // 追跡選手のロード
   const athleteIndex = JSON.parse(
@@ -113,11 +117,13 @@ async function scrapeRunners(
     athleteLookup.set(name.replace(/\s+/g, ""), { joyName: name, clubs: summary.clubs || [] });
   }
 
-  // 処理済みイベントキーをDBから取得
+  // 処理済みイベントキーをDBから取得（distinct (event_date, event_name) を JS 側で一意化）。
+  // 注: 旧実装は limit(10000) で、2万行超のテーブルではキーを取りこぼし→取得済みイベントを
+  //     再スクレイプして枠を浪費していた。十分大きな limit で全行取得して一意化する。
   const { data: existingKeys } = await supabaseAdmin
     .from("lc_performances")
     .select("event_date, event_name")
-    .limit(10000);
+    .limit(100000);
 
   const processedKeys = new Set<string>();
   if (existingKeys) {
@@ -134,22 +140,37 @@ async function scrapeRunners(
 
   let totalRunners = 0;
   let totalClasses = 0;
-  const newRecords: Array<{
-    athlete_name: string;
-    event_date: string;
-    event_name: string;
-    class_name: string;
-    cruising_speed: number;
-    miss_rate: number;
-    race_type: string;
-  }> = [];
+  let eventsProcessed = 0;
+  let dbInserted = 0;
+  let stoppedForBudget = false;
 
   for (const event of lcEvents) {
+    // 予算超過後は新しいイベントに着手しない（着手済みイベントは完走させ、イベント単位で保存）
+    if (Date.now() - requestStart > START_EVENT_BEFORE_MS) {
+      stoppedForBudget = true;
+      break;
+    }
+
     const eventId = event.lapcenter_event_id!;
     const eventType = isSprint(event.name) ? "sprint" : "forest";
 
     const classes = await fetchEventClasses(eventId);
-    if (classes.length === 0) continue;
+    if (classes.length === 0) {
+      eventsProcessed++;
+      continue;
+    }
+
+    // このイベント分のレコードを集め、イベント単位で即upsert。
+    // 途中で関数がタイムアウトしても、完了済みイベントの行は保全される（全損防止）。
+    const eventRecords: Array<{
+      athlete_name: string;
+      event_date: string;
+      event_name: string;
+      class_name: string;
+      cruising_speed: number;
+      miss_rate: number;
+      race_type: string;
+    }> = [];
 
     for (const cls of classes) {
       await new Promise((r) => setTimeout(r, DELAY_MS));
@@ -173,7 +194,7 @@ async function scrapeRunners(
         // speed=100 & miss=0 は基準ランナー（1人クラス等）で無意味なデータ
         if (r.speed === 100 && r.missRate === 0) continue;
 
-        newRecords.push({
+        eventRecords.push({
           athlete_name: entry.joyName,
           event_date: event.date,
           event_name: event.name,
@@ -182,30 +203,33 @@ async function scrapeRunners(
           miss_rate: r.missRate,
           race_type: eventType,
         });
-        totalRunners++;
       }
       totalClasses++;
     }
-  }
 
-  // DBに保存（バッチ upsert）
-  let dbInserted = 0;
-  for (let i = 0; i < newRecords.length; i += 500) {
-    const batch = newRecords.slice(i, i + 500);
-    const { error } = await supabaseAdmin
-      .from("lc_performances")
-      .upsert(batch, { onConflict: "athlete_name,event_date,event_name,class_name" });
-    if (error) {
-      console.error("LC DB upsert failed:", error.message);
-    } else {
-      dbInserted += batch.length;
+    // イベント単位でバッチ upsert（冪等: athlete_name,event_date,event_name,class_name）
+    for (let i = 0; i < eventRecords.length; i += 500) {
+      const batch = eventRecords.slice(i, i + 500);
+      const { error } = await supabaseAdmin
+        .from("lc_performances")
+        .upsert(batch, { onConflict: "athlete_name,event_date,event_name,class_name" });
+      if (error) {
+        console.error("LC DB upsert failed:", error.message);
+      } else {
+        dbInserted += batch.length;
+      }
     }
+
+    totalRunners += eventRecords.length;
+    eventsProcessed++;
   }
 
   return {
-    events_processed: lcEvents.length,
+    events_processed: eventsProcessed,
+    candidate_events: lcEvents.length,
     classes_processed: totalClasses,
     tracked_runners: totalRunners,
     db_inserted: dbInserted,
+    stopped_for_budget: stoppedForBudget,
   };
 }
