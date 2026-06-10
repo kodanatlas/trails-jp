@@ -10,8 +10,10 @@ export const metadata: Metadata = {
 };
 
 export default async function EventsPage() {
-  const events = await readEvents();
-  const lastSync = await getEventsLastSync();
+  const [events, lastSync] = await Promise.all([
+    readEvents(),
+    getEventsLastSync(),
+  ]);
   const lastSyncJst = lastSync
     ? new Date(lastSync).toLocaleString("ja-JP", {
         timeZone: "Asia/Tokyo",
