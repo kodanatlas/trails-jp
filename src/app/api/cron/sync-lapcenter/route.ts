@@ -61,15 +61,30 @@ export async function GET(request: Request) {
 
   const start = Date.now();
   try {
-    // ---- LapCenter イベントマッチング (日次) ----
     const events = (await readEvents()).map((e) => ({ ...e }));
-    const beforeUnmatched = events.filter((e) => !e.lapcenter_event_id).length;
-    const result = await matchLapCenterEvents(events);
-    const afterUnmatched = events.filter((e) => !e.lapcenter_event_id).length;
-    const newMatches = beforeUnmatched - afterUnmatched;
 
-    if (newMatches > 0) {
-      await writeEvents(events);
+    // ---- LapCenter イベントマッチング (日次・非致命) ----
+    // マッチングは sync-events でも毎日行われ events ストアに永続化される。ここでの
+    // mulka2 取得が一時的に失敗(TypeError: fetch failed 等)しても致命とはせず、
+    // ストア済みマッチを使って下のスクレイプを必ず続行する（毎日のスクレイプを守る）。
+    let matchingResult: Record<string, unknown>;
+    try {
+      const beforeUnmatched = events.filter((e) => !e.lapcenter_event_id).length;
+      const result = await matchLapCenterEvents(events);
+      const afterUnmatched = events.filter((e) => !e.lapcenter_event_id).length;
+      const newMatches = beforeUnmatched - afterUnmatched;
+      if (newMatches > 0) {
+        await writeEvents(events);
+      }
+      matchingResult = {
+        new_matches: newMatches,
+        total_matched: result.matched,
+        total_events: result.total,
+        lc_events_fetched: result.lcEventsCount,
+      };
+    } catch (err) {
+      console.error("LC matching failed (non-fatal):", err);
+      matchingResult = { error: String(err) };
     }
 
     // ---- 巡航速度・ミス率スクレイプ (毎日・壁時計予算内で新しい順に処理) ----
@@ -83,12 +98,7 @@ export async function GET(request: Request) {
 
     const payload = {
       success: true,
-      matching: {
-        new_matches: newMatches,
-        total_matched: result.matched,
-        total_events: result.total,
-        lc_events_fetched: result.lcEventsCount,
-      },
+      matching: matchingResult,
       runners: runnersResult,
       synced_at: new Date().toISOString(),
     };
