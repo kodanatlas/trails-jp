@@ -1,4 +1,12 @@
 import * as cheerio from "cheerio";
+import { fetch as lcFetch, Agent } from "undici";
+
+// mulka2.com は 2026-06 の証明書更新でチェーンが不完全になり、Node(undici)の厳格TLS検証では
+// "unable to get local issuer certificate"（中間CA: Let's Encrypt YR2）で失敗する。
+// curl/ブラウザは AIA でチェーンを補完するため成功するが、undici は AIA 非対応。
+// mulka2 への接続に限り証明書検証を緩めて取得する。公開成績データの取得のみで認証情報は
+// 送らないため影響は限定的（mulka2 がチェーンを直せば元の検証に戻してよい）。
+const mulka2Dispatcher = new Agent({ connect: { rejectUnauthorized: false } });
 
 export interface LapCenterEvent {
   eventId: number;
@@ -29,8 +37,9 @@ const BASE_URL = "https://mulka2.com/lapcenter";
 
 export async function fetchLapCenterEvents(year: number): Promise<LapCenterEvent[]> {
   const url = `${BASE_URL}/index.jsp?year=${year}`;
-  const res = await fetch(url, {
+  const res = await lcFetch(url, {
     headers: { "User-Agent": "trails.jp/1.0 (lapcenter sync)" },
+    dispatcher: mulka2Dispatcher,
   });
   if (!res.ok) return [];
 
@@ -296,8 +305,9 @@ export async function matchLapCenterEvents<
 
 export async function fetchEventClasses(eventId: number): Promise<LapCenterClass[]> {
   const url = `${BASE_URL}/lapcombat2/index.jsp?event=${eventId}&file=1`;
-  const res = await fetch(url, {
+  const res = await lcFetch(url, {
     headers: { "User-Agent": "trails.jp/1.0 (lapcenter sync)" },
+    dispatcher: mulka2Dispatcher,
   });
   if (!res.ok) return [];
 
@@ -341,8 +351,9 @@ export async function fetchSplitList(
   classId: number
 ): Promise<LapCenterRunnerStat[]> {
   const url = `${BASE_URL}/lapcombat2/split-list.jsp?event=${eventId}&file=1&class=${classId}`;
-  const res = await fetch(url, {
+  const res = await lcFetch(url, {
     headers: { "User-Agent": "trails.jp/1.0 (lapcenter sync)" },
+    dispatcher: mulka2Dispatcher,
   });
   if (!res.ok) return [];
 
