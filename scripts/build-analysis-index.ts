@@ -355,8 +355,13 @@ async function fetchFreshRankings() {
 // --- メイン処理（async fetch後に同期処理を続行） ---
 async function main() {
 
-console.log(`Fetching fresh rankings from JOY (all ${ALL_CLASSES.length} categories)...`);
-await fetchFreshRankings().catch((e: unknown) => console.warn("Ranking fetch failed, using local files:", e));
+// SKIP_FETCH=1: JOY 再取得を丸ごとスキップ（ローカル既存 JSON で index/snapshot/movers 経路だけ回すドライラン用）
+if (process.env.SKIP_FETCH === "1") {
+  console.log("⚠ SKIP_FETCH=1: JOY 再取得をスキップし、ローカル既存 JSON を使用します");
+} else {
+  console.log(`Fetching fresh rankings from JOY (all ${ALL_CLASSES.length} categories)...`);
+  await fetchFreshRankings().catch((e: unknown) => console.warn("Ranking fetch failed, using local files:", e));
+}
 
 // ランキング取得時刻を記録（ランキングページの「最終更新」表示用）。
 // ビルド = 週次取得タイミングなので、ビルド時刻 ≒ データ取得時刻。
@@ -637,7 +642,8 @@ if (supabaseUrl && supabaseKey) {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const prevMonth = (() => {
-      const d = new Date(now); d.setMonth(d.getMonth() - 1);
+      // 月初1日固定で前月を求める（setMonth は 29〜31日に翌月へロールオーバーする）
+      const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     })();
     const prevYear = `${now.getFullYear() - 1}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -653,11 +659,15 @@ if (supabaseUrl && supabaseKey) {
       "Content-Type": "application/json",
       Prefer: "resolution=merge-duplicates",
     };
-    await fetch(`${supabaseUrl}/rest/v1/club_stats_snapshot`, {
+    // on_conflict 指定で同月2回目以降のビルドも upsert（未指定だと 409 無音失敗で月初値が凍結される）
+    const clubSnapRes = await fetch(`${supabaseUrl}/rest/v1/club_stats_snapshot?on_conflict=month`, {
       method: "POST",
       headers,
       body: JSON.stringify({ month: currentMonth, stats: snapshot }),
     });
+    if (!clubSnapRes.ok) {
+      console.warn(`⚠ club_stats_snapshot upsert failed: HTTP ${clubSnapRes.status} (1 row)`);
+    }
 
     // 前月・前年のスナップショットを取得
     const fetchSnapshot = async (month: string) => {
@@ -700,19 +710,28 @@ if (supabaseUrl && supabaseKey) {
   console.warn("⚠ Supabase not configured, skipping club deltas");
 }
 
-// ---- ランキング順位・ポイントの前月比・前年比算出 ----
+// ---- ランキング順位・ポイントの前月比・前年比算出（全クラス対象） ----
+// movers.json 用の候補（delta 付与時に収集）
+interface MoverCandidate {
+  name: string;       // 表示用生名（スペース保持）
+  club: string;
+  type: string;       // 例: age_forest
+  className: string;  // 例: 無差別
+  rank: number;
+  mom: number;        // rank_delta.mom（順位上昇幅）
+  pointsMom: number;  // points_delta.mom
+}
+const moverCandidates: MoverCandidate[] = [];
+// 前月スナップショット GET が成功したか（false の間は movers.json を温存する）
+let rankingSnapshotFetched = false;
+
 if (supabaseUrl && supabaseKey) {
-  const DELTA_FILES = [
-    "age_forest_無差別.json",
-    "age_forest_女子無差別.json",
-    "age_sprint_S_無差別.json",
-    "age_sprint_S_女子無差別.json",
-  ];
   try {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const prevMonth = (() => {
-      const d = new Date(now); d.setMonth(d.getMonth() - 1);
+      // 月初1日固定で前月を求める（setMonth は 29〜31日に翌月へロールオーバーする）
+      const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     })();
     const prevYear = `${now.getFullYear() - 1}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -723,37 +742,63 @@ if (supabaseUrl && supabaseKey) {
       Prefer: "resolution=merge-duplicates",
     };
 
-    for (const fileName of DELTA_FILES) {
+    // 前月・前年のスナップショットを月ごとに1リクエストで取得し、file_key で引けるようにする
+    const fetchMonthSnapshots = async (
+      month: string,
+    ): Promise<Map<string, Record<string, { r: number; p: number }>> | null> => {
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/ranking_snapshot?month=eq.${month}&select=file_key,stats`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+      );
+      if (!res.ok) {
+        console.warn(`⚠ ranking_snapshot fetch failed: month=${month} HTTP ${res.status}`);
+        return null;
+      }
+      const rows = await res.json() as { file_key: string; stats: Record<string, { r: number; p: number }> }[];
+      // 取得件数を必ずログに出す（無言全滅の防止）
+      console.log(`✓ ranking_snapshot ${month}: ${rows.length} rows`);
+      return new Map(rows.map((r) => [r.file_key, r.stats]));
+    };
+    const [pmMonthMap, pyMonthMap] = await Promise.all([
+      fetchMonthSnapshots(prevMonth),
+      fetchMonthSnapshots(prevYear),
+    ]);
+    rankingSnapshotFetched = pmMonthMap !== null;
+
+    // 存在する全ランキングファイルを対象に (a) スナップショット行構築 (b) delta 付与
+    const snapshotRows: { month: string; file_key: string; stats: Record<string, { r: number; p: number }> }[] = [];
+    for (const fileName of files) {
+      const parsed = parseFilename(fileName);
+      if (!parsed) continue;
       const filePath = path.join(RANKINGS_DIR, fileName);
-      if (!fs.existsSync(filePath)) continue;
       const entries: RawEntry[] = JSON.parse(fs.readFileSync(filePath, "utf-8"));
       const fileKey = fileName.replace(".json", "");
+
+      // 同姓同名ガード: 同一ファイル内に同じ athlete_name が2件以上ある名前は
+      // スナップショット格納・delta 付与の両方からスキップ（後勝ち上書きによる捏造 delta の根絶）
+      const nameCounts = new Map<string, number>();
+      for (const e of entries) {
+        nameCounts.set(e.athlete_name, (nameCounts.get(e.athlete_name) ?? 0) + 1);
+      }
+      const dupNames = new Set([...nameCounts].filter(([, c]) => c >= 2).map(([n]) => n));
 
       // スナップショット保存: { "選手名": { r: rank, p: total_points } }
       const snap: Record<string, { r: number; p: number }> = {};
       for (const e of entries) {
+        if (dupNames.has(e.athlete_name)) continue;
         snap[e.athlete_name] = { r: e.rank, p: e.total_points };
       }
-      await fetch(`${supabaseUrl}/rest/v1/ranking_snapshot`, {
-        method: "POST",
-        headers: sbHeaders,
-        body: JSON.stringify({ month: currentMonth, file_key: fileKey, stats: snap }),
-      });
+      snapshotRows.push({ month: currentMonth, file_key: fileKey, stats: snap });
 
-      // 前月・前年を取得
-      const fetchSnap = async (month: string) => {
-        const res = await fetch(
-          `${supabaseUrl}/rest/v1/ranking_snapshot?month=eq.${month}&file_key=eq.${fileKey}&select=stats`,
-          { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
-        );
-        const rows = await res.json() as { stats: Record<string, { r: number; p: number }> }[];
-        return rows[0]?.stats ?? null;
-      };
-      const [pmSnap, pySnap] = await Promise.all([fetchSnap(prevMonth), fetchSnap(prevYear)]);
-
-      // delta付与
+      // delta 付与（前月・前年はメモリ上の月別マップから file_key 引き）
+      const pmSnap = pmMonthMap?.get(fileKey) ?? null;
+      const pySnap = pyMonthMap?.get(fileKey) ?? null;
       let deltaCount = 0;
       for (const e of entries) {
+        // 過去ビルドが書き込んだ stale な delta（同姓同名の捏造値を含む）を一旦除去してから再計算
+        delete (e as any).rank_delta;
+        delete (e as any).points_delta;
+        if (dupNames.has(e.athlete_name)) continue;
         const pm = pmSnap?.[e.athlete_name];
         const py = pySnap?.[e.athlete_name];
         if (pm || py) {
@@ -766,13 +811,91 @@ if (supabaseUrl && supabaseKey) {
             yoy: py ? Math.round((e.total_points - py.p) * 10) / 10 : null,
           };
           deltaCount++;
+          // movers 候補: points 実増（受動上昇の除外）× 順位も実上昇 × 上位200位 × アクティブ
+          // 順位 mom <= 0 を通すと「↑0」「↑-n」が急上昇として緑表示されてしまう
+          if (pm) {
+            const pointsMom = Math.round((e.total_points - pm.p) * 10) / 10;
+            const rankMom = pm.r - e.rank;
+            if (pointsMom > 0 && rankMom > 0 && e.rank <= 200 && e.is_active) {
+              moverCandidates.push({
+                name: e.athlete_name,
+                club: e.club,
+                type: parsed.type,
+                className: parsed.className,
+                rank: e.rank,
+                mom: rankMom,
+                pointsMom,
+              });
+            }
+          }
         }
       }
       fs.writeFileSync(filePath, JSON.stringify(entries, null, 2));
       if (deltaCount > 0) console.log(`✓ ranking deltas: ${fileKey} (${deltaCount} athletes)`);
     }
+
+    // スナップショット書き込み: 20行ずつ分割バルク POST（on_conflict 指定で同月再ビルドも upsert）
+    const SNAPSHOT_BATCH_SIZE = 20;
+    let upsertFailures = 0;
+    for (let i = 0; i < snapshotRows.length; i += SNAPSHOT_BATCH_SIZE) {
+      const batch = snapshotRows.slice(i, i + SNAPSHOT_BATCH_SIZE);
+      const res = await fetch(`${supabaseUrl}/rest/v1/ranking_snapshot?on_conflict=month,file_key`, {
+        method: "POST",
+        headers: sbHeaders,
+        body: JSON.stringify(batch),
+      });
+      if (!res.ok) {
+        upsertFailures++;
+        console.warn(`⚠ ranking_snapshot upsert failed: HTTP ${res.status} (${batch.length} rows, offset ${i})`);
+      }
+    }
+    if (upsertFailures === 0) {
+      console.log(`✓ ranking_snapshot: ${snapshotRows.length} files upserted for ${currentMonth}`);
+    }
   } catch (e) {
     console.warn("Ranking snapshot/delta failed:", e);
+  }
+} else {
+  console.warn("⚠ Supabase not configured, skipping ranking deltas");
+}
+
+// ---- movers.json 生成（トップページ「今月の急上昇」用） ----
+{
+  const moversPath = path.resolve(__dirname, "../src/data/movers.json");
+  if (!rankingSnapshotFetched) {
+    // env なし・スナップショット GET 失敗時は捏造防止のため既存ファイルを温存
+    console.warn("⚠ movers.json: スナップショット未取得のため既存ファイルを温存（書き込みスキップ）");
+  } else {
+    // 選手単位 dedupe（キー = 空白除去名、最良 mom を採用）→ mom 降順 top10
+    const byAthlete = new Map<string, MoverCandidate>();
+    for (const c of moverCandidates) {
+      const key = c.name.replace(/\s+/g, "");
+      const prev = byAthlete.get(key);
+      if (!prev || c.mom > prev.mom) byAthlete.set(key, c);
+    }
+    const topMovers = [...byAthlete.values()].sort((a, b) => b.mom - a.mom).slice(0, 10);
+    if (topMovers.length < 3) {
+      // 月初など候補が正味空のときは前回分を温存（セクション消滅を防ぐ）
+      console.warn(`⚠ movers.json: 候補 ${topMovers.length} 件 (<3) のため既存ファイルを温存（書き込みスキップ）`);
+    } else {
+      const generatedAtJst = `${new Date().toLocaleString("sv-SE", {
+        timeZone: "Asia/Tokyo",
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit",
+      })} JST`;
+      const items = topMovers.map((c) => ({
+        name: c.name,                       // 表示用生名（スペース保持）
+        key: c.name.replace(/\s+/g, ""),    // /analysis?athlete= リンク用（encodeURIComponent して使う）
+        club: c.club,
+        type: c.type,
+        className: c.className,
+        rank: c.rank,
+        mom: c.mom,
+        pointsMom: c.pointsMom,
+      }));
+      fs.writeFileSync(moversPath, JSON.stringify({ generatedAtJst, items }, null, 2) + "\n");
+      console.log(`✓ movers.json: ${items.length} movers (top mom=${items[0].mom})`);
+    }
   }
 }
 

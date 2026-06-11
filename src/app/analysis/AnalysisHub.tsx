@@ -12,6 +12,18 @@ import { SupportTab } from "./SupportTab";
 
 type Tab = "athlete" | "clubs" | "compare" | "support";
 
+/**
+ * URL の ?athlete= を選手選択と同期する（key = 空白除去名）。
+ * 第1引数に history.state を渡して既存の popstate 状態機械（pushState/replaceState の
+ * state オブジェクト）を壊さないこと。
+ */
+function syncAthleteUrl(key: string | null) {
+  const url = new URL(window.location.href);
+  if (key) url.searchParams.set("athlete", key);
+  else url.searchParams.delete("athlete");
+  history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
 const tabs: { id: Tab; label: string; icon: typeof User }[] = [
   { id: "athlete", label: "選手分析", icon: User },
   { id: "clubs", label: "クラブ", icon: Users },
@@ -141,6 +153,7 @@ export function AnalysisHub() {
               setSearchQuery("");
               setFromClub(null);
               setFromSupport(false);
+              syncAthleteUrl(null);
             }}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === tab.id
@@ -166,6 +179,7 @@ export function AnalysisHub() {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
+                if (selectedAthlete) syncAthleteUrl(null); // 選手解除時は ?athlete を除去
                 setSelectedAthlete(null);
               }}
               className="w-full rounded-lg border border-border bg-surface py-2 pl-8 pr-3 text-sm outline-none focus:border-primary"
@@ -184,6 +198,7 @@ export function AnalysisHub() {
                   onClick={() => {
                     setSelectedAthlete(a);
                     setSearchQuery(a.name);
+                    syncAthleteUrl(a.name);
                   }}
                   className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-all hover:border-primary/30 hover:bg-card-hover"
                 >
@@ -232,7 +247,7 @@ export function AnalysisHub() {
                   応援に戻る
                 </button>
               )}
-              <AthleteDetail summary={selectedAthlete} />
+              <AthleteDetail summary={selectedAthlete} athleteIndex={athleteIndex} />
             </>
           )}
 
@@ -260,6 +275,7 @@ export function AnalysisHub() {
               // 戻る先としてクラブタブの状態を履歴に記録
               history.replaceState({ tab: "clubs", club: clubName }, "");
               history.pushState({ tab: "athlete", athlete: name, fromClub: clubName }, "");
+              syncAthleteUrl(name); // pushState 直後なので新エントリの URL のみ更新（state は保持）
               setFromClub(clubName ?? null);
               setActiveTab("athlete");
               setSearchQuery(name);
@@ -286,6 +302,7 @@ export function AnalysisHub() {
           onSelectAthlete={(athlete) => {
             history.replaceState({ tab: "support" }, "");
             history.pushState({ tab: "athlete", athlete: athlete.name, fromSupport: true }, "");
+            syncAthleteUrl(athlete.name); // pushState 直後なので新エントリの URL のみ更新（state は保持）
             setFromSupport(true);
             setFromClub(null);
             setActiveTab("athlete");

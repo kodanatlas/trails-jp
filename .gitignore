@@ -33,3 +33,6 @@ npm-debug.log*
 
 # Supabase CLI 一時ファイル
 supabase/.temp/
+
+# Claude 検証用一時ファイル
+.tmp_*

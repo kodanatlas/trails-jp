@@ -1,0 +1,105 @@
+{
+  "generatedAtJst": "2026-06-10 22:53 JST",
+  "items": [
+    {
+      "name": "小山 温史",
+      "key": "小山温史",
+      "club": "トータス",
+      "type": "age_forest",
+      "className": "無差別",
+      "rank": 172,
+      "mom": 1241,
+      "pointsMom": 2797.1
+    },
+    {
+      "name": "市川 礼人",
+      "key": "市川礼人",
+      "club": "OLCルーパー",
+      "type": "age_sprint",
+      "className": "S_無差別",
+      "rank": 160,
+      "mom": 746,
+      "pointsMom": 3235.3
+    },
+    {
+      "name": "堀田 祐子",
+      "key": "堀田祐子",
+      "club": "青葉会/トータス",
+      "type": "age_forest",
+      "className": "女子無差別",
+      "rank": 53,
+      "mom": 312,
+      "pointsMom": 2624.9
+    },
+    {
+      "name": "高橋 友理奈",
+      "key": "高橋友理奈",
+      "club": "青葉会",
+      "type": "age_forest",
+      "className": "女子無差別",
+      "rank": 164,
+      "mom": 230,
+      "pointsMom": 2337.9
+    },
+    {
+      "name": "西脇 博子",
+      "key": "西脇博子",
+      "club": "入間市OLC",
+      "type": "age_forest",
+      "className": "女子無差別",
+      "rank": 161,
+      "mom": 229,
+      "pointsMom": 2296.8
+    },
+    {
+      "name": "羽岡 美紀",
+      "key": "羽岡美紀",
+      "club": "朱雀OK",
+      "type": "age_sprint",
+      "className": "S_女子無差別",
+      "rank": 33,
+      "mom": 195,
+      "pointsMom": 2926.6
+    },
+    {
+      "name": "加藤 遼",
+      "key": "加藤遼",
+      "club": "早大OC",
+      "type": "age_sprint",
+      "className": "S_無差別",
+      "rank": 122,
+      "mom": 192,
+      "pointsMom": 550.4
+    },
+    {
+      "name": "安江 舞莉",
+      "key": "安江舞莉",
+      "club": "京女OLC",
+      "type": "age_sprint",
+      "className": "S_女子無差別",
+      "rank": 157,
+      "mom": 167,
+      "pointsMom": 3079.1
+    },
+    {
+      "name": "小倉 歩実",
+      "key": "小倉歩実",
+      "club": "早大OC",
+      "type": "age_sprint",
+      "className": "S_女子無差別",
+      "rank": 89,
+      "mom": 163,
+      "pointsMom": 2863.3
+    },
+    {
+      "name": "宇野 和輝",
+      "key": "宇野和輝",
+      "club": "名椙OLC",
+      "type": "age_forest",
+      "className": "無差別",
+      "rank": 166,
+      "mom": 146,
+      "pointsMom": 361.5
+    }
+  ]
+}

@@ -3,6 +3,8 @@ import { CalendarDays, Trophy, ArrowRight, ExternalLink, BarChart3 } from "lucid
 import type { JOEEvent } from "@/lib/scraper/events";
 import eventsJson from "@/data/events.json";
 import rankingsJson from "@/data/rankings.json";
+import { MonthlyMovers } from "@/components/MonthlyMovers";
+import { WeeklyCheerPodium } from "@/components/WeeklyCheerPodium";
 
 export default function Home() {
   const allEvents = eventsJson as JOEEvent[];
@@ -103,6 +105,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 今月の急上昇（ビルド時静的データ） */}
+      <MonthlyMovers />
+
       {/* Upcoming Events (JOY連携) */}
       <section className="border-b border-border bg-surface py-12 sm:py-16">
         <div className="mx-auto max-w-6xl px-4">
@@ -172,6 +177,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* 今週の応援 表彰台（likes はクライアント fetch — SSG 維持） */}
+      <WeeklyCheerPodium />
 
     </div>
   );

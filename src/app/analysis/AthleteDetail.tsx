@@ -4,8 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
-import { Loader2, TrendingUp, TrendingDown, Minus, Target, Zap, Calendar, ChevronDown } from "lucide-react";
-import type { AthleteSummary, AthleteProfile, LapCenterPerformance } from "@/lib/analysis/types";
+import { Loader2, TrendingUp, TrendingDown, Minus, Target, Zap, Calendar, ChevronDown, Share2, Link as LinkIcon, Check } from "lucide-react";
+import type { AthleteSummary, AthleteProfile, AthleteIndex, LapCenterPerformance } from "@/lib/analysis/types";
 import type { AthleteEntryRef } from "@/lib/entries/index-types";
 import {
   loadAthleteDetail,
@@ -15,13 +15,17 @@ import {
   typeLabel,
   getBestRanks,
 } from "@/lib/analysis/utils";
+import { eventFuzzyMatch } from "@/lib/analysis/event-match";
+import { SITE_URL } from "@/lib/site";
 import { UpcomingEntries } from "./UpcomingEntries";
+import { HeadToHead } from "./HeadToHead";
 
 interface Props {
   summary: AthleteSummary;
+  athleteIndex: AthleteIndex;
 }
 
-export function AthleteDetail({ summary }: Props) {
+export function AthleteDetail({ summary, athleteIndex }: Props) {
   const [profile, setProfile] = useState<AthleteProfile | null>(null);
   const [lcData, setLcData] = useState<LapCenterPerformance[] | null>(null);
   const [entryData, setEntryData] = useState<
@@ -81,6 +85,13 @@ export function AthleteDetail({ summary }: Props) {
       <ScoreChart profile={profile} />
       {lcData && lcData.length >= 2 && <LapCenterChart data={lcData} profile={profile} />}
       <RecentEvents profile={profile} />
+      {/* key で選手切替時に相手選択をリセット */}
+      <HeadToHead
+        key={profile.name}
+        profile={profile}
+        athleteIndex={athleteIndex}
+        myEntries={entryData?.entries ?? null}
+      />
       <UpcomingEntries data={entryData} />
     </div>
   );
@@ -115,17 +126,20 @@ function ProfileHeader({ profile }: { profile: AthleteProfile }) {
           <h2 className="text-lg font-bold">{profile.name}</h2>
           <p className="text-xs text-muted">{profile.clubs.join(" / ")}</p>
         </div>
-        <div className="text-right">
-          <p className="text-2xl font-bold text-primary">
-            {profile.avgTotalPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
-          </p>
-          <button
-            onClick={() => setShowBreakdown((v) => !v)}
-            className="inline-flex items-center gap-0.5 text-[10px] text-muted hover:text-foreground transition-colors"
-          >
-            F・S 無差別平均
-            <ChevronDown className={`h-3 w-3 transition-transform ${showBreakdown ? "rotate-180" : ""}`} />
-          </button>
+        <div className="flex items-start gap-3">
+          <ShareButtons name={profile.name} />
+          <div className="text-right">
+            <p className="text-2xl font-bold text-primary">
+              {profile.avgTotalPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+            </p>
+            <button
+              onClick={() => setShowBreakdown((v) => !v)}
+              className="inline-flex items-center gap-0.5 text-[10px] text-muted hover:text-foreground transition-colors"
+            >
+              F・S 無差別平均
+              <ChevronDown className={`h-3 w-3 transition-transform ${showBreakdown ? "rotate-180" : ""}`} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -188,6 +202,66 @@ function ProfileHeader({ profile }: { profile: AthleteProfile }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/** シェアボタン群: X intent・Web Share・URL コピー（シェア URL は /a/[name] カードページ） */
+function ShareButtons({ name }: { name: string }) {
+  const [copied, setCopied] = useState(false);
+
+  // name は athlete-index のキー（空白除去名）。シェア URL は必ず encodeURIComponent で組み立てる
+  const shareUrl = `${SITE_URL}/a/${encodeURIComponent(name)}`;
+  const shareText = `${name}のオリエンタイプ #trails_jp`;
+  const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+
+  const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+
+  const handleNativeShare = () => {
+    navigator.share({ title: `${name} | trails.jp`, text: shareText, url: shareUrl }).catch(() => {
+      // ユーザーキャンセル等は無視
+    });
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(shareUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  };
+
+  return (
+    <div className="flex items-center gap-0.5">
+      <a
+        href={intentUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="X でシェア"
+        className="rounded-full p-1.5 text-muted transition-colors hover:bg-white/10 hover:text-foreground"
+      >
+        {/* X (旧Twitter) ロゴ */}
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current" aria-hidden="true">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+        </svg>
+      </a>
+      {canNativeShare && (
+        <button
+          onClick={handleNativeShare}
+          title="シェア"
+          className="rounded-full p-1.5 text-muted transition-colors hover:bg-white/10 hover:text-foreground"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+        </button>
+      )}
+      <button
+        onClick={handleCopy}
+        title={copied ? "コピーしました" : "URL をコピー"}
+        className={`rounded-full p-1.5 transition-colors ${
+          copied ? "text-green-400" : "text-muted hover:bg-white/10 hover:text-foreground"
+        }`}
+      >
+        {copied ? <Check className="h-3.5 w-3.5" /> : <LinkIcon className="h-3.5 w-3.5" />}
+      </button>
     </div>
   );
 }
@@ -634,41 +708,6 @@ function valOpacity(value: number, min: number, max: number): number {
   const range = max - min || 1;
   const t = Math.max(0, Math.min(1, (value - min) / range)); // 0=min(good), 1=max(bad)
   return 1 - t * 0.7; // 1.0(濃) → 0.3(薄)
-}
-
-/** イベント名ノイズ除去 (JOY↔LapCenter 近似一致用) */
-function stripEventNoise(s: string): string {
-  let r = s;
-  r = r.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
-  r = r.replace(/20\d{2}年度?/g, "");
-  r = r.replace(/20\d{2}/g, "");
-  r = r.replace(/第\s*[0-9一二三四五六七八九十百千]+\s*回/g, "");
-  r = r.replace(/(令和|平成)\s*[0-9一-九十]+\s*年度?/g, "");
-  r = r.replace(/[（(][^)）]*[)）]/g, "");
-  r = r.replace(/【[^】]*】/g, "");
-  for (const w of ["大会", "地区", "年度", "兼", "in", "IN", "の", "・", "\u3000"]) r = r.replaceAll(w, "");
-  r = r.replace(/[\s\-\/\\.,、。!！?？:：;；&＆'"_＿~～|｜\[\]［］{}]/g, "");
-  return r.toLowerCase();
-}
-
-function eventFuzzyMatch(a: string, b: string): boolean {
-  const na = stripEventNoise(a);
-  const nb = stripEventNoise(b);
-  if (!na || !nb) return false;
-  if (na === nb) return true;
-  const shorter = na.length <= nb.length ? na : nb;
-  const longer = na.length <= nb.length ? nb : na;
-  if (shorter.length >= 3 && longer.includes(shorter)) return true;
-  if (shorter.length >= 4 && longer.length >= 4) {
-    const trigrams = new Set<string>();
-    for (let i = 0; i <= shorter.length - 3; i++) trigrams.add(shorter.substring(i, i + 3));
-    let common = 0;
-    for (let i = 0; i <= longer.length - 3; i++) {
-      if (trigrams.has(longer.substring(i, i + 3))) common++;
-    }
-    if (common / trigrams.size >= 0.6 && common >= 3) return true;
-  }
-  return false;
 }
 
 /** LapCenter 巡航速度・ミス率推移チャート */
