@@ -16,11 +16,14 @@ type Tab = "athlete" | "clubs" | "compare" | "support";
  * URL の ?athlete= を選手選択と同期する（key = 空白除去名）。
  * 第1引数に history.state を渡して既存の popstate 状態機械（pushState/replaceState の
  * state オブジェクト）を壊さないこと。
+ * ?tab= は初期表示専用の深リンク（トップ「今週の応援」等）なので、ユーザーが
+ * タブ切替や選手選択で操作を始めたら常に除去する（リロード時の意図しないタブ復元を防ぐ）。
  */
 function syncAthleteUrl(key: string | null) {
   const url = new URL(window.location.href);
   if (key) url.searchParams.set("athlete", key);
   else url.searchParams.delete("athlete");
+  url.searchParams.delete("tab");
   history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
@@ -66,13 +69,20 @@ export function AnalysisHub() {
       if (!initialAthleteHandled.current) {
         const params = new URLSearchParams(window.location.search);
         const athleteParam = params.get("athlete");
+        let athleteOpened = false;
         if (athleteParam && ai?.athletes) {
           const summary = ai.athletes[athleteParam];
           if (summary) {
             setSelectedAthlete(summary);
             setSearchQuery(athleteParam);
             setActiveTab("athlete");
+            athleteOpened = true;
           }
+        }
+        // ?tab= 深リンク（トップ「今週の応援」→応援タブ等）。?athlete= が優先
+        const tabParam = params.get("tab");
+        if (!athleteOpened && tabParam && tabs.some((t) => t.id === tabParam)) {
+          setActiveTab(tabParam as Tab);
         }
         initialAthleteHandled.current = true;
       }

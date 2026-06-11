@@ -98,7 +98,10 @@ export function WeeklyCheerPodium() {
               応援数{label === "累計" ? "（累計）" : ""}
             </span>
           </div>
-          <Link href="/analysis" className="text-xs font-medium text-primary hover:underline">
+          <Link
+            href="/analysis?tab=support"
+            className="text-xs font-medium text-primary hover:underline"
+          >
             応援タブへ →
           </Link>
         </div>
@@ -143,7 +146,7 @@ export function WeeklyCheerPodium() {
         <div className="border-t border-border" />
 
         <p className="mt-4 text-center text-xs text-muted">
-          <Link href="/analysis" className="text-primary hover:underline">
+          <Link href="/analysis?tab=support" className="text-primary hover:underline">
             選手分析の応援タブ
           </Link>
           から、あなたも気になる選手を応援できます。
