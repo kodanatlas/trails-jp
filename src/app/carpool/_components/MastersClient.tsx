@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { fetchCarpool, postCarpool, patchCarpool, putCarpool } from "./carpoolFetch";
 import { useToast } from "./Toast";
 import CarpoolHeader from "./CarpoolHeader";
+import NodeMapPicker from "./NodeMapPicker";
 import { cn } from "@/lib/utils";
 import type {
   ClubDTO,
@@ -193,6 +194,14 @@ function NodesTab({
     () => nodes.filter((n) => n.kind === subKind),
     [nodes, subKind],
   );
+
+  // 地図ピッカーの初期中心: 既存ノードから venue を優先、無ければ座標ありの最初のノード、それも無ければ null。
+  const mapFallbackCenter = useMemo<{ lat: number; lng: number } | null>(() => {
+    const hasCoord = (n: NodeDTO) => n.lat != null && n.lng != null;
+    const venue = nodes.find((n) => n.kind === "venue" && hasCoord(n));
+    const pick = venue ?? nodes.find(hasCoord);
+    return pick ? { lat: Number(pick.lat), lng: Number(pick.lng) } : null;
+  }, [nodes]);
 
   // P5.5: focus 時、表示中の種別で最初の座標なし行を画面中央へ寄せる（一度きり）。
   useEffect(() => {
@@ -447,6 +456,16 @@ function NodesTab({
               />
             </div>
           </div>
+          {/* 地図ピッカー: タップ／ドラッグで座標を直接指定・微修正できる。 */}
+          <NodeMapPicker
+            lat={form.lat}
+            lng={form.lng}
+            onPick={(lat, lng) => setForm((f) => ({ ...f, lat: String(lat), lng: String(lng) }))}
+            fallbackCenter={mapFallbackCenter}
+          />
+          <p className="text-xs text-muted">
+            「再取得」の結果がずれている場合は、地図のピンをドラッグして修正できます
+          </p>
           {subKind === "venue" && (
             <label className="flex items-center gap-2 text-sm text-foreground">
               <input

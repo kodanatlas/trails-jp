@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   haversineKm,
   estimateTransitMinutes,
+  estimateTransitFromCarMinutes,
   buildOsrmCoordsParam,
   buildOsrmTableUrl,
   parseOsrmDurations,
@@ -44,24 +45,32 @@ describe("estimateTransitMinutes", () => {
     expect(Number.isInteger(m)).toBe(true);
     expect(m).toBeGreaterThan(60);
   });
-  it("目黒駅〜練馬駅は正気な分（>5, <=480, 1440 ではない）", () => {
+  it("目黒駅〜練馬駅は haversine fallback で >5・1440 ではない（クランプは廃止）", () => {
     const meguro: GeoNode = { id: "meguro", lat: 35.633, lng: 139.716 };
     const nerima: GeoNode = { id: "nerima", lat: 35.748, lng: 139.654 };
     const m = estimateTransitMinutes(meguro, nerima);
     expect(m).toBeGreaterThan(5);
-    expect(m).toBeLessThanOrEqual(TRANSIT_MAX_SANE_MIN); // 480
     expect(m).not.toBe(1440);
     // haversine（直線距離）は都内の近接駅レンジ（10〜18km 程度）に収まる。
     const km = haversineKm(meguro, nerima);
     expect(km).toBeGreaterThan(10);
     expect(km).toBeLessThan(18);
   });
-  it("既定 maxMinutes は TRANSIT_MAX_SANE_MIN（480）でキャップされ 1440 にならない", () => {
-    // 地球規模の距離（日本〜南米）でも 480 で頭打ち。
-    const far1: GeoNode = { id: "f1", lat: 35.6, lng: 139.7 };
-    const far2: GeoNode = { id: "f2", lat: -34.6, lng: -58.4 };
-    const m = estimateTransitMinutes(far1, far2);
-    expect(m).toBe(TRANSIT_MAX_SANE_MIN);
+  it("クランプ廃止: 地球規模の距離では生値が 480 を超える", () => {
+    // 沖縄相当の遠距離（東京〜lat26,lng127）でも頭打ちせず生値を返す。
+    const tokyo: GeoNode = { id: "f1", lat: 35.6, lng: 139.7 };
+    const okinawa: GeoNode = { id: "f2", lat: 26.0, lng: 127.0 };
+    const m = estimateTransitMinutes(tokyo, okinawa);
+    expect(m).toBeGreaterThan(TRANSIT_MAX_SANE_MIN); // クランプされない生値
+  });
+});
+
+describe("estimateTransitFromCarMinutes", () => {
+  it("car 22 分 → 50 分（22 * 1.6 + 15 = 50.2 → round 50）", () => {
+    expect(estimateTransitFromCarMinutes(22)).toBe(50);
+  });
+  it("係数とバッファ: car 0 → 15 分", () => {
+    expect(estimateTransitFromCarMinutes(0)).toBe(15);
   });
 });
 
@@ -153,22 +162,47 @@ describe("buildCarUpserts", () => {
 });
 
 describe("buildTransitUpserts", () => {
-  it("未入力 transit ペアのみ source=api で全順序対を埋める", () => {
-    const nodes = [A, B, V];
+  it("未入力 transit ペアのみ source=api で全順序対を埋める（近接ノード）", () => {
+    // V は A 近傍なので A↔V / B↔V は 480 以下に収まる（over-cap スキップなし）。
+    const near: GeoNode = { id: "near", lat: 35.69, lng: 139.69 }; // A のすぐ近く
+    const nodes = [A, near, V];
     const skip = buildSkipKeySet([
-      { fromNodeId: "a", toNodeId: "b", mode: "transit", source: "manual" },
+      { fromNodeId: "a", toNodeId: "near", mode: "transit", source: "manual" },
     ]);
-    const out = buildTransitUpserts(nodes, skip);
-    // 3 ノード順序対 6 - 1(保護) = 5
-    expect(out).toHaveLength(5);
-    expect(out.every((u) => u.source === "api" && u.mode === "transit")).toBe(true);
+    const { upserts, skippedOverCap } = buildTransitUpserts(nodes, skip);
+    // 3 ノード順序対 6 - 1(保護) = 5、いずれも近距離で over-cap なし。
+    expect(upserts).toHaveLength(5);
+    expect(upserts.every((u) => u.source === "api" && u.mode === "transit")).toBe(true);
+    expect(skippedOverCap).toBe(0);
   });
 
-  it("推定分が 480 を超えるエントリは保存しない", () => {
-    // 国内ノードどうしなので全て 480 以下に収まる（異常値は出ない）。
+  it("推定分が 480 を超えるペアはクランプ値を保存せずスキップ（skippedOverCap で報告）", () => {
+    // A(新宿)↔B(横浜) はクランプ廃止で約541分 → 480超 → 両方向スキップ。
     const nodes = [A, B, V];
-    const out = buildTransitUpserts(nodes, new Set());
-    expect(out.every((u) => u.minutes <= TRANSIT_MAX_SANE_MIN)).toBe(true);
+    const { upserts, skippedOverCap } = buildTransitUpserts(nodes, new Set());
+    // 保存された分はすべて 480 以下（クランプ値 480 は混入しない）。
+    expect(upserts.every((u) => u.minutes <= TRANSIT_MAX_SANE_MIN)).toBe(true);
+    expect(upserts.some((u) => u.minutes === TRANSIT_MAX_SANE_MIN)).toBe(false);
+    // a↔b（2ペア）はスキップ、a↔v / b↔v（4ペア）は保存。
+    expect(skippedOverCap).toBe(2);
+    expect(upserts).toHaveLength(4);
+    expect(
+      upserts.find((u) => u.fromNodeId === "a" && u.toNodeId === "b"),
+    ).toBeUndefined();
+  });
+
+  it("car 所要があるペアは car ベース推定を第一情報源にする", () => {
+    const meguro: GeoNode = { id: "meguro", lat: 35.633, lng: 139.716 };
+    const nerima: GeoNode = { id: "nerima", lat: 35.748, lng: 139.654 };
+    const nodes = [meguro, nerima];
+    // 目黒→練馬 の car 22 分。transit は car ベースの 50 分になる。
+    const carMinutesByPair = new Map<string, number>([["meguro>nerima", 22]]);
+    const { upserts } = buildTransitUpserts(nodes, new Set(), undefined, carMinutesByPair);
+    const mn = upserts.find((u) => u.fromNodeId === "meguro" && u.toNodeId === "nerima");
+    expect(mn?.minutes).toBe(50);
+    // 逆方向は car 不在 → haversine fallback（car ベースの 50 とは独立）。
+    const nm = upserts.find((u) => u.fromNodeId === "nerima" && u.toNodeId === "meguro");
+    expect(nm?.minutes).toBe(estimateTransitMinutes(nerima, meguro));
   });
 });
 
@@ -210,12 +244,82 @@ describe("buildAutoUpserts", () => {
     const existing: ExistingTravelTime[] = [
       { fromNodeId: "a", toNodeId: "b", mode: "car", source: "manual" }, // 保護
     ];
-    const { car, transit, all } = buildAutoUpserts(nodes, durations, existing);
+    const { car, transit, all, transitSkippedOverCap } = buildAutoUpserts(
+      nodes,
+      durations,
+      existing,
+    );
     // car: a>b 保護 → b>a のみ
     expect(car.map((u) => `${u.fromNodeId}${u.toNodeId}`)).toEqual(["ba"]);
     // transit: a>b, b>a 両方未入力
     expect(transit).toHaveLength(2);
     expect(all).toHaveLength(3);
+    expect(transitSkippedOverCap).toBe(0);
+  });
+
+  it("目黒→練馬: car 22 分があれば transit は car ベースの 50 分（248 でも >100 でもない）", () => {
+    const meguro: GeoNode = { id: "meguro", lat: 35.633, lng: 139.716 };
+    const nerima: GeoNode = { id: "nerima", lat: 35.748, lng: 139.654 };
+    const nodes = [meguro, nerima];
+    // durations: meguro(0)→nerima(1) = 22 分（= 1320 秒）。
+    const durations = parseOsrmDurations({
+      code: "Ok",
+      durations: [
+        [0, 22 * 60],
+        [22 * 60, 0],
+      ],
+    });
+    const { transit } = buildAutoUpserts(nodes, durations, []);
+    const mn = transit.find((u) => u.fromNodeId === "meguro" && u.toNodeId === "nerima");
+    expect(mn?.minutes).toBe(50);
+    expect(mn!.minutes).toBeLessThanOrEqual(100);
+    expect(mn?.minutes).not.toBe(248);
+  });
+
+  it("car 不在ペア: transit は haversine 推定（現行係数）にフォールバック", () => {
+    const meguro: GeoNode = { id: "meguro", lat: 35.633, lng: 139.716 };
+    const nerima: GeoNode = { id: "nerima", lat: 35.748, lng: 139.654 };
+    const nodes = [meguro, nerima];
+    // durations 空 → car なし → haversine 推定そのまま。
+    const { car, transit } = buildAutoUpserts(nodes, [], []);
+    expect(car).toHaveLength(0);
+    const mn = transit.find((u) => u.fromNodeId === "meguro" && u.toNodeId === "nerima");
+    expect(mn?.minutes).toBe(estimateTransitMinutes(meguro, nerima));
+  });
+
+  it("over-cap スキップ: car 不在の遠距離（>480分）は保存されず transitSkippedOverCap≥1", () => {
+    const tokyo: GeoNode = { id: "tokyo", lat: 35.6, lng: 139.7 };
+    const okinawa: GeoNode = { id: "okinawa", lat: 26.0, lng: 127.0 };
+    const nodes = [tokyo, okinawa];
+    // car 不在（durations 空）→ haversine 推定が 480 を超える → ペアごとスキップ。
+    const { transit, transitSkippedOverCap } = buildAutoUpserts(nodes, [], []);
+    // 当該ペアは transit に存在しない。
+    expect(
+      transit.find((u) => u.fromNodeId === "tokyo" && u.toNodeId === "okinawa"),
+    ).toBeUndefined();
+    expect(transitSkippedOverCap).toBeGreaterThanOrEqual(1);
+    // クランプ値 480 は一切保存されない。
+    expect(transit.some((u) => u.minutes === TRANSIT_MAX_SANE_MIN)).toBe(false);
+  });
+
+  it("異常な car 所要（1093分）は transit ベースに使わず haversine fallback に回す", () => {
+    const meguro: GeoNode = { id: "meguro", lat: 35.633, lng: 139.716 };
+    const nerima: GeoNode = { id: "nerima", lat: 35.748, lng: 139.654 };
+    const nodes = [meguro, nerima];
+    // meguro→nerima の car = 1093 分（CAR_MAX_SANE_MIN 超の異常値）。
+    const durations = parseOsrmDurations({
+      code: "Ok",
+      durations: [
+        [0, 1093 * 60],
+        [1093 * 60, 0],
+      ],
+    });
+    const { transit } = buildAutoUpserts(nodes, durations, []);
+    const mn = transit.find((u) => u.fromNodeId === "meguro" && u.toNodeId === "nerima");
+    // 1093 を car ベース（= 1093*1.6+15 = 1764）に使っていない。
+    // 都内近接距離なので haversine fallback 値で保存される。
+    expect(mn?.minutes).toBe(estimateTransitMinutes(meguro, nerima));
+    expect(mn?.minutes).not.toBe(estimateTransitFromCarMinutes(1093));
   });
 });
 

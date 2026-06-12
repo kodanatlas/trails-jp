@@ -4,9 +4,12 @@ import {
   withStationSuffix,
   buildGeocodeQueries,
   pickFirstLatLng,
+  pickBestLatLng,
+  centroidLatLng,
   geocodeAddress,
   isJapanDomain,
   normalizeJapanLatLng,
+  TOKYO_STATION,
   type FetchLike,
 } from "../geocode";
 
@@ -122,6 +125,79 @@ describe("normalizeJapanLatLng", () => {
   });
 });
 
+describe("pickBestLatLng", () => {
+  // 北海道目黒（遠地）を FIRST に置き、先頭採用が死んでいることを証明する。
+  it("目黒駅 regression: 先頭の北海道候補ではなく東京の目黒駅を採る", () => {
+    const features = [
+      { geometry: { coordinates: [143.25, 42.13] }, properties: { title: "北海道広尾郡大樹町字目黒" } },
+      { geometry: { coordinates: [139.716, 35.633] }, properties: { title: "目黒駅" } },
+    ];
+    expect(pickBestLatLng(features, TOKYO_STATION, "目黒駅")).toEqual({ lat: 35.633, lng: 139.716 });
+  });
+
+  it("駅優先: 近い非駅(~2km)より、やや遠い駅(~10km, <300km)を優先する", () => {
+    // ref=東京駅。非駅 "目黒" は東京駅のすぐ近く、駅 "目黒駅" はやや南で両方 300km 以内。
+    const features = [
+      { geometry: { coordinates: [139.767, 35.70] }, properties: { title: "目黒" } }, // 非駅・~2km
+      { geometry: { coordinates: [139.716, 35.633] }, properties: { title: "目黒駅" } }, // 駅・~10km
+    ];
+    expect(pickBestLatLng(features, TOKYO_STATION, "目黒駅")).toEqual({ lat: 35.633, lng: 139.716 });
+  });
+
+  it("駅候補が300km超のみ: 駅優先で絞らず、近い非駅候補を採る", () => {
+    // 駅候補は北海道（300km超）のみ。非駅候補は東京近傍。駅優先で絞ると遠地を掴むため絞らない。
+    const features = [
+      { geometry: { coordinates: [143.25, 42.13] }, properties: { title: "目黒駅" } }, // 駅だが北海道
+      { geometry: { coordinates: [139.716, 35.633] }, properties: { title: "目黒" } }, // 非駅・東京
+    ];
+    expect(pickBestLatLng(features, TOKYO_STATION, "目黒駅")).toEqual({ lat: 35.633, lng: 139.716 });
+  });
+
+  it("非駅クエリは純粋に最近傍（タイトル無関係）", () => {
+    const features = [
+      { geometry: { coordinates: [143.25, 42.13] }, properties: { title: "昭和記念公園(北海道)" } },
+      { geometry: { coordinates: [139.41, 35.70] }, properties: { title: "昭和記念公園" } },
+    ];
+    expect(pickBestLatLng(features, TOKYO_STATION, "昭和記念公園")).toEqual({ lat: 35.70, lng: 139.41 });
+  });
+
+  it("全候補が300km超でも null を返さず最近傍を採る（遠征大会の会場登録を阻害しない）", () => {
+    const features = [
+      { geometry: { coordinates: [143.25, 42.13] }, properties: { title: "帯広A" } }, // 東京駅から 777km
+      { geometry: { coordinates: [141.35, 43.06] }, properties: { title: "札幌B" } }, // 東京駅から 832km
+    ];
+    // どちらも 300km 超だが null にせず、最近傍（帯広A）を採る。
+    expect(pickBestLatLng(features, TOKYO_STATION, "帯広")).toEqual({ lat: 42.13, lng: 143.25 });
+  });
+
+  it("候補正規化: swap された対 [35.6,139.7] と国外 [10,10] は drop され、有効候補が残る", () => {
+    // [35.6,139.7] は coords=[lng=35.6, lat=139.7]。lat=139.7 が第1ゲート(isValidLat)で弾かれ drop
+    //   （Japan の経度 122-154 は常に緯度上限90を超えるため、GSI の [lng,lat] 順では swap 補正は実質
+    //    到達不能＝pickFirstLatLng と同じ挙動）。[10,10] は国外で normalizeJapanLatLng が null → drop。
+    // 残る有効候補（東京）が返る。
+    const features = [
+      { geometry: { coordinates: [35.6, 139.7] }, properties: { title: "swap地点(drop)" } },
+      { geometry: { coordinates: [10, 10] }, properties: { title: "国外(drop)" } },
+      { geometry: { coordinates: [139.767, 35.681] }, properties: { title: "東京" } },
+    ];
+    expect(pickBestLatLng(features, TOKYO_STATION, "swap地点")).toEqual({ lat: 35.681, lng: 139.767 });
+  });
+
+  it("有効候補ゼロは null", () => {
+    expect(pickBestLatLng([], TOKYO_STATION, "x")).toBeNull();
+    expect(pickBestLatLng([{ geometry: { coordinates: [10, 10] } }], TOKYO_STATION, "x")).toBeNull();
+  });
+});
+
+describe("centroidLatLng", () => {
+  it("2 点の算術平均を返す", () => {
+    expect(centroidLatLng([{ lat: 35, lng: 139 }, { lat: 37, lng: 141 }])).toEqual({ lat: 36, lng: 140 });
+  });
+  it("空配列は null", () => {
+    expect(centroidLatLng([])).toBeNull();
+  });
+});
+
 describe("geocodeAddress (fetch mocked)", () => {
   const okJson = (features: unknown): ReturnType<FetchLike> =>
     Promise.resolve({ ok: true, json: () => Promise.resolve(features) });
@@ -172,5 +248,26 @@ describe("geocodeAddress (fetch mocked)", () => {
     const r = await geocodeAddress("  ", { fetchImpl });
     expect(r).toBeNull();
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("ref で同名異地の最近傍を選ぶ（同一レスポンスでも ref 次第で結果が変わる）", async () => {
+    // 同名異地: 北海道目黒(先頭) と 東京の目黒駅。レスポンスは両ケースで同一。
+    const meguroFeatures = [
+      { geometry: { coordinates: [143.25, 42.13] }, properties: { title: "北海道広尾郡大樹町字目黒" } },
+      { geometry: { coordinates: [139.716, 35.633] }, properties: { title: "目黒駅" } },
+    ];
+    const mkFetch = (): FetchLike => vi.fn(() => okJson(meguroFeatures));
+
+    // ref を北海道近傍に置くと北海道候補を採る。
+    const near = await geocodeAddress("目黒駅", {
+      fetchImpl: mkFetch(),
+      timeoutMs: 1000,
+      ref: { lat: 42.9, lng: 143.2 },
+    });
+    expect(near).toEqual({ lat: 42.13, lng: 143.25 });
+
+    // ref 未指定（既定=東京駅）だと東京の目黒駅を採る。
+    const def = await geocodeAddress("目黒駅", { fetchImpl: mkFetch(), timeoutMs: 1000 });
+    expect(def).toEqual({ lat: 35.633, lng: 139.716 });
   });
 });

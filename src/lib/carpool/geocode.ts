@@ -7,8 +7,10 @@
  *   geometry.coordinates = [lng, lat]（経度・緯度の順）を持つ。
  *
  * 設計方針:
- * - 純粋ロジック（クエリ正規化・候補抽出）と I/O（fetch）を分離し、前者を vitest 対象にする。
- * - 先頭候補のみ採用。取得失敗・候補ゼロは null を返し、従来動作（座標 null のまま）を保つ。
+ * - 純粋ロジック（クエリ正規化・候補抽出・候補選択）と I/O（fetch）を分離し、前者を vitest 対象にする。
+ * - 複数候補から「参照点に最も近い候補」を採用（pickBestLatLng）。GSI は同名異地（例: 目黒駅↔
+ *   北海道目黒）を返すことがあり、先頭採用だと遠地を誤選択するため。取得失敗・候補ゼロは null を
+ *   返し、従来動作（座標 null のまま）を保つ。
  * - 外部呼び出しは server route 経由・タイムアウト/失敗隔離・User-Agent 明示。
  */
 
@@ -130,12 +132,153 @@ export function normalizeJapanLatLng(lat: number, lng: number): LatLng | null {
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// 距離（haversine）と候補選択の参照点
+// ---------------------------------------------------------------------------
+
+/** 地球半径（km）。 */
+const EARTH_RADIUS_KM = 6371;
+
+function toRad(deg: number): number {
+  return (deg * Math.PI) / 180;
+}
+
+/**
+ * 2 点間の大圏距離（km）。候補選択（pickBestLatLng）と OSRM フォールバックの基礎。
+ *
+ * 元は osrm.ts に置いていたが、geocode が候補選択に必要としかつ osrm.ts は geocode を
+ * import する（循環回避のため geocode → osrm の import は不可）ため、こちらへ移設。
+ * osrm.ts は `export { haversineKm }` で再エクスポートし、従来の import 経路を維持する。
+ */
+export function haversineKm(a: LatLng, b: LatLng): number {
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/**
+ * 最終フォールバックの参照点（東京駅）。
+ * 呼び出し側がクラブの既存ノードから参照点を解決できなかった場合に使う。
+ */
+export const TOKYO_STATION: LatLng = { lat: 35.681, lng: 139.767 };
+
+/**
+ * 「近傍」とみなす距離上限（km）。駅優先の足切りに使う閾値であり、
+ * **候補選択そのものの足切りには使わない**（遠征大会の会場登録を阻害しないため、
+ * これを超える候補も最終的には最近傍として採用しうる）。
+ */
+export const GEOCODE_NEAR_KM = 300;
+
+/**
+ * 点群の算術平均（重心）を返す。空配列は null。
+ * クラブの既存ジオコーディング済みノードから参照点を作るのに使う。
+ */
+export function centroidLatLng(points: ReadonlyArray<LatLng>): LatLng | null {
+  if (points.length === 0) return null;
+  let sumLat = 0;
+  let sumLng = 0;
+  for (const p of points) {
+    sumLat += p.lat;
+    sumLng += p.lng;
+  }
+  return { lat: sumLat / points.length, lng: sumLng / points.length };
+}
+
+/** pickBestLatLng が扱う 1 候補（正規化済み座標 + タイトル）。 */
+interface GeocodeCandidate {
+  lat: number;
+  lng: number;
+  title: string;
+}
+
+/**
+ * GSI features から有効候補（日本ドメイン正規化済み）を抽出する内部パーサ。
+ *
+ * 各候補は pickFirstLatLng と同じゲートを通す:
+ *   coords が配列かつ長さ >= 2 → isValidLat/isValidLng（第1ゲート）→
+ *   normalizeJapanLatLng（第2ゲート: swap 補正 + 国外ゴミ棄却。null は drop）。
+ * title は properties.title を文字列化（無ければ ""）。
+ */
+function parseGeocodeCandidates(features: unknown): GeocodeCandidate[] {
+  if (!Array.isArray(features)) return [];
+  const out: GeocodeCandidate[] = [];
+  for (const f of features as GsiFeature[]) {
+    const coords = f?.geometry?.coordinates;
+    if (!Array.isArray(coords) || coords.length < 2) continue;
+    const lng = coords[0];
+    const lat = coords[1];
+    if (!isValidLat(lat) || !isValidLng(lng)) continue;
+    const normalized = normalizeJapanLatLng(lat, lng);
+    if (!normalized) continue;
+    const title = String(f?.properties?.title ?? "");
+    out.push({ lat: normalized.lat, lng: normalized.lng, title });
+  }
+  return out;
+}
+
+/**
+ * GSI レスポンス（feature 配列）から「参照点に最も近い候補」を選ぶ純粋関数。
+ *
+ * GSI は同名異地（例: クエリ "目黒駅" に対し正解の目黒駅と、北海道広尾郡大樹町字目黒）を
+ * 返すことがあり、いずれも日本ドメイン内のため isJapanDomain では弾けない。先頭採用だと
+ * 遠地を誤選択するため、参照点 ref への haversine 最近傍を採る。
+ *
+ * ロジック:
+ *   1. 候補抽出（parseGeocodeCandidates）。空なら null。
+ *   2. 駅優先: normalizeGeocodeQuery(query) が "駅" を含むとき、title が "駅" で終わる候補
+ *      （stationSubset）を作る。stationSubset が非空 **かつ** その少なくとも 1 つが ref から
+ *      GEOCODE_NEAR_KM(300km) 以内なら、検討対象を stationSubset に絞る。
+ *      逆に駅候補がすべて 300km 超で非駅候補が存在する場合は絞らない（= 全候補で比較）。
+ *      これが「目黒駅 → 北海道目黒（駅ではない）」の逆ケースを保護する。
+ *   3. ref への haversine 最近傍を返す。
+ *      **距離で棄却は一切しない**: すべての候補が 300km 超でも、最も近い候補を返す
+ *      （遠征大会の会場登録を阻害しないため）。
+ */
+export function pickBestLatLng(features: unknown, ref: LatLng, query: string): LatLng | null {
+  const candidates = parseGeocodeCandidates(features);
+  if (candidates.length === 0) return null;
+
+  let pool: GeocodeCandidate[] = candidates;
+
+  // 駅優先（条件付き）。
+  if (normalizeGeocodeQuery(query).includes("駅")) {
+    const stationSubset = candidates.filter((c) => c.title.endsWith("駅"));
+    if (
+      stationSubset.length > 0 &&
+      stationSubset.some((c) => haversineKm({ lat: c.lat, lng: c.lng }, ref) <= GEOCODE_NEAR_KM)
+    ) {
+      pool = stationSubset;
+    }
+  }
+
+  // ref への最近傍を選ぶ（距離による棄却はしない）。
+  let best = pool[0];
+  let bestDist = haversineKm({ lat: best.lat, lng: best.lng }, ref);
+  for (let i = 1; i < pool.length; i++) {
+    const c = pool[i];
+    const d = haversineKm({ lat: c.lat, lng: c.lng }, ref);
+    if (d < bestDist) {
+      best = c;
+      bestDist = d;
+    }
+  }
+  return { lat: best.lat, lng: best.lng };
+}
+
 /**
  * GSI レスポンス（feature 配列）の先頭候補から LatLng を取り出す純粋関数。
  *
  * GSI の coordinates は [lng, lat] の順である点に注意。
  * - 配列でない / 空 / 座標が範囲外・非数値 なら null。
  * - 先頭候補のみ採用（複数候補のランキングはしない＝GSI の返却順を信頼）。
+ *
+ * 注: geocodeAddress は本関数ではなく pickBestLatLng（参照点最近傍）を使う。
+ * 本関数は既存テストとの後方互換のため残す（複数候補からの遠地誤選択は防げない点に注意）。
  */
 export function pickFirstLatLng(features: unknown): LatLng | null {
   if (!Array.isArray(features) || features.length === 0) return null;
@@ -164,19 +307,21 @@ export type FetchLike = (
  * 名称 → LatLng を国土地理院 AddressSearch で解決する I/O 関数。
  *
  * - buildGeocodeQueries で 正規化クエリ → 駅サフィックス の順に試す。
- * - 最初に有効な座標が取れたものを採用。すべて失敗・タイムアウト・例外は null。
- * - User-Agent を明示。AbortController でタイムアウト。失敗は隔離して null を返す
- *   （= 従来動作: 座標 null のまま）。
+ * - 各クエリの候補から pickBestLatLng（参照点 ref への最近傍 + 駅優先）で 1 件を採用。
+ *   ref 省略時は東京駅（TOKYO_STATION）。最初に命中したものを返す。
+ * - すべて失敗・タイムアウト・例外は null。User-Agent を明示。AbortController でタイムアウト。
+ *   失敗は隔離して null を返す（= 従来動作: 座標 null のまま）。
  */
 export async function geocodeAddress(
   raw: string,
-  opts?: { fetchImpl?: FetchLike; timeoutMs?: number; signal?: AbortSignal },
+  opts?: { fetchImpl?: FetchLike; timeoutMs?: number; signal?: AbortSignal; ref?: LatLng },
 ): Promise<LatLng | null> {
   const queries = buildGeocodeQueries(raw);
   if (queries.length === 0) return null;
 
   const fetchImpl = (opts?.fetchImpl ?? (globalThis.fetch as unknown)) as FetchLike;
   const timeoutMs = opts?.timeoutMs ?? GEOCODE_TIMEOUT_MS;
+  const ref = opts?.ref ?? TOKYO_STATION;
 
   for (const q of queries) {
     const url = `${GSI_ADDRESS_SEARCH_URL}?q=${encodeURIComponent(q)}`;
@@ -192,7 +337,7 @@ export async function geocodeAddress(
       });
       if (!res.ok) continue;
       const json = await res.json();
-      const hit = pickFirstLatLng(json);
+      const hit = pickBestLatLng(json, ref, q);
       if (hit) return hit;
     } catch {
       // タイムアウト/ネットワーク失敗は隔離し、次のクエリ or null へ。

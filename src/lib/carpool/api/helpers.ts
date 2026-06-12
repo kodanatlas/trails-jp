@@ -15,6 +15,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createHash } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_WRITES } from "./constants";
+import { isJapanDomain, centroidLatLng, type LatLng } from "@/lib/carpool/geocode";
 
 /**
  * ハッシュ用ソルト。likes と共用（LIKE_SALT）。
@@ -147,6 +148,48 @@ export async function resolveClub(slug: string): Promise<CarpoolClub | null> {
     .maybeSingle();
   if (error || !data) return null;
   return data as CarpoolClub;
+}
+
+// ---------------------------------------------------------------------------
+// ジオコーディングの参照点解決（同名異地の誤選択を防ぐ近傍ヒント）
+// ---------------------------------------------------------------------------
+
+/**
+ * クラブのジオコーディング参照点を解決する。geocodeAddress に渡し、
+ * 同名異地（例: "目黒駅" ↔ 北海道目黒）から最近傍候補を選ばせるためのヒント。
+ *
+ * 参照点の優先順位:
+ *   ① クラブの既存ジオコーディング済みノード（日本ドメイン内）の重心
+ *      （② 会場ノードも座標があれば①の集合に含まれるため別扱い不要）
+ *   ③ ここで未解決（null）なら、呼び出し側で geocodeAddress が東京駅へフォールバックする。
+ *
+ * - lat/lng が両方 not-null のノードのみ対象。opts.excludeNodeId は集合から除外する
+ *   （再ジオコーディング対象のノード自身が遠地の誤座標を持つ場合、それで重心を引っ張られない）。
+ * - isJapanDomain を通らない座標（国外ゴミ）は除外。
+ * - クエリエラー時は null（geocode は東京駅へフォールバック。書き込み経路は決して壊さない）。
+ */
+export async function resolveClubGeoRef(
+  clubId: string,
+  opts?: { excludeNodeId?: string },
+): Promise<LatLng | null> {
+  const { data, error } = await supabaseAdmin
+    .from("carpool_nodes")
+    .select("id, lat, lng")
+    .eq("club_id", clubId)
+    .not("lat", "is", null)
+    .not("lng", "is", null);
+  if (error || !data) return null;
+
+  const points: LatLng[] = [];
+  for (const row of data) {
+    if (opts?.excludeNodeId && row.id === opts.excludeNodeId) continue;
+    const lat = Number(row.lat);
+    const lng = Number(row.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    if (!isJapanDomain(lat, lng)) continue;
+    points.push({ lat, lng });
+  }
+  return centroidLatLng(points);
 }
 
 // ---------------------------------------------------------------------------

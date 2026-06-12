@@ -85,7 +85,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
   const durations = await fetchOsrmTable(geoNodes);
 
   // 4) 未入力ペアのみ埋める upsert を組み立てる。
-  const { car, transit, all } = buildAutoUpserts(geoNodes, durations, existing);
+  //    car 計算が先で、その結果を transit 推定の第一情報源にする（都市鉄道圏の精度確保）。
+  //    公共交通の推定が信頼できない（>480分）区間は保存せず件数だけ受け取る。
+  const { car, transit, all, transitSkippedOverCap } = buildAutoUpserts(
+    geoNodes,
+    durations,
+    existing,
+  );
+
+  // 公共交通の推定が信頼できず保存を見送った区間の日本語警告（>0 のときのみ付与）。
+  const transitSkipSuffix =
+    transitSkippedOverCap > 0
+      ? `（公共交通の推定が信頼できない区間${transitSkippedOverCap}件は保存しませんでした。座標や距離を確認してください）`
+      : "";
 
   // OSRM 不達かつ書く対象なし（transit も全て既存）→ 接続案内。
   if (all.length === 0 && durations.length === 0) {
@@ -138,9 +150,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     transit: transit.length,
     osrmOk: durations.length > 0,
     travelTimes: upserted.map(toTravelTimeDTO),
-    // 国外座標を除外した場合のみ案内を付ける（成功応答のフィールドは増やさない方針）。
-    ...(dropped.length > 0
-      ? { message: `移動時間を自動計算しました${droppedSuffix}` }
+    // 国外座標の除外 or 公共交通の保存スキップがあった場合のみ案内を付ける
+    //（どちらも無ければ成功応答に message フィールドを足さない方針）。
+    ...(dropped.length > 0 || transitSkippedOverCap > 0
+      ? { message: `移動時間を自動計算しました${droppedSuffix}${transitSkipSuffix}` }
       : {}),
   });
 }

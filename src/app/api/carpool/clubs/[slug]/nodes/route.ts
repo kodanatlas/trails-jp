@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { nodeCreateSchema } from "@/lib/carpool/api/schemas";
 import { toNodeDTO } from "@/lib/carpool/api/mappers";
-import { ERR, zodError, guardWrite, writeChangeLog, resolveClub } from "@/lib/carpool/api/helpers";
+import { ERR, zodError, guardWrite, writeChangeLog, resolveClub, resolveClubGeoRef } from "@/lib/carpool/api/helpers";
 import { geocodeAddress } from "@/lib/carpool/geocode";
 
 export const dynamic = "force-dynamic";
@@ -81,7 +81,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
   let node = data;
   if (node.lat == null && node.lng == null) {
     try {
-      const hit = await geocodeAddress(node.name);
+      // 同名異地の誤選択を防ぐ参照点（クラブ既存ノード重心）。作成直後の自ノードは除外。
+      // resolveClubGeoRef はエラー時 null を返すためノード作成を壊さない。
+      const ref = await resolveClubGeoRef(club.id, { excludeNodeId: node.id });
+      const hit = await geocodeAddress(node.name, { ref: ref ?? undefined });
       if (hit) {
         const { data: updated, error: updateError } = await supabaseAdmin
           .from("carpool_nodes")

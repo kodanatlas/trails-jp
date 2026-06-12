@@ -11,6 +11,7 @@ import {
   writeChangeLog,
   resolveClub,
   assertOwnedByClub,
+  resolveClubGeoRef,
 } from "@/lib/carpool/api/helpers";
 import { geocodeAddress } from "@/lib/carpool/geocode";
 
@@ -113,7 +114,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       // C2: 新規作成したエリアノードのみ、名称でジオコーディングして座標を自動補完する。
       // 既存ノード再利用（上の existingArea 分岐）では実行しない。失敗は隔離（座標 null のまま）。
       try {
-        const hit = await geocodeAddress(areaName);
+        // 同名異地の誤選択を防ぐ参照点（クラブ既存ノード重心）。作成直後の自エリアノードは除外。
+        const ref = await resolveClubGeoRef(club.id, { excludeNodeId: areaNode.id });
+        const hit = await geocodeAddress(areaName, { ref: ref ?? undefined });
         if (hit) {
           const { error: geoUpdateErr } = await supabaseAdmin
             .from("carpool_nodes")

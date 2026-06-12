@@ -42,5 +42,32 @@
 ## 本番 DB 修復 SQL（メインが Management API で実行）
 - 誤座標 nodes: lat>46 OR lat<20 OR lng>154 OR lng<122 を対象に、入替えで域内化する行のみ lat↔lng スワップ。
 - 誤 travel_times: 自動算出（source in osrm/api）かつ minutes が車>600/transit>480 の行を削除（再計算で埋め直す）。
-</content>
-</invoke>
+
+## 追補（同日）: バグ1の真の真因 = ジオコーディングの同名異地ミスマッチ
+- 「目黒駅」が GSI 先頭候補の**北海道広尾郡大樹町字目黒**（42.13N/143.25E・日本域内）に誤マッチ。
+  日本域チェックでは弾けない → 候補選択を「先頭採用」から**参照点最近傍**に変更。
+- `pickBestLatLng(features, ref, query)`: 候補正規化（swap補正/域外棄却）→ クエリに「駅」を含み
+  300km以内に駅名末尾一致候補があれば駅サブセットに限定 → ref への最近傍を採用（距離棄却なし＝遠征対応）。
+- 参照点 = `resolveClubGeoRef(clubId, {excludeNodeId})`（クラブの既存ジオコ済みノードの日本域重心。
+  再取得APIは対象ノード自身を除外）→ 無ければ東京駅 (35.681,139.767) フォールバック。
+- 配線: nodes POST / nodes/[id]/geocode（再取得）/ members homeAreaName の3箇所。
+- `haversineKm` は osrm.ts → geocode.ts へ移動（循環import回避・osrm から re-export で互換維持）。
+- 検証: vitest 38ファイル/375テスト green（+10）・tsc 0・eslint 変更分 0 errors。
+- DB の誤マッチ済みノード（例: 北海道の目黒座標を持つ「目黒駅」）は、マスタの「座標を再取得」で
+  近接優先により正しい座標へ更新できる。
+
+## 追補2（同日）: transit 推定を車所要ベースに変更
+- 旧推定（直線×1.3÷4km/h）は都市圏鉄道で過大（目黒→練馬 248分 vs 実態25分）。
+- OSRM car 所要が同ペアにある場合: `transit ≈ car分 × 1.6 + 15`（`estimateTransitFromCarMinutes`、22分→50分）。
+  car 異常値（>600分）は推定ベースに使わない。car 無しペアのみ従来 haversine 推定（係数現行維持）。
+- 480 上限はクランプ廃止→**超過ペアは保存スキップ**（`transitSkippedOverCap` で件数を返し、
+  travel-times/auto のレスポンス message に日本語警告を追記）。
+- 検証: vitest 38ファイル/382テスト green（+7）・tsc 0・eslint 0。
+
+## 追補3（同日）: 地図による座標調整 UI（NodeMapPicker）
+- `src/app/carpool/_components/NodeMapPicker.tsx` 新規: maplibre-gl（既存依存）+ 国土地理院タイル
+  （attribution「国土地理院」）。ピンのドラッグ / 地図タップで座標更新（6桁丸め）。
+  _maps の既存パターン（"use client" + useEffect 内 dynamic import + cancelled ガード）に準拠。
+- MastersClient の場所編集フォームの座標欄直下に組込み。座標未設定時は会場 or 東京駅中心+タップ案内。
+  「再取得」結果がズレた場合の修正導線の説明文つき。保存は既存 PATCH（lat/lng 文字列→Number）。
+- 検証: tsc 0・eslint 0（地図はテスト対象外・vitest 382 green 維持）。

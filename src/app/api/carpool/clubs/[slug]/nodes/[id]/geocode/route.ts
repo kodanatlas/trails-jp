@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { nodeGeocodeSchema } from "@/lib/carpool/api/schemas";
 import { toNodeDTO } from "@/lib/carpool/api/mappers";
-import { ERR, zodError, guardWrite, writeChangeLog, resolveClub } from "@/lib/carpool/api/helpers";
+import { ERR, zodError, guardWrite, writeChangeLog, resolveClub, resolveClubGeoRef } from "@/lib/carpool/api/helpers";
 import { geocodeAddress } from "@/lib/carpool/geocode";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +47,10 @@ export async function POST(
   // 外部呼び出しは失敗を隔離（null 扱い）。手動入力導線を案内に残す。
   let hit = null;
   try {
-    hit = await geocodeAddress(existing.name);
+    // 再ジオコーディング対象の自ノード（北海道目黒のような遠地誤座標を持ちうる）は
+    // 参照点の重心から必ず除外する。さもないと誤座標が自分を引き寄せて補正できない。
+    const ref = await resolveClubGeoRef(club.id, { excludeNodeId: id });
+    hit = await geocodeAddress(existing.name, { ref: ref ?? undefined });
   } catch {
     hit = null;
   }
