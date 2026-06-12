@@ -14,9 +14,9 @@ interface CarpoolHeaderProps {
 
 /**
  * 配車画面共通のスティッキーヘッダー。
- * 左: 🚗 クラブ名（タップで /carpool?stay=1 = クラブ切替。stay=1 で自動遷移を抑止）。
+ * 左: 🚗 クラブ名（タップで /carpool = クラブ選択へ。自動遷移は廃止済みのため常に一覧が出る）。
  * 右: 操作者名 + 切替。
- * クラブ配下ページの訪問時に carpool.club を保存する（04 §0 のクラブ記憶）。
+ * クラブ配下ページの訪問時に carpool.club を保存する（「前回のクラブを開く」ショートカット用）。
  */
 export default function CarpoolHeader({
   clubName,
@@ -33,7 +33,7 @@ export default function CarpoolHeader({
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
       <div className="mx-auto flex max-w-2xl items-center justify-between gap-2 px-4 py-3">
         <Link
-          href="/carpool?stay=1"
+          href="/carpool"
           className="truncate text-sm font-semibold text-foreground hover:text-primary"
           title="別のクラブを選ぶ"
         >

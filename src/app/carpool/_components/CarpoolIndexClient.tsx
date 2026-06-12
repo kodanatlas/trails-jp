@@ -15,7 +15,6 @@ export default function CarpoolIndexClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savedSlug, setSavedSlug] = useState<string | null>(null);
-  const [redirecting, setRedirecting] = useState(false);
 
   // 追加フォーム
   const [showForm, setShowForm] = useState(false);
@@ -26,18 +25,12 @@ export default function CarpoolIndexClient() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // クラブ記憶の読込 + 自動遷移（04 §0）。?stay=1 で自動遷移を抑止
-  //（CarpoolHeader の「別のクラブを選ぶ」リンクは ?stay=1 付きで来る）。
+  // クラブ記憶は「前回のクラブを開く」ショートカット表示にのみ使う。
+  // 自動遷移はしない（特定クラブに表示が固定される挙動は 2026-06-12 ユーザー指示で廃止）。
   useEffect(() => {
     const stored = readRememberedClub();
-    if (!stored) return;
-    setSavedSlug(stored);
-    const stay = new URLSearchParams(window.location.search).has("stay");
-    if (!stay) {
-      setRedirecting(true);
-      router.replace(`/carpool/${stored}`);
-    }
-  }, [router]);
+    if (stored) setSavedSlug(stored);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,14 +94,6 @@ export default function CarpoolIndexClient() {
       setSubmitting(false);
     }
   };
-
-  if (redirecting) {
-    return (
-      <main className="mx-auto max-w-2xl px-4 py-6">
-        <p className="text-sm text-muted">前回のクラブへ移動中…</p>
-      </main>
-    );
-  }
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
