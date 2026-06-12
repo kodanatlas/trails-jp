@@ -2,6 +2,12 @@
 
 import { useState, type FormEvent } from "react";
 import { postCarpool } from "./carpoolFetch";
+import { useAthleteSuggest } from "./useAthleteSuggest";
+import { readLegacyActorName } from "./storageKeys";
+import {
+  athleteSelectionToFields,
+  athleteKeyForSubmit,
+} from "@/lib/carpool/suggest";
 import type { MemberDTO } from "@/lib/carpool/api/mappers";
 
 interface ActorModalProps {
@@ -39,13 +45,28 @@ export default function ActorModal({
     activeMembers.length === 0 ? "register" : "list",
   );
 
-  // 自己登録フォーム
-  const [displayName, setDisplayName] = useState("");
+  // 自己登録フォーム。名前は旧キー（クラブ作成時の名前等）が残っていればプリフィル
+  // （M1: クラブ作成直後の member 化失敗時フォールバック。モーダルはクライアントでのみ開く）。
+  const [displayName, setDisplayName] = useState(
+    () => readLegacyActorName(slug) ?? "",
+  );
   const [hasCar, setHasCar] = useState(false);
   const [seatsAvailable, setSeatsAvailable] = useState("");
   const [homeAreaName, setHomeAreaName] = useState("");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // 指摘4: 氏名の正規候補サジェスト。候補選択で displayName=正規氏名・athleteKey を同時設定。
+  // 自由入力も引き続き可（JOY 未出場者）。その場合はサーバ側の nameKey 自動付与がフォローする。
+  const suggest = useAthleteSuggest();
+  const [selectedAthlete, setSelectedAthlete] = useState<string | null>(null);
+
+  const pickAthlete = (canonicalName: string) => {
+    const fields = athleteSelectionToFields(canonicalName);
+    setDisplayName(fields.displayName);
+    setSelectedAthlete(fields.displayName);
+    suggest.dismiss();
+  };
 
   const submitRegister = async (e: FormEvent) => {
     e.preventDefault();
@@ -63,6 +84,9 @@ export default function ActorModal({
       displayName: name,
       hasCar,
     };
+    // 候補選択済みかつ同一人物のままなら正規キーを明示送信（編集で別人になったら自動付与に委ねる）。
+    const athleteKey = athleteKeyForSubmit(name, selectedAthlete);
+    if (athleteKey) body.athleteKey = athleteKey;
     if (hasCar && seatsAvailable !== "") {
       body.seatsAvailable = Number(seatsAvailable);
     }
@@ -140,10 +164,36 @@ export default function ActorModal({
                 className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
                 placeholder="例: 山田太郎"
                 value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
+                onChange={(e) => {
+                  setDisplayName(e.target.value);
+                  suggest.setQuery(e.target.value);
+                }}
                 maxLength={40}
                 autoFocus
               />
+              {suggest.results.length > 0 && (
+                <ul className="mt-1 flex flex-col gap-1 rounded-lg bg-surface p-1">
+                  {suggest.results.map((a) => (
+                    <li key={a.name}>
+                      <button
+                        type="button"
+                        onClick={() => pickAthlete(a.name)}
+                        className="w-full rounded px-2 py-1 text-left text-sm text-foreground hover:bg-card-hover"
+                      >
+                        {a.name}
+                        {a.clubs.length > 0 && (
+                          <span className="ml-2 text-xs text-muted">
+                            {a.clubs.join(", ")}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-1 text-[10px] text-muted">
+                候補から選ぶと JOY エントリーの自動検出が確実になります（一覧に無ければそのまま入力でOK）。
+              </p>
             </div>
 
             <label className="flex items-center gap-2 text-sm text-foreground">

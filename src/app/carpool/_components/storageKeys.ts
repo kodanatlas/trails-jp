@@ -22,6 +22,37 @@ export function actorMemberStorageKey(slug: string): string {
   return `carpool.actorMember.${slug}`;
 }
 
+/**
+ * 操作者 member を保存する（useActor.setActorMember と同一の二重書き込みロジックの正本）。
+ * 新キー（member_id）+ 互換用旧キー（名前）。localStorage 不可環境では無視。
+ */
+export function rememberActorMember(
+  slug: string,
+  member: { id: string; displayName: string },
+): void {
+  try {
+    window.localStorage.setItem(actorMemberStorageKey(slug), member.id);
+    // 互換: 旧キーにも名前を残しておく（他タブ・旧コードとの併存安全）。
+    window.localStorage.setItem(actorStorageKey(slug), member.displayName);
+  } catch {
+    /* noop */
+  }
+}
+
+/**
+ * 旧キー（名前文字列）を読む。useActor の移行と、ActorModal の名前プリフィル
+ * （M1: member 化失敗時のフォールバック）で使う。SSR・不可環境では null。
+ */
+export function readLegacyActorName(slug: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = window.localStorage.getItem(actorStorageKey(slug));
+    return stored && stored.length > 0 ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
 /** クラブ slug を localStorage に記憶する（不可環境では無視）。 */
 export function rememberClub(slug: string): void {
   try {

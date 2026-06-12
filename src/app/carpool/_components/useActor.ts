@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { actorStorageKey, actorMemberStorageKey } from "./storageKeys";
+import {
+  actorStorageKey,
+  actorMemberStorageKey,
+  rememberActorMember,
+  readLegacyActorName,
+} from "./storageKeys";
 import type { MemberDTO } from "@/lib/carpool/api/mappers";
 
 /** クライアントでのみ localStorage の member_id（新キー）を読む（SSR では null）。 */
@@ -9,17 +14,6 @@ function readActorMemberId(slug: string): string | null {
   if (typeof window === "undefined") return null;
   try {
     const stored = window.localStorage.getItem(actorMemberStorageKey(slug));
-    return stored && stored.length > 0 ? stored : null;
-  } catch {
-    return null;
-  }
-}
-
-/** クライアントでのみ旧キー（名前文字列）を読む（移行用）。 */
-function readLegacyActorName(slug: string): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = window.localStorage.getItem(actorStorageKey(slug));
     return stored && stored.length > 0 ? stored : null;
   } catch {
     return null;
@@ -84,13 +78,8 @@ export function useActor(slug: string, members: MemberDTO[]): UseActorResult {
 
   const setActorMember = useCallback(
     (m: MemberDTO) => {
-      try {
-        window.localStorage.setItem(actorMemberStorageKey(slug), m.id);
-        // 互換: 旧キーにも名前を残しておく（他タブ・旧コードとの併存安全）。
-        window.localStorage.setItem(actorStorageKey(slug), m.displayName);
-      } catch {
-        /* localStorage 不可環境では state のみ更新 */
-      }
+      // 二重書き込みロジックの正本は storageKeys.rememberActorMember（不可環境では state のみ更新）。
+      rememberActorMember(slug, m);
       setActorMemberId(m.id);
     },
     [slug],

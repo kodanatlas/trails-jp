@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { participationBulkSchema } from "@/lib/carpool/api/schemas";
+import { normalizeNameKey } from "@/lib/name-key";
 import { toMemberDTO, toParticipationDTO } from "@/lib/carpool/api/mappers";
 import type { MemberDTO, ParticipationDTO } from "@/lib/carpool/api/mappers";
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/lib/carpool/api/helpers";
 import {
   planBulkParticipations,
+  indexMembersByKey,
   type ResolvedBulkEntry,
 } from "@/lib/carpool/bulk-plan";
 
@@ -70,8 +72,37 @@ export async function POST(
   if (denied) return denied;
 
   // ---------------------------------------------------------------------------
+  // 重複作成防止の最後の砦（指摘1）: 同 club 内の active member を 1 回取得し、
+  // athlete_key / normalizeNameKey(display_name) の二重索引を作る。newMember 作成前に
+  // 同キーの既存 active member が居れば、新規作成せずその id を再利用する。
+  // バッチ内で新規作成した member も索引に追加し、同名の newMember が複数あっても 1 人に収束させる。
+  // ---------------------------------------------------------------------------
+  const { data: clubMembers, error: clubMembersErr } = await supabaseAdmin
+    .from("carpool_members")
+    .select("id, athlete_key, display_name, active")
+    .eq("club_id", club.id)
+    .eq("active", true);
+  if (clubMembersErr) return ERR.serverError(clubMembersErr.message);
+
+  // 正準キー索引（pure: indexMembersByKey）。athlete_key 優先・先勝ち。
+  const memberIdByKey = indexMembersByKey(
+    (clubMembers ?? []).map((m) => ({
+      id: m.id as string,
+      athleteKey: (m.athlete_key as string | null) ?? null,
+      displayName: (m.display_name as string | null) ?? null,
+    })),
+  );
+  // バッチ内で新規作成した member を索引に足すための糖衣（pure 索引と同じ先勝ち規則）。
+  const indexKey = (key: string | null | undefined, id: string) => {
+    if (!key) return;
+    const k = normalizeNameKey(key);
+    if (k && !memberIdByKey.has(k)) memberIdByKey.set(k, id);
+  };
+
+  // ---------------------------------------------------------------------------
   // 1) 新規メンバー作成（newMember 指定行）。1件ずつ insert し、成功で即 change_log。
   //    athleteKey は検出 nameKey をそのまま渡す前提（自動紐付け）。
+  //    ただし同キーの既存 active member が居れば再利用する（重複作成防止）。
   // ---------------------------------------------------------------------------
   const createdMembers: MemberDTO[] = [];
   // entries の各行を「解決済み memberId + className」に変換するための作業用。
@@ -79,6 +110,18 @@ export async function POST(
 
   for (const e of input.entries) {
     if (e.newMember) {
+      // 既存 active member（athlete_key or 表示名キー一致）が居れば再利用。
+      const lookupKey = normalizeNameKey(e.newMember.athleteKey);
+      const existingId = memberIdByKey.get(lookupKey);
+      if (existingId) {
+        resolved.push({
+          memberId: existingId,
+          className: e.className ?? null,
+          newMemberRow: null,
+        });
+        continue;
+      }
+
       const insertRow: Record<string, unknown> = {
         club_id: club.id,
         display_name: e.newMember.displayName,
@@ -106,6 +149,9 @@ export async function POST(
         actorName: guard.ctx.actorName,
         ipHash: guard.ctx.ipHash,
       });
+      // 同一バッチ内の後続 newMember が同名を指したときに再利用できるよう索引へ追加。
+      indexKey(member.athlete_key as string, member.id as string);
+      if (member.display_name) indexKey(member.display_name as string, member.id as string);
       createdMembers.push(toMemberDTO(member, []));
       resolved.push({
         memberId: member.id as string,

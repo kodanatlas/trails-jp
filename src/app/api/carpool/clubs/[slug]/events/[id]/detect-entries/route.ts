@@ -33,15 +33,17 @@ export async function GET(
     return NextResponse.json({ generatedAt: null, detected: [] }, { headers: CACHE_HEADERS });
   }
 
+  // display_name も取得し、athlete_key 不一致時の突合フォールバック（指摘1）に使う。
   const { data: members, error: membersError } = await supabaseAdmin
     .from("carpool_members")
-    .select("id, athlete_key")
+    .select("id, athlete_key, display_name")
     .eq("club_id", club.id);
   if (membersError) return ERR.serverError(membersError.message);
 
   const existingMembers: ExistingMemberRef[] = (members ?? []).map((m) => ({
     id: m.id,
     athleteKey: m.athlete_key ?? null,
+    displayName: m.display_name ?? null,
   }));
 
   const { generatedAt, detected } = await detectEntriesForEvent(

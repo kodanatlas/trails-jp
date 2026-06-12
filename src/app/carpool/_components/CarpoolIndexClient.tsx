@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { fetchCarpool, postCarpool } from "./carpoolFetch";
 import { useToast } from "./Toast";
-import { actorStorageKey, readRememberedClub, rememberClub } from "./storageKeys";
-import type { ClubDTO } from "@/lib/carpool/api/mappers";
+import {
+  actorStorageKey,
+  rememberActorMember,
+  readRememberedClub,
+  rememberClub,
+} from "./storageKeys";
+import { filterClubCandidates, clubSelectionToFields } from "@/lib/carpool/suggest";
+import { buildCreatorMemberBody } from "@/lib/carpool/onboarding";
+import type { ClubDTO, MemberDTO } from "@/lib/carpool/api/mappers";
 
 export default function CarpoolIndexClient() {
   const router = useRouter();
@@ -24,6 +31,44 @@ export default function CarpoolIndexClient() {
   const [actorName, setActorName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // 指摘4: クラブ名の正規候補サジェスト。trails.jp 静的配信の /data/club-stats.json
+  // （正規化済みクラブ名がキー）をフォーム表示時に1回 fetch し、キー一覧のみ保持する。
+  // null = 未取得（取得失敗時もサジェスト無しで自由入力できる: ベストエフォート）。
+  const [clubKeys, setClubKeys] = useState<string[] | null>(null);
+  const [showClubSuggest, setShowClubSuggest] = useState(false);
+
+  useEffect(() => {
+    if (!showForm || clubKeys !== null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/data/club-stats.json", {
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as { clubs?: Record<string, unknown> };
+        if (!cancelled) setClubKeys(Object.keys(json.clubs ?? {}));
+      } catch {
+        /* サジェストはベストエフォート（失敗しても自由入力を妨げない） */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [showForm, clubKeys]);
+
+  const clubCandidates = useMemo(
+    () => (showClubSuggest ? filterClubCandidates(clubKeys ?? [], name) : []),
+    [showClubSuggest, clubKeys, name],
+  );
+
+  const pickClubCandidate = (canonicalClubName: string) => {
+    const fields = clubSelectionToFields(canonicalClubName);
+    setName(fields.name);
+    setJoeNames(fields.joeClubNames.join(", "));
+    setShowClubSuggest(false);
+  };
 
   // クラブ記憶は「前回のクラブを開く」ショートカット表示にのみ使う。
   // 自動遷移はしない（特定クラブに表示が固定される挙動は 2026-06-12 ユーザー指示で廃止）。
@@ -82,12 +127,30 @@ export default function CarpoolIndexClient() {
         joeClubNames,
       });
       toast("クラブを作成しました", "success");
-      // 作成者の操作者名をそのクラブに引き継ぐ
-      try {
-        window.localStorage.setItem(actorStorageKey(data.club.slug), trimmedActor);
-      } catch {
-        /* noop */
+
+      // M1: 作成者をその場で member 化し、操作者（actorMember 新キー）として保存する。
+      // 旧キーだけの名前書き込みは廃止（ホームで「未設定」になり Step1 で二重登録感が出るため）。
+      // athleteKey は body に含めない = サーバが normalizeNameKey(displayName) を自動付与。
+      const memberBody = buildCreatorMemberBody(trimmedActor);
+      if (memberBody) {
+        try {
+          const created = await postCarpool<{ member: MemberDTO }>(
+            `/clubs/${data.club.slug}/members`,
+            memberBody,
+          );
+          // useActor.setActorMember 相当（新キー member_id + 互換旧キー名前）。
+          rememberActorMember(data.club.slug, created.member);
+        } catch {
+          // member 化の失敗はクラブ作成の成功を妨げない（遷移は続行）。
+          // 旧キーに名前だけ残し、ホーム Step1 の自己登録フォームが名前をプリフィルする。
+          try {
+            window.localStorage.setItem(actorStorageKey(data.club.slug), trimmedActor);
+          } catch {
+            /* noop */
+          }
+        }
       }
+
       selectClub(data.club.slug);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "作成に失敗しました");
@@ -163,10 +226,31 @@ export default function CarpoolIndexClient() {
                 id="club-name"
                 className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setShowClubSuggest(true);
+                }}
                 maxLength={60}
                 required
               />
+              {clubCandidates.length > 0 && (
+                <ul className="mt-1 flex flex-col gap-1 rounded-lg bg-surface p-1">
+                  {clubCandidates.map((c) => (
+                    <li key={c}>
+                      <button
+                        type="button"
+                        onClick={() => pickClubCandidate(c)}
+                        className="w-full rounded px-2 py-1 text-left text-sm text-foreground hover:bg-card-hover"
+                      >
+                        {c}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-1 text-[10px] text-muted">
+                候補から選ぶと JOY エントリーの自動検出が確実になります（JOY 表記名も自動で入ります）。
+              </p>
             </div>
             <div>
               <label className="mb-1 block text-xs text-muted" htmlFor="club-slug">

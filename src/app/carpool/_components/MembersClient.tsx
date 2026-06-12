@@ -6,6 +6,8 @@ import { useActor } from "./useActor";
 import { useToast } from "./Toast";
 import ActorModal from "./ActorModal";
 import CarpoolHeader from "./CarpoolHeader";
+import { useAthleteSuggest } from "./useAthleteSuggest";
+import { athleteSelectionToFields } from "@/lib/carpool/suggest";
 import { normalizeNameKey } from "@/lib/name-key";
 import type {
   ClubDTO,
@@ -91,6 +93,20 @@ export default function MembersClient({ slug }: MembersClientProps) {
   const [athleteSearching, setAthleteSearching] = useState(false);
   const [athleteError, setAthleteError] = useState<string | null>(null);
 
+  // 指摘4: 表示名のインクリメンタル正規候補サジェスト（debounce 付き）。
+  // 候補選択で displayName=正規氏名・athleteKey=normalizeNameKey(正規氏名) を同時設定。
+  const nameSuggest = useAthleteSuggest();
+
+  const pickNameCandidate = (canonicalName: string) => {
+    const fields = athleteSelectionToFields(canonicalName);
+    setForm((f) => ({
+      ...f,
+      displayName: fields.displayName,
+      athleteKey: fields.athleteKey,
+    }));
+    nameSuggest.dismiss();
+  };
+
   const areaNodes = useMemo(() => nodes.filter((n) => n.kind === "area"), [nodes]);
   const pickableNodes = useMemo(() => nodes.filter((n) => n.kind !== "venue"), [nodes]);
   const nodeName = (id: string | null): string | null =>
@@ -135,6 +151,7 @@ export default function MembersClient({ slug }: MembersClientProps) {
     setAddingArea(false);
     setAthleteQuery("");
     setAthleteResults([]);
+    nameSuggest.clear();
   };
 
   const openEdit = (m: MemberDTO) => {
@@ -145,6 +162,7 @@ export default function MembersClient({ slug }: MembersClientProps) {
     setAddingArea(false);
     setAthleteQuery("");
     setAthleteResults([]);
+    nameSuggest.clear();
   };
 
   const closeForm = () => {
@@ -360,10 +378,36 @@ export default function MembersClient({ slug }: MembersClientProps) {
               <input
                 className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
                 value={form.displayName}
-                onChange={(e) => setForm((f) => ({ ...f, displayName: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, displayName: e.target.value }));
+                  nameSuggest.setQuery(e.target.value);
+                }}
                 maxLength={40}
                 required
               />
+              {nameSuggest.results.length > 0 && (
+                <ul className="mt-1 flex flex-col gap-1 rounded-lg bg-surface p-1">
+                  {nameSuggest.results.map((a) => (
+                    <li key={a.name}>
+                      <button
+                        type="button"
+                        onClick={() => pickNameCandidate(a.name)}
+                        className="w-full rounded px-2 py-1 text-left text-sm text-foreground hover:bg-card-hover"
+                      >
+                        {a.name}
+                        {a.clubs.length > 0 && (
+                          <span className="ml-2 text-xs text-muted">
+                            {a.clubs.join(", ")}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-1 text-[10px] text-muted">
+                候補から選ぶと JOY エントリーの自動検出が確実になります（一覧に無ければそのまま入力でOK）。
+              </p>
             </div>
 
             <div>

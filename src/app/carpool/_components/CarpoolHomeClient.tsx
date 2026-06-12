@@ -151,11 +151,14 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
     const step1Done = actorMemberId !== null; // あなたを登録
     const step2Done = events.length > 0; // 大会を選ぶ
     const step3Done = members.length > 1; // クラブに共有（自分以外もいる）
+    // M3: イベント0件なら Step4 は「配車係待ち」の待機表示であり、完了判定の対象外。
+    const step4Required = events.length > 0;
     // Step4 は直近イベント + actorMember の参加有無。判定不能なら未完了扱いにしない（非活性）。
-    const step4Known = step1Done && events.length > 0 && latestParticipated !== null;
+    const step4Known = step1Done && step4Required && latestParticipated !== null;
     const step4Done = step4Known && latestParticipated === true;
-    const allDone = step1Done && step2Done && step3Done && step4Done;
-    return { step1Done, step2Done, step3Done, step4Known, step4Done, allDone };
+    const allDone =
+      step1Done && step2Done && step3Done && (!step4Required || step4Done);
+    return { step1Done, step2Done, step3Done, step4Required, step4Known, step4Done, allDone };
   }, [actorMemberId, events.length, members.length, latestParticipated]);
 
   const latestEvent = events[0];
@@ -257,6 +260,12 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
                     done={setup.step4Done}
                     // Step1 未完了 or 直近イベント無しなら判定不能 → 非活性表示。
                     disabled={!setup.step1Done || !latestEvent}
+                    // M3: イベント0件の初見メンバーでも導線が尽きないよう待機表示を出す。
+                    note={
+                      !latestEvent
+                        ? "配車係が大会を作るのを待っています（作られるとここから参加登録できます）"
+                        : undefined
+                    }
                     cta={
                       setup.step1Done && latestEvent && !setup.step4Done
                         ? {
@@ -371,7 +380,7 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
             </form>
 
             <p className="mb-3 rounded-lg bg-surface p-2 text-xs text-muted">
-              会場と駐車場が分かれる大会は要綱で確認して到着地ノードを変更してください。
+              会場と駐車場が分かれる大会は、要綱を見て「会場・駐車場」の場所を確認・修正してください（⚙ 設定 から変更できます）。
             </p>
 
             {searchError && <p className="mb-2 text-sm text-red-400">{searchError}</p>}
@@ -436,12 +445,15 @@ function SetupStep({
   done,
   cta,
   disabled,
+  note,
 }: {
   n: number;
   title: string;
   done: boolean;
   cta?: { label: string; onClick?: () => void; href?: string };
   disabled?: boolean;
+  /** 待機状態などの補足表示（タイトル下・任意）。 */
+  note?: string;
 }) {
   return (
     <li
@@ -459,13 +471,16 @@ function SetupStep({
         >
           {done ? "✓" : n}
         </span>
-        <span
-          className={cn(
-            "truncate text-sm",
-            done ? "text-muted line-through" : "text-foreground",
-          )}
-        >
-          {title}
+        <span className="min-w-0">
+          <span
+            className={cn(
+              "block truncate text-sm",
+              done ? "text-muted line-through" : "text-foreground",
+            )}
+          >
+            {title}
+          </span>
+          {note && <span className="block text-[10px] text-muted">{note}</span>}
         </span>
       </div>
       {!done && cta && (

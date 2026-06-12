@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { memberCreateSchema, seatsToCapacity } from "@/lib/carpool/api/schemas";
+import { normalizeNameKey } from "@/lib/name-key";
 import { toMemberDTO, type PickupPrefDTO } from "@/lib/carpool/api/mappers";
 import {
   ERR,
@@ -110,12 +111,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     }
   }
 
+  // 名前の重複防止（指摘1）: athleteKey 未指定なら displayName の正準キーを自動設定する。
+  // これにより、セットアップガイド/ActorModal の自己登録で作った member と
+  // JOY 検出（detect-entries）の同一人物が、突合キーで一致するようになる。
+  const resolvedAthleteKey =
+    input.athleteKey !== undefined && input.athleteKey !== null
+      ? input.athleteKey
+      : normalizeNameKey(input.displayName) || null;
+
   const insertRow: Record<string, unknown> = {
     club_id: club.id,
     display_name: input.displayName,
     default_capacity: seatsToCapacity(input.seatsAvailable),
   };
-  if (input.athleteKey !== undefined) insertRow.athlete_key = input.athleteKey;
+  if (resolvedAthleteKey) insertRow.athlete_key = resolvedAthleteKey;
   if (resolvedHomeNodeId !== undefined) insertRow.home_node_id = resolvedHomeNodeId;
   if (input.hasCar !== undefined) insertRow.has_car = input.hasCar;
   if (input.defaultWillingness !== undefined) insertRow.default_willingness = input.defaultWillingness;
