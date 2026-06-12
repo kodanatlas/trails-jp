@@ -6,6 +6,7 @@ import { fetchCarpool, postCarpool, CarpoolApiError } from "./carpoolFetch";
 import { useActor } from "./useActor";
 import { useToast } from "./Toast";
 import { minToTime, minToDuration } from "./planFormat";
+import StartlistImport from "./StartlistImport";
 import type { PlanWorkerMessage, PlanWorkerRequest } from "./plan.worker";
 import { cn } from "@/lib/utils";
 import {
@@ -1060,6 +1061,15 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
                 </div>
               )}
             </section>
+
+            {/* スタートリスト取込（発行書類 / URL / テキスト → 参加へ反映） */}
+            <StartlistImport
+              slug={slug}
+              eventId={eventId}
+              actorName={actorName}
+              members={members}
+              onApplied={() => void load()}
+            />
           </aside>
 
           {/* ===== 中央: ボード ===== */}

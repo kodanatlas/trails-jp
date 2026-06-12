@@ -7,6 +7,7 @@ import { useActor } from "./useActor";
 import { useToast } from "./Toast";
 import ActorModal from "./ActorModal";
 import CarpoolHeader from "./CarpoolHeader";
+import StartlistImport from "./StartlistImport";
 import { chunkBulkEntries } from "@/lib/carpool/bulk-plan";
 import { planQuickRegister, type QuickRole } from "@/lib/carpool/quick-register";
 import {
@@ -765,6 +766,17 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
 
             {/* 「次にやること」バナー（actor 設定済みのときは従来位置） */}
             {!actorLocked && bannerEl}
+
+            {/* スタートリスト取込（発行書類 / URL / テキスト → 参加へ反映） */}
+            <div className="mb-4">
+              <StartlistImport
+                slug={slug}
+                eventId={eventId}
+                actorName={actorName}
+                members={members}
+                onApplied={() => void load()}
+              />
+            </div>
 
             {/* エントリー検出（一括登録） */}
             {/* m3: joeEventId の無い手動作成イベントは「JOY 連携なし」案内に出し分け（検出0件と区別）。 */}

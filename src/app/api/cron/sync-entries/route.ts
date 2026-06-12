@@ -4,6 +4,64 @@ import { buildEntryIndex } from "@/lib/entries/build-index";
 import { writeEntryIndex } from "@/lib/entry-index-store";
 import { logCron } from "@/lib/cron-logger";
 import { notifyCronWarning } from "@/lib/cron-notifier";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import { scrapeDocuments } from "@/lib/scraper/documents";
+
+const JOE_BASE_URL = "https://japan-o-entry.com";
+
+// 配車割 Phase 4 相乗りステップの予算・上限。本体(45s)を侵さない範囲でだけ働く。
+// 既存本体が overallBudget=45s を使い切る前提で、全体 maxDuration=60s の残余から数秒だけ割く。
+const STARTLIST_STEP_BUDGET_MS = 8000;
+// 1 リクエストで処理する carpool_events の上限（予算超過の保険）。
+const STARTLIST_MAX_EVENTS = 8;
+// title にこのいずれかを含む発行書類をスタートリストとみなす。
+const STARTLIST_TITLE_HINTS = ["スタート", "スタートリスト", "startlist", "start list"];
+
+/**
+ * 配車割 Phase 4 相乗り: startlist_url 未設定の未来大会について発行書類を当たり、
+ * スタートリストらしき書類が見つかれば carpool_events.startlist_url を埋める。
+ *
+ * 完全隔離（例外は呼び出し側で握りつぶす）・残予算内のベストエフォート。
+ * change_log は cron 由来のため省略。
+ *
+ * @returns 実際に startlist_url を更新できた件数。
+ */
+async function fillStartlistUrls(deadline: number): Promise<number> {
+  const today = jstDateStr(0);
+
+  // 対象: joe_event_id 非 null・未来日・startlist_url が null。近い順。
+  const { data, error } = await supabaseAdmin
+    .from("carpool_events")
+    .select("id, joe_event_id, event_date, startlist_url")
+    .not("joe_event_id", "is", null)
+    .is("startlist_url", null)
+    .gte("event_date", today)
+    .order("event_date", { ascending: true })
+    .limit(STARTLIST_MAX_EVENTS);
+  if (error || !data) return 0;
+
+  let updated = 0;
+  for (const row of data as Array<{ id: string; joe_event_id: number | null }>) {
+    if (Date.now() >= deadline) break; // 予算切れで即中断
+    if (row.joe_event_id === null || row.joe_event_id === undefined) continue;
+
+    const joeUrl = `${JOE_BASE_URL}/event/view/${row.joe_event_id}`;
+    const docs = await scrapeDocuments(joeUrl);
+    const hit = docs.find((d) =>
+      STARTLIST_TITLE_HINTS.some((h) =>
+        d.title.toLowerCase().includes(h.toLowerCase()),
+      ),
+    );
+    if (!hit) continue;
+
+    const { error: updError } = await supabaseAdmin
+      .from("carpool_events")
+      .update({ startlist_url: hit.url })
+      .eq("id", row.id);
+    if (!updError) updated += 1;
+  }
+  return updated;
+}
 
 // 対象(targets)のうち取得失敗がこの件数以上なら警告（取りこぼし＝選手エントリーの欠落に直結）。
 const SCRAPE_SHORTFALL_WARN_THRESHOLD = 5;
@@ -82,12 +140,26 @@ export async function GET(request: Request) {
 
     await writeEntryIndex(index);
 
+    // 配車割 Phase 4 相乗り（完全隔離）: 本体成功後の残予算でだけ動く。
+    // 例外・失敗は握りつぶし、本体レスポンス（200）に一切影響させない。
+    let startlistFilled = 0;
+    try {
+      const remaining = 45000 - (Date.now() - start);
+      if (remaining > 1000) {
+        const budget = Math.min(STARTLIST_STEP_BUDGET_MS, remaining);
+        startlistFilled = await fillStartlistUrls(Date.now() + budget);
+      }
+    } catch (e) {
+      console.error("startlist_url fill step failed (ignored):", e);
+    }
+
     const payload = {
       success: true,
       targets: targets.length,
       scraped: index.scrapedEventCount,
       athletes: Object.keys(index.athletes).length,
       deferred,
+      startlist_filled: startlistFilled,
       generated_at: index.generatedAt,
     };
     await logCron("sync-entries", "success", payload, Date.now() - start);

@@ -6,6 +6,9 @@ import { useActor } from "./useActor";
 import CarpoolHeader from "./CarpoolHeader";
 import { trimTime, buildMapsDirUrl } from "./planFormat";
 import { cn } from "@/lib/utils";
+import { calcFare } from "@/lib/carpool/fare";
+import { calcDepartRecommend } from "@/lib/carpool/depart-recommend";
+import type { FareSettings } from "@/lib/carpool/fare";
 import type {
   ClubDTO,
   EventDTO,
@@ -315,6 +318,7 @@ export default function ResultClient({ slug, eventId }: ResultClientProps) {
                       participationByMemberId={participationByMemberId}
                       memberName={memberName}
                       venueNode={venueNode}
+                      clubSettings={(club?.settings ?? {}) as FareSettings}
                     />
                   ))}
                   {plan.cars.length === 0 && (
@@ -368,6 +372,7 @@ function CarCard({
   participationByMemberId,
   memberName,
   venueNode,
+  clubSettings,
 }: {
   car: PlanCarDTO;
   isOwn: boolean;
@@ -377,6 +382,7 @@ function CarCard({
   participationByMemberId: Map<string, ParticipationDTO>;
   memberName: (id: string | null) => string;
   venueNode: NodeDTO | null;
+  clubSettings: FareSettings;
 }) {
   const driver = memberById.get(car.driverMemberId) ?? null;
   const driverName = memberName(car.driverMemberId);
@@ -423,6 +429,17 @@ function CarCard({
   }, [driver, car.pickupNodeIds, nodeById, venueNode]);
 
   const driverParticipation = participationByMemberId.get(car.driverMemberId);
+
+  // 割り勘計算。
+  const route = car.routeId ? routeById.get(car.routeId) ?? null : null;
+  const riderCount = car.riders.length;
+  const fare = route ? calcFare(route, riderCount, clubSettings) : null;
+
+  // 出発リコメンド計算（運転手の homeNodeId に対応する rt を使う）。
+  const driverHomeNodeId = driver?.homeNodeId ?? null;
+  const rt =
+    route?.routeTimes?.find((t) => t.nodeId === driverHomeNodeId)?.minutesToVenue ?? 0;
+  const departRec = calcDepartRecommend(car.departureTime, route?.riskWindows ?? [], rt);
 
   return (
     <details
@@ -513,6 +530,24 @@ function CarCard({
 
         {/* ルート名 */}
         <p className="text-xs text-muted">ルート: {routeName}</p>
+
+        {/* 渋滞メモ */}
+        {departRec && departRec.kind === "avoid" && (
+          <p className="text-xs text-yellow-400">
+            🚦 渋滞メモ: {departRec.avoid.reason}のため早め出発案{" "}
+            <span className="font-semibold">{departRec.avoid.departMin}発</span>
+            （通常 {departRec.departTime}発）
+          </p>
+        )}
+
+        {/* 割り勘 */}
+        {fare && (
+          <p className="text-xs text-foreground">
+            💰 割り勘: 1人{" "}
+            <span className="font-semibold">{fare.perRiderYen.toLocaleString()}円</span>
+            （高速往復 {fare.tollRoundYen.toLocaleString()}円 + 燃料 約{fare.fuelRoundYen.toLocaleString()}円）
+          </p>
+        )}
 
         {/* Google Maps ナビ */}
         {mapsUrl && (
