@@ -27,7 +27,8 @@ import type { MemberDTO, ParticipationDTO } from "./carpoolTypes";
 interface StartlistImportProps {
   slug: string;
   eventId: string;
-  actorName: string | null;
+  /** change_log 記録用。スタートリスト取込はメンバー文脈を持たないため "guest" を渡す。 */
+  actorName: string;
   members: MemberDTO[];
   /** 反映成功時に呼ぶ（親が participations を再取得する）。 */
   onApplied: () => void;
@@ -140,8 +141,6 @@ export default function StartlistImport({
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
   const [summary, setSummary] = useState<ApplyResponse | null>(null);
-
-  const canWrite = actorName !== null && actorName.length > 0;
 
   // 開封時に発行書類を取得（1 回）。失敗してもパネルは壊さない。
   const loadDocuments = useCallback(async () => {
@@ -306,7 +305,6 @@ export default function StartlistImport({
   const targetCount = matches.filter((m, i) => isApplyTarget(m, i)).length;
 
   const handleApply = useCallback(async () => {
-    if (!canWrite) return;
     // M2: プレビュー時のスナップショットを送信する（入力欄の現在値は使わない）。
     if (!previewedSource) {
       setApplyError("プレビューを実行してから反映してください。");
@@ -372,7 +370,6 @@ export default function StartlistImport({
     slug,
     eventId,
     actorName,
-    canWrite,
     matches,
     edits,
     confirmed,
@@ -396,12 +393,6 @@ export default function StartlistImport({
 
       {open && (
         <div className="mt-3 space-y-4">
-          {!canWrite && (
-            <p className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-400">
-              操作者を設定すると反映できます。
-            </p>
-          )}
-
           {/* 入力経路タブ */}
           <div className="flex rounded-lg border border-border bg-surface p-0.5 text-xs">
             {(
@@ -690,7 +681,7 @@ export default function StartlistImport({
               <button
                 type="button"
                 onClick={() => void handleApply()}
-                disabled={!canWrite || applying || targetCount === 0}
+                disabled={applying || targetCount === 0}
                 className="rounded-lg bg-primary px-4 py-2 text-xs font-medium text-white hover:bg-primary-dark disabled:opacity-50"
               >
                 {applying

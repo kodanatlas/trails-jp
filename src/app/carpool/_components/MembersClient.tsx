@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { fetchCarpool, postCarpool, patchCarpool } from "./carpoolFetch";
-import { useActor } from "./useActor";
 import { useToast } from "./Toast";
-import ActorModal from "./ActorModal";
 import CarpoolHeader from "./CarpoolHeader";
 import { useAthleteSuggest } from "./useAthleteSuggest";
 import { athleteSelectionToFields } from "@/lib/carpool/suggest";
@@ -21,6 +19,12 @@ import type { AthleteSuggestion } from "./carpoolTypes";
 interface MembersClientProps {
   slug: string;
 }
+
+/**
+ * 調整さんモデル: メンバー編集の actorName は「編集対象メンバーの displayName」。
+ * メンバー文脈を持たない書き込み（エリアノード作成）は固定文字列 "guest"。
+ */
+const GUEST = "guest";
 
 type Willingness = "always" | "if_needed";
 
@@ -74,9 +78,6 @@ export default function MembersClient({ slug }: MembersClientProps) {
   const [nodes, setNodes] = useState<NodeDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showActorModal, setShowActorModal] = useState(false);
-
-  const { actorName, ready, setActorMember } = useActor(slug, members);
 
   // 編集状態: null=非表示, "new"=追加, それ以外=メンバー id
   const [editing, setEditing] = useState<string | null>(null);
@@ -136,16 +137,7 @@ export default function MembersClient({ slug }: MembersClientProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
-  const requireActor = (): boolean => {
-    if (ready && !actorName) {
-      setShowActorModal(true);
-      return false;
-    }
-    return true;
-  };
-
   const openNew = () => {
-    if (!requireActor()) return;
     setForm(EMPTY_FORM);
     setEditing("new");
     setFormError(null);
@@ -156,7 +148,6 @@ export default function MembersClient({ slug }: MembersClientProps) {
   };
 
   const openEdit = (m: MemberDTO) => {
-    if (!requireActor()) return;
     setForm(memberToForm(m));
     setEditing(m.id);
     setFormError(null);
@@ -191,15 +182,11 @@ export default function MembersClient({ slug }: MembersClientProps) {
   };
 
   const addArea = async () => {
-    if (!actorName) {
-      setShowActorModal(true);
-      return;
-    }
     const name = newAreaName.trim();
     if (!name) return;
     try {
       const data = await postCarpool<{ node: NodeDTO }>(`/clubs/${slug}/nodes`, {
-        actorName,
+        actorName: GUEST,
         kind: "area",
         name,
       });
@@ -247,11 +234,8 @@ export default function MembersClient({ slug }: MembersClientProps) {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!actorName) {
-      setShowActorModal(true);
-      return;
-    }
-    if (!form.displayName.trim()) {
+    const displayName = form.displayName.trim();
+    if (!displayName) {
       setFormError("表示名を入力してください");
       return;
     }
@@ -264,8 +248,9 @@ export default function MembersClient({ slug }: MembersClientProps) {
         : null;
 
     const body: Record<string, unknown> = {
-      actorName,
-      displayName: form.displayName.trim(),
+      // 調整さんモデル: 編集対象メンバーの displayName を actorName に流用する。
+      actorName: displayName,
+      displayName,
       homeNodeId: form.homeNodeId,
       hasCar: form.hasCar,
       athleteKey: form.athleteKey,
@@ -305,12 +290,7 @@ export default function MembersClient({ slug }: MembersClientProps) {
   return (
     <div className="min-h-screen">
       {toastEl}
-      <CarpoolHeader
-        clubName={club?.name ?? slug}
-        slug={slug}
-        actorName={actorName}
-        onActorChange={() => setShowActorModal(true)}
-      />
+      <CarpoolHeader clubName={club?.name ?? slug} slug={slug} />
 
       <main className="mx-auto max-w-2xl px-4 py-6">
         <div className="mb-4 flex items-center justify-between">
@@ -678,20 +658,6 @@ export default function MembersClient({ slug }: MembersClientProps) {
           </form>
         )}
       </main>
-
-      {showActorModal && (
-        <ActorModal
-          slug={slug}
-          members={members}
-          actorName={actorName}
-          onSelectMember={(m) => {
-            setActorMember(m);
-            void load();
-            setShowActorModal(false);
-          }}
-          onClose={() => setShowActorModal(false)}
-        />
-      )}
     </div>
   );
 }

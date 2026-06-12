@@ -10,8 +10,12 @@
  * actor_name は操作者のまま change_log に残る（既存設計どおり・ここでは扱わない）。
  */
 
-/** クイック登録で選べるロール（undecided は一括登録専用なので含めない）。 */
-export type QuickRole = "driver" | "rider";
+/**
+ * クイック登録で選べるロール（undecided は一括登録専用なので含めない）。
+ * 'passenger'（同乗者 = 乗る車が決まっている）は UI 専用。participation では
+ * role='rider' + fixedDriverMemberId に畳む（DB 変更なし・MILP の確約 hard 制約と整合）。
+ */
+export type QuickRole = "driver" | "rider" | "passenger";
 
 /** 検出行のうち計画に必要な最小情報。 */
 export interface QuickRegisterInput {
@@ -30,6 +34,11 @@ export interface QuickRegisterInput {
    * 数値として有効（0〜20）なら member 作成 body の seatsAvailable に入れる。
    */
   seatsInput?: string | null;
+  /**
+   * B: 同乗者（passenger）クイック登録時の確約運転手 member id（必須・最小ステップで選択）。
+   * role='passenger' のときのみ使用。未指定なら計画は確約なしの rider に縮退する。
+   */
+  fixedDriverMemberId?: string | null;
 }
 
 /** member 作成が必要な場合の body 断片（actorName はクライアントが付与）。 */
@@ -53,9 +62,19 @@ function parseSeats(input: string | null | undefined): number | undefined {
 export interface QuickRegisterPlan {
   /** null = member 作成不要（既存 member）。 */
   memberBody: QuickMemberBody | null;
-  role: QuickRole;
+  /**
+   * participation に保存する role。passenger は API では 'rider' に畳むため、
+   * ここでは常に 'driver' | 'rider' のいずれかになる（passenger は出力されない）。
+   */
+  role: "driver" | "rider";
   /** participation に保存するクラス（空文字は null に正規化）。 */
   className: string | null;
+  /**
+   * B: 同乗者（passenger）の確約運転手 member id。
+   * passenger 以外は undefined（participation body に fixedDriverMemberId を含めない）。
+   * passenger かつ未指定（呼び出し側がガードを通さなかった場合）は確約なし rider に縮退し undefined。
+   */
+  fixedDriverMemberId?: string;
 }
 
 /**
@@ -70,8 +89,16 @@ export function planQuickRegister(
 ): QuickRegisterPlan {
   const className = input.className || null;
 
+  // B: passenger は participation の role='rider' に畳む。確約運転手があれば付帯する。
+  const participationRole: "driver" | "rider" = role === "driver" ? "driver" : "rider";
+  const fixedDriverId =
+    role === "passenger" && input.fixedDriverMemberId
+      ? input.fixedDriverMemberId
+      : undefined;
+  const fixed = fixedDriverId ? { fixedDriverMemberId: fixedDriverId } : {};
+
   if (input.memberId) {
-    return { memberBody: null, role, className };
+    return { memberBody: null, role: participationRole, className, ...fixed };
   }
 
   const displayName =
@@ -79,6 +106,7 @@ export function planQuickRegister(
     (input.rawName ?? "").trim() ||
     input.nameKey;
 
+  // seats（同乗可能人数）は運転手として作るときのみ意味を持つ。
   const seats = role === "driver" ? parseSeats(input.seatsInput) : undefined;
 
   return {
@@ -88,7 +116,8 @@ export function planQuickRegister(
       hasCar: role === "driver",
       ...(seats !== undefined ? { seatsAvailable: seats } : {}),
     },
-    role,
+    role: participationRole,
     className,
+    ...fixed,
   };
 }

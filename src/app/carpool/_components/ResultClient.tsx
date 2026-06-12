@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchCarpool, CarpoolApiError } from "./carpoolFetch";
-import { useActor } from "./useActor";
 import CarpoolHeader from "./CarpoolHeader";
 import { trimTime, buildMapsDirUrl } from "./planFormat";
 import { cn } from "@/lib/utils";
@@ -61,12 +60,9 @@ export default function ResultClient({ slug, eventId }: ResultClientProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 操作者（自分）の特定に使う。
-  const { actorMemberId } = useActor(slug, members);
-
-  // m3: actor 未設定の閲覧者向けの一時選択（localStorage には保存しない）。
+  // 調整さんモデル: 操作者概念なし。閲覧者は「自分の車を探す」一時選択のみ（保存しない）。
   const [tempMemberId, setTempMemberId] = useState<string | null>(null);
-  const effectiveMemberId = actorMemberId ?? tempMemberId;
+  const effectiveMemberId = tempMemberId;
 
   useEffect(() => {
     let cancelled = false;
@@ -214,13 +210,7 @@ export default function ResultClient({ slug, eventId }: ResultClientProps) {
 
   return (
     <div className="min-h-screen">
-      {/* 切替（操作者選択）はこのページでは行わないため no-op。 */}
-      <CarpoolHeader
-        clubName={club?.name ?? slug}
-        slug={slug}
-        actorName={null}
-        onActorChange={() => {}}
-      />
+      <CarpoolHeader clubName={club?.name ?? slug} slug={slug} />
 
       <main className="mx-auto max-w-2xl px-4 py-6">
         {loading && <p className="text-sm text-muted">読み込み中…</p>}
@@ -259,8 +249,8 @@ export default function ResultClient({ slug, eventId }: ResultClientProps) {
                 </p>
               )}
 
-              {/* m3: actor 未設定でも「自分の車」を探せる一時選択（保存しない） */}
-              {!actorMemberId && plan && planMembers.length > 0 && (
+              {/* 「自分の車」を探せる一時選択（保存しない） */}
+              {plan && planMembers.length > 0 && (
                 <div className="mt-3">
                   <label
                     htmlFor="result-self-select"

@@ -4,16 +4,14 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { fetchCarpool, postCarpool } from "./carpoolFetch";
-import { useActor } from "./useActor";
 import { useToast } from "./Toast";
-import ActorModal from "./ActorModal";
+import AddMemberModal from "./AddMemberModal";
 import CarpoolHeader from "./CarpoolHeader";
 import { cn } from "@/lib/utils";
 import type {
   ClubDTO,
   EventDTO,
   MemberDTO,
-  ParticipationDTO,
 } from "@/lib/carpool/api/mappers";
 import type { JoyEvent as JoyEventLike } from "./carpoolTypes";
 
@@ -55,13 +53,9 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { actorName, actorMemberId, ready, setActorMember } = useActor(slug, members);
-
-  const [showActorModal, setShowActorModal] = useState(false);
+  // 調整さんモデル: 操作者概念なし。誰でもメンバーを追加・編集できる。
+  const [showAddMember, setShowAddMember] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
-
-  // 直近イベントの自分の参加有無（Step4 判定用）。null=未取得 / 判定不能。
-  const [latestParticipated, setLatestParticipated] = useState<boolean | null>(null);
 
   // イベント検索モーダル
   const [query, setQuery] = useState("");
@@ -97,33 +91,6 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
     };
   }, [slug]);
 
-  // Step4 判定: 直近イベント（events[0]）の participations を 1 本だけ追加 fetch し、
-  // actorMember の参加有無を見る。actorMember 未設定や直近イベント無しなら判定不能（null）。
-  useEffect(() => {
-    let cancelled = false;
-    const latest = events[0];
-    if (!latest || !actorMemberId) {
-      setLatestParticipated(null);
-      return;
-    }
-    (async () => {
-      try {
-        const res = await fetchCarpool<{ participations: ParticipationDTO[] }>(
-          `/clubs/${slug}/events/${latest.id}/participations`,
-        );
-        if (cancelled) return;
-        setLatestParticipated(
-          res.participations.some((p) => p.memberId === actorMemberId),
-        );
-      } catch {
-        if (!cancelled) setLatestParticipated(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [slug, events, actorMemberId]);
-
   const openEventModal = () => {
     setShowEventModal(true);
   };
@@ -146,20 +113,14 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
     }
   };
 
-  // セットアップ状態の各ステップ完了判定。
+  // セットアップ状態の各ステップ完了判定（調整さんモデル: 操作者概念なし）。
   const setup = useMemo(() => {
-    const step1Done = actorMemberId !== null; // あなたを登録
+    const step1Done = members.length > 0; // メンバーを追加（1人以上いれば完了）
     const step2Done = events.length > 0; // 大会を選ぶ
     const step3Done = members.length > 1; // クラブに共有（自分以外もいる）
-    // M3: イベント0件なら Step4 は「配車係待ち」の待機表示であり、完了判定の対象外。
-    const step4Required = events.length > 0;
-    // Step4 は直近イベント + actorMember の参加有無。判定不能なら未完了扱いにしない（非活性）。
-    const step4Known = step1Done && step4Required && latestParticipated !== null;
-    const step4Done = step4Known && latestParticipated === true;
-    const allDone =
-      step1Done && step2Done && step3Done && (!step4Required || step4Done);
-    return { step1Done, step2Done, step3Done, step4Required, step4Known, step4Done, allDone };
-  }, [actorMemberId, events.length, members.length, latestParticipated]);
+    const allDone = step1Done && step2Done && step3Done;
+    return { step1Done, step2Done, step3Done, allDone };
+  }, [events.length, members.length]);
 
   const latestEvent = events[0];
 
@@ -182,13 +143,12 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
   };
 
   const createEvent = async (joe: JoyEventLike) => {
-    // actorName は member 解決後の display_name。未解決でも作成は可能だが、
-    // 設定済みなら正しい操作者名を残す。
+    // 調整さんモデル: 大会作成はメンバー文脈を持たないため actorName="guest"。
     setCreatingId(joe.joeEventId);
     setCreateError(null);
     try {
       const data = await postCarpool<{ event: EventDTO }>(`/clubs/${slug}/events`, {
-        actorName: actorName ?? "（未設定）",
+        actorName: "guest",
         joeEventId: joe.joeEventId,
       });
       toast("配車イベントを作成しました", "success");
@@ -202,12 +162,7 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
   return (
     <div className="min-h-screen">
       {toastEl}
-      <CarpoolHeader
-        clubName={club?.name ?? slug}
-        slug={slug}
-        actorName={actorName}
-        onActorChange={() => setShowActorModal(true)}
-      />
+      <CarpoolHeader clubName={club?.name ?? slug} slug={slug} />
 
       <main className="mx-auto max-w-2xl px-4 py-6">
         {loading && <p className="text-sm text-muted">読み込み中…</p>}
@@ -215,7 +170,7 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
 
         {!loading && !error && (
           <>
-            {ready && !setup.allDone && (
+            {!setup.allDone && (
               <section className="mb-6 rounded-xl border border-border bg-card p-4">
                 <h2 className="mb-3 text-sm font-semibold text-foreground">
                   はじめの設定
@@ -223,13 +178,19 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
                 <ol className="flex flex-col gap-2">
                   <SetupStep
                     n={1}
-                    title="あなたを登録する"
+                    title="メンバーを追加する"
                     done={setup.step1Done}
+                    // 大会ページの検出からも取り込めることを補足（最初の大会があれば）。
+                    note={
+                      !setup.step1Done && latestEvent
+                        ? "大会ページの「JOY エントリー検出」から取り込むこともできます"
+                        : undefined
+                    }
                     cta={
                       !setup.step1Done
                         ? {
-                            label: "登録する",
-                            onClick: () => setShowActorModal(true),
+                            label: "メンバーを追加",
+                            onClick: () => setShowAddMember(true),
                           }
                         : undefined
                     }
@@ -251,27 +212,6 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
                     cta={
                       !setup.step3Done
                         ? { label: "URL をコピー", onClick: () => void copyShareUrl() }
-                        : undefined
-                    }
-                  />
-                  <SetupStep
-                    n={4}
-                    title="参加を登録する"
-                    done={setup.step4Done}
-                    // Step1 未完了 or 直近イベント無しなら判定不能 → 非活性表示。
-                    disabled={!setup.step1Done || !latestEvent}
-                    // M3: イベント0件の初見メンバーでも導線が尽きないよう待機表示を出す。
-                    note={
-                      !latestEvent
-                        ? "配車係が大会を作るのを待っています（作られるとここから参加登録できます）"
-                        : undefined
-                    }
-                    cta={
-                      setup.step1Done && latestEvent && !setup.step4Done
-                        ? {
-                            label: "参加を登録",
-                            href: `/carpool/${slug}/${latestEvent.id}`,
-                          }
                         : undefined
                     }
                   />
@@ -334,19 +274,16 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
         )}
       </main>
 
-      {showActorModal && (
-        <ActorModal
+      {showAddMember && (
+        <AddMemberModal
           slug={slug}
-          members={members}
-          actorName={actorName}
-          onSelectMember={(m) => {
-            setActorMember(m);
+          onCreated={(m) => {
             setMembers((prev) =>
               prev.some((x) => x.id === m.id) ? prev : [...prev, m],
             );
-            setShowActorModal(false);
+            setShowAddMember(false);
           }}
-          onClose={() => setShowActorModal(false)}
+          onClose={() => setShowAddMember(false)}
         />
       )}
 

@@ -100,4 +100,46 @@ describe("planQuickRegister (M4: 検出行の単独クイック登録)", () => {
     );
     expect(plan.memberBody).toBeNull();
   });
+
+  // --- B: 同乗者（passenger）クイック登録 = role rider + fixedDriverMemberId ---
+
+  it("folds passenger into role='rider' and carries fixedDriverMemberId (existing member)", () => {
+    const plan = planQuickRegister(
+      { ...base, memberId: "m-1", fixedDriverMemberId: "drv-9" },
+      "passenger",
+    );
+    expect(plan.memberBody).toBeNull();
+    expect(plan.role).toBe("rider");
+    expect(plan.fixedDriverMemberId).toBe("drv-9");
+  });
+
+  it("passenger for an unregistered entry creates a no-car member + carries driver", () => {
+    const plan = planQuickRegister(
+      { ...base, fixedDriverMemberId: "drv-9" },
+      "passenger",
+    );
+    expect(plan.memberBody?.hasCar).toBe(false);
+    expect(plan.memberBody?.athleteKey).toBe("山田太郎");
+    expect(plan.role).toBe("rider");
+    expect(plan.fixedDriverMemberId).toBe("drv-9");
+  });
+
+  it("passenger ignores seats input (only driver uses seats)", () => {
+    const plan = planQuickRegister(
+      { ...base, fixedDriverMemberId: "drv-9", seatsInput: "3" },
+      "passenger",
+    );
+    expect(plan.memberBody && "seatsAvailable" in plan.memberBody).toBe(false);
+  });
+
+  it("passenger without a driver degrades to a plain rider (no fixedDriverMemberId)", () => {
+    const plan = planQuickRegister({ ...base, memberId: "m-1" }, "passenger");
+    expect(plan.role).toBe("rider");
+    expect(plan.fixedDriverMemberId).toBeUndefined();
+  });
+
+  it("driver/rider plans never carry fixedDriverMemberId", () => {
+    expect(planQuickRegister(base, "driver").fixedDriverMemberId).toBeUndefined();
+    expect(planQuickRegister(base, "rider").fixedDriverMemberId).toBeUndefined();
+  });
 });

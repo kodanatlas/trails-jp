@@ -191,7 +191,7 @@ export function buildPlanInput(
 
   // --- B1: 会場ノード必須（無いと到着地が定義できず、route_times も意味を持たない） ---
   if (!event.venueNodeId) {
-    errors.push("会場ノードが未設定です（大会の到着地を登録してください）");
+    errors.push("会場・駐車場の場所が未設定です（大会の到着地を登録してください）");
   }
 
   // member 索引（id → DTO）と表示名（警告メッセージ用）。

@@ -12,6 +12,7 @@ import {
   resolveClub,
   assertOwnedByClub,
 } from "@/lib/carpool/api/helpers";
+import { geocodeAddress } from "@/lib/carpool/geocode";
 
 export const dynamic = "force-dynamic";
 
@@ -108,11 +109,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         actorName: guard.ctx.actorName,
         ipHash: guard.ctx.ipHash,
       });
+
+      // C2: 新規作成したエリアノードのみ、名称でジオコーディングして座標を自動補完する。
+      // 既存ノード再利用（上の existingArea 分岐）では実行しない。失敗は隔離（座標 null のまま）。
+      try {
+        const hit = await geocodeAddress(areaName);
+        if (hit) {
+          const { error: geoUpdateErr } = await supabaseAdmin
+            .from("carpool_nodes")
+            .update({ lat: hit.lat, lng: hit.lng })
+            .eq("id", areaNode.id)
+            .eq("club_id", club.id);
+          if (!geoUpdateErr) {
+            await writeChangeLog({
+              clubId: club.id,
+              tableName: "carpool_nodes",
+              recordId: areaNode.id,
+              action: "update",
+              payload: { geocoded: true, source: "gsi", lat: hit.lat, lng: hit.lng },
+              actorName: guard.ctx.actorName,
+              ipHash: guard.ctx.ipHash,
+            });
+          }
+        }
+      } catch {
+        // ジオコーディング失敗はメンバー作成に影響させない。
+      }
     }
   }
 
   // 名前の重複防止（指摘1）: athleteKey 未指定なら displayName の正準キーを自動設定する。
-  // これにより、セットアップガイド/ActorModal の自己登録で作った member と
+  // これにより、セットアップガイド/メンバー追加モーダルで作った member と
   // JOY 検出（detect-entries）の同一人物が、突合キーで一致するようになる。
   const resolvedAthleteKey =
     input.athleteKey !== undefined && input.athleteKey !== null

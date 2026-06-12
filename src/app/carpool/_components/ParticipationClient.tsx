@@ -1,15 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { fetchCarpool, postCarpool, patchCarpool, buildUrl } from "./carpoolFetch";
-import { useActor } from "./useActor";
 import { useToast } from "./Toast";
-import ActorModal from "./ActorModal";
 import CarpoolHeader from "./CarpoolHeader";
+import AddMemberModal from "./AddMemberModal";
 import StartlistImport from "./StartlistImport";
 import { chunkBulkEntries } from "@/lib/carpool/bulk-plan";
 import { planQuickRegister, type QuickRole } from "@/lib/carpool/quick-register";
+import {
+  buildSelfPickChoices,
+  filterSelfPickChoices,
+  type SelfPickChoice,
+} from "@/lib/carpool/self-pick";
 import {
   toApiRole,
   participationToFormRole,
@@ -43,11 +47,57 @@ type Willingness = "always" | "if_needed";
 
 const ROLE_SEGMENTS: { value: FormRole; label: string }[] = [
   { value: "driver", label: "運転手" },
-  { value: "passenger", label: "同乗者" },
-  { value: "rider", label: "同乗希望" },
+  { value: "passenger", label: "同乗者（乗る車が決まっている）" },
+  { value: "rider", label: "同乗希望（配車を待つ）" },
   { value: "self", label: "自力" },
   { value: "absent", label: "不参加" },
 ];
+
+/**
+ * 「あなたはどれ？」カードのバッジ用ロールラベル・色分け。
+ * participation.role は rider が fixedDriver の有無で 同乗者/同乗希望 に分かれるが、
+ * チップのバッジでは「同乗」とだけ示し、詳細は役割選択を開いたときに区別する。
+ */
+const ROLE_BADGE: Record<string, { label: string; cls: string }> = {
+  driver: { label: "運転手", cls: "bg-blue-500/20 text-blue-400" },
+  rider: { label: "同乗", cls: "bg-green-500/20 text-green-400" },
+  self: { label: "自力", cls: "bg-white/10 text-muted" },
+  absent: { label: "不参加", cls: "bg-white/10 text-muted" },
+  undecided: { label: "回答待ち", cls: "bg-yellow-500/20 text-yellow-400" },
+};
+
+function roleBadgeFor(role: string | null): { label: string; cls: string } {
+  if (!role) return { label: "未登録", cls: "bg-white/10 text-muted" };
+  return ROLE_BADGE[role] ?? { label: role, cls: "bg-white/10 text-muted" };
+}
+
+/** 「あなたはどれ？」役割選択ボタンの定義（FormRole に対応）。 */
+const SELF_PICK_ROLE_BUTTONS: { role: FormRole; label: string }[] = [
+  { role: "driver", label: "🚗 運転手" },
+  { role: "rider", label: "🙋 同乗希望（配車を待つ）" },
+  { role: "passenger", label: "⛓ 同乗者（乗る車が決まっている）" },
+  { role: "self", label: "自力で行く" },
+  { role: "absent", label: "不参加" },
+];
+
+const SELF_PICK_ROLE_TOAST: Record<FormRole, string> = {
+  driver: "運転手",
+  passenger: "同乗者",
+  rider: "同乗希望",
+  self: "自力",
+  absent: "不参加",
+};
+
+/** participation.role + fixedDriver の有無 → カード役割選択の現在ハイライト（FormRole）。 */
+function choiceCurrentFormRole(
+  role: string | null,
+  fixedDriverMemberId: string | null,
+): FormRole | null {
+  if (role === null) return null;
+  if (role === "rider") return fixedDriverMemberId ? "passenger" : "rider";
+  if (role === "driver" || role === "self" || role === "absent") return role;
+  return null; // undecided 等はハイライトしない
+}
 
 const STATUS_LABEL: Record<EventDTO["status"], string> = {
   planning: "募集中",
@@ -110,7 +160,6 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
 
   const [club, setClub] = useState<ClubDTO | null>(null);
   const [event, setEvent] = useState<EventDTO | null>(null);
-  const [routes, setRoutes] = useState<RouteDTO[]>([]);
   const [participations, setParticipations] = useState<ParticipationDTO[]>([]);
   const [members, setMembers] = useState<MemberDTO[]>([]);
   const [nodes, setNodes] = useState<NodeDTO[]>([]);
@@ -120,14 +169,10 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { actorName, actorMemberId, member: actorMember, ready, setActorMember } =
-    useActor(slug, members);
-
-  // M2: actor 未設定（直リンク流入など）の間は参加フォームをロックし、
-  // 「まず自分を登録」バナーを最上段に固定する。
-  const actorLocked = ready && !actorMemberId;
-
-  const [showActorModal, setShowActorModal] = useState(false);
+  // 調整さんモデル: 操作者概念なし。URL を開いた全員が同じデータを編集できる。
+  // change_log の actorName は「編集対象メンバーの displayName」、メンバー文脈の無い
+  // 一括登録は固定文字列 "guest"（memberName 経由で解決する）。
+  const [showAddMember, setShowAddMember] = useState(false);
   const [showDetect, setShowDetect] = useState(true);
 
   const [form, setForm] = useState<PForm>(EMPTY_PFORM);
@@ -135,6 +180,8 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   const [formError, setFormError] = useState<string | null>(null);
   // R7: 乗車エリア（自宅エリア）のテキスト入力。選択メンバーの現在値をプリフィルする。
   const [homeAreaInput, setHomeAreaInput] = useState("");
+  // major1: 乗車エリアを「その他（入力）」でテキスト入力中か（チップ非該当値の編集用）。
+  const [areaOtherOpen, setAreaOtherOpen] = useState(false);
 
   // 検出パネルの一括選択状態（detKey → 選択中）と未登録行の表示名入力（detKey → 値）。
   const [selectedDet, setSelectedDet] = useState<Record<string, boolean>>({});
@@ -146,12 +193,34 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   // R5: 未登録メンバーの運転手クイック登録前に同乗可能人数を聞く最小ステップ（detKey / 入力値）。
   const [seatsAskKey, setSeatsAskKey] = useState<string | null>(null);
   const [seatsAskValue, setSeatsAskValue] = useState("");
+  // B: 同乗者クイック登録前に「乗る車（運転手）」を聞く最小ステップ（detKey / 選択中の運転手 member id）。
+  const [driverAskKey, setDriverAskKey] = useState<string | null>(null);
+  const [driverAskValue, setDriverAskValue] = useState("");
+
+  // Phase 5.5 blocker: 「あなたはどれ？」カードの状態（端末に保存しない＝毎回選び直す）。
+  const [selfPickQuery, setSelfPickQuery] = useState("");
+  // 展開中チップの SelfPickChoice.key（null = どれも展開していない）。
+  const [selfPickKey, setSelfPickKey] = useState<string | null>(null);
+  // ⛓同乗者の最小ステップで選択中の運転手 member id。
+  const [selfPickDriver, setSelfPickDriver] = useState("");
+  // カード経由の登録進行中フラグ（多重送信防止）。
+  const [selfPickSaving, setSelfPickSaving] = useState(false);
+
+  // Phase 5.5 major3: 「詳細を編集」セクションの開閉（既定は閉じる。行タップ/行追加で自動展開）。
+  const [showEdit, setShowEdit] = useState(false);
 
   const memberById = useMemo(() => {
     const map = new Map<string, MemberDTO>();
     for (const m of members) map.set(m.id, m);
     return map;
   }, [members]);
+
+  // 調整さんモデル: write の actorName は編集対象メンバーの displayName を使う。
+  const memberName = useCallback(
+    (id: string | null): string =>
+      id ? (memberById.get(id)?.displayName ?? "不明") : "—",
+    [memberById],
+  );
 
   const nodeById = useMemo(() => {
     const map = new Map<string, NodeDTO>();
@@ -165,6 +234,38 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     [event, nodes],
   );
 
+  // major1: 乗車エリアのチップ候補（場所 = area / pickup ノード名・重複排除）。
+  // 0 件のクラブ（初期）はチップを出さずテキスト入力のみ。
+  const areaChipNames = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const n of nodes) {
+      if (n.kind !== "area" && n.kind !== "pickup") continue;
+      const name = n.name.trim();
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      out.push(name);
+    }
+    return out.sort((a, b) => a.localeCompare(b, "ja"));
+  }, [nodes]);
+
+  // blocker: 「あなたはどれ？」カードの統合チップ（検出 + 登録済み + active メンバー）。
+  const selfPickChoices = useMemo(
+    () => buildSelfPickChoices(detected, members, participations),
+    [detected, members, participations],
+  );
+  const filteredSelfPick = useMemo(
+    () => filterSelfPickChoices(selfPickChoices, selfPickQuery),
+    [selfPickChoices, selfPickQuery],
+  );
+
+  // カードの役割選択ハイライト用に、memberId → 既存 participation を引く。
+  const participationByMemberId = useMemo(() => {
+    const map = new Map<string, ParticipationDTO>();
+    for (const p of participations) map.set(p.memberId, p);
+    return map;
+  }, [participations]);
+
   const driverParticipations = useMemo(
     () => participations.filter((p) => p.role === "driver"),
     [participations],
@@ -177,10 +278,12 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   );
 
   // R7: メンバー選択が変わったら乗車エリア入力を本人の現在値にプリフィルする。
+  // major1: チップ非該当の既存値ならテキスト入力（その他）を開いた状態で開始する。
   useEffect(() => {
     const m = memberById.get(form.memberId);
     const name = m?.homeNodeId ? (nodeById.get(m.homeNodeId)?.name ?? "") : "";
     setHomeAreaInput(name);
+    setAreaOtherOpen(false);
   }, [form.memberId, memberById, nodeById]);
 
   // R6: 配車計画プレースホルダのサマリ（運転手1+ かつ 同乗1+ で表示）。
@@ -201,7 +304,6 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
       ]);
       setClub(clubRes.club);
       setEvent(detailRes.event);
-      setRoutes(detailRes.routes);
       setParticipations(detailRes.participations);
       setMembers(membersRes.members);
       setNodes(nodesRes.nodes);
@@ -236,19 +338,6 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, eventId]);
-
-  // actor が確定したら、その人の既定値をフォームに反映（初回のみ）。
-  useEffect(() => {
-    if (!ready || !actorMember) return;
-    if (!form.memberId) {
-      setForm((f) => ({
-        ...f,
-        memberId: actorMember.id,
-        role: actorMember.hasCar ? "driver" : "rider",
-      }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, actorMember]);
 
   // 指摘3: 検出結果からメンバーのクラスを引く（自分が検出されていれば class をプリフィル）。
   const detectedClassFor = (memberId: string): string => {
@@ -305,9 +394,14 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   };
 
   const scrollToForm = () => {
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    if (typeof window === "undefined") return;
+    // major3: 編集フォームは下方の「詳細を編集」セクション内。展開アニメ後に位置が確定するため
+    // 次フレームでアンカーへスクロールする（無ければ先頭へフォールバック）。
+    requestAnimationFrame(() => {
+      const el = document.getElementById("edit-section");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      else window.scrollTo({ top: 0, behavior: "smooth" });
+    });
   };
 
   const togglePickup = (nodeId: string) => {
@@ -337,14 +431,12 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!actorName) {
-      setShowActorModal(true);
-      return;
-    }
     if (!form.memberId) {
       setFormError("メンバーを選択してください");
       return;
     }
+    // 調整さんモデル: 編集対象メンバーの displayName を actorName に使う。
+    const actorName = memberName(form.memberId);
     // R4: 同乗者（乗る車が決まっている）は確約相手（運転手）の選択が必須。
     if (form.role === "passenger" && !form.fixedDriverMemberId) {
       setFormError("乗る車（運転手）を選択してください");
@@ -444,9 +536,6 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     }
   };
 
-  const memberName = (id: string | null): string =>
-    id ? (memberById.get(id)?.displayName ?? "不明") : "—";
-
   // 既に参加行がある member（検出パネルから除外する）。
   const participatedMemberIds = useMemo(
     () => new Set(participations.map((p) => p.memberId)),
@@ -483,16 +572,14 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
 
   // 削除（誤検出・キャンセル用）。?memberId=&actorName= で DELETE。
   const deleteParticipation = async (memberId: string) => {
-    if (!actorName) {
-      setShowActorModal(true);
-      return;
-    }
     if (typeof window !== "undefined") {
       const ok = window.confirm(
         `${memberName(memberId)} の参加情報を削除しますか？`,
       );
       if (!ok) return;
     }
+    // 調整さんモデル: 削除対象メンバーの displayName を actorName に使う。
+    const actorName = memberName(memberId);
     try {
       const qs = `memberId=${encodeURIComponent(memberId)}&actorName=${encodeURIComponent(actorName)}`;
       const res = await fetch(
@@ -518,11 +605,9 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
 
   // 選択した検出行をまとめて bulk 登録。
   const submitBulk = async () => {
-    if (!actorName) {
-      setShowActorModal(true);
-      return;
-    }
     if (selectedKeys.length === 0) return;
+    // 調整さんモデル: 一括登録は複数メンバーをまたぐためメンバー文脈がない → "guest"。
+    const actorName = "guest";
     setBulkSaving(true);
     setBulkError(null);
 
@@ -590,14 +675,12 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     i: number,
     role: QuickRole,
     seatsInput?: string,
+    fixedDriverMemberId?: string,
   ) => {
-    if (!actorName) {
-      setShowActorModal(true);
-      return;
-    }
     const key = detKey(d, i);
     setQuickSavingKey(key);
     setSeatsAskKey(null);
+    setDriverAskKey(null);
     setBulkError(null);
     try {
       const plan = planQuickRegister(
@@ -609,9 +692,15 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
           displayNameInput: nameInputs[key] ?? null,
           // R5: 運転手登録時の同乗可能人数（最小ステップの入力。未入力なら付与しない）。
           seatsInput: seatsInput ?? null,
+          // B: 同乗者登録時の確約運転手 member id（最小ステップで選択）。
+          fixedDriverMemberId: fixedDriverMemberId ?? null,
         },
         role,
       );
+
+      // 調整さんモデル: 登録される本人の displayName を actorName に使う
+      // （新規作成なら memberBody.displayName、既存メンバーなら memberName）。
+      const actorName = plan.memberBody?.displayName ?? memberName(d.memberId);
 
       let memberId = d.memberId;
       let displayName = d.memberId ? memberName(d.memberId) : "";
@@ -630,10 +719,20 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
         role: plan.role,
         className: plan.className,
         entrySource: "auto",
+        // B: passenger のみ確約運転手を付帯（driver/rider では plan.fixedDriverMemberId は undefined）。
+        ...(plan.fixedDriverMemberId !== undefined
+          ? { fixedDriverMemberId: plan.fixedDriverMemberId }
+          : {}),
       });
 
       toast(
-        `${displayName} さんを${role === "driver" ? "運転手" : "同乗希望"}で登録しました`,
+        `${displayName} さんを${
+          role === "driver"
+            ? "運転手"
+            : role === "passenger"
+              ? "同乗者"
+              : "同乗希望"
+        }で登録しました`,
         "success",
       );
       // 行 index ベースの選択キーが再読込でずれるため、選択状態はリセットする。
@@ -647,84 +746,135 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     }
   };
 
+  // blocker: 「あなたはどれ？」カードからの自己登録（≤4タップ・テキスト入力ゼロ）。
+  // choice.memberId が null（未登録検出）は planQuickRegister 機構を再利用して member 作成込みで登録。
+  // member 確定済みは participation を upsert（POST = upsert なので新規/更新を分岐しない）。
+  // 役割変更の actorName は対象本人の displayName を使う（調整さんモデル）。
+  const registerFromCard = async (
+    choice: SelfPickChoice,
+    role: FormRole,
+    fixedDriverMemberId?: string,
+  ) => {
+    if (selfPickSaving) return;
+    setSelfPickSaving(true);
+    try {
+      const roleLabel = SELF_PICK_ROLE_TOAST[role];
+
+      if (choice.memberId === null) {
+        // 未登録検出 → member 作成込み。
+        const det = choice.detected;
+        const nameKey = det?.nameKey ?? "";
+        const className = det?.className ?? null;
+        const rawName = det?.rawName ?? choice.displayName;
+
+        if (role === "driver" || role === "rider" || role === "passenger") {
+          // planQuickRegister を再利用（driver は seats を聞かない＝ゼロ入力）。
+          const quickRole: QuickRole =
+            role === "passenger" ? "passenger" : role === "driver" ? "driver" : "rider";
+          const plan = planQuickRegister(
+            {
+              memberId: null,
+              nameKey,
+              rawName,
+              className,
+              displayNameInput: choice.displayName,
+              seatsInput: null,
+              fixedDriverMemberId: fixedDriverMemberId ?? null,
+            },
+            quickRole,
+          );
+          const actorName = plan.memberBody?.displayName ?? choice.displayName;
+          let memberId = "";
+          if (plan.memberBody) {
+            const created = await postCarpool<{ member: MemberDTO }>(
+              `/clubs/${slug}/members`,
+              { actorName, ...plan.memberBody },
+            );
+            memberId = created.member.id;
+          }
+          await postCarpool(`/clubs/${slug}/events/${eventId}/participations`, {
+            actorName,
+            memberId,
+            role: plan.role,
+            className: plan.className,
+            entrySource: "auto",
+            ...(plan.fixedDriverMemberId !== undefined
+              ? { fixedDriverMemberId: plan.fixedDriverMemberId }
+              : { fixedDriverMemberId: null }),
+          });
+        } else {
+          // self / absent: 車なしで member 作成 → participation role=self/absent。
+          const actorName = choice.displayName;
+          const created = await postCarpool<{ member: MemberDTO }>(
+            `/clubs/${slug}/members`,
+            { actorName, displayName: choice.displayName, athleteKey: nameKey, hasCar: false },
+          );
+          await postCarpool(`/clubs/${slug}/events/${eventId}/participations`, {
+            actorName,
+            memberId: created.member.id,
+            role: toApiRole(role),
+            className,
+            entrySource: "auto",
+            fixedDriverMemberId: null,
+          });
+        }
+      } else {
+        // member 確定済み → participation upsert（POST=upsert）。
+        const memberId = choice.memberId;
+        const actorName = memberName(memberId);
+        const className = choice.detected?.className ?? null;
+        await postCarpool(`/clubs/${slug}/events/${eventId}/participations`, {
+          actorName,
+          memberId,
+          role: toApiRole(role),
+          className,
+          entrySource: "manual",
+          // passenger のみ確約運転手を付帯。それ以外は明示 null でクリア。
+          fixedDriverMemberId:
+            role === "passenger" ? (fixedDriverMemberId ?? null) : null,
+        });
+      }
+
+      toast(`${choice.displayName} さんを${roleLabel}で登録しました`, "success");
+      // 端末に「自分」を保存しない（調整さんモデル）。展開を畳んで再読込。
+      setSelfPickKey(null);
+      setSelfPickDriver("");
+      await load();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "登録に失敗しました", "error");
+    } finally {
+      setSelfPickSaving(false);
+    }
+  };
+
   // M4: 登録状況一覧の行タップ → その人をフォームへ読込（代理編集の導線）。
+  // major3: 「詳細を編集」セクションを自動展開してからスクロールする。
   const editParticipant = (memberId: string) => {
     loadParticipationIntoForm(memberId);
+    setShowEdit(true);
     scrollToForm();
   };
 
-  // 「次にやること」バナーの内容。
-  const myParticipation = useMemo(
-    () =>
-      actorMemberId
-        ? participations.find((p) => p.memberId === actorMemberId) ?? null
-        : null,
-    [participations, actorMemberId],
+  // 調整さんモデル: 「次にやること」は個人ではなく大会全体の状況案内に簡素化する。
+  // 未回答（役割未設定）人数と未登録の検出者数を出し、誰でも対応できることを示す。
+  const undecidedCount = useMemo(
+    () => participations.filter((p) => p.role === "undecided").length,
+    [participations],
   );
 
-  const banner = useMemo(() => {
-    if (ready && !actorMemberId) {
-      return {
-        text: "まず自分を登録してください",
-        label: "自分を登録",
-        action: () => setShowActorModal(true),
-      };
-    }
-    if (!actorMember) return null;
-    if (!myParticipation) {
-      return {
-        text: "あなたの参加がまだ登録されていません",
-        label: "参加を登録する",
-        action: () => {
-          loadParticipationIntoForm(actorMember.id);
-          scrollToForm();
-        },
-      };
-    }
-    if (myParticipation.role === "undecided") {
-      return {
-        text: "あなたの役割が未回答です",
-        label: "役割を答える",
-        action: () => {
-          loadParticipationIntoForm(actorMember.id);
-          scrollToForm();
-        },
-      };
-    }
-    return {
-      text: "あなたの参加は登録済みです",
-      label: "内容を確認・変更",
-      action: () => {
-        loadParticipationIntoForm(actorMember.id);
-        scrollToForm();
-      },
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, actorMemberId, actorMember, myParticipation, participations]);
-
-  // 「次にやること」バナー（M2: actor 未設定時は最上段に固定表示するため共通化）。
-  const bannerEl = banner ? (
-    <section className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-primary/40 bg-primary/10 p-4">
-      <p className="min-w-0 text-sm text-foreground">{banner.text}</p>
-      <button
-        type="button"
-        onClick={banner.action}
-        className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark"
-      >
-        {banner.label}
-      </button>
-    </section>
-  ) : null;
+  const bannerEl =
+    undecidedCount > 0 ? (
+      <section className="mb-4 rounded-xl border border-primary/40 bg-primary/10 p-4">
+        <p className="text-sm text-foreground">
+          役割が未回答の人が {undecidedCount} 人います。下の一覧から名前をタップして役割を設定できます。
+        </p>
+      </section>
+    ) : null;
 
   return (
     <div className="min-h-screen">
       {toastEl}
-      <CarpoolHeader
-        clubName={club?.name ?? slug}
-        slug={slug}
-        actorName={actorName}
-        onActorChange={() => setShowActorModal(true)}
-      />
+      <CarpoolHeader clubName={club?.name ?? slug} slug={slug} />
 
       <main className="mx-auto max-w-2xl px-4 py-6">
         {loading && <p className="text-sm text-muted">読み込み中…</p>}
@@ -732,285 +882,488 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
 
         {!loading && !error && event && (
           <>
-            {/* M2: actor 未設定（直リンク流入）の間はバナーをヘッダ直下の最上段に固定。 */}
-            {actorLocked && bannerEl}
-
-            {/* イベント情報カード */}
-            <section className="mb-4 rounded-xl border border-border bg-card p-4">
-              <div className="mb-1 flex items-start justify-between gap-2">
-                <h1 className="text-lg font-bold text-foreground">{event.name}</h1>
+            {/* ① イベント情報（major3: 1〜2行のコンパクトヘッダー） */}
+            <section className="mb-4 rounded-xl border border-border bg-card px-4 py-3">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <h1 className="text-base font-bold text-foreground">{event.name}</h1>
                 <span
                   className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-medium ${STATUS_CLASS[event.status]}`}
                 >
                   {STATUS_LABEL[event.status]}
                 </span>
               </div>
-              <p className="text-sm text-muted">{formatEventDate(event.eventDate)}</p>
-              {venueNode && (
-                <p className="mt-1 text-sm text-foreground">会場: {venueNode.name}</p>
-              )}
-              {event.bulletinUrl && (
-                <a
-                  href={event.bulletinUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-1 inline-block text-sm text-accent hover:underline"
-                >
-                  要綱を開く
-                </a>
-              )}
-              {routes.length > 0 && (
-                <p className="mt-1 text-xs text-muted">登録ルート: {routes.length} 件</p>
-              )}
-            </section>
-
-            {/* 「次にやること」バナー（actor 設定済みのときは従来位置） */}
-            {!actorLocked && bannerEl}
-
-            {/* スタートリスト取込（発行書類 / URL / テキスト → 参加へ反映） */}
-            <div className="mb-4">
-              <StartlistImport
-                slug={slug}
-                eventId={eventId}
-                actorName={actorName}
-                members={members}
-                onApplied={() => void load()}
-              />
-            </div>
-
-            {/* エントリー検出（一括登録） */}
-            {/* m3: joeEventId の無い手動作成イベントは「JOY 連携なし」案内に出し分け（検出0件と区別）。 */}
-            {event.joeEventId === null ? (
-              <section className="mb-4 rounded-xl border border-border bg-card p-4">
-                <p className="text-sm text-muted">
-                  この大会は JOY 連携がないため自動検出は使えません。下のフォームから手動で参加登録してください。
-                </p>
-              </section>
-            ) : detectError ? (
-              <section className="mb-4 rounded-xl border border-red-500/40 bg-card p-4">
-                <p className="text-sm text-red-400">
-                  エントリー検出の取得に失敗しました: {detectError}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void loadDetect()}
-                  disabled={detectLoading}
-                  className="mt-2 rounded-lg bg-white/10 px-4 py-2 text-xs text-foreground hover:bg-white/15 disabled:opacity-50"
-                >
-                  {detectLoading ? "再取得中…" : "再試行"}
-                </button>
-              </section>
-            ) : pendingDetected.length === 0 ? (
-              <section className="mb-4 rounded-xl border border-border bg-card p-4">
-                <p className="text-sm text-muted">
-                  JOY エントリーからの未登録者はありません。
-                </p>
-              </section>
-            ) : (
-              <section className="mb-4 rounded-xl border border-border bg-card p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowDetect((s) => !s)}
-                    className="flex min-w-0 items-center gap-2 text-left"
-                  >
-                    <span className="text-sm font-semibold text-foreground">
-                      JOY エントリーで {pendingDetected.length} 名（未登録）
-                    </span>
-                    <span className="text-xs text-muted">
-                      {showDetect ? "閉じる" : "開く"}
-                    </span>
-                  </button>
-                  {showDetect && (
-                    <button
-                      type="button"
-                      onClick={toggleSelectAll}
-                      className="shrink-0 rounded-lg bg-white/10 px-3 py-1.5 text-xs text-foreground hover:bg-white/15"
-                    >
-                      {allSelected ? "全解除" : "全選択"}
-                    </button>
-                  )}
-                </div>
-
-                {showDetect && (
+              <p className="mt-0.5 text-xs text-muted">
+                {formatEventDate(event.eventDate)}
+                {venueNode ? ` ・ ${venueNode.name}` : ""}
+                {event.bulletinUrl && (
                   <>
-                    <ul className="mt-3 flex flex-col gap-2">
-                      {pendingDetected.map((d, i) => {
-                        const key = detKey(d, i);
-                        const checked = !!selectedDet[key];
-                        const isUnregistered = !d.memberId;
-                        return (
-                          <li key={key} className="rounded-lg bg-surface p-3">
-                            <label className="flex items-start gap-2">
-                              <input
-                                type="checkbox"
-                                className="mt-1"
-                                checked={checked}
-                                onChange={(e) =>
-                                  setSelectedDet((s) => ({
-                                    ...s,
-                                    [key]: e.target.checked,
-                                  }))
-                                }
-                              />
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm text-foreground">
-                                  {d.memberId
-                                    ? memberName(d.memberId)
-                                    : (d.rawName ?? d.nameKey)}
-                                  <span className="ml-2 text-xs text-muted">
-                                    {d.className}
-                                  </span>
-                                </p>
-                                <p className="truncate text-xs text-muted">
-                                  {d.affiliation}
-                                  {d.matchedClubName ? ` → ${d.matchedClubName}` : ""}
-                                  {isUnregistered && (
-                                    <span className="ml-2 text-[10px]">新規登録</span>
-                                  )}
-                                </p>
-                              </div>
-                            </label>
-
-                            {/* 未登録行を選択したら、名前確認（姓 名）入力欄を出す */}
-                            {isUnregistered && checked && (
-                              <div className="mt-2 pl-6">
-                                <label className="mb-1 block text-[10px] text-muted">
-                                  登録名（姓と名の間にスペースを入れられます）
-                                </label>
-                                <input
-                                  className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground"
-                                  value={nameInputs[key] ?? d.rawName ?? d.nameKey}
-                                  onChange={(e) =>
-                                    setNameInputs((s) => ({
-                                      ...s,
-                                      [key]: e.target.value,
-                                    }))
-                                  }
-                                  maxLength={40}
-                                />
-                              </div>
-                            )}
-
-                            {/* M4: 行単位クイック登録（本人以外の代理操作。未登録は member 作成込み） */}
-                            <div className="mt-2 flex gap-2 pl-6">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  // R5: 未登録メンバーは同乗可能人数を聞く最小ステップを挟む。
-                                  if (isUnregistered) {
-                                    setSeatsAskKey((k) => (k === key ? null : key));
-                                    setSeatsAskValue("");
-                                  } else {
-                                    void quickRegister(d, i, "driver");
-                                  }
-                                }}
-                                disabled={quickSavingKey !== null || bulkSaving}
-                                className="rounded bg-white/10 px-2 py-1 text-[10px] text-foreground hover:bg-white/15 disabled:opacity-50"
-                              >
-                                {quickSavingKey === key ? "登録中…" : "運転手として登録"}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void quickRegister(d, i, "rider")}
-                                disabled={quickSavingKey !== null || bulkSaving}
-                                className="rounded bg-white/10 px-2 py-1 text-[10px] text-foreground hover:bg-white/15 disabled:opacity-50"
-                              >
-                                {quickSavingKey === key ? "登録中…" : "同乗希望として登録"}
-                              </button>
-                            </div>
-
-                            {/* R5: 運転手クイック登録の最小ステップ（同乗可能人数） */}
-                            {seatsAskKey === key && (
-                              <div className="mt-2 flex items-end gap-2 pl-6">
-                                <div className="min-w-0">
-                                  <label className="mb-1 block text-[10px] text-muted">
-                                    自分以外にあと何人乗せられますか？（空欄可）
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    max={20}
-                                    className="w-24 rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground"
-                                    value={seatsAskValue}
-                                    onChange={(e) => setSeatsAskValue(e.target.value)}
-                                  />
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => void quickRegister(d, i, "driver", seatsAskValue)}
-                                  disabled={quickSavingKey !== null || bulkSaving}
-                                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark disabled:opacity-50"
-                                >
-                                  運転手で登録
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setSeatsAskKey(null)}
-                                  className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-foreground hover:bg-white/15"
-                                >
-                                  キャンセル
-                                </button>
-                              </div>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-
-                    {bulkError && (
-                      <p className="mt-2 text-sm text-red-400">{bulkError}</p>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => void submitBulk()}
-                      disabled={bulkSaving || selectedKeys.length === 0}
-                      className="mt-3 w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                    {" ・ "}
+                    <a
+                      href={event.bulletinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent hover:underline"
                     >
-                      {bulkSaving
-                        ? "登録中…"
-                        : `選択した ${selectedKeys.length} 人をまとめて参加登録`}
-                    </button>
+                      要綱
+                    </a>
                   </>
                 )}
-              </section>
-            )}
+              </p>
+            </section>
 
-            {/* 参加登録フォーム（M2: actor 確定までロック / M4: 対象者名を見出しに明示） */}
-            <form
-              onSubmit={submit}
-              className="mb-6 flex flex-col gap-4 rounded-xl border border-border bg-card p-4"
-            >
-              <h2 className="text-sm font-semibold text-foreground">
-                {form.memberId
-                  ? `${memberName(form.memberId)} さんの参加を登録`
-                  : "参加登録"}
-              </h2>
-              {/* M4: 自分以外を編集中であることの明示（性善説の代理操作。記録は操作者名で残る）。 */}
-              {form.memberId && actorMemberId && form.memberId !== actorMemberId && (
-                <p className="-mt-2 text-[10px] text-amber-400/90">
-                  あなた（{memberName(actorMemberId)}）が本人に代わって入力しています。変更の記録には操作者としてあなたの名前が残ります。
-                </p>
-              )}
+            {/* ② あなたはどれ？カード（最上部の唯一のプライマリ CTA） */}
+            <SelfPickCard
+              choices={filteredSelfPick}
+              totalCount={selfPickChoices.length}
+              query={selfPickQuery}
+              onQueryChange={setSelfPickQuery}
+              expandedKey={selfPickKey}
+              onToggleExpand={(key) => {
+                setSelfPickKey((k) => (k === key ? null : key));
+                setSelfPickDriver("");
+              }}
+              saving={selfPickSaving}
+              driverParticipations={driverParticipations}
+              memberName={memberName}
+              participationByMemberId={participationByMemberId}
+              driverSelectValue={selfPickDriver}
+              onDriverSelectChange={setSelfPickDriver}
+              onRegister={(choice, role, fixedDriver) =>
+                void registerFromCard(choice, role, fixedDriver)
+              }
+              onAddMember={() => setShowAddMember(true)}
+            />
 
-              {actorLocked && (
+            {/* 大会全体の状況案内バナー（major3: 上部だが視覚的に副次） */}
+            {bannerEl}
+
+            {/* ③ 参加者（検出者＋登録者を統合した1つの一覧。1カード・サブヘッダ区切り＝全体ビュー） */}
+            <section className="rounded-xl border border-border bg-card p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-foreground">
+                  参加者（{participations.length}）
+                </h2>
+                {/* 行を追加: 新しいメンバーを作成してそのままフォームに読み込む。 */}
                 <button
                   type="button"
-                  onClick={() => setShowActorModal(true)}
-                  className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-left text-sm text-foreground hover:bg-primary/20"
+                  onClick={() => setShowAddMember(true)}
+                  className="shrink-0 rounded-lg bg-white/10 px-3 py-1.5 text-xs text-foreground hover:bg-white/15"
                 >
-                  まず自分を登録してください（タップで登録）
+                  ＋行を追加（新メンバー）
                 </button>
-              )}
+              </div>
 
-              <fieldset
-                disabled={actorLocked}
-                className={cn(
-                  "flex flex-col gap-4",
-                  actorLocked && "pointer-events-none select-none opacity-50",
+              <div className="flex flex-col gap-4">
+                {/* 未登録（JOY検出）サブグループ。同一リスト内の先頭に置く（FEATURE B 完全保持）。 */}
+                {/* m3: joeEventId の無い手動作成イベントは「JOY 連携なし」案内に出し分け（検出0件と区別）。 */}
+                {event.joeEventId === null ? null : detectError ? (
+                  <div className="rounded-lg border border-red-500/40 bg-surface p-3">
+                    <p className="text-sm text-red-400">
+                      エントリー検出の取得に失敗しました: {detectError}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void loadDetect()}
+                      disabled={detectLoading}
+                      className="mt-2 rounded-lg bg-white/10 px-4 py-2 text-xs text-foreground hover:bg-white/15 disabled:opacity-50"
+                    >
+                      {detectLoading ? "再取得中…" : "再試行"}
+                    </button>
+                  </div>
+                ) : pendingDetected.length === 0 ? null : (
+                  <div>
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowDetect((s) => !s)}
+                        className="flex min-w-0 items-center gap-2 text-left"
+                      >
+                        <span className="text-xs font-semibold text-muted">
+                          未登録（JOY検出）（{pendingDetected.length}）
+                        </span>
+                        <span className="text-[10px] text-muted">
+                          {showDetect ? "閉じる" : "開く"}
+                        </span>
+                      </button>
+                      {showDetect && (
+                        <button
+                          type="button"
+                          onClick={toggleSelectAll}
+                          className="shrink-0 rounded-lg bg-white/10 px-3 py-1 text-[10px] text-foreground hover:bg-white/15"
+                        >
+                          {allSelected ? "全解除" : "全選択"}
+                        </button>
+                      )}
+                    </div>
+
+                    {showDetect && (
+                      <>
+                        <ul className="flex flex-col gap-2">
+                          {pendingDetected.map((d, i) => {
+                            const key = detKey(d, i);
+                            const checked = !!selectedDet[key];
+                            const isUnregistered = !d.memberId;
+                            return (
+                              <li key={key} className="rounded-lg bg-surface p-3">
+                                <label className="flex items-start gap-2">
+                                  <input
+                                    type="checkbox"
+                                    className="mt-1"
+                                    checked={checked}
+                                    onChange={(e) =>
+                                      setSelectedDet((s) => ({
+                                        ...s,
+                                        [key]: e.target.checked,
+                                      }))
+                                    }
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm text-foreground">
+                                      {d.memberId
+                                        ? memberName(d.memberId)
+                                        : (d.rawName ?? d.nameKey)}
+                                      {d.className && (
+                                        <span className="ml-2 text-xs text-muted">
+                                          {d.className}
+                                        </span>
+                                      )}
+                                      {isUnregistered && (
+                                        <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-muted">
+                                          未登録
+                                        </span>
+                                      )}
+                                    </p>
+                                    <p className="truncate text-xs text-muted">
+                                      {d.affiliation}
+                                      {d.matchedClubName ? ` → ${d.matchedClubName}` : ""}
+                                      {isUnregistered && (
+                                        <span className="ml-2 text-[10px]">新規登録</span>
+                                      )}
+                                    </p>
+                                  </div>
+                                </label>
+
+                                {/* 未登録行を選択したら、名前確認（姓 名）入力欄を出す */}
+                                {isUnregistered && checked && (
+                                  <div className="mt-2 pl-6">
+                                    <label className="mb-1 block text-[10px] text-muted">
+                                      登録名（姓と名の間にスペースを入れられます）
+                                    </label>
+                                    <input
+                                      className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+                                      value={nameInputs[key] ?? d.rawName ?? d.nameKey}
+                                      onChange={(e) =>
+                                        setNameInputs((s) => ({
+                                          ...s,
+                                          [key]: e.target.value,
+                                        }))
+                                      }
+                                      maxLength={40}
+                                    />
+                                  </div>
+                                )}
+
+                                {/* M4: 行単位クイック登録（本人以外の代理操作。未登録は member 作成込み） */}
+                                <div className="mt-2 flex flex-wrap gap-2 pl-6">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      // R5: 未登録メンバーは同乗可能人数を聞く最小ステップを挟む。
+                                      // B: 同乗者の最小ステップが開いていたら閉じる（同時に1つだけ開く）。
+                                      setDriverAskKey(null);
+                                      if (isUnregistered) {
+                                        setSeatsAskKey((k) => (k === key ? null : key));
+                                        setSeatsAskValue("");
+                                      } else {
+                                        void quickRegister(d, i, "driver");
+                                      }
+                                    }}
+                                    disabled={quickSavingKey !== null || bulkSaving}
+                                    className="rounded bg-white/10 px-2 py-1 text-[10px] text-foreground hover:bg-white/15 disabled:opacity-50"
+                                  >
+                                    {quickSavingKey === key ? "登録中…" : "運転手として登録"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => void quickRegister(d, i, "rider")}
+                                    disabled={quickSavingKey !== null || bulkSaving}
+                                    className="rounded bg-white/10 px-2 py-1 text-[10px] text-foreground hover:bg-white/15 disabled:opacity-50"
+                                  >
+                                    {quickSavingKey === key ? "登録中…" : "同乗希望として登録"}
+                                  </button>
+                                  {/* B: 同乗者（乗る車が決まっている）。運転手を選ぶ最小ステップを開く。 */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      // B: 運転手の最小ステップ（同乗可能人数）が開いていたら閉じる（同時に1つだけ）。
+                                      setSeatsAskKey(null);
+                                      setDriverAskKey((k) => (k === key ? null : key));
+                                      setDriverAskValue("");
+                                    }}
+                                    disabled={quickSavingKey !== null || bulkSaving}
+                                    className="rounded bg-white/10 px-2 py-1 text-[10px] text-foreground hover:bg-white/15 disabled:opacity-50"
+                                  >
+                                    {quickSavingKey === key ? "登録中…" : "同乗者として登録"}
+                                  </button>
+                                </div>
+
+                                {/* R5: 運転手クイック登録の最小ステップ（同乗可能人数） */}
+                                {seatsAskKey === key && (
+                                  <div className="mt-2 flex items-end gap-2 pl-6">
+                                    <div className="min-w-0">
+                                      <label className="mb-1 block text-[10px] text-muted">
+                                        自分以外にあと何人乗せられますか？（空欄可）
+                                      </label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        max={20}
+                                        className="w-24 rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+                                        value={seatsAskValue}
+                                        onChange={(e) => setSeatsAskValue(e.target.value)}
+                                      />
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => void quickRegister(d, i, "driver", seatsAskValue)}
+                                      disabled={quickSavingKey !== null || bulkSaving}
+                                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                                    >
+                                      運転手で登録
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setSeatsAskKey(null)}
+                                      className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-foreground hover:bg-white/15"
+                                    >
+                                      キャンセル
+                                    </button>
+                                  </div>
+                                )}
+
+                                {/* B: 同乗者クイック登録の最小ステップ（乗る車＝運転手を選択） */}
+                                {driverAskKey === key && (
+                                  <div className="mt-2 flex items-end gap-2 pl-6">
+                                    <div className="min-w-0 flex-1">
+                                      <label className="mb-1 block text-[10px] text-muted">
+                                        乗る車（運転手）を選択
+                                      </label>
+                                      <select
+                                        className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground disabled:opacity-50"
+                                        value={driverAskValue}
+                                        onChange={(e) => setDriverAskValue(e.target.value)}
+                                        disabled={driverParticipations.length === 0}
+                                      >
+                                        <option value="">選択してください</option>
+                                        {driverParticipations.map((p) => (
+                                          <option key={p.memberId} value={p.memberId}>
+                                            {memberName(p.memberId)}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      {driverParticipations.length === 0 && (
+                                        <p className="mt-1 text-[10px] text-muted">
+                                          先に運転手を登録してください
+                                        </p>
+                                      )}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        void quickRegister(
+                                          d,
+                                          i,
+                                          "passenger",
+                                          undefined,
+                                          driverAskValue,
+                                        )
+                                      }
+                                      disabled={
+                                        quickSavingKey !== null ||
+                                        bulkSaving ||
+                                        !driverAskValue
+                                      }
+                                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                                    >
+                                      同乗者で登録
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setDriverAskKey(null)}
+                                      className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-foreground hover:bg-white/15"
+                                    >
+                                      キャンセル
+                                    </button>
+                                  </div>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+
+                        {bulkError && (
+                          <p className="mt-2 text-sm text-red-400">{bulkError}</p>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => void submitBulk()}
+                          disabled={bulkSaving || selectedKeys.length === 0}
+                          className="mt-3 w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                        >
+                          {bulkSaving
+                            ? "登録中…"
+                            : `選択した ${selectedKeys.length} 人をまとめて参加登録`}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 )}
+
+                {/* 登録済みの参加者（役割グループをサブヘッダとして同一カード内に表示） */}
+                <StatusGroup
+                  title="運転手"
+                  items={participations.filter((p) => p.role === "driver")}
+                  onDelete={deleteParticipation}
+                  onEdit={editParticipant}
+                  render={(p) => {
+                    const m = memberById.get(p.memberId);
+                    const seats = p.capacityOverrideSeats ?? m?.seatsAvailable ?? null;
+                    return (
+                      <span>
+                        {memberName(p.memberId)}
+                        {p.className && (
+                          <span className="ml-2 text-xs text-accent">{p.className}</span>
+                        )}
+                        <span className="ml-2 text-xs text-muted">
+                          {seats !== null ? `+${seats}名` : "定員未設定"}
+                          {p.willingness === "always"
+                            ? " ・必ず"
+                            : p.willingness === "if_needed"
+                              ? " ・必要なら"
+                              : ""}
+                        </span>
+                      </span>
+                    );
+                  }}
+                />
+                {/* R4: 同乗者（確約あり）と同乗希望（確約なし）を別グループ表示 */}
+                <StatusGroup
+                  title="同乗者（乗る車が決まっている）"
+                  items={participations.filter(
+                    (p) => p.role === "rider" && p.fixedDriverMemberId,
+                  )}
+                  onDelete={deleteParticipation}
+                  onEdit={editParticipant}
+                  render={(p) => (
+                    <span>
+                      {memberName(p.memberId)}
+                      {p.className && (
+                        <span className="ml-2 text-xs text-accent">{p.className}</span>
+                      )}
+                      <span className="ml-2 text-xs text-accent">
+                        → {memberName(p.fixedDriverMemberId)} の車
+                      </span>
+                      {/* M5: 確約先が現在 driver でない（役割変更等の事後不整合）場合の警告 */}
+                      {p.fixedDriverMemberId &&
+                        !currentDriverIds.has(p.fixedDriverMemberId) && (
+                          <span className="ml-2 text-xs text-red-400">
+                            ⚠ 確約先が運転手ではありません
+                          </span>
+                        )}
+                    </span>
+                  )}
+                />
+                <StatusGroup
+                  title="同乗希望"
+                  items={participations.filter(
+                    (p) => p.role === "rider" && !p.fixedDriverMemberId,
+                  )}
+                  onDelete={deleteParticipation}
+                  onEdit={editParticipant}
+                  render={(p) => (
+                    <span>
+                      {memberName(p.memberId)}
+                      {p.className && (
+                        <span className="ml-2 text-xs text-accent">{p.className}</span>
+                      )}
+                    </span>
+                  )}
+                />
+                <StatusGroup
+                  title="自力で行く"
+                  compact
+                  items={participations.filter((p) => p.role === "self")}
+                  onDelete={deleteParticipation}
+                  onEdit={editParticipant}
+                  render={(p) => <span>{memberName(p.memberId)}</span>}
+                />
+                <StatusGroup
+                  title="不参加"
+                  compact
+                  items={participations.filter((p) => p.role === "absent")}
+                  onDelete={deleteParticipation}
+                  onEdit={editParticipant}
+                  render={(p) => <span>{memberName(p.memberId)}</span>}
+                />
+                <StatusGroup
+                  title="回答待ち"
+                  compact
+                  muted
+                  items={participations.filter((p) => p.role === "undecided")}
+                  onDelete={deleteParticipation}
+                  onEdit={editParticipant}
+                  editLabel="役割を設定"
+                  render={(p) => (
+                    <span>
+                      {memberName(p.memberId)}
+                      {p.className && (
+                        <span className="ml-2 text-xs text-accent">{p.className}</span>
+                      )}
+                    </span>
+                  )}
+                />
+
+                {/* 統合一覧が空（登録者も検出未登録者もいない）の場合の案内 */}
+                {participations.length === 0 &&
+                  (event.joeEventId === null || pendingDetected.length === 0) && (
+                    <p className="text-sm text-muted">
+                      {event.joeEventId === null
+                        ? "まだ参加者がいません。上のフォームから登録してください。"
+                        : "まだ参加者がいません。JOY エントリーからの未登録者もありません。"}
+                    </p>
+                  )}
+              </div>
+            </section>
+
+            {/* ④ 詳細を編集（major3: 既定は閉じる。行タップ/行追加で自動展開） */}
+            <section id="edit-section" className="mb-6 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowEdit((s) => !s)}
+                className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-left"
+                aria-expanded={showEdit}
               >
+                <span className="text-sm font-semibold text-foreground">
+                  詳細を編集（座席数・出発時刻・拾える場所など）
+                </span>
+                <span className="text-xs text-muted">{showEdit ? "閉じる" : "開く"}</span>
+              </button>
+
+              {showEdit && (
+            <form
+              onSubmit={submit}
+              className="mt-3 flex flex-col gap-4 rounded-xl border border-border bg-card p-4"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-foreground">
+                  {form.memberId
+                    ? `${memberName(form.memberId)} さんの参加を登録`
+                    : "参加登録"}
+                </h2>
+              </div>
+
+              <div className="flex flex-col gap-4">
               <div>
                 <label className="mb-1 block text-xs text-muted">参加者</label>
                 <select
@@ -1053,9 +1406,6 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                     </button>
                   ))}
                 </div>
-                <p className="mt-1 text-[10px] text-muted">
-                  同乗者 = 乗る車が決まっている人 ／ 同乗希望 = 配車割り当てを待つ人
-                </p>
               </div>
 
               {/* R7: 乗車エリア（運転手・同乗者・同乗希望に必須。配車割当の起点） */}
@@ -1073,13 +1423,65 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                         乗車エリアが未設定です。設定しないと配車の割当ができません
                       </p>
                     )}
-                  <input
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-                    value={homeAreaInput}
-                    onChange={(e) => setHomeAreaInput(e.target.value)}
-                    placeholder="例: 八王子駅"
-                    maxLength={80}
-                  />
+
+                  {/* major1: 登録済みの場所（area / pickup ノード名）をチップで選ぶ。
+                      該当チップが無いときだけ「その他（入力）」でテキスト入力にフォールバックする。
+                      クラブに場所が 0 件（初期）ならチップを出さずテキスト入力のみ。 */}
+                  {areaChipNames.length > 0 && !areaOtherOpen ? (
+                    <div className="flex flex-wrap gap-2">
+                      {areaChipNames.map((name) => {
+                        const selected = homeAreaInput.trim() === name;
+                        return (
+                          <button
+                            key={name}
+                            type="button"
+                            onClick={() => setHomeAreaInput(name)}
+                            className={cn(
+                              "rounded-full px-3 py-1.5 text-xs",
+                              selected
+                                ? "bg-primary text-white"
+                                : "bg-background text-foreground hover:bg-white/10",
+                            )}
+                          >
+                            {name}
+                          </button>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAreaOtherOpen(true);
+                          // チップ該当値だった場合はクリアして入力を促す。
+                          if (areaChipNames.includes(homeAreaInput.trim())) {
+                            setHomeAreaInput("");
+                          }
+                        }}
+                        className="rounded-full border border-dashed border-border px-3 py-1.5 text-xs text-muted hover:text-foreground"
+                      >
+                        その他（入力）
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                        value={homeAreaInput}
+                        onChange={(e) => setHomeAreaInput(e.target.value)}
+                        placeholder="例: 八王子駅"
+                        maxLength={80}
+                      />
+                      {areaChipNames.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setAreaOtherOpen(false)}
+                          className="mt-1 text-[10px] text-accent hover:underline"
+                        >
+                          一覧から選ぶ
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   <p className="mt-1 text-[10px] text-muted">
                     {form.role === "driver"
                       ? "出発地として配車計算に使われます。"
@@ -1307,160 +1709,267 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
               >
                 {saving ? "登録中…" : "この内容で登録"}
               </button>
-              </fieldset>
+              </div>
             </form>
-
-            {/* 参加状況一覧 */}
-            <section className="flex flex-col gap-4">
-              <StatusGroup
-                title="運転手"
-                items={participations.filter((p) => p.role === "driver")}
-                onDelete={deleteParticipation}
-                onEdit={editParticipant}
-                render={(p) => {
-                  const m = memberById.get(p.memberId);
-                  const seats = p.capacityOverrideSeats ?? m?.seatsAvailable ?? null;
-                  return (
-                    <span>
-                      {memberName(p.memberId)}
-                      {p.className && (
-                        <span className="ml-2 text-xs text-accent">{p.className}</span>
-                      )}
-                      <span className="ml-2 text-xs text-muted">
-                        {seats !== null ? `+${seats}名` : "定員未設定"}
-                        {p.willingness === "always"
-                          ? " ・必ず"
-                          : p.willingness === "if_needed"
-                            ? " ・必要なら"
-                            : ""}
-                      </span>
-                    </span>
-                  );
-                }}
-              />
-              {/* R4: 同乗者（確約あり）と同乗希望（確約なし）を別グループ表示 */}
-              <StatusGroup
-                title="同乗者（乗る車が決まっている）"
-                items={participations.filter(
-                  (p) => p.role === "rider" && p.fixedDriverMemberId,
-                )}
-                onDelete={deleteParticipation}
-                onEdit={editParticipant}
-                render={(p) => (
-                  <span>
-                    {memberName(p.memberId)}
-                    {p.className && (
-                      <span className="ml-2 text-xs text-accent">{p.className}</span>
-                    )}
-                    <span className="ml-2 text-xs text-accent">
-                      → {memberName(p.fixedDriverMemberId)} の車
-                    </span>
-                    {/* M5: 確約先が現在 driver でない（役割変更等の事後不整合）場合の警告 */}
-                    {p.fixedDriverMemberId &&
-                      !currentDriverIds.has(p.fixedDriverMemberId) && (
-                        <span className="ml-2 text-xs text-red-400">
-                          ⚠ 確約先が運転手ではありません
-                        </span>
-                      )}
-                  </span>
-                )}
-              />
-              <StatusGroup
-                title="同乗希望"
-                items={participations.filter(
-                  (p) => p.role === "rider" && !p.fixedDriverMemberId,
-                )}
-                onDelete={deleteParticipation}
-                onEdit={editParticipant}
-                render={(p) => (
-                  <span>
-                    {memberName(p.memberId)}
-                    {p.className && (
-                      <span className="ml-2 text-xs text-accent">{p.className}</span>
-                    )}
-                  </span>
-                )}
-              />
-              <StatusGroup
-                title="自力で行く"
-                compact
-                items={participations.filter((p) => p.role === "self")}
-                onDelete={deleteParticipation}
-                onEdit={editParticipant}
-                render={(p) => <span>{memberName(p.memberId)}</span>}
-              />
-              <StatusGroup
-                title="不参加"
-                compact
-                items={participations.filter((p) => p.role === "absent")}
-                onDelete={deleteParticipation}
-                onEdit={editParticipant}
-                render={(p) => <span>{memberName(p.memberId)}</span>}
-              />
-              <StatusGroup
-                title="回答待ち"
-                compact
-                muted
-                items={participations.filter((p) => p.role === "undecided")}
-                onDelete={deleteParticipation}
-                onEdit={editParticipant}
-                editLabel="役割を設定"
-                render={(p) => (
-                  <span>
-                    {memberName(p.memberId)}
-                    {p.className && (
-                      <span className="ml-2 text-xs text-accent">{p.className}</span>
-                    )}
-                  </span>
-                )}
-              />
+              )}
             </section>
 
-            {/* 次のステップ: 配車計画（Phase 3 実装済み） */}
-            {planSummary.ready && (
-              <section className="mt-6 rounded-xl border border-primary/40 bg-card p-4">
-                <h2 className="text-sm font-semibold text-foreground">
-                  次のステップ: 配車計画の作成
-                </h2>
-                <p className="mt-1 text-xs text-muted">
-                  確定参加 {planSummary.participantCount} 人・運転手{" "}
-                  {planSummary.driverCount} 台が揃っています。
-                  最適化を実行して配車案を作り、公開すると全員が結果ページで見られます。
-                </p>
-                <Link
-                  href={`/carpool/${slug}/${eventId}/plan`}
-                  className="mt-3 block w-full rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white hover:bg-primary-dark"
-                >
-                  配車計画を作成・調整する
-                </Link>
-                <Link
-                  href={`/carpool/${slug}/${eventId}/result`}
-                  className="mt-2 block w-full rounded-lg bg-white/10 px-4 py-2 text-center text-sm text-foreground hover:bg-white/15"
-                >
-                  配車結果を見る（公開後）
-                </Link>
-              </section>
-            )}
+            {/* ⑤ 配車係向け（major3: 取込・配車計画・公開などの主催者向けツールをまとめる） */}
+            <section className="mt-6 rounded-xl border border-border bg-card p-4">
+              <h2 className="text-sm font-semibold text-foreground">配車係向け</h2>
+              <p className="mt-1 text-xs text-muted">
+                参加者の取込や配車計画の作成・公開を行います（普段の役割登録は上の「あなたはどれ？」から）。
+              </p>
+
+              {/* スタートリスト取込（発行書類 / URL / テキスト → 参加へ反映） */}
+              <div className="mt-3">
+                <StartlistImport
+                  slug={slug}
+                  eventId={eventId}
+                  actorName="guest"
+                  members={members}
+                  onApplied={() => void load()}
+                />
+              </div>
+
+              {/* 次のステップ: 配車計画（Phase 3 実装済み） */}
+              {planSummary.ready && (
+                <div className="mt-4 rounded-lg border border-primary/40 bg-surface p-3">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    次のステップ: 配車計画の作成
+                  </h3>
+                  <p className="mt-1 text-xs text-muted">
+                    確定参加 {planSummary.participantCount} 人・運転手{" "}
+                    {planSummary.driverCount} 台が揃っています。
+                    最適化を実行して配車案を作り、公開すると全員が結果ページで見られます。
+                  </p>
+                  <Link
+                    href={`/carpool/${slug}/${eventId}/plan`}
+                    className="mt-3 block w-full rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white hover:bg-primary-dark"
+                  >
+                    配車計画を作成・調整する
+                  </Link>
+                  <Link
+                    href={`/carpool/${slug}/${eventId}/result`}
+                    className="mt-2 block w-full rounded-lg bg-white/10 px-4 py-2 text-center text-sm text-foreground hover:bg-white/15"
+                  >
+                    配車結果を見る（公開後）
+                  </Link>
+                </div>
+              )}
+            </section>
           </>
         )}
       </main>
 
-      {showActorModal && (
-        <ActorModal
+      {showAddMember && (
+        <AddMemberModal
           slug={slug}
-          members={members}
-          actorName={actorName}
-          onSelectMember={(m) => {
-            setActorMember(m);
+          onCreated={(m) => {
+            // 作成したメンバーを一覧に足し、そのままフォームに読み込む（行追加の導線）。
             setMembers((prev) =>
               prev.some((x) => x.id === m.id) ? prev : [...prev, m],
             );
-            setShowActorModal(false);
+            loadParticipationIntoForm(m.id);
+            scrollToForm();
+            setShowAddMember(false);
           }}
-          onClose={() => setShowActorModal(false)}
+          onClose={() => setShowAddMember(false)}
         />
       )}
     </div>
+  );
+}
+
+/**
+ * 「あなたはどれ？」カード（Phase 5.5 blocker）。
+ *
+ * 自分の名前チップをタップ → 役割ボタンをタップで登録（テキスト入力ゼロ・≤4タップ）。
+ * 端末に「自分」を保存しない（調整さんモデル: 毎回ここから選び直す）。
+ */
+function SelfPickCard({
+  choices,
+  totalCount,
+  query,
+  onQueryChange,
+  expandedKey,
+  onToggleExpand,
+  saving,
+  driverParticipations,
+  memberName,
+  participationByMemberId,
+  driverSelectValue,
+  onDriverSelectChange,
+  onRegister,
+  onAddMember,
+}: {
+  choices: SelfPickChoice[];
+  totalCount: number;
+  query: string;
+  onQueryChange: (q: string) => void;
+  expandedKey: string | null;
+  onToggleExpand: (key: string) => void;
+  saving: boolean;
+  driverParticipations: ParticipationDTO[];
+  memberName: (id: string | null) => string;
+  participationByMemberId: Map<string, ParticipationDTO>;
+  driverSelectValue: string;
+  onDriverSelectChange: (v: string) => void;
+  onRegister: (choice: SelfPickChoice, role: FormRole, fixedDriver?: string) => void;
+  onAddMember: () => void;
+}) {
+  return (
+    <section className="mb-4 rounded-xl border border-primary/40 bg-card p-4">
+      <h2 className="text-base font-bold text-foreground">あなたはどれ？</h2>
+      <p className="mt-0.5 text-xs text-muted">
+        自分の名前をタップして役割を選ぶだけで登録できます（毎回ここから選びます）。
+      </p>
+
+      {/* 名前検索（任意・即時絞込。モバイルでキーボードが出ないよう autoFocus しない） */}
+      <input
+        className="mt-3 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+        value={query}
+        onChange={(e) => onQueryChange(e.target.value)}
+        placeholder="名前で探す"
+        maxLength={40}
+      />
+
+      {/* チップ列（クラブ一致が先頭・lib がソート済み） */}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {choices.map((c) => {
+          const badge = roleBadgeFor(c.role);
+          const expanded = expandedKey === c.key;
+          return (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => onToggleExpand(c.key)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm",
+                expanded
+                  ? "bg-primary text-white"
+                  : "bg-surface text-foreground hover:bg-white/10",
+              )}
+            >
+              <span>{c.displayName}</span>
+              <span
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-[10px] font-medium",
+                  expanded ? "bg-white/20 text-white" : badge.cls,
+                )}
+              >
+                {badge.label}
+              </span>
+            </button>
+          );
+        })}
+        {choices.length === 0 && (
+          <p className="text-xs text-muted">
+            {totalCount === 0
+              ? "候補がまだありません。下のリンクからメンバーを追加してください。"
+              : "一致する名前がありません。検索を変えるか、下のリンクから追加してください。"}
+          </p>
+        )}
+      </div>
+
+      {/* 展開中チップの役割選択（チップ列の下にインライン表示） */}
+      {expandedKey !== null &&
+        (() => {
+          const choice = choices.find((c) => c.key === expandedKey);
+          if (!choice) return null;
+          const existing = choice.memberId
+            ? participationByMemberId.get(choice.memberId)
+            : undefined;
+          const currentRole = choiceCurrentFormRole(
+            choice.role,
+            existing?.fixedDriverMemberId ?? null,
+          );
+          return (
+            <div className="mt-3 rounded-lg border border-border bg-surface p-3">
+              <p className="mb-2 text-xs text-muted">
+                {choice.displayName} さんの役割を選んでください
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {SELF_PICK_ROLE_BUTTONS.map((b) => {
+                  const isPassenger = b.role === "passenger";
+                  const active = currentRole === b.role;
+                  return (
+                    <button
+                      key={b.role}
+                      type="button"
+                      disabled={saving}
+                      onClick={() => {
+                        if (isPassenger) return; // 同乗者は下の運転手選択を経由
+                        onRegister(choice, b.role);
+                      }}
+                      className={cn(
+                        "rounded-lg px-3 py-2 text-xs font-medium disabled:opacity-50",
+                        isPassenger
+                          ? "bg-background text-foreground hover:bg-white/10"
+                          : active
+                            ? "bg-primary text-white"
+                            : "bg-background text-foreground hover:bg-white/10",
+                      )}
+                    >
+                      {b.label}
+                      {active && !isPassenger && (
+                        <span className="ml-1 text-[10px]">（現在）</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* ⛓同乗者: 運転手を選ぶ最小ステップ → 確定 */}
+              <div className="mt-3 rounded-lg bg-background p-2">
+                <label className="mb-1 block text-[10px] text-muted">
+                  ⛓ 同乗者にするには、乗る車（運転手）を選んでください
+                  {currentRole === "passenger" && (
+                    <span className="ml-1 text-accent">（現在 同乗者）</span>
+                  )}
+                </label>
+                <div className="flex items-end gap-2">
+                  <select
+                    className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground disabled:opacity-50"
+                    value={driverSelectValue}
+                    onChange={(e) => onDriverSelectChange(e.target.value)}
+                    disabled={driverParticipations.length === 0}
+                  >
+                    <option value="">運転手を選択</option>
+                    {driverParticipations.map((p) => (
+                      <option key={p.memberId} value={p.memberId}>
+                        {memberName(p.memberId)}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={saving || !driverSelectValue}
+                    onClick={() => onRegister(choice, "passenger", driverSelectValue)}
+                    className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                  >
+                    同乗者で登録
+                  </button>
+                </div>
+                {driverParticipations.length === 0 && (
+                  <p className="mt-1 text-[10px] text-muted">
+                    先に運転手を登録してください
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+      {/* フォールバック: 一覧にいないメンバーを追加 */}
+      <button
+        type="button"
+        onClick={onAddMember}
+        className="mt-3 text-xs text-accent hover:underline"
+      >
+        一覧にいない → メンバーを追加
+      </button>
+    </section>
   );
 }
 

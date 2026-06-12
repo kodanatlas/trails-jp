@@ -1,25 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { fetchCarpool, postCarpool, patchCarpool, putCarpool } from "./carpoolFetch";
-import { useActor } from "./useActor";
 import { useToast } from "./Toast";
-import ActorModal from "./ActorModal";
 import CarpoolHeader from "./CarpoolHeader";
 import { cn } from "@/lib/utils";
 import type {
   ClubDTO,
-  MemberDTO,
   NodeDTO,
   TravelTimeDTO,
 } from "@/lib/carpool/api/mappers";
 
 interface MastersClientProps {
   slug: string;
+  // P5.5: plan からの座標未取得ジャンプ（?focus=missing-coords）。
+  // 受け取ると「場所」タブを開き、座標なしの行をハイライトしてスクロールする。
+  focus?: "missing-coords";
 }
 
 type Tab = "nodes" | "times" | "settings";
 type NodeKind = "area" | "pickup" | "venue";
+
+/**
+ * 調整さんモデル: マスタ（場所・移動時間・クラブ設定）はメンバー文脈を持たないため、
+ * change_log の actorName は固定文字列 "guest"。誰でも編集できる。
+ */
+const GUEST = "guest";
 
 const KIND_LABEL: Record<NodeKind, string> = {
   area: "自宅エリア（最寄り駅など）",
@@ -27,31 +33,27 @@ const KIND_LABEL: Record<NodeKind, string> = {
   venue: "会場・駐車場",
 };
 
-export default function MastersClient({ slug }: MastersClientProps) {
+export default function MastersClient({ slug, focus }: MastersClientProps) {
   const { toast, toastEl } = useToast();
-  const [tab, setTab] = useState<Tab>("nodes");
+  // P5.5: focus=missing-coords のときは「場所」タブを開く（既定も nodes だが明示する）。
+  const [tab, setTab] = useState<Tab>(focus === "missing-coords" ? "nodes" : "nodes");
   const [club, setClub] = useState<ClubDTO | null>(null);
   const [nodes, setNodes] = useState<NodeDTO[]>([]);
   const [travelTimes, setTravelTimes] = useState<TravelTimeDTO[]>([]);
-  const [members, setMembers] = useState<MemberDTO[]>([]);
-  const { actorName, ready, setActorMember } = useActor(slug, members);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showActorModal, setShowActorModal] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [clubRes, nodesRes, ttRes, membersRes] = await Promise.all([
+      const [clubRes, nodesRes, ttRes] = await Promise.all([
         fetchCarpool<{ club: ClubDTO }>(`/clubs/${slug}`),
         fetchCarpool<{ nodes: NodeDTO[] }>(`/clubs/${slug}/nodes`),
         fetchCarpool<{ travelTimes: TravelTimeDTO[] }>(`/clubs/${slug}/travel-times`),
-        fetchCarpool<{ members: MemberDTO[] }>(`/clubs/${slug}/members`),
       ]);
       setClub(clubRes.club);
       setNodes(nodesRes.nodes);
       setTravelTimes(ttRes.travelTimes);
-      setMembers(membersRes.members);
     } catch (e) {
       setError(e instanceof Error ? e.message : "読み込みに失敗しました");
     } finally {
@@ -64,23 +66,10 @@ export default function MastersClient({ slug }: MastersClientProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
-  const requireActor = (): boolean => {
-    if (ready && !actorName) {
-      setShowActorModal(true);
-      return false;
-    }
-    return true;
-  };
-
   return (
     <div className="min-h-screen">
       {toastEl}
-      <CarpoolHeader
-        clubName={club?.name ?? slug}
-        slug={slug}
-        actorName={actorName}
-        onActorChange={() => setShowActorModal(true)}
-      />
+      <CarpoolHeader clubName={club?.name ?? slug} slug={slug} />
 
       <main className="mx-auto max-w-2xl px-4 py-6">
         <h1 className="mb-3 text-lg font-bold text-foreground">場所・時間の設定</h1>
@@ -118,10 +107,9 @@ export default function MastersClient({ slug }: MastersClientProps) {
               <NodesTab
                 slug={slug}
                 nodes={nodes}
-                actorName={actorName}
-                requireActor={requireActor}
                 onChanged={load}
                 toast={toast}
+                focusMissingCoords={focus === "missing-coords"}
               />
             )}
             {tab === "times" && (
@@ -129,8 +117,6 @@ export default function MastersClient({ slug }: MastersClientProps) {
                 slug={slug}
                 nodes={nodes}
                 travelTimes={travelTimes}
-                actorName={actorName}
-                requireActor={requireActor}
                 onChanged={load}
                 toast={toast}
               />
@@ -139,8 +125,6 @@ export default function MastersClient({ slug }: MastersClientProps) {
               <SettingsTab
                 slug={slug}
                 club={club}
-                actorName={actorName}
-                requireActor={requireActor}
                 onChanged={load}
                 toast={toast}
               />
@@ -148,20 +132,6 @@ export default function MastersClient({ slug }: MastersClientProps) {
           </>
         )}
       </main>
-
-      {showActorModal && (
-        <ActorModal
-          slug={slug}
-          members={members}
-          actorName={actorName}
-          onSelectMember={(m) => {
-            setActorMember(m);
-            void load();
-            setShowActorModal(false);
-          }}
-          onClose={() => setShowActorModal(false)}
-        />
-      )}
     </div>
   );
 }
@@ -182,41 +152,94 @@ interface NodeForm {
 
 const EMPTY_NODE_FORM: NodeForm = { name: "", lat: "", lng: "", parking: false, note: "" };
 
+// P5.5: 座標未取得（lat か lng が null）の判定。
+const isMissingCoords = (n: NodeDTO): boolean => n.lat == null || n.lng == null;
+
 function NodesTab({
   slug,
   nodes,
-  actorName,
-  requireActor,
   onChanged,
   toast,
+  focusMissingCoords,
 }: {
   slug: string;
   nodes: NodeDTO[];
-  actorName: string | null;
-  requireActor: () => boolean;
   onChanged: () => Promise<void>;
   toast: ToastFn;
+  // P5.5: plan からの座標未取得ジャンプで開かれたか。座標なし行を強調しスクロールする。
+  focusMissingCoords: boolean;
 }) {
-  const [subKind, setSubKind] = useState<NodeKind>("area");
+  // P5.5: focus 時は最初に座標なしのノードを含む種別を開く（無ければ area）。
+  const initialSubKind = useMemo<NodeKind>(() => {
+    if (!focusMissingCoords) return "area";
+    const firstMissing = nodes.find(isMissingCoords);
+    return (firstMissing?.kind as NodeKind | undefined) ?? "area";
+    // マウント時の初期値のみ（focus と nodes の初期スナップショットで決める）。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [subKind, setSubKind] = useState<NodeKind>(initialSubKind);
   const [editing, setEditing] = useState<string | null>(null); // "new" | id | null
   const [form, setForm] = useState<NodeForm>(EMPTY_NODE_FORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // C: 座標再取得（ジオコーディング）の進行中ノード id（null = 待機）。
+  const [geocodingId, setGeocodingId] = useState<string | null>(null);
+
+  // P5.5: 最初の座標なし行への ref（マウント後に一度だけ scrollIntoView する）。
+  const firstMissingRef = useRef<HTMLLIElement | null>(null);
+  const didScrollRef = useRef(false);
 
   const filtered = useMemo(
     () => nodes.filter((n) => n.kind === subKind),
     [nodes, subKind],
   );
 
+  // P5.5: focus 時、表示中の種別で最初の座標なし行を画面中央へ寄せる（一度きり）。
+  useEffect(() => {
+    if (!focusMissingCoords || didScrollRef.current) return;
+    const el = firstMissingRef.current;
+    if (el) {
+      didScrollRef.current = true;
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [focusMissingCoords, filtered]);
+
+  // P5.5: 表示中リストで最初に座標なしになる行（ハイライト＆スクロール対象）。
+  const firstMissingId = useMemo(
+    () => (focusMissingCoords ? filtered.find(isMissingCoords)?.id ?? null : null),
+    [focusMissingCoords, filtered],
+  );
+
+  // C: 住所/名称から座標を再取得（サーバ側ジオコーディング）。
+  // geocoded:true → 取得成功でトースト＋再読込、false → サーバの message を案内表示。
+  const geocode = async (n: NodeDTO) => {
+    setGeocodingId(n.id);
+    try {
+      const res = await postCarpool<{
+        node: NodeDTO;
+        geocoded: boolean;
+        message?: string;
+      }>(`/clubs/${slug}/nodes/${n.id}/geocode`, { actorName: GUEST });
+      if (res.geocoded) {
+        toast("座標を取得しました", "success");
+        await onChanged();
+      } else {
+        toast(res.message ?? "座標を取得できませんでした", "success");
+      }
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "座標の取得に失敗しました", "error");
+    } finally {
+      setGeocodingId(null);
+    }
+  };
+
   const openNew = () => {
-    if (!requireActor()) return;
     setForm(EMPTY_NODE_FORM);
     setEditing("new");
     setFormError(null);
   };
 
   const openEdit = (n: NodeDTO) => {
-    if (!requireActor()) return;
     setForm({
       name: n.name,
       lat: n.lat === null ? "" : String(n.lat),
@@ -230,7 +253,6 @@ function NodesTab({
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!actorName) return;
     if (!form.name.trim()) {
       setFormError("名前を入力してください");
       return;
@@ -238,7 +260,7 @@ function NodesTab({
     setSaving(true);
     setFormError(null);
     const body: Record<string, unknown> = {
-      actorName,
+      actorName: GUEST,
       kind: subKind,
       name: form.name.trim(),
       lat: form.lat !== "" ? Number(form.lat) : null,
@@ -249,10 +271,10 @@ function NodesTab({
     try {
       if (editing === "new") {
         await postCarpool(`/clubs/${slug}/nodes`, body);
-        toast("ノードを追加しました", "success");
+        toast("場所を追加しました", "success");
       } else if (editing) {
         await patchCarpool(`/clubs/${slug}/nodes/${editing}`, body);
-        toast("ノードを更新しました", "success");
+        toast("場所を更新しました", "success");
       }
       setEditing(null);
       await onChanged();
@@ -263,8 +285,25 @@ function NodesTab({
     }
   };
 
+  // P5.5: focus 時のみ、座標なしが残る種別にバッジを出して横断的に気づけるようにする。
+  const missingByKind = useMemo(() => {
+    const m: Record<NodeKind, number> = { area: 0, pickup: 0, venue: 0 };
+    if (focusMissingCoords) {
+      for (const n of nodes) if (isMissingCoords(n)) m[n.kind as NodeKind] += 1;
+    }
+    return m;
+  }, [focusMissingCoords, nodes]);
+  const totalMissing = missingByKind.area + missingByKind.pickup + missingByKind.venue;
+
   return (
     <div>
+      {focusMissingCoords && totalMissing > 0 && (
+        <div className="mb-3 rounded-lg border border-yellow-400/50 bg-yellow-400/10 p-3 text-xs text-yellow-300">
+          配車プランから「座標未取得」の場所へ移動しました。下の
+          <span className="font-semibold">⚠ 座標未取得</span>
+          の行で「再取得」を押すか、緯度・経度を入力してください（残り {totalMissing} 件）。
+        </div>
+      )}
       <div className="mb-3 flex gap-2">
         {(["area", "pickup", "venue"] as NodeKind[]).map((k) => (
           <button
@@ -282,6 +321,12 @@ function NodesTab({
             )}
           >
             {KIND_LABEL[k]}
+            {/* P5.5: focus 時、その種別に残る座標なし件数を小バッジで示す。 */}
+            {focusMissingCoords && missingByKind[k] > 0 && (
+              <span className="ml-1.5 rounded-full bg-yellow-400/30 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-200">
+                ⚠ {missingByKind[k]}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -297,25 +342,66 @@ function NodesTab({
       </div>
 
       <ul className="flex flex-col gap-2">
-        {filtered.map((n) => (
-          <li key={n.id}>
-            <button
-              type="button"
-              onClick={() => openEdit(n)}
-              className="flex w-full items-center justify-between gap-2 rounded-xl border border-border bg-card p-3 text-left hover:bg-card-hover"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-foreground">{n.name}</p>
-                {n.note && <p className="truncate text-xs text-muted">{n.note}</p>}
-              </div>
-              {n.kind === "venue" && n.parking && (
-                <span className="shrink-0 rounded bg-accent/20 px-2 py-0.5 text-[10px] text-accent">
-                  駐車場あり
-                </span>
+        {filtered.map((n) => {
+          const hasCoord = n.lat != null && n.lng != null;
+          // P5.5: focus 時、座標なし行はリング強調。最初の1件にスクロール用 ref を付ける。
+          const highlight = focusMissingCoords && !hasCoord;
+          const isFirstMissing = focusMissingCoords && n.id === firstMissingId;
+          return (
+            <li
+              key={n.id}
+              ref={isFirstMissing ? firstMissingRef : undefined}
+              className={cn(
+                "flex items-stretch gap-2 rounded-xl border bg-card",
+                highlight
+                  ? "border-yellow-400/70 ring-2 ring-yellow-400/40"
+                  : "border-border",
               )}
-            </button>
-          </li>
-        ))}
+            >
+              <button
+                type="button"
+                onClick={() => openEdit(n)}
+                className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-l-xl p-3 text-left hover:bg-card-hover"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">{n.name}</p>
+                  {/* C: 座標の取得状況。取得済みは緯度経度を小数4桁で表示。 */}
+                  {hasCoord ? (
+                    <p className="truncate text-xs text-muted">
+                      📍 取得済 ({n.lat!.toFixed(4)}, {n.lng!.toFixed(4)})
+                    </p>
+                  ) : (
+                    <p
+                      className={cn(
+                        "truncate text-xs",
+                        highlight
+                          ? "font-semibold text-yellow-300"
+                          : "text-yellow-400",
+                      )}
+                    >
+                      {highlight ? "⚠ 座標未取得" : "座標なし"}
+                    </p>
+                  )}
+                  {n.note && <p className="truncate text-xs text-muted">{n.note}</p>}
+                </div>
+                {n.kind === "venue" && n.parking && (
+                  <span className="shrink-0 rounded bg-accent/20 px-2 py-0.5 text-[10px] text-accent">
+                    駐車場あり
+                  </span>
+                )}
+              </button>
+              {/* C: 名称/住所から座標を再取得（サーバ側ジオコーディング）。 */}
+              <button
+                type="button"
+                onClick={() => void geocode(n)}
+                disabled={geocodingId !== null}
+                className="shrink-0 self-center rounded-lg bg-white/10 px-3 py-1.5 text-xs text-foreground hover:bg-white/15 disabled:opacity-50"
+              >
+                {geocodingId === n.id ? "取得中…" : "再取得"}
+              </button>
+            </li>
+          );
+        })}
         {filtered.length === 0 && (
           <li className="text-sm text-muted">{KIND_LABEL[subKind]}がまだありません。</li>
         )}
@@ -419,16 +505,12 @@ function TravelTimesTab({
   slug,
   nodes,
   travelTimes,
-  actorName,
-  requireActor,
   onChanged,
   toast,
 }: {
   slug: string;
   nodes: NodeDTO[];
   travelTimes: TravelTimeDTO[];
-  actorName: string | null;
-  requireActor: () => boolean;
   onChanged: () => Promise<void>;
   toast: ToastFn;
 }) {
@@ -449,8 +531,6 @@ function TravelTimesTab({
   const rowKey = (t: TravelTimeDTO) => `${t.fromNodeId}|${t.toNodeId}|${t.mode}`;
 
   const addRow = async () => {
-    if (!requireActor()) return;
-    if (!actorName) return;
     if (!newRow.fromNodeId || !newRow.toNodeId || newRow.minutes === "") {
       setRowError("出発地・到着地・分を入力してください");
       return;
@@ -459,7 +539,7 @@ function TravelTimesTab({
     setRowError(null);
     try {
       await putCarpool(`/clubs/${slug}/travel-times`, {
-        actorName,
+        actorName: GUEST,
         entries: [
           {
             fromNodeId: newRow.fromNodeId,
@@ -481,14 +561,10 @@ function TravelTimesTab({
   };
 
   const saveEdit = async (t: TravelTimeDTO) => {
-    if (!actorName) {
-      requireActor();
-      return;
-    }
     if (editMinutes === "") return;
     try {
       await putCarpool(`/clubs/${slug}/travel-times`, {
-        actorName,
+        actorName: GUEST,
         entries: [
           {
             fromNodeId: t.fromNodeId,
@@ -559,7 +635,6 @@ function TravelTimesTab({
                 <button
                   type="button"
                   onClick={() => {
-                    if (!requireActor()) return;
                     setEditKey(key);
                     setEditMinutes(String(t.minutes));
                   }}
@@ -671,15 +746,11 @@ function numFromSettings(settings: Record<string, unknown>, key: string): string
 function SettingsTab({
   slug,
   club,
-  actorName,
-  requireActor,
   onChanged,
   toast,
 }: {
   slug: string;
   club: ClubDTO;
-  actorName: string | null;
-  requireActor: () => boolean;
   onChanged: () => Promise<void>;
   toast: ToastFn;
 }) {
@@ -704,8 +775,6 @@ function SettingsTab({
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!requireActor()) return;
-    if (!actorName) return;
     setSaving(true);
     setFormError(null);
 
@@ -723,7 +792,7 @@ function SettingsTab({
 
     try {
       await patchCarpool(`/clubs/${slug}`, {
-        actorName,
+        actorName: GUEST,
         settings,
         joeClubNames,
       });

@@ -1,13 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { nodeUpdateSchema } from "@/lib/carpool/api/schemas";
+import { nodeGeocodeSchema } from "@/lib/carpool/api/schemas";
 import { toNodeDTO } from "@/lib/carpool/api/mappers";
 import { ERR, zodError, guardWrite, writeChangeLog, resolveClub } from "@/lib/carpool/api/helpers";
+import { geocodeAddress } from "@/lib/carpool/geocode";
 
 export const dynamic = "force-dynamic";
 
-/** PATCH /api/carpool/clubs/[slug]/nodes/[id] — ノード更新。 */
-export async function PATCH(
+/**
+ * C3: POST /api/carpool/clubs/[slug]/nodes/[id]/geocode — 座標の再取得（マスタの「再取得」ボタン）。
+ *
+ * node.name でジオコーディングし直し、命中したら lat/lng を更新する。
+ * 命中しなかった場合は座標を変更せず 200 + geocoded:false + 日本語案内を返す。
+ */
+export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ slug: string; id: string }> },
 ) {
@@ -31,39 +37,47 @@ export async function PATCH(
     return ERR.invalidBody();
   }
 
-  const parsed = nodeUpdateSchema.safeParse(body);
+  const parsed = nodeGeocodeSchema.safeParse(body);
   if (!parsed.success) return zodError(parsed.error.issues);
   const input = parsed.data;
 
   const guard = await guardWrite(req, club, input.actorName);
   if ("response" in guard) return guard.response;
 
-  const patch: Record<string, unknown> = {};
-  if (input.kind !== undefined) patch.kind = input.kind;
-  if (input.name !== undefined) patch.name = input.name;
-  if (input.lat !== undefined) patch.lat = input.lat;
-  if (input.lng !== undefined) patch.lng = input.lng;
-  if (input.parking !== undefined) patch.parking = input.parking;
-  if (input.note !== undefined) patch.note = input.note;
+  // 外部呼び出しは失敗を隔離（null 扱い）。手動入力導線を案内に残す。
+  let hit = null;
+  try {
+    hit = await geocodeAddress(existing.name);
+  } catch {
+    hit = null;
+  }
 
-  const { data, error } = await supabaseAdmin
+  if (!hit) {
+    return NextResponse.json({
+      node: toNodeDTO(existing),
+      geocoded: false,
+      message: "座標が見つかりませんでした。名称を確認するか手動で入力してください",
+    });
+  }
+
+  const { data: updated, error: updateError } = await supabaseAdmin
     .from("carpool_nodes")
-    .update(patch)
+    .update({ lat: hit.lat, lng: hit.lng })
     .eq("id", id)
     .eq("club_id", club.id)
     .select("*")
     .single();
-  if (error) return ERR.serverError(error.message);
+  if (updateError) return ERR.serverError(updateError.message);
 
   await writeChangeLog({
     clubId: club.id,
     tableName: "carpool_nodes",
     recordId: id,
     action: "update",
-    payload: data,
+    payload: { geocoded: true, source: "gsi", lat: hit.lat, lng: hit.lng },
     actorName: guard.ctx.actorName,
     ipHash: guard.ctx.ipHash,
   });
 
-  return NextResponse.json({ node: toNodeDTO(data) });
+  return NextResponse.json({ node: toNodeDTO(updated), geocoded: true });
 }

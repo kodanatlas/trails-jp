@@ -525,7 +525,7 @@ describe("buildPlanInput — blocking errors (B1)", () => {
       travelTimes: [],
     };
     const { errors } = buildPlanInput(data);
-    expect(errors.some((e) => e.includes("会場ノードが未設定"))).toBe(true);
+    expect(errors.some((e) => e.includes("会場・駐車場の場所が未設定"))).toBe(true);
   });
 
   it("errors when no route candidates are registered", () => {

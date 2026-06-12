@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { fetchCarpool, postCarpool, CarpoolApiError } from "./carpoolFetch";
-import { useActor } from "./useActor";
 import { useToast } from "./Toast";
 import { minToTime, minToDuration } from "./planFormat";
 import StartlistImport from "./StartlistImport";
@@ -57,6 +56,10 @@ const WEIGHT_FIELDS: { key: keyof Weights; label: string; max: number; step: num
 ];
 
 const PRESET_ORDER: WeightPresetKey[] = ["balanced", "wait", "drive"];
+
+// P5.5: 座標未取得が原因のチェック項目から masters へ飛ぶときに付ける focus パラメータ。
+// MastersClient 側はこの値を見て「場所」タブを開き、座標なしの行をハイライトする。
+const FOCUS_MISSING_COORDS = "focus=missing-coords";
 
 /**
  * 0時からの分 → "HH:MM"（両桁ゼロ詰め）。0..1439 にクランプ、範囲外は null。
@@ -163,6 +166,9 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
   // --- 公開/保存 ---
   const [publishing, setPublishing] = useState(false);
 
+  // D: 移動時間の自動計算（OSRM）実行中フラグ。
+  const [autoCalculating, setAutoCalculating] = useState(false);
+
   // --- 履歴 ---
   const [history, setHistory] = useState<PlanMetaDTO[]>([]);
 
@@ -170,7 +176,9 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
   // 実行の世代番号。Worker を使い回すため、古い実行からの応答を無視するのに使う。
   const runIdRef = useRef(0);
 
-  const { actorName } = useActor(slug, members);
+  // 調整さんモデル: 配車プランの保存・公開・移動時間の自動計算はメンバー文脈を持たない
+  // クラブ全体の操作のため、change_log の actorName は固定文字列 "guest"。
+  const actorName = "guest";
 
   // member / node / route の索引。
   const memberById = useMemo(() => {
@@ -247,6 +255,69 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
     }
   }, [slug, eventId]);
 
+  // D: 移動時間の自動計算（場所どうし + 会場ルート）。
+  // 実行前チェックに「移動時間が未入力」が出ているとき、ワンクリックで
+  // OSRM 由来の移動時間とルート所要時間を埋め、プラン再読込で警告を更新する。
+  const autoCalcTravelTimes = useCallback(async () => {
+    setAutoCalculating(true);
+    try {
+      // 1) 場所どうしの移動時間（車/公共交通）。
+      const tt = await postCarpool<{
+        count: number;
+        car: number;
+        transit: number;
+        osrmOk?: boolean;
+        geoNodeCount?: number;
+        message?: string;
+      }>(`/clubs/${slug}/travel-times/auto`, { actorName });
+
+      // 2) 会場ルートの所要時間。
+      const rt = await postCarpool<{
+        count: number;
+        routeCount: number;
+        osrmOk: boolean;
+        message?: string;
+      }>(`/clubs/${slug}/events/${eventId}/routes/auto-times`, { actorName });
+
+      // 座標不足（geoNodeCount<2 もしくは message が座標に言及）は、まずマスタで座標取得を促す。
+      const coordMissing =
+        (tt.geoNodeCount !== undefined && tt.geoNodeCount < 2) ||
+        (tt.message?.includes("座標") ?? false);
+      if (coordMissing) {
+        toast(
+          "場所の座標が不足しています。マスタで座標を取得してください",
+          "error",
+        );
+      } else if (tt.osrmOk === false || rt.osrmOk === false || tt.message || rt.message) {
+        // OSRM 未接続など。埋まったぶんは反映済みなので、案内だけ出して続行する。
+        toast(
+          tt.message ??
+            rt.message ??
+            "自動計算サーバーに接続できませんでした。手動入力で補ってください",
+          "success",
+        );
+      } else {
+        toast(
+          `移動時間を自動計算しました（車 ${tt.car}件・公共交通 ${tt.transit}件・会場 ${rt.count}件）`,
+          "success",
+        );
+      }
+    } catch (e) {
+      toast(
+        e instanceof CarpoolApiError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : "自動計算に失敗しました",
+        "error",
+      );
+    } finally {
+      setAutoCalculating(false);
+      // 反映ぶんで警告を更新するため、必ずプランを再読込する。
+      await load();
+    }
+  }, [actorName, slug, eventId, load, toast]);
+
   useEffect(() => {
     void load();
     void loadHistory();
@@ -322,17 +393,32 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
   // B1: 各エラー/警告のテキストから解消先リンクを引く（不足データの修正導線）。
   const issueLink = useCallback(
     (text: string): { href: string; label: string } | null => {
-      if (text.includes("会場ノード") || text.includes("ルート候補")) {
+      // 会場・駐車場の「場所」は座標が要るので focus を付けて座標未取得行へ誘導する。
+      if (text.includes("会場・駐車場の場所")) {
+        return {
+          href: `/carpool/${slug}/masters?${FOCUS_MISSING_COORDS}`,
+          label: "マスタ管理で登録",
+        };
+      }
+      // ルート候補はルートデータの問題（座標ではない）ので plain href のまま。
+      if (text.includes("ルート候補")) {
         return { href: `/carpool/${slug}/masters`, label: "マスタ管理で登録" };
       }
+      // ルート所要時間はルート側の所要時間入力。座標ハイライトの対象ではない。
+      if (text.includes("ルート所要時間")) {
+        return { href: `/carpool/${slug}/masters`, label: "マスタ管理で入力" };
+      }
+      // 移動時間/マトリクス/乗車可能地点は座標不足が主因なので focus を付ける。
       if (
-        text.includes("ルート所要時間") ||
         text.includes("移動時間") ||
         text.includes("マトリクス") ||
         text.includes("乗車できる地点") ||
         text.includes("乗車可能地点")
       ) {
-        return { href: `/carpool/${slug}/masters`, label: "マスタ管理で入力" };
+        return {
+          href: `/carpool/${slug}/masters?${FOCUS_MISSING_COORDS}`,
+          label: "マスタ管理で入力",
+        };
       }
       // R7: 乗車エリアは参加状況ページの参加フォームで入力できる。
       if (text.includes("乗車エリア")) {
@@ -356,6 +442,12 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
 
   // 実行前チェックに出す全エラー（組み立て段階 + ソルバ validate）。描画用なので素の計算でよい。
   const allCheckErrors = [...inputErrors, ...validationErrors];
+
+  // D: エラー/警告のいずれかに「移動時間が未入力」が含まれるか（自動計算ボタンの表示条件）。
+  // allCheckErrors/warnings 同様に描画用の素の計算（小さい配列なので memo 不要）。
+  const hasMissingTravelTime = [...allCheckErrors, ...warnings].some((m) =>
+    m.includes("移動時間が未入力"),
+  );
 
   // --- 最適化実行（Worker 起動） ---
   const runSolve = useCallback(
@@ -638,7 +730,7 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
   // --- POST body 組み立て（公開/下書き） ---
   const buildCreateBody = useCallback(
     (status: "draft" | "published"): PlanCreateInput | null => {
-      if (!result || !actorName) return null;
+      if (!result) return null;
       const cars: PlanCreateInput["cars"] = result.cars.map((car) => {
         const sched = scheduleByDriver.get(car.driverId);
         // 経由ノード順（schedule.stops が無ければ rider の nodeId 重複排除）。
@@ -820,11 +912,6 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
             >
               結果ページ
             </Link>
-            {actorName ? (
-              <span className="max-w-[10rem] truncate text-muted">{actorName}</span>
-            ) : (
-              <span className="text-muted">操作者未設定</span>
-            )}
           </div>
         </div>
       </header>
@@ -883,88 +970,102 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
                 </p>
               </div>
 
-              {/* 重みプリセット */}
-              <div className="mb-4">
-                <span className="mb-1.5 block text-xs text-muted">重みプリセット</span>
-                <div className="flex flex-col gap-1.5">
-                  {PRESET_ORDER.map((key) => (
-                    <label
-                      key={key}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-xs",
-                        preset === key
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border text-muted hover:text-foreground",
+              {/* P5.5: 重みプリセット・詳細スライダ・時間予算は ⚙ 詳細設定 に畳む。
+                  既定（balanced / 5秒）のまま「最適化を実行」できるよう、開かなくても動く。 */}
+              <details className="group rounded-lg border border-border bg-surface/50">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-xs font-medium text-muted hover:text-foreground">
+                  <span>⚙ 詳細設定</span>
+                  <span className="text-[10px] transition-transform group-open:rotate-90">
+                    ▶
+                  </span>
+                </summary>
+                <div className="border-t border-border px-3 pb-3 pt-3">
+                  {/* 重みプリセット */}
+                  <div className="mb-4">
+                    <span className="mb-1.5 block text-xs text-muted">重みプリセット</span>
+                    <div className="flex flex-col gap-1.5">
+                      {PRESET_ORDER.map((key) => (
+                        <label
+                          key={key}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-xs",
+                            preset === key
+                              ? "border-primary bg-primary/10 text-foreground"
+                              : "border-border text-muted hover:text-foreground",
+                          )}
+                        >
+                          <input
+                            type="radio"
+                            name="preset"
+                            checked={preset === key}
+                            onChange={() => handlePreset(key)}
+                            className="accent-primary"
+                          />
+                          {WEIGHT_PRESET_LABELS[key]}
+                        </label>
+                      ))}
+                      {preset === "custom" && (
+                        <span className="text-[11px] text-yellow-400">
+                          カスタム（スライダ編集中）
+                        </span>
                       )}
-                    >
-                      <input
-                        type="radio"
-                        name="preset"
-                        checked={preset === key}
-                        onChange={() => handlePreset(key)}
-                        className="accent-primary"
-                      />
-                      {WEIGHT_PRESET_LABELS[key]}
-                    </label>
-                  ))}
-                  {preset === "custom" && (
-                    <span className="text-[11px] text-yellow-400">
-                      カスタム（スライダ編集中）
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* 詳細スライダ（折りたたみ） */}
-              <div className="mb-4">
-                <button
-                  type="button"
-                  onClick={() => setShowSliders((s) => !s)}
-                  className="text-xs text-primary hover:underline"
-                >
-                  {showSliders ? "▼ 詳細スライダを隠す" : "▶ 詳細スライダ"}
-                </button>
-                {showSliders && (
-                  <div className="mt-2 space-y-2">
-                    {WEIGHT_FIELDS.map((f) => (
-                      <div key={f.key}>
-                        <div className="flex items-center justify-between text-[11px] text-muted">
-                          <span>{f.label}</span>
-                          <span className="tabular-nums">{weights[f.key]}</span>
-                        </div>
-                        <input
-                          type="range"
-                          min={0}
-                          max={f.max}
-                          step={f.step}
-                          value={weights[f.key]}
-                          onChange={(e) =>
-                            handleWeightChange(f.key, Number(e.target.value))
-                          }
-                          className="w-full accent-primary"
-                        />
-                      </div>
-                    ))}
+                    </div>
                   </div>
-                )}
-              </div>
 
-              {/* ソルバ時間予算 */}
-              <div>
-                <label className="mb-1.5 block text-xs text-muted">
-                  ソルバ時間予算（秒）
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={60}
-                  value={timeLimitSec}
-                  onChange={(e) =>
-                    setTimeLimitSec(Math.max(1, Math.min(60, Number(e.target.value) || 5)))
-                  }
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
-                />
-              </div>
+                  {/* 詳細スライダ（折りたたみ） */}
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowSliders((s) => !s)}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      {showSliders ? "▼ 詳細スライダを隠す" : "▶ 詳細スライダ"}
+                    </button>
+                    {showSliders && (
+                      <div className="mt-2 space-y-2">
+                        {WEIGHT_FIELDS.map((f) => (
+                          <div key={f.key}>
+                            <div className="flex items-center justify-between text-[11px] text-muted">
+                              <span>{f.label}</span>
+                              <span className="tabular-nums">{weights[f.key]}</span>
+                            </div>
+                            <input
+                              type="range"
+                              min={0}
+                              max={f.max}
+                              step={f.step}
+                              value={weights[f.key]}
+                              onChange={(e) =>
+                                handleWeightChange(f.key, Number(e.target.value))
+                              }
+                              className="w-full accent-primary"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ソルバ時間予算 */}
+                  <div>
+                    <label className="mb-1.5 block text-xs text-muted">
+                      ソルバ時間予算（秒）
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={60}
+                      value={timeLimitSec}
+                      onChange={(e) =>
+                        setTimeLimitSec(
+                          Math.max(1, Math.min(60, Number(e.target.value) || 5)),
+                        )
+                      }
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+                    />
+                  </div>
+                </div>
+              </details>
             </section>
 
             {/* 実行前チェック（B1: エラーは実行をブロック。各項目に解消先リンク） */}
@@ -973,6 +1074,30 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
                 <h2 className="mb-2 text-sm font-semibold text-foreground">
                   実行前チェック
                 </h2>
+                {/* D: 移動時間が未入力のとき、OSRM 由来の自動計算をワンクリックで実行する。 */}
+                {hasMissingTravelTime && (
+                  <div className="mb-3 rounded-lg border border-primary/40 bg-primary/10 p-3">
+                    <p className="text-xs text-foreground">
+                      移動時間が未入力の区間があります。自動計算で埋められます。
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void autoCalcTravelTimes()}
+                        disabled={autoCalculating}
+                        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                      >
+                        {autoCalculating ? "計算中…" : "自動計算する"}
+                      </button>
+                      <Link
+                        href={`/carpool/${slug}/masters?${FOCUS_MISSING_COORDS}`}
+                        className="whitespace-nowrap text-xs text-primary hover:underline"
+                      >
+                        マスタで座標を取得 →
+                      </Link>
+                    </div>
+                  </div>
+                )}
                 {allCheckErrors.length > 0 && (
                   <div className="mb-2">
                     <span className="text-[11px] font-semibold text-red-400">
@@ -1391,16 +1516,11 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
 
                 <section className="rounded-xl border border-border bg-card p-4">
                   <h2 className="mb-3 text-sm font-semibold text-foreground">公開</h2>
-                  {!actorName && (
-                    <p className="mb-2 rounded-md bg-yellow-500/10 px-2 py-1 text-[11px] text-yellow-400">
-                      操作者を選択してください
-                    </p>
-                  )}
                   <div className="flex flex-col gap-2">
                     <button
                       type="button"
                       onClick={() => handlePublish("published")}
-                      disabled={!actorName || publishing}
+                      disabled={publishing}
                       className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
                     >
                       この案を公開
@@ -1408,7 +1528,7 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
                     <button
                       type="button"
                       onClick={() => handlePublish("draft")}
-                      disabled={!actorName || publishing}
+                      disabled={publishing}
                       className="rounded-lg bg-white/10 px-4 py-2 text-sm text-foreground hover:bg-white/15 disabled:opacity-50"
                     >
                       下書き保存

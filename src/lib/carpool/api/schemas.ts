@@ -124,7 +124,7 @@ export const nodeKind = z.enum(["area", "pickup", "venue"]);
 export const nodeCreateSchema = z.object({
   ...actorEnvelope,
   kind: nodeKind,
-  name: z.string().trim().min(1, { message: "ノード名を入力してください" }).max(80),
+  name: z.string().trim().min(1, { message: "場所の名前を入力してください" }).max(80),
   lat: z.number().min(-90).max(90).nullable().optional(),
   lng: z.number().min(-180).max(180).nullable().optional(),
   parking: z.boolean().optional(),
@@ -140,6 +140,12 @@ export const nodeUpdateSchema = z.object({
   parking: z.boolean().optional(),
   note: z.string().max(500).nullable().optional(),
 });
+
+/**
+ * C3: ノードの座標再取得（「再取得」ボタン）専用。本文は actorName のみ。
+ * 名称（node.name）でジオコーディングし直すため、座標等の入力は受けない。
+ */
+export const nodeGeocodeSchema = z.object({ ...actorEnvelope });
 
 // ---------------------------------------------------------------------------
 // members（pickup prefs はメンバー更新内で置換）
@@ -211,6 +217,12 @@ export const travelTimesPutSchema = z.object({
       message: `移動時間は1リクエストにつき${TRAVEL_TIMES_BATCH_LIMIT}件までです`,
     }),
 });
+
+/**
+ * D1: 移動時間の自動計算（OSRM/transit 推定）専用。本文は actorName のみ。
+ * 対象ノード・既存値はすべてサーバ側で DB から導出するため、入力は受けない。
+ */
+export const travelTimesAutoSchema = z.object({ ...actorEnvelope });
 
 // ---------------------------------------------------------------------------
 // events
@@ -291,6 +303,13 @@ export const routeUpdateSchema = z.object({
   /** 指定時は route_times を全置換。 */
   routeTimes: routeTimeList.optional(),
 });
+
+/**
+ * D2: 大会の全ルートの route_times を OSRM 自動投入する専用。本文は actorName のみ。
+ * 会場ノード・対象ノード・既存 route_times はすべてサーバ側で DB から導出する。
+ * 既存（手入力）の route_times は上書きしない（未入力ペアのみ埋める）。
+ */
+export const routeTimesAutoSchema = z.object({ ...actorEnvelope });
 
 // ---------------------------------------------------------------------------
 // participations（upsert: unique(event_id, member_id)）
@@ -376,13 +395,16 @@ export type ClubCreateInput = z.infer<typeof clubCreateSchema>;
 export type ClubUpdateInput = z.infer<typeof clubUpdateSchema>;
 export type NodeCreateInput = z.infer<typeof nodeCreateSchema>;
 export type NodeUpdateInput = z.infer<typeof nodeUpdateSchema>;
+export type NodeGeocodeInput = z.infer<typeof nodeGeocodeSchema>;
 export type MemberCreateInput = z.infer<typeof memberCreateSchema>;
 export type MemberUpdateInput = z.infer<typeof memberUpdateSchema>;
 export type TravelTimesPutInput = z.infer<typeof travelTimesPutSchema>;
+export type TravelTimesAutoInput = z.infer<typeof travelTimesAutoSchema>;
 export type EventCreateInput = z.infer<typeof eventCreateSchema>;
 export type EventUpdateInput = z.infer<typeof eventUpdateSchema>;
 export type RouteCreateInput = z.infer<typeof routeCreateSchema>;
 export type RouteUpdateInput = z.infer<typeof routeUpdateSchema>;
+export type RouteTimesAutoInput = z.infer<typeof routeTimesAutoSchema>;
 export type ParticipationCreateInput = z.infer<typeof participationCreateSchema>;
 export type ParticipationUpdateInput = z.infer<typeof participationUpdateSchema>;
 export type ParticipationBulkInput = z.infer<typeof participationBulkSchema>;

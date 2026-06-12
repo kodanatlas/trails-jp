@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { nodeCreateSchema } from "@/lib/carpool/api/schemas";
 import { toNodeDTO } from "@/lib/carpool/api/mappers";
 import { ERR, zodError, guardWrite, writeChangeLog, resolveClub } from "@/lib/carpool/api/helpers";
+import { geocodeAddress } from "@/lib/carpool/geocode";
 
 export const dynamic = "force-dynamic";
 
@@ -75,5 +76,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     ipHash: guard.ctx.ipHash,
   });
 
-  return NextResponse.json({ node: toNodeDTO(data) }, { status: 201 });
+  // C1: 座標未指定（lat/lng とも null）なら名称でジオコーディングして自動補完する。
+  // 失敗・候補ゼロ・例外は隔離し、座標 null のまま（=ノード作成は壊さない）。
+  let node = data;
+  if (node.lat == null && node.lng == null) {
+    try {
+      const hit = await geocodeAddress(node.name);
+      if (hit) {
+        const { data: updated, error: updateError } = await supabaseAdmin
+          .from("carpool_nodes")
+          .update({ lat: hit.lat, lng: hit.lng })
+          .eq("id", node.id)
+          .eq("club_id", club.id)
+          .select("*")
+          .single();
+        if (!updateError && updated) {
+          node = updated;
+          await writeChangeLog({
+            clubId: club.id,
+            tableName: "carpool_nodes",
+            recordId: node.id,
+            action: "update",
+            payload: { geocoded: true, source: "gsi", lat: hit.lat, lng: hit.lng },
+            actorName: guard.ctx.actorName,
+            ipHash: guard.ctx.ipHash,
+          });
+        }
+      }
+    } catch {
+      // ジオコーディング失敗はノード作成に影響させない（座標 null のまま）。
+    }
+  }
+
+  return NextResponse.json({ node: toNodeDTO(node) }, { status: 201 });
 }

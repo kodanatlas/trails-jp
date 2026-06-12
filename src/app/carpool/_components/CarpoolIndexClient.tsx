@@ -5,12 +5,6 @@ import { useRouter } from "next/navigation";
 import { fetchCarpool, postCarpool, CarpoolApiError } from "./carpoolFetch";
 import { useToast } from "./Toast";
 import { useAthleteSuggest } from "./useAthleteSuggest";
-import {
-  actorStorageKey,
-  rememberActorMember,
-  readRememberedClub,
-  rememberClub,
-} from "./storageKeys";
 import { filterClubCandidates, clubSelectionToFields } from "@/lib/carpool/suggest";
 import { generateClubSlug, retryClubSlug } from "@/lib/carpool/club-slug";
 import { buildCreatorMemberBody } from "@/lib/carpool/onboarding";
@@ -23,7 +17,6 @@ export default function CarpoolIndexClient() {
   const [clubs, setClubs] = useState<ClubDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [savedSlug, setSavedSlug] = useState<string | null>(null);
 
   // 追加フォーム
   const [showForm, setShowForm] = useState(false);
@@ -81,13 +74,7 @@ export default function CarpoolIndexClient() {
     setShowClubSuggest(false);
   };
 
-  // クラブ記憶は「前回のクラブを開く」ショートカット表示にのみ使う。
-  // 自動遷移はしない（特定クラブに表示が固定される挙動は 2026-06-12 ユーザー指示で廃止）。
-  useEffect(() => {
-    const stored = readRememberedClub();
-    if (stored) setSavedSlug(stored);
-  }, []);
-
+  // 調整さんモデル: クラブ記憶（localStorage）は廃止。/carpool は常にクラブ一覧を出す。
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -106,12 +93,7 @@ export default function CarpoolIndexClient() {
   }, []);
 
   const selectClub = (clubSlug: string) => {
-    rememberClub(clubSlug);
     router.push(`/carpool/${clubSlug}`);
-  };
-
-  const goToSaved = () => {
-    if (savedSlug) router.push(`/carpool/${savedSlug}`);
   };
 
   const handleCreate = async (e: FormEvent) => {
@@ -152,26 +134,18 @@ export default function CarpoolIndexClient() {
       }
       toast("クラブを作成しました", "success");
 
-      // M1: 作成者をその場で member 化し、操作者（actorMember 新キー）として保存する。
-      // 旧キーだけの名前書き込みは廃止（ホームで「未設定」になり Step1 で二重登録感が出るため）。
+      // 作成者をその場で最初の member 化する（Step1 を満たす）。localStorage 記憶は廃止。
       // athleteKey は body に含めない = サーバが normalizeNameKey(displayName) を自動付与。
       const memberBody = buildCreatorMemberBody(trimmedActor);
       if (memberBody) {
         try {
-          const created = await postCarpool<{ member: MemberDTO }>(
+          await postCarpool<{ member: MemberDTO }>(
             `/clubs/${data.club.slug}/members`,
             memberBody,
           );
-          // useActor.setActorMember 相当（新キー member_id + 互換旧キー名前）。
-          rememberActorMember(data.club.slug, created.member);
         } catch {
           // member 化の失敗はクラブ作成の成功を妨げない（遷移は続行）。
-          // 旧キーに名前だけ残し、ホーム Step1 の自己登録フォームが名前をプリフィルする。
-          try {
-            window.localStorage.setItem(actorStorageKey(data.club.slug), trimmedActor);
-          } catch {
-            /* noop */
-          }
+          // ホームの「メンバーを追加」から後で追加できる。
         }
       }
 
@@ -187,16 +161,6 @@ export default function CarpoolIndexClient() {
       {toastEl}
       <h1 className="mb-1 text-xl font-bold text-foreground">🚗 配車割</h1>
       <p className="mb-5 text-sm text-muted">クラブを選んでください。</p>
-
-      {savedSlug && (
-        <button
-          type="button"
-          onClick={goToSaved}
-          className="mb-4 w-full rounded-xl border border-border bg-card p-3 text-left text-sm text-foreground hover:bg-card-hover"
-        >
-          前回のクラブ「{savedSlug}」を開く
-        </button>
-      )}
 
       {loading && <p className="text-sm text-muted">読み込み中…</p>}
       {error && <p className="text-sm text-red-400">{error}</p>}
