@@ -10,6 +10,7 @@ import type { PlanWorkerMessage, PlanWorkerRequest } from "./plan.worker";
 import { cn } from "@/lib/utils";
 import {
   buildPlanInput,
+  relabelIssues,
   WEIGHT_PRESET_LABELS,
   WEIGHT_PRESETS,
   type WeightPresetKey,
@@ -169,6 +170,9 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
   // D: 移動時間の自動計算（OSRM）実行中フラグ。
   const [autoCalculating, setAutoCalculating] = useState(false);
 
+  // BUG3: 既定ルートの自動作成（初回実行のブロック解消）実行中フラグ。
+  const [creatingRoute, setCreatingRoute] = useState(false);
+
   // --- 履歴 ---
   const [history, setHistory] = useState<PlanMetaDTO[]>([]);
 
@@ -318,6 +322,47 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
     }
   }, [actorName, slug, eventId, load, toast]);
 
+  // BUG3: 既定ルートを自動作成して、ルート候補0件による初回実行ブロックを解消する。
+  // 1) /routes に「自動ルート」を作成 → 2) /routes/auto-times で route_times を OSRM 充填。
+  // 会場の場所が未設定だと auto-times が意味を持たないため、先に会場設定を促す。
+  const autoCreateRoute = useCallback(async () => {
+    if (!event?.venueNodeId) {
+      toast(
+        "先に会場・駐車場の場所を設定してください（自動ルートの所要時間に必要です）",
+        "error",
+      );
+      return;
+    }
+    setCreatingRoute(true);
+    try {
+      // 1) ルートを1件作成（料金/距離/リスクは任意。distanceKm はクライアントで不明なので省略）。
+      await postCarpool(`/clubs/${slug}/events/${eventId}/routes`, {
+        actorName,
+        name: "自動ルート",
+        tollYen: 0,
+        riskScore: 0,
+      });
+      // 2) 各ノード → 会場 の car 所要を OSRM から route_times に充填。
+      await postCarpool(`/clubs/${slug}/events/${eventId}/routes/auto-times`, {
+        actorName,
+      });
+      toast("自動ルートを作成しました", "success");
+    } catch (e) {
+      toast(
+        e instanceof CarpoolApiError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : "自動ルートの作成に失敗しました",
+        "error",
+      );
+    } finally {
+      setCreatingRoute(false);
+      // 作成ぶんで実行前チェックを更新するため、必ずプランを再読込する。
+      await load();
+    }
+  }, [event?.venueNodeId, actorName, slug, eventId, load, toast]);
+
   useEffect(() => {
     void load();
     void loadHistory();
@@ -356,19 +401,35 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
     return map;
   }, [input]);
 
+  // BUG2: solver/validate と buildPlanInput の各メッセージに含まれる生 UUID を
+  // 表示名/場所名へ置換するための nameMap。built が無い間は空辞書。
+  // useMemo で安定参照にし、下流の relabel useMemo が毎レンダー再計算されないようにする。
+  const nameMap = useMemo(
+    () => built?.nameMap ?? { members: {}, nodes: {} },
+    [built?.nameMap],
+  );
+
   // --- 実行前チェック（validate + warnings をマージ） ---
+  // validate(input) は `name=(id)=>id` 由来の生 UUID を含むため relabelIssues で名前化する。
   const validationErrors = useMemo(() => {
     if (!input) return [];
     try {
-      return validate(input);
+      return relabelIssues(validate(input), nameMap);
     } catch (e) {
       return [e instanceof Error ? e.message : "検証に失敗しました"];
     }
-  }, [input]);
+  }, [input, nameMap]);
 
-  const warnings = built?.warnings ?? [];
+  // BUG2: buildPlanInput の warnings/errors も relabel して堅牢化する（冪等・安全）。
+  const warnings = useMemo(
+    () => relabelIssues(built?.warnings ?? [], nameMap),
+    [built?.warnings, nameMap],
+  );
   // B1: 組み立て段階のブロッキングエラー（会場/ルート/運転手/脱落/確約/到達性）。
-  const inputErrors = built?.errors ?? [];
+  const inputErrors = useMemo(
+    () => relabelIssues(built?.errors ?? [], nameMap),
+    [built?.errors, nameMap],
+  );
 
   const driverCount = input?.cars.length ?? 0;
   const memberCount = input?.members.length ?? 0;
@@ -1106,16 +1167,40 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
                     <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-red-400">
                       {allCheckErrors.map((w, i) => {
                         const link = issueLink(w);
+                        // BUG3: ルート候補0件は、その場で既定ルートを自動作成できる
+                        // ボタンを主導線にする（マスタへの Link は副次フォールバック）。
+                        const isRouteCandidate = w.includes("ルート候補");
                         return (
                           <li key={`e-${i}`}>
                             {w}
-                            {link && (
-                              <Link
-                                href={link.href}
-                                className="ml-1.5 whitespace-nowrap text-primary hover:underline"
-                              >
-                                {link.label} →
-                              </Link>
+                            {isRouteCandidate ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => void autoCreateRoute()}
+                                  disabled={creatingRoute}
+                                  className="ml-1.5 whitespace-nowrap rounded bg-primary px-2 py-0.5 text-[11px] font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                                >
+                                  {creatingRoute ? "作成中…" : "ルートを自動作成"}
+                                </button>
+                                {link && (
+                                  <Link
+                                    href={link.href}
+                                    className="ml-1.5 whitespace-nowrap text-primary hover:underline"
+                                  >
+                                    {link.label} →
+                                  </Link>
+                                )}
+                              </>
+                            ) : (
+                              link && (
+                                <Link
+                                  href={link.href}
+                                  className="ml-1.5 whitespace-nowrap text-primary hover:underline"
+                                >
+                                  {link.label} →
+                                </Link>
+                              )
                             )}
                           </li>
                         );

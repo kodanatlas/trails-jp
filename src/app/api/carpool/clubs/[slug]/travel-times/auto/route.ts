@@ -7,6 +7,7 @@ import { TRAVEL_TIMES_BATCH_LIMIT } from "@/lib/carpool/api/constants";
 import {
   fetchOsrmTable,
   buildAutoUpserts,
+  sanitizeGeoNodes,
   type GeoNode,
   type ExistingTravelTime,
 } from "@/lib/carpool/osrm";
@@ -46,9 +47,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     .eq("club_id", club.id);
   if (nodesError) return ERR.serverError(nodesError.message);
 
-  const geoNodes: GeoNode[] = (nodeRows ?? [])
+  const rawGeoNodes: GeoNode[] = (nodeRows ?? [])
     .filter((n) => n.lat != null && n.lng != null)
     .map((n) => ({ id: n.id, lat: Number(n.lat), lng: Number(n.lng) }));
+
+  // 日本ドメイン外の座標（履歴の不良データ）を計算から除外し、swap は自動補正する。
+  const { ok: geoNodes, dropped } = sanitizeGeoNodes(rawGeoNodes);
+  // dropped 件数を日本語警告として応答 message に付け足す（既存フィールドは維持）。
+  const droppedSuffix =
+    dropped.length > 0 ? `（座標が日本国外の場所${dropped.length}件は除外しました）` : "";
 
   if (geoNodes.length < 2) {
     return NextResponse.json({
@@ -56,7 +63,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       car: 0,
       transit: 0,
       geoNodeCount: geoNodes.length,
-      message: "座標つきの場所が2件未満です。マスタで座標を取得してください",
+      message: `座標つきの場所が2件未満です。マスタで座標を取得してください${droppedSuffix}`,
     });
   }
 
@@ -87,7 +94,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       car: 0,
       transit: 0,
       osrmOk: false,
-      message: "自動計算サーバーに接続できませんでした。マスタで手入力してください",
+      message: `自動計算サーバーに接続できませんでした。マスタで手入力してください${droppedSuffix}`,
     });
   }
 
@@ -131,5 +138,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     transit: transit.length,
     osrmOk: durations.length > 0,
     travelTimes: upserted.map(toTravelTimeDTO),
+    // 国外座標を除外した場合のみ案内を付ける（成功応答のフィールドは増やさない方針）。
+    ...(dropped.length > 0
+      ? { message: `移動時間を自動計算しました${droppedSuffix}` }
+      : {}),
   });
 }

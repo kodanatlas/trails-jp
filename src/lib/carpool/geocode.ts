@@ -90,6 +90,46 @@ function isValidLng(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n) && n >= -180 && n <= 180;
 }
 
+// ---------------------------------------------------------------------------
+// 日本ドメインの緯度経度判定（座標の swap 防御 + 国外ゴミデータの除外）
+// ---------------------------------------------------------------------------
+
+/** 日本の緯度の下限（沖縄〜与那国の南端を含む粗い矩形）。 */
+export const JAPAN_LAT_MIN = 20;
+/** 日本の緯度の上限（北海道北端を含む）。 */
+export const JAPAN_LAT_MAX = 46;
+/** 日本の経度の下限（与那国の西端を含む）。 */
+export const JAPAN_LNG_MIN = 122;
+/** 日本の経度の上限（南鳥島の東端を含む）。 */
+export const JAPAN_LNG_MAX = 154;
+
+/**
+ * (lat, lng) が日本の粗い矩形ドメイン内か。
+ * lat ∈ [20,46] かつ lng ∈ [122,154] のときだけ true。
+ */
+export function isJapanDomain(lat: number, lng: number): boolean {
+  return (
+    lat >= JAPAN_LAT_MIN &&
+    lat <= JAPAN_LAT_MAX &&
+    lng >= JAPAN_LNG_MIN &&
+    lng <= JAPAN_LNG_MAX
+  );
+}
+
+/**
+ * 日本ドメイン前提で (lat, lng) を正規化する。
+ *
+ * - 既に日本ドメイン内ならそのまま {lat,lng} を返す。
+ * - lat/lng を入れ替えると日本ドメインに入る（= DB に [lat,lng] が swap 保存された
+ *   履歴データ）なら、入れ替えた {lat:lng, lng:lat} を返して自動補正する。
+ * - どちらでもない（国外のゴミ）なら null を返して棄却する。
+ */
+export function normalizeJapanLatLng(lat: number, lng: number): LatLng | null {
+  if (isJapanDomain(lat, lng)) return { lat, lng };
+  if (isJapanDomain(lng, lat)) return { lat: lng, lng: lat };
+  return null;
+}
+
 /**
  * GSI レスポンス（feature 配列）の先頭候補から LatLng を取り出す純粋関数。
  *
@@ -104,9 +144,12 @@ export function pickFirstLatLng(features: unknown): LatLng | null {
     if (!Array.isArray(coords) || coords.length < 2) continue;
     const lng = coords[0];
     const lat = coords[1];
-    if (isValidLat(lat) && isValidLng(lng)) {
-      return { lat, lng };
-    }
+    // 第1ゲート: 物理的に有効な緯度経度（-90..90 / -180..180）。
+    if (!isValidLat(lat) || !isValidLng(lng)) continue;
+    // 第2ゲート: 日本ドメイン正規化（swap 自動補正 + 国外ゴミの棄却）。
+    const normalized = normalizeJapanLatLng(lat, lng);
+    if (!normalized) continue; // 国外ドメインはこの候補を飛ばす
+    return normalized;
   }
   return null;
 }

@@ -85,6 +85,33 @@ export interface BuildPlanInputResult {
    * UI はこれが空でない限り「最適化を実行」を無効化する。
    */
   errors: string[];
+  /**
+   * id → 表示名/場所名の対応表。
+   * solver の validate が返す生の UUID を含むメッセージを、relabelIssues で
+   * 人間可読な名前に置換するために使う（members: メンバー表示名 / nodes: 場所名）。
+   */
+  nameMap: { members: Record<string, string>; nodes: Record<string, string> };
+}
+
+/**
+ * メッセージ配列中の UUID を nameMap の名前へ置換する純粋ヘルパー。
+ *
+ * solver/validate.ts は `name = (id) => id` で生の UUID を埋め込むため、
+ * "<uuid> さんは乗車可能地点がありません" や
+ * "移動時間が未入力: <uuid>→会場 (car)" のような文字列が出る。
+ * これらに含まれる UUID v4 風パターンを、members/nodes を統合した辞書で置換する。
+ * 未知の UUID・UUID でない文字列はそのまま残す（冪等・安全）。
+ */
+export function relabelIssues(
+  messages: string[],
+  nameMap: { members: Record<string, string>; nodes: Record<string, string> },
+): string[] {
+  const combined: Record<string, string> = { ...nameMap.members, ...nameMap.nodes };
+  const UUID_RE =
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+  return messages.map((msg) =>
+    msg.replace(UUID_RE, (id) => combined[id] ?? id),
+  );
 }
 
 // DEFAULT_WEIGHTS / DEFAULT_OPTIONS / プリセットは types から再エクスポートして UI と共有する。
@@ -201,6 +228,12 @@ export function buildPlanInput(
 
   const nodeById = new Map<string, NodeDTO>();
   for (const n of nodes) nodeById.set(n.id, n);
+
+  // id → 名前の対応表（実行前チェックの UUID を relabelIssues で名前化するため）。
+  const memberName: Record<string, string> = {};
+  for (const m of members) memberName[m.id] = m.displayName;
+  const nodeName: Record<string, string> = {};
+  for (const n of nodes) nodeName[n.id] = n.name;
 
   // --- M: role が driver / rider の participation のみ（self/absent/undecided 除外） ---
   const active = participations.filter(
@@ -408,5 +441,6 @@ export function buildPlanInput(
     input,
     warnings: Array.from(new Set(warnings)),
     errors: Array.from(new Set(errors)),
+    nameMap: { members: memberName, nodes: nodeName },
   };
 }

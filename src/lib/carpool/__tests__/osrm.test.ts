@@ -11,6 +11,9 @@ import {
   buildAutoUpserts,
   buildRouteTimesToVenue,
   fetchOsrmTable,
+  sanitizeGeoNodes,
+  CAR_MAX_SANE_MIN,
+  TRANSIT_MAX_SANE_MIN,
   type GeoNode,
   type ExistingTravelTime,
   type FetchLike,
@@ -40,6 +43,25 @@ describe("estimateTransitMinutes", () => {
     const m = estimateTransitMinutes(A, B);
     expect(Number.isInteger(m)).toBe(true);
     expect(m).toBeGreaterThan(60);
+  });
+  it("目黒駅〜練馬駅は正気な分（>5, <=480, 1440 ではない）", () => {
+    const meguro: GeoNode = { id: "meguro", lat: 35.633, lng: 139.716 };
+    const nerima: GeoNode = { id: "nerima", lat: 35.748, lng: 139.654 };
+    const m = estimateTransitMinutes(meguro, nerima);
+    expect(m).toBeGreaterThan(5);
+    expect(m).toBeLessThanOrEqual(TRANSIT_MAX_SANE_MIN); // 480
+    expect(m).not.toBe(1440);
+    // haversine（直線距離）は都内の近接駅レンジ（10〜18km 程度）に収まる。
+    const km = haversineKm(meguro, nerima);
+    expect(km).toBeGreaterThan(10);
+    expect(km).toBeLessThan(18);
+  });
+  it("既定 maxMinutes は TRANSIT_MAX_SANE_MIN（480）でキャップされ 1440 にならない", () => {
+    // 地球規模の距離（日本〜南米）でも 480 で頭打ち。
+    const far1: GeoNode = { id: "f1", lat: 35.6, lng: 139.7 };
+    const far2: GeoNode = { id: "f2", lat: -34.6, lng: -58.4 };
+    const m = estimateTransitMinutes(far1, far2);
+    expect(m).toBe(TRANSIT_MAX_SANE_MIN);
   });
 });
 
@@ -110,6 +132,24 @@ describe("buildCarUpserts", () => {
     const av = out.find((u) => u.fromNodeId === "a" && u.toNodeId === "v");
     expect(av?.minutes).toBe(5); // 300s
   });
+
+  it("異常値（minutes>600）のエントリは保存しない（1093 分は除外）", () => {
+    const sane = parseOsrmDurations({
+      code: "Ok",
+      // a>b = 1093 分 = 65580 秒（座標エラー由来の異常値）, a>v = 5 分。
+      durations: [
+        [0, 1093 * 60, 300],
+        [600, 0, 360],
+        [300, 360, 0],
+      ],
+    });
+    const out = buildCarUpserts(nodes, sane, new Set());
+    // a>b は 1093 > CAR_MAX_SANE_MIN(600) なので除外される。
+    expect(out.find((u) => u.fromNodeId === "a" && u.toNodeId === "b")).toBeUndefined();
+    // 他の正常ペアは残る。
+    expect(out.find((u) => u.fromNodeId === "a" && u.toNodeId === "v")?.minutes).toBe(5);
+    expect(out.every((u) => u.minutes <= CAR_MAX_SANE_MIN)).toBe(true);
+  });
 });
 
 describe("buildTransitUpserts", () => {
@@ -122,6 +162,44 @@ describe("buildTransitUpserts", () => {
     // 3 ノード順序対 6 - 1(保護) = 5
     expect(out).toHaveLength(5);
     expect(out.every((u) => u.source === "api" && u.mode === "transit")).toBe(true);
+  });
+
+  it("推定分が 480 を超えるエントリは保存しない", () => {
+    // 国内ノードどうしなので全て 480 以下に収まる（異常値は出ない）。
+    const nodes = [A, B, V];
+    const out = buildTransitUpserts(nodes, new Set());
+    expect(out.every((u) => u.minutes <= TRANSIT_MAX_SANE_MIN)).toBe(true);
+  });
+});
+
+describe("sanitizeGeoNodes", () => {
+  it("日本ドメイン内ノードは ok に残る", () => {
+    const n: GeoNode = { id: "ok1", lat: 35.6, lng: 139.7 };
+    const { ok, dropped } = sanitizeGeoNodes([n]);
+    expect(ok).toEqual([{ id: "ok1", lat: 35.6, lng: 139.7 }]);
+    expect(dropped).toEqual([]);
+  });
+  it("swap されたノード（lat=139.7,lng=35.6）は補正して ok に入る", () => {
+    const n: GeoNode = { id: "sw1", lat: 139.7, lng: 35.6 };
+    const { ok, dropped } = sanitizeGeoNodes([n]);
+    expect(ok).toEqual([{ id: "sw1", lat: 35.6, lng: 139.7 }]);
+    expect(dropped).toEqual([]);
+  });
+  it("国外ノード（lat=10,lng=10）は dropped に入る", () => {
+    const n: GeoNode = { id: "bad1", lat: 10, lng: 10 };
+    const { ok, dropped } = sanitizeGeoNodes([n]);
+    expect(ok).toEqual([]);
+    expect(dropped).toEqual([{ id: "bad1", lat: 10, lng: 10 }]);
+  });
+  it("混在集合を ok/dropped に振り分ける", () => {
+    const nodes: GeoNode[] = [
+      { id: "ok1", lat: 35.6, lng: 139.7 },
+      { id: "sw1", lat: 139.7, lng: 35.6 },
+      { id: "bad1", lat: 10, lng: 10 },
+    ];
+    const { ok, dropped } = sanitizeGeoNodes(nodes);
+    expect(ok.map((n) => n.id).sort()).toEqual(["ok1", "sw1"]);
+    expect(dropped.map((n) => n.id)).toEqual(["bad1"]);
   });
 });
 

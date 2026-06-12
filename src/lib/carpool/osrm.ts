@@ -13,12 +13,26 @@
  *   日本語案内へフォールバック。
  */
 
+import { normalizeJapanLatLng } from "./geocode";
+
 /** 座標を持つノード（自動計算の対象）。 */
 export interface GeoNode {
   id: string;
   lat: number;
   lng: number;
 }
+
+/**
+ * car（OSRM）所要の正気範囲の上限（分）。
+ * これを超える値は座標エラー由来の異常値とみなし、保存しない（10時間相当）。
+ */
+export const CAR_MAX_SANE_MIN = 600;
+
+/**
+ * transit（haversine 推定）所要の正気範囲の上限（分）。
+ * これを超える値は座標エラー由来の異常値とみなし、保存しない（8時間相当）。
+ */
+export const TRANSIT_MAX_SANE_MIN = 480;
 
 /** 既存 travel_time（上書き判定に使う最小形）。 */
 export interface ExistingTravelTime {
@@ -70,6 +84,9 @@ export function haversineKm(a: GeoNode, b: GeoNode): number {
  * 直線距離を「実距離≒直線×1.3」に補正し、徒歩+乗換係数として平均 ~4km/h 相当で割る
  * （駅探索・待ち時間・乗換を均した粗い実効速度）。最低 5 分・整数分・上限 cap。
  * source='api' として保存し、編集可とする（あくまで初期値の目安）。
+ *
+ * maxMinutes の既定は TRANSIT_MAX_SANE_MIN（480 分 = 8 時間）。座標エラーで
+ * 巨大距離になった場合でも、この cap までに抑える（異常値の連鎖を防ぐ）。
  */
 export function estimateTransitMinutes(
   a: GeoNode,
@@ -79,10 +96,38 @@ export function estimateTransitMinutes(
   const kmh = opts?.effectiveKmh ?? 4; // 徒歩+乗換を均した実効速度
   const detour = opts?.detourFactor ?? 1.3;
   const minMin = opts?.minMinutes ?? 5;
-  const maxMin = opts?.maxMinutes ?? 1440;
+  const maxMin = opts?.maxMinutes ?? TRANSIT_MAX_SANE_MIN;
   const km = haversineKm(a, b) * detour;
   const minutes = Math.round((km / kmh) * 60);
   return Math.min(maxMin, Math.max(minMin, minutes));
+}
+
+/**
+ * GeoNode 集合を日本ドメインで検疫する。
+ *
+ * - 各ノードの (lat,lng) を normalizeJapanLatLng に通す。
+ *   - 日本ドメイン内 → そのまま ok[] へ。
+ *   - swap された対（DB に [lat,lng] が逆保存された履歴データ）→ 補正した座標で ok[] へ。
+ *   - 国外ドメイン（ゴミ）→ 元のノードを dropped[] へ。
+ *
+ * OSRM / haversine 計算前にこれで弾くことで、国外座標による異常な所要時間
+ * （地球の裏側まで数千分）が DB に保存されるのを防ぐ。
+ */
+export function sanitizeGeoNodes(nodes: ReadonlyArray<GeoNode>): {
+  ok: GeoNode[];
+  dropped: GeoNode[];
+} {
+  const ok: GeoNode[] = [];
+  const dropped: GeoNode[] = [];
+  for (const n of nodes) {
+    const normalized = normalizeJapanLatLng(n.lat, n.lng);
+    if (normalized) {
+      ok.push({ id: n.id, lat: normalized.lat, lng: normalized.lng });
+    } else {
+      dropped.push(n);
+    }
+  }
+  return { ok, dropped };
 }
 
 /**
@@ -172,6 +217,8 @@ export function buildCarUpserts(
     const from = nodes[d.fromIndex];
     const to = nodes[d.toIndex];
     if (!from || !to) continue;
+    // 座標エラー由来の異常値（10時間超）は保存しない。
+    if (d.minutes > CAR_MAX_SANE_MIN) continue;
     const key = pairKey(from.id, to.id, "car");
     if (skip.has(key)) continue;
     out.push({
@@ -204,11 +251,14 @@ export function buildTransitUpserts(
       const to = nodes[j];
       const key = pairKey(from.id, to.id, "transit");
       if (skip.has(key)) continue;
+      const minutes = estimateTransitMinutes(from, to, opts);
+      // 座標エラー由来の異常値（8時間超）は保存しない。
+      if (minutes > TRANSIT_MAX_SANE_MIN) continue;
       out.push({
         fromNodeId: from.id,
         toNodeId: to.id,
         mode: "transit",
-        minutes: estimateTransitMinutes(from, to, opts),
+        minutes,
         source: "api",
       });
     }

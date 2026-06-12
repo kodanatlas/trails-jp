@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildPlanInput,
+  relabelIssues,
   timeToMin,
   WEIGHT_PRESETS,
   type PlanInputData,
@@ -607,5 +608,64 @@ describe("buildPlanInput — blocking errors (B1)", () => {
     };
     const { errors } = buildPlanInput(data);
     expect(errors).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// relabelIssues / nameMap（BUG 2: 実行前チェックの UUID を名前へ）
+// ---------------------------------------------------------------------------
+
+describe("relabelIssues", () => {
+  const MEMBER_UUID = "11111111-1111-4111-8111-111111111111";
+  const NODE_UUID = "22222222-2222-4222-8222-222222222222";
+  const nameMap = {
+    members: { [MEMBER_UUID]: "田中太郎" },
+    nodes: { [NODE_UUID]: "目黒駅" },
+  };
+
+  it("メンバー UUID を表示名に置換する（solver の乗車可能地点メッセージ）", () => {
+    const out = relabelIssues([`${MEMBER_UUID} さんは乗車可能地点がありません`], nameMap);
+    expect(out).toEqual(["田中太郎 さんは乗車可能地点がありません"]);
+  });
+
+  it("ノード UUID を場所名に置換する（移動時間が未入力メッセージ）", () => {
+    const out = relabelIssues([`移動時間が未入力: ${NODE_UUID}→会場 (car)`], nameMap);
+    expect(out).toEqual(["移動時間が未入力: 目黒駅→会場 (car)"]);
+  });
+
+  it("1 メッセージ内の複数 UUID をまとめて置換する", () => {
+    const out = relabelIssues(
+      [`移動時間が未入力: ${NODE_UUID}→${NODE_UUID} (transit)`],
+      nameMap,
+    );
+    expect(out).toEqual(["移動時間が未入力: 目黒駅→目黒駅 (transit)"]);
+  });
+
+  it("未知の UUID はそのまま残す", () => {
+    const unknown = "99999999-9999-4999-8999-999999999999";
+    const out = relabelIssues([`${unknown} さんは乗車可能地点がありません`], nameMap);
+    expect(out).toEqual([`${unknown} さんは乗車可能地点がありません`]);
+  });
+
+  it("UUID を含まないテキストは変更しない", () => {
+    const out = relabelIssues(["運転手が登録されていません"], nameMap);
+    expect(out).toEqual(["運転手が登録されていません"]);
+  });
+});
+
+describe("buildPlanInput — nameMap", () => {
+  it("members と nodes を含む nameMap を返す", () => {
+    const members = [member("d1", { seatsAvailable: 3, displayName: "ドライバー一郎" })];
+    const data: PlanInputData = {
+      event: baseEvent,
+      routes: [route("k1", { d1_home: 90 })],
+      participations: [participation("d1", "driver")],
+      members,
+      nodes: [node("venue1", "venue", "市民体育館")],
+      travelTimes: [],
+    };
+    const { nameMap } = buildPlanInput(data);
+    expect(nameMap.members.d1).toBe("ドライバー一郎");
+    expect(nameMap.nodes.venue1).toBe("市民体育館");
   });
 });

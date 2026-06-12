@@ -586,8 +586,7 @@ function TravelTimesTab({
   return (
     <div>
       <p className="mb-3 rounded-lg bg-surface p-2 text-xs text-muted">
-        {/* Phase 3 comment */}
-        必要ペアの動的算出は Phase 3 で実装予定。現在は手動入力のみ。
+        移動時間は配車計画ページの『自動計算する』で自動取得できます（ここでは手修正）
       </p>
 
       <ul className="mb-4 flex flex-col gap-2">
@@ -601,6 +600,16 @@ function TravelTimesTab({
             >
               <div className="min-w-0">
                 <p className="truncate text-sm text-foreground">
+                  {/* MINOR2: car で 600 分超は座標エラー由来の異常値の疑い。⚠ を前置。 */}
+                  {t.mode === "car" && t.minutes > 600 && (
+                    <span
+                      className="mr-1 text-yellow-400"
+                      title="移動時間が異常値です（座標を確認してください）"
+                      aria-label="移動時間が異常値です（座標を確認してください）"
+                    >
+                      ⚠
+                    </span>
+                  )}
                   {nodeName(t.fromNodeId)} → {nodeName(t.toNodeId)}
                 </p>
                 <p className="text-xs text-muted">

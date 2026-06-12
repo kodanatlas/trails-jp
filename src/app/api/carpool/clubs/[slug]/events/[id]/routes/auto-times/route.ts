@@ -2,7 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { routeTimesAutoSchema } from "@/lib/carpool/api/schemas";
 import { ERR, zodError, guardWrite, writeChangeLog, resolveClub } from "@/lib/carpool/api/helpers";
-import { fetchOsrmTable, buildRouteTimesToVenue, type GeoNode } from "@/lib/carpool/osrm";
+import {
+  fetchOsrmTable,
+  buildRouteTimesToVenue,
+  sanitizeGeoNodes,
+  type GeoNode,
+} from "@/lib/carpool/osrm";
 
 export const dynamic = "force-dynamic";
 
@@ -59,15 +64,20 @@ export async function POST(
     .eq("club_id", club.id);
   if (nodesError) return ERR.serverError(nodesError.message);
 
-  const geoNodes: GeoNode[] = (nodeRows ?? [])
+  const rawGeoNodes: GeoNode[] = (nodeRows ?? [])
     .filter((n) => n.lat != null && n.lng != null)
     .map((n) => ({ id: n.id, lat: Number(n.lat), lng: Number(n.lng) }));
+
+  // 日本ドメイン外の座標（履歴の不良データ）を計算から除外し、swap は自動補正する。
+  const { ok: geoNodes, dropped } = sanitizeGeoNodes(rawGeoNodes);
+  const droppedSuffix =
+    dropped.length > 0 ? `（座標が日本国外の場所${dropped.length}件は除外しました）` : "";
 
   const venueIndex = geoNodes.findIndex((n) => n.id === event.venue_node_id);
   if (venueIndex < 0) {
     return NextResponse.json({
       count: 0,
-      message: "会場の場所の座標がありません。マスタで取得してください",
+      message: `会場の場所の座標がありません。マスタで取得してください${droppedSuffix}`,
     });
   }
 
@@ -122,12 +132,15 @@ export async function POST(
     ipHash: guard.ctx.ipHash,
   });
 
+  // 既存の message（OSRM 不達）に、国外座標を除外した案内を付け足す。
+  const baseMessage =
+    durations.length === 0 ? "自動計算サーバーに接続できませんでした" : "";
+  const message = `${baseMessage}${droppedSuffix}`;
+
   return NextResponse.json({
     count: totalInserted,
     routeCount: (routes ?? []).length,
     osrmOk: durations.length > 0,
-    ...(durations.length === 0
-      ? { message: "自動計算サーバーに接続できませんでした" }
-      : {}),
+    ...(message ? { message } : {}),
   });
 }
