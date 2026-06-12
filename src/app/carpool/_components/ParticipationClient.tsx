@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import Link from "next/link";
-import { fetchCarpool, postCarpool, patchCarpool } from "./carpoolFetch";
+import { fetchCarpool, postCarpool, patchCarpool, buildUrl } from "./carpoolFetch";
 import { useActor } from "./useActor";
 import { useToast } from "./Toast";
 import ActorModal from "./ActorModal";
@@ -24,6 +23,7 @@ interface ParticipationClientProps {
   eventId: string;
 }
 
+/** ユーザーが選べるロール（'undecided' は未回答状態であり選択肢に含めない）。 */
 type Role = "driver" | "rider" | "self" | "absent";
 type Willingness = "always" | "if_needed";
 
@@ -85,9 +85,13 @@ const EMPTY_PFORM: PForm = {
   className: "",
 };
 
+/** 検出行のキー（nameKey + index で安定化）。 */
+function detKey(d: DetectedEntry, i: number): string {
+  return `${d.nameKey}-${i}`;
+}
+
 export default function ParticipationClient({ slug, eventId }: ParticipationClientProps) {
   const { toast, toastEl } = useToast();
-  const { actorName, ready, setActor } = useActor(slug);
 
   const [club, setClub] = useState<ClubDTO | null>(null);
   const [event, setEvent] = useState<EventDTO | null>(null);
@@ -96,11 +100,13 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   const [members, setMembers] = useState<MemberDTO[]>([]);
   const [nodes, setNodes] = useState<NodeDTO[]>([]);
   const [detected, setDetected] = useState<DetectedEntry[]>([]);
-  /** detect-entries の取得失敗（「検出0件」と区別して表示する）。 */
   const [detectError, setDetectError] = useState<string | null>(null);
   const [detectLoading, setDetectLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { actorName, actorMemberId, member: actorMember, ready, setActorMember } =
+    useActor(slug, members);
 
   const [showActorModal, setShowActorModal] = useState(false);
   const [showDetect, setShowDetect] = useState(true);
@@ -108,6 +114,12 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   const [form, setForm] = useState<PForm>(EMPTY_PFORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // 検出パネルの一括選択状態（detKey → 選択中）と未登録行の表示名入力（detKey → 値）。
+  const [selectedDet, setSelectedDet] = useState<Record<string, boolean>>({});
+  const [nameInputs, setNameInputs] = useState<Record<string, string>>({});
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   const memberById = useMemo(() => {
     const map = new Map<string, MemberDTO>();
@@ -146,7 +158,6 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
       setMembers(membersRes.members);
       setNodes(nodesRes.nodes);
 
-      // detect-entries は失敗しても致命的でない（失敗は detectError で別表示）
       await loadDetect();
     } catch (e) {
       setError(e instanceof Error ? e.message : "読み込みに失敗しました");
@@ -155,7 +166,6 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     }
   };
 
-  /** detect-entries のみ再取得（失敗時の再試行ボタンからも呼ぶ）。 */
   const loadDetect = async () => {
     setDetectLoading(true);
     setDetectError(null);
@@ -179,26 +189,34 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, eventId]);
 
-  // actor が確定したら、その人の既存参加 or 既定値をフォームに反映
+  // actor が確定したら、その人の既定値をフォームに反映（初回のみ）。
   useEffect(() => {
-    if (!ready || members.length === 0) return;
-    const me = actorName
-      ? members.find((m) => m.displayName === actorName)
-      : undefined;
-    if (me && !form.memberId) {
-      setForm((f) => ({ ...f, memberId: me.id, role: me.hasCar ? "driver" : "rider" }));
+    if (!ready || !actorMember) return;
+    if (!form.memberId) {
+      setForm((f) => ({
+        ...f,
+        memberId: actorMember.id,
+        role: actorMember.hasCar ? "driver" : "rider",
+      }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, actorName, members]);
+  }, [ready, actorMember]);
 
-  // メンバー選択時、既存参加があればフォームに展開
+  // メンバー選択時、既存参加があればフォームに展開。
   const loadParticipationIntoForm = (memberId: string) => {
     const existing = participations.find((p) => p.memberId === memberId);
     const member = memberById.get(memberId);
     if (existing) {
+      // 'undecided'（未回答）はセグメントに無いので、回答を促す既定値に倒す。
+      const initialRole: Role =
+        existing.role === "undecided"
+          ? member?.hasCar
+            ? "driver"
+            : "rider"
+          : existing.role;
       setForm({
         memberId,
-        role: existing.role,
+        role: initialRole,
         capacityOverrideSeats:
           existing.capacityOverrideSeats === null
             ? ""
@@ -222,12 +240,7 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     }
   };
 
-  const prefillForMember = (memberId: string) => {
-    if (ready && !actorName) {
-      setShowActorModal(true);
-      return;
-    }
-    loadParticipationIntoForm(memberId);
+  const scrollToForm = () => {
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -312,13 +325,168 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   const memberName = (id: string | null): string =>
     id ? (memberById.get(id)?.displayName ?? "不明") : "—";
 
-  // 検出されたが未登録（参加レコードが無い）メンバー
-  const unregisteredDetected = useMemo(() => {
-    const participatedMemberIds = new Set(participations.map((p) => p.memberId));
-    return detected.filter(
-      (d) => !d.memberId || !participatedMemberIds.has(d.memberId),
-    );
-  }, [detected, participations]);
+  // 既に参加行がある member（検出パネルから除外する）。
+  const participatedMemberIds = useMemo(
+    () => new Set(participations.map((p) => p.memberId)),
+    [participations],
+  );
+
+  // 検出パネルに出す行（既に参加登録済みの member は出さない）。
+  const pendingDetected = useMemo(
+    () =>
+      detected.filter((d) => !d.memberId || !participatedMemberIds.has(d.memberId)),
+    [detected, participatedMemberIds],
+  );
+
+  const selectedKeys = useMemo(
+    () => Object.keys(selectedDet).filter((k) => selectedDet[k]),
+    [selectedDet],
+  );
+
+  const allSelected =
+    pendingDetected.length > 0 &&
+    pendingDetected.every((d, i) => selectedDet[detKey(d, i)]);
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedDet({});
+    } else {
+      const next: Record<string, boolean> = {};
+      pendingDetected.forEach((d, i) => {
+        next[detKey(d, i)] = true;
+      });
+      setSelectedDet(next);
+    }
+  };
+
+  // 削除（誤検出・キャンセル用）。?memberId=&actorName= で DELETE。
+  const deleteParticipation = async (memberId: string) => {
+    if (!actorName) {
+      setShowActorModal(true);
+      return;
+    }
+    if (typeof window !== "undefined") {
+      const ok = window.confirm(
+        `${memberName(memberId)} の参加情報を削除しますか？`,
+      );
+      if (!ok) return;
+    }
+    try {
+      const qs = `memberId=${encodeURIComponent(memberId)}&actorName=${encodeURIComponent(actorName)}`;
+      const res = await fetch(
+        buildUrl(`/clubs/${slug}/events/${eventId}/participations?${qs}`),
+        { method: "DELETE", headers: { Accept: "application/json" } },
+      );
+      if (!res.ok) {
+        let msg = `通信に失敗しました（${res.status}）`;
+        try {
+          const j = (await res.json()) as { error?: string };
+          if (j?.error) msg = j.error;
+        } catch {
+          /* noop */
+        }
+        throw new Error(msg);
+      }
+      toast("参加情報を削除しました", "success");
+      await load();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "削除に失敗しました", "error");
+    }
+  };
+
+  // 選択した検出行をまとめて bulk 登録。
+  const submitBulk = async () => {
+    if (!actorName) {
+      setShowActorModal(true);
+      return;
+    }
+    if (selectedKeys.length === 0) return;
+    setBulkSaving(true);
+    setBulkError(null);
+
+    const entries: Array<Record<string, unknown>> = [];
+    for (let i = 0; i < pendingDetected.length; i++) {
+      const d = pendingDetected[i];
+      const key = detKey(d, i);
+      if (!selectedDet[key]) continue;
+      const className = d.className || null;
+      if (d.memberId) {
+        // 既存メンバー
+        entries.push({ memberId: d.memberId, className });
+      } else {
+        // 未登録 → newMember（displayName は名前確認入力値、athleteKey は元の nameKey 不変）。
+        const displayName = (nameInputs[key] ?? d.rawName ?? d.nameKey).trim();
+        entries.push({
+          newMember: { displayName, athleteKey: d.nameKey },
+          className,
+        });
+      }
+    }
+
+    try {
+      await postCarpool(`/clubs/${slug}/events/${eventId}/participations/bulk`, {
+        actorName,
+        entries,
+      });
+      toast(`${entries.length} 人を参加登録しました`, "success");
+      setSelectedDet({});
+      setNameInputs({});
+      await load();
+    } catch (err) {
+      setBulkError(err instanceof Error ? err.message : "一括登録に失敗しました");
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
+  // 「次にやること」バナーの内容。
+  const myParticipation = useMemo(
+    () =>
+      actorMemberId
+        ? participations.find((p) => p.memberId === actorMemberId) ?? null
+        : null,
+    [participations, actorMemberId],
+  );
+
+  const banner = useMemo(() => {
+    if (ready && !actorMemberId) {
+      return {
+        text: "まず自分を登録してください",
+        label: "自分を登録",
+        action: () => setShowActorModal(true),
+      };
+    }
+    if (!actorMember) return null;
+    if (!myParticipation) {
+      return {
+        text: "あなたの参加がまだ登録されていません",
+        label: "参加を登録する",
+        action: () => {
+          loadParticipationIntoForm(actorMember.id);
+          scrollToForm();
+        },
+      };
+    }
+    if (myParticipation.role === "undecided") {
+      return {
+        text: "あなたの役割が未回答です",
+        label: "役割を答える",
+        action: () => {
+          loadParticipationIntoForm(actorMember.id);
+          scrollToForm();
+        },
+      };
+    }
+    return {
+      text: "あなたの参加は登録済みです",
+      label: "内容を確認・変更",
+      action: () => {
+        loadParticipationIntoForm(actorMember.id);
+        scrollToForm();
+      },
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, actorMemberId, actorMember, myParticipation, participations]);
 
   return (
     <div className="min-h-screen">
@@ -365,7 +533,21 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
               )}
             </section>
 
-            {/* エントリー検出（失敗と0件を区別して表示） */}
+            {/* 「次にやること」バナー */}
+            {banner && (
+              <section className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-primary/40 bg-primary/10 p-4">
+                <p className="min-w-0 text-sm text-foreground">{banner.text}</p>
+                <button
+                  type="button"
+                  onClick={banner.action}
+                  className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark"
+                >
+                  {banner.label}
+                </button>
+              </section>
+            )}
+
+            {/* エントリー検出（一括登録） */}
             {detectError ? (
               <section className="mb-4 rounded-xl border border-red-500/40 bg-card p-4">
                 <p className="text-sm text-red-400">
@@ -380,74 +562,117 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                   {detectLoading ? "再取得中…" : "再試行"}
                 </button>
               </section>
-            ) : detected.length === 0 ? (
+            ) : pendingDetected.length === 0 ? (
               <section className="mb-4 rounded-xl border border-border bg-card p-4">
                 <p className="text-sm text-muted">
-                  JOY エントリーからの検出はありませんでした。
+                  JOY エントリーからの未登録者はありません。
                 </p>
               </section>
             ) : (
               <section className="mb-4 rounded-xl border border-border bg-card p-4">
-                <button
-                  type="button"
-                  onClick={() => setShowDetect((s) => !s)}
-                  className="flex w-full items-center justify-between text-left"
-                >
-                  <span className="text-sm font-semibold text-foreground">
-                    JOY エントリーで {detected.length} 名を検出しました
-                  </span>
-                  <span className="text-xs text-muted">{showDetect ? "閉じる" : "開く"}</span>
-                </button>
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowDetect((s) => !s)}
+                    className="flex min-w-0 items-center gap-2 text-left"
+                  >
+                    <span className="text-sm font-semibold text-foreground">
+                      JOY エントリーで {pendingDetected.length} 名（未登録）
+                    </span>
+                    <span className="text-xs text-muted">
+                      {showDetect ? "閉じる" : "開く"}
+                    </span>
+                  </button>
+                  {showDetect && (
+                    <button
+                      type="button"
+                      onClick={toggleSelectAll}
+                      className="shrink-0 rounded-lg bg-white/10 px-3 py-1.5 text-xs text-foreground hover:bg-white/15"
+                    >
+                      {allSelected ? "全解除" : "全選択"}
+                    </button>
+                  )}
+                </div>
+
                 {showDetect && (
-                  <ul className="mt-3 flex flex-col gap-2">
-                    {detected.map((d, i) => {
-                      const matched = d.memberId ? memberById.get(d.memberId) : undefined;
-                      return (
-                        <li
-                          key={`${d.nameKey}-${i}`}
-                          className="rounded-lg bg-surface p-3"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="truncate text-sm text-foreground">
-                                {d.rawName ?? d.nameKey}
-                                <span className="ml-2 text-xs text-muted">
-                                  {d.className}
-                                </span>
-                              </p>
-                              <p className="truncate text-xs text-muted">
-                                {d.affiliation}
-                                {d.matchedClubName ? ` → ${d.matchedClubName}` : ""}
-                              </p>
-                            </div>
-                            {d.alreadyRegistered && (
-                              <span className="shrink-0 rounded bg-green-500/20 px-2 py-0.5 text-[10px] font-medium text-green-400">
-                                登録済
-                              </span>
+                  <>
+                    <ul className="mt-3 flex flex-col gap-2">
+                      {pendingDetected.map((d, i) => {
+                        const key = detKey(d, i);
+                        const checked = !!selectedDet[key];
+                        const isUnregistered = !d.memberId;
+                        return (
+                          <li key={key} className="rounded-lg bg-surface p-3">
+                            <label className="flex items-start gap-2">
+                              <input
+                                type="checkbox"
+                                className="mt-1"
+                                checked={checked}
+                                onChange={(e) =>
+                                  setSelectedDet((s) => ({
+                                    ...s,
+                                    [key]: e.target.checked,
+                                  }))
+                                }
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm text-foreground">
+                                  {d.memberId
+                                    ? memberName(d.memberId)
+                                    : (d.rawName ?? d.nameKey)}
+                                  <span className="ml-2 text-xs text-muted">
+                                    {d.className}
+                                  </span>
+                                </p>
+                                <p className="truncate text-xs text-muted">
+                                  {d.affiliation}
+                                  {d.matchedClubName ? ` → ${d.matchedClubName}` : ""}
+                                  {isUnregistered && (
+                                    <span className="ml-2 text-[10px]">新規登録</span>
+                                  )}
+                                </p>
+                              </div>
+                            </label>
+
+                            {/* 未登録行を選択したら、名前確認（姓 名）入力欄を出す */}
+                            {isUnregistered && checked && (
+                              <div className="mt-2 pl-6">
+                                <label className="mb-1 block text-[10px] text-muted">
+                                  登録名（姓と名の間にスペースを入れられます）
+                                </label>
+                                <input
+                                  className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+                                  value={nameInputs[key] ?? d.rawName ?? d.nameKey}
+                                  onChange={(e) =>
+                                    setNameInputs((s) => ({
+                                      ...s,
+                                      [key]: e.target.value,
+                                    }))
+                                  }
+                                  maxLength={40}
+                                />
+                              </div>
                             )}
-                          </div>
-                          <div className="mt-2">
-                            {matched ? (
-                              <button
-                                type="button"
-                                onClick={() => prefillForMember(matched.id)}
-                                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark"
-                              >
-                                {matched.displayName} で参加登録
-                              </button>
-                            ) : (
-                              <Link
-                                href={`/carpool/${slug}/members`}
-                                className="text-xs text-accent hover:underline"
-                              >
-                                メンバー未登録 → 登録する
-                              </Link>
-                            )}
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                          </li>
+                        );
+                      })}
+                    </ul>
+
+                    {bulkError && (
+                      <p className="mt-2 text-sm text-red-400">{bulkError}</p>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => void submitBulk()}
+                      disabled={bulkSaving || selectedKeys.length === 0}
+                      className="mt-3 w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                    >
+                      {bulkSaving
+                        ? "登録中…"
+                        : `選択した ${selectedKeys.length} 人をまとめて参加登録`}
+                    </button>
+                  </>
                 )}
               </section>
             )}
@@ -693,10 +918,10 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
               <StatusGroup
                 title="運転手"
                 items={participations.filter((p) => p.role === "driver")}
+                onDelete={deleteParticipation}
                 render={(p) => {
                   const m = memberById.get(p.memberId);
-                  const seats =
-                    p.capacityOverrideSeats ?? m?.seatsAvailable ?? null;
+                  const seats = p.capacityOverrideSeats ?? m?.seatsAvailable ?? null;
                   return (
                     <span>
                       {memberName(p.memberId)}
@@ -715,6 +940,7 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
               <StatusGroup
                 title="同乗希望"
                 items={participations.filter((p) => p.role === "rider")}
+                onDelete={deleteParticipation}
                 render={(p) => (
                   <span>
                     {memberName(p.memberId)}
@@ -730,33 +956,24 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                 title="自力で行く"
                 compact
                 items={participations.filter((p) => p.role === "self")}
+                onDelete={deleteParticipation}
                 render={(p) => <span>{memberName(p.memberId)}</span>}
               />
               <StatusGroup
                 title="不参加"
                 compact
                 items={participations.filter((p) => p.role === "absent")}
+                onDelete={deleteParticipation}
                 render={(p) => <span>{memberName(p.memberId)}</span>}
               />
-
-              {unregisteredDetected.length > 0 && (
-                <div>
-                  <h3 className="mb-1 text-xs font-semibold text-muted">
-                    検出済み・未登録
-                  </h3>
-                  <ul className="flex flex-col gap-1">
-                    {unregisteredDetected.map((d, i) => (
-                      <li
-                        key={`${d.nameKey}-u-${i}`}
-                        className="rounded-lg bg-card/50 px-3 py-1.5 text-sm text-muted"
-                      >
-                        {d.memberId ? memberName(d.memberId) : (d.rawName ?? d.nameKey)}
-                        <span className="ml-2 text-[10px]">未登録</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              <StatusGroup
+                title="回答待ち"
+                compact
+                muted
+                items={participations.filter((p) => p.role === "undecided")}
+                onDelete={deleteParticipation}
+                render={(p) => <span>{memberName(p.memberId)}</span>}
+              />
             </section>
           </>
         )}
@@ -766,8 +983,12 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
         <ActorModal
           slug={slug}
           members={members}
-          onSelect={(name) => {
-            setActor(name);
+          actorName={actorName}
+          onSelectMember={(m) => {
+            setActorMember(m);
+            setMembers((prev) =>
+              prev.some((x) => x.id === m.id) ? prev : [...prev, m],
+            );
             setShowActorModal(false);
           }}
           onClose={() => setShowActorModal(false)}
@@ -782,11 +1003,15 @@ function StatusGroup({
   items,
   render,
   compact,
+  muted,
+  onDelete,
 }: {
   title: string;
   items: ParticipationDTO[];
   render: (p: ParticipationDTO) => React.ReactNode;
   compact?: boolean;
+  muted?: boolean;
+  onDelete?: (memberId: string) => void;
 }) {
   if (items.length === 0) return null;
   return (
@@ -799,11 +1024,24 @@ function StatusGroup({
           <li
             key={p.id}
             className={cn(
-              "rounded-lg bg-card px-3 py-1.5 text-sm text-foreground",
-              compact ? "" : "border border-border",
+              "flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-sm",
+              muted
+                ? "bg-white/10 text-muted"
+                : "bg-card text-foreground",
+              !compact && !muted ? "border border-border" : "",
             )}
           >
-            {render(p)}
+            <span className="min-w-0">{render(p)}</span>
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(p.memberId)}
+                className="shrink-0 rounded px-2 py-0.5 text-[10px] text-muted hover:text-red-400"
+                aria-label="削除"
+              >
+                削除
+              </button>
+            )}
           </li>
         ))}
       </ul>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { fetchCarpool, postCarpool } from "./carpoolFetch";
@@ -8,7 +8,13 @@ import { useActor } from "./useActor";
 import { useToast } from "./Toast";
 import ActorModal from "./ActorModal";
 import CarpoolHeader from "./CarpoolHeader";
-import type { ClubDTO, EventDTO, MemberDTO } from "@/lib/carpool/api/mappers";
+import { cn } from "@/lib/utils";
+import type {
+  ClubDTO,
+  EventDTO,
+  MemberDTO,
+  ParticipationDTO,
+} from "@/lib/carpool/api/mappers";
 import type { JoyEvent as JoyEventLike } from "./carpoolTypes";
 
 interface CarpoolHomeClientProps {
@@ -42,7 +48,6 @@ function formatEventDate(date: string): string {
 export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
   const router = useRouter();
   const { toast, toastEl } = useToast();
-  const { actorName, ready, setActor } = useActor(slug);
 
   const [club, setClub] = useState<ClubDTO | null>(null);
   const [events, setEvents] = useState<EventDTO[]>([]);
@@ -50,8 +55,13 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { actorName, actorMemberId, ready, setActorMember } = useActor(slug, members);
+
   const [showActorModal, setShowActorModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
+
+  // 直近イベントの自分の参加有無（Step4 判定用）。null=未取得 / 判定不能。
+  const [latestParticipated, setLatestParticipated] = useState<boolean | null>(null);
 
   // イベント検索モーダル
   const [query, setQuery] = useState("");
@@ -87,13 +97,68 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
     };
   }, [slug]);
 
-  const openEventModal = () => {
-    if (ready && !actorName) {
-      setShowActorModal(true);
+  // Step4 判定: 直近イベント（events[0]）の participations を 1 本だけ追加 fetch し、
+  // actorMember の参加有無を見る。actorMember 未設定や直近イベント無しなら判定不能（null）。
+  useEffect(() => {
+    let cancelled = false;
+    const latest = events[0];
+    if (!latest || !actorMemberId) {
+      setLatestParticipated(null);
       return;
     }
+    (async () => {
+      try {
+        const res = await fetchCarpool<{ participations: ParticipationDTO[] }>(
+          `/clubs/${slug}/events/${latest.id}/participations`,
+        );
+        if (cancelled) return;
+        setLatestParticipated(
+          res.participations.some((p) => p.memberId === actorMemberId),
+        );
+      } catch {
+        if (!cancelled) setLatestParticipated(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, events, actorMemberId]);
+
+  const openEventModal = () => {
     setShowEventModal(true);
   };
+
+  const copyShareUrl = async () => {
+    const url =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/carpool/${slug}`
+        : `/carpool/${slug}`;
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        toast("URL をコピーしました", "success");
+        return;
+      }
+      throw new Error("clipboard unavailable");
+    } catch {
+      // clipboard 不可環境は URL 文字列を toast で表示（手動コピー用）。
+      toast(url, "success");
+    }
+  };
+
+  // セットアップ状態の各ステップ完了判定。
+  const setup = useMemo(() => {
+    const step1Done = actorMemberId !== null; // あなたを登録
+    const step2Done = events.length > 0; // 大会を選ぶ
+    const step3Done = members.length > 1; // クラブに共有（自分以外もいる）
+    // Step4 は直近イベント + actorMember の参加有無。判定不能なら未完了扱いにしない（非活性）。
+    const step4Known = step1Done && events.length > 0 && latestParticipated !== null;
+    const step4Done = step4Known && latestParticipated === true;
+    const allDone = step1Done && step2Done && step3Done && step4Done;
+    return { step1Done, step2Done, step3Done, step4Known, step4Done, allDone };
+  }, [actorMemberId, events.length, members.length, latestParticipated]);
+
+  const latestEvent = events[0];
 
   const runSearch = async (e: FormEvent) => {
     e.preventDefault();
@@ -114,15 +179,13 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
   };
 
   const createEvent = async (joe: JoyEventLike) => {
-    if (!actorName) {
-      setShowActorModal(true);
-      return;
-    }
+    // actorName は member 解決後の display_name。未解決でも作成は可能だが、
+    // 設定済みなら正しい操作者名を残す。
     setCreatingId(joe.joeEventId);
     setCreateError(null);
     try {
       const data = await postCarpool<{ event: EventDTO }>(`/clubs/${slug}/events`, {
-        actorName,
+        actorName: actorName ?? "（未設定）",
         joeEventId: joe.joeEventId,
       });
       toast("配車イベントを作成しました", "success");
@@ -149,6 +212,64 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
 
         {!loading && !error && (
           <>
+            {ready && !setup.allDone && (
+              <section className="mb-6 rounded-xl border border-border bg-card p-4">
+                <h2 className="mb-3 text-sm font-semibold text-foreground">
+                  はじめの設定
+                </h2>
+                <ol className="flex flex-col gap-2">
+                  <SetupStep
+                    n={1}
+                    title="あなたを登録する"
+                    done={setup.step1Done}
+                    cta={
+                      !setup.step1Done
+                        ? {
+                            label: "登録する",
+                            onClick: () => setShowActorModal(true),
+                          }
+                        : undefined
+                    }
+                  />
+                  <SetupStep
+                    n={2}
+                    title="配車する大会を選ぶ"
+                    done={setup.step2Done}
+                    cta={
+                      !setup.step2Done
+                        ? { label: "大会を選ぶ", onClick: openEventModal }
+                        : undefined
+                    }
+                  />
+                  <SetupStep
+                    n={3}
+                    title="クラブのみんなに URL を共有する"
+                    done={setup.step3Done}
+                    cta={
+                      !setup.step3Done
+                        ? { label: "URL をコピー", onClick: () => void copyShareUrl() }
+                        : undefined
+                    }
+                  />
+                  <SetupStep
+                    n={4}
+                    title="参加を登録する"
+                    done={setup.step4Done}
+                    // Step1 未完了 or 直近イベント無しなら判定不能 → 非活性表示。
+                    disabled={!setup.step1Done || !latestEvent}
+                    cta={
+                      setup.step1Done && latestEvent && !setup.step4Done
+                        ? {
+                            label: "参加を登録",
+                            href: `/carpool/${slug}/${latestEvent.id}`,
+                          }
+                        : undefined
+                    }
+                  />
+                </ol>
+              </section>
+            )}
+
             <div className="mb-4 flex items-center justify-between gap-2">
               <h1 className="text-lg font-bold text-foreground">配車イベント</h1>
               <button
@@ -197,7 +318,7 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
                 href={`/carpool/${slug}/masters`}
                 className="rounded-lg bg-white/10 px-4 py-2 text-sm text-foreground hover:bg-white/15"
               >
-                マスタ設定
+                ⚙ 設定
               </Link>
             </footer>
           </>
@@ -208,8 +329,12 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
         <ActorModal
           slug={slug}
           members={members}
-          onSelect={(name) => {
-            setActor(name);
+          actorName={actorName}
+          onSelectMember={(m) => {
+            setActorMember(m);
+            setMembers((prev) =>
+              prev.some((x) => x.id === m.id) ? prev : [...prev, m],
+            );
             setShowActorModal(false);
           }}
           onClose={() => setShowActorModal(false)}
@@ -301,5 +426,66 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
         </div>
       )}
     </div>
+  );
+}
+
+/** セットアップガイドの 1 ステップ行。完了は ✓、未完了は CTA ボタン/リンクを出す。 */
+function SetupStep({
+  n,
+  title,
+  done,
+  cta,
+  disabled,
+}: {
+  n: number;
+  title: string;
+  done: boolean;
+  cta?: { label: string; onClick?: () => void; href?: string };
+  disabled?: boolean;
+}) {
+  return (
+    <li
+      className={cn(
+        "flex items-center justify-between gap-3 rounded-lg bg-surface px-3 py-2",
+        disabled && "opacity-50",
+      )}
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        <span
+          className={cn(
+            "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+            done ? "bg-green-500/20 text-green-400" : "bg-white/10 text-muted",
+          )}
+        >
+          {done ? "✓" : n}
+        </span>
+        <span
+          className={cn(
+            "truncate text-sm",
+            done ? "text-muted line-through" : "text-foreground",
+          )}
+        >
+          {title}
+        </span>
+      </div>
+      {!done && cta && (
+        cta.href ? (
+          <Link
+            href={cta.href}
+            className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark"
+          >
+            {cta.label}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={cta.onClick}
+            className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark"
+          >
+            {cta.label}
+          </button>
+        )
+      )}
+    </li>
   );
 }

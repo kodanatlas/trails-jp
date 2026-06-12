@@ -230,3 +230,66 @@ export async function PATCH(
 
   return NextResponse.json({ participation: toParticipationDTO(data) });
 }
+
+/** UUID v4 形式の簡易検証（zod の z.string().uuid() と同等の緩さ）。 */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * DELETE /api/carpool/clubs/[slug]/events/[id]/participations?memberId=<uuid>&actorName=<name>
+ * 物理削除（誤検出・キャンセル用）。before 行を全列 change_log に残す。
+ *
+ * DELETE は body を持たないのが普通（fetchCarpool も DELETE 時は body を送らない）ため、
+ * memberId / actorName は **クエリパラメータ**で受ける。両方必須。
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ slug: string; id: string }> },
+) {
+  const { slug, id } = await params;
+  const club = await resolveClub(slug);
+  if (!club) return ERR.notFound("クラブ");
+
+  const memberId = req.nextUrl.searchParams.get("memberId");
+  const actorName = req.nextUrl.searchParams.get("actorName")?.trim() ?? "";
+  if (!memberId || !UUID_RE.test(memberId) || actorName.length === 0) {
+    return ERR.invalidBody();
+  }
+
+  const guard = await guardWrite(req, club, actorName);
+  if ("response" in guard) return guard.response;
+
+  const denied = await assertOwnedByClub(club.id, {
+    events: [id],
+    members: [memberId],
+  });
+  if (denied) return denied;
+
+  const { row: before, error: findError } = await findExistingParticipation(
+    club.id,
+    id,
+    memberId,
+  );
+  if (findError) return ERR.serverError(findError);
+  if (!before) return ERR.notFound("参加情報");
+
+  const { error } = await supabaseAdmin
+    .from("carpool_participations")
+    .delete()
+    .eq("event_id", id)
+    .eq("member_id", memberId)
+    .eq("club_id", club.id);
+  if (error) return ERR.serverError(error.message);
+
+  await writeChangeLog({
+    clubId: club.id,
+    tableName: "carpool_participations",
+    recordId: (before.id as string | null) ?? null,
+    action: "delete",
+    payload: before,
+    actorName: guard.ctx.actorName,
+    ipHash: guard.ctx.ipHash,
+  });
+
+  return NextResponse.json({ deleted: true });
+}

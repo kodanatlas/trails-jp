@@ -70,13 +70,53 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
   });
   if (denied) return denied;
 
+  // D: homeAreaName 指定かつ homeNodeId 未指定のとき、kind='area' のノードを
+  // 再利用 or 作成し、その id を home_node_id に使う（UI からノード概念を隠すための糖衣）。
+  // homeNodeId が指定されていれば homeAreaName は無視する（homeNodeId 優先）。
+  let resolvedHomeNodeId: string | null | undefined = input.homeNodeId;
+  if (
+    input.homeAreaName !== undefined &&
+    (input.homeNodeId === undefined || input.homeNodeId === null)
+  ) {
+    const areaName = input.homeAreaName; // schema で trim 済み
+    const { data: existingArea, error: findAreaErr } = await supabaseAdmin
+      .from("carpool_nodes")
+      .select("*")
+      .eq("club_id", club.id)
+      .eq("kind", "area")
+      .eq("name", areaName)
+      .maybeSingle();
+    if (findAreaErr) return ERR.serverError(findAreaErr.message);
+
+    if (existingArea) {
+      resolvedHomeNodeId = existingArea.id;
+    } else {
+      const { data: areaNode, error: areaErr } = await supabaseAdmin
+        .from("carpool_nodes")
+        .insert({ club_id: club.id, kind: "area", name: areaName })
+        .select("*")
+        .single();
+      if (areaErr) return ERR.serverError(areaErr.message);
+      resolvedHomeNodeId = areaNode.id;
+      await writeChangeLog({
+        clubId: club.id,
+        tableName: "carpool_nodes",
+        recordId: areaNode.id,
+        action: "insert",
+        payload: areaNode,
+        actorName: guard.ctx.actorName,
+        ipHash: guard.ctx.ipHash,
+      });
+    }
+  }
+
   const insertRow: Record<string, unknown> = {
     club_id: club.id,
     display_name: input.displayName,
     default_capacity: seatsToCapacity(input.seatsAvailable),
   };
   if (input.athleteKey !== undefined) insertRow.athlete_key = input.athleteKey;
-  if (input.homeNodeId !== undefined) insertRow.home_node_id = input.homeNodeId;
+  if (resolvedHomeNodeId !== undefined) insertRow.home_node_id = resolvedHomeNodeId;
   if (input.hasCar !== undefined) insertRow.has_car = input.hasCar;
   if (input.defaultWillingness !== undefined) insertRow.default_willingness = input.defaultWillingness;
   if (input.earliestDeparture !== undefined) insertRow.earliest_departure = input.earliestDeparture;

@@ -22,6 +22,7 @@ import {
   MINUTES_MAX,
   TOLL_YEN_MAX,
   EST_COURSE_MIN_MAX,
+  PARTICIPATION_BULK_LIMIT,
 } from "./constants";
 
 // ---------------------------------------------------------------------------
@@ -158,6 +159,11 @@ export const memberCreateSchema = z.object({
   displayName: z.string().trim().min(1, { message: "表示名を入力してください" }).max(40),
   athleteKey: z.string().trim().min(1).max(120).nullable().optional(),
   homeNodeId: z.string().uuid().nullable().optional(),
+  /**
+   * 自宅エリアをテキストで指定（ノード概念を UI から隠すための糖衣）。
+   * homeNodeId 未指定時のみ有効: 同 club・kind='area'・name 一致のノードを再利用、無ければ作成して home_node_id に使う。
+   */
+  homeAreaName: z.string().trim().min(1).max(80).optional(),
   hasCar: z.boolean().optional(),
   /** API は seatsAvailable（同乗可能人数, 自分以外）で受ける。保存時 +1。 */
   seatsAvailable: seatsAvailable.nullable().optional(),
@@ -313,11 +319,11 @@ const participationOptionalBody = {
   notes: z.string().max(1000).nullable().optional(),
 };
 
-/** POST（新規 upsert）: role 必須。 */
+/** POST（新規 upsert）: role 必須。'undecided' は検出一括登録の「回答待ち」状態を表す。 */
 export const participationCreateSchema = z.object({
   ...actorEnvelope,
   memberId: z.string().uuid(),
-  role: z.enum(["driver", "rider", "self", "absent"]),
+  role: z.enum(["driver", "rider", "self", "absent", "undecided"]),
   ...participationOptionalBody,
 });
 
@@ -325,8 +331,41 @@ export const participationCreateSchema = z.object({
 export const participationUpdateSchema = z.object({
   ...actorEnvelope,
   memberId: z.string().uuid(),
-  role: z.enum(["driver", "rider", "self", "absent"]).optional(),
+  role: z.enum(["driver", "rider", "self", "absent", "undecided"]).optional(),
   ...participationOptionalBody,
+});
+
+/**
+ * 検出パネルからの一括参加登録（bulk）専用スキーマ。
+ * role は固定 'undecided'（回答待ち）なので body に role は取らない。
+ * 各行は既存メンバー（memberId）か新規メンバー（newMember）のいずれか一方を指定する。
+ */
+export const participationBulkSchema = z.object({
+  ...actorEnvelope,
+  entries: z
+    .array(
+      z
+        .object({
+          // 既存メンバーを指定する場合
+          memberId: z.string().uuid().optional(),
+          // 新規メンバーを作る場合（memberId と排他。どちらか必須）
+          newMember: z
+            .object({
+              displayName: z.string().trim().min(1).max(40),
+              athleteKey: z.string().trim().min(1).max(120),
+            })
+            .optional(),
+          // 表示用（任意・検出由来のクラス）
+          className: z.string().trim().max(40).nullable().optional(),
+        })
+        .refine((e) => (e.memberId != null) !== (e.newMember != null), {
+          message: "各行は既存メンバーか新規メンバーのいずれか一方を指定してください",
+        }),
+    )
+    .min(1, { message: "登録する対象がありません" })
+    .max(PARTICIPATION_BULK_LIMIT, {
+      message: `一度に登録できるのは${PARTICIPATION_BULK_LIMIT}人までです`,
+    }),
 });
 
 // ---------------------------------------------------------------------------
@@ -346,3 +385,4 @@ export type RouteCreateInput = z.infer<typeof routeCreateSchema>;
 export type RouteUpdateInput = z.infer<typeof routeUpdateSchema>;
 export type ParticipationCreateInput = z.infer<typeof participationCreateSchema>;
 export type ParticipationUpdateInput = z.infer<typeof participationUpdateSchema>;
+export type ParticipationBulkInput = z.infer<typeof participationBulkSchema>;

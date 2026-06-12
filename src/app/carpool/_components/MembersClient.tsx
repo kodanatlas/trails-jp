@@ -65,7 +65,6 @@ function memberToForm(m: MemberDTO): MemberForm {
 
 export default function MembersClient({ slug }: MembersClientProps) {
   const { toast, toastEl } = useToast();
-  const { actorName, ready, setActor } = useActor(slug);
 
   const [club, setClub] = useState<ClubDTO | null>(null);
   const [members, setMembers] = useState<MemberDTO[]>([]);
@@ -73,6 +72,8 @@ export default function MembersClient({ slug }: MembersClientProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showActorModal, setShowActorModal] = useState(false);
+
+  const { actorName, ready, setActorMember } = useActor(slug, members);
 
   // 編集状態: null=非表示, "new"=追加, それ以外=メンバー id
   const [editing, setEditing] = useState<string | null>(null);
@@ -633,8 +634,10 @@ export default function MembersClient({ slug }: MembersClientProps) {
         <ActorModal
           slug={slug}
           members={members}
-          onSelect={(name) => {
-            setActor(name);
+          actorName={actorName}
+          onSelectMember={(m) => {
+            setActorMember(m);
+            void load();
             setShowActorModal(false);
           }}
           onClose={() => setShowActorModal(false)}

@@ -45,3 +45,6 @@ export const ACTOR_NAME_MAX = 30;
 
 /** 既定の到着バッファ（分）。クラブ settings 未設定時のフォールバック。 */
 export const DEFAULT_BUFFER_MIN = 75;
+
+/** participations の一括登録（検出パネル）で1リクエストに含められる上限件数。 */
+export const PARTICIPATION_BULK_LIMIT = 30;

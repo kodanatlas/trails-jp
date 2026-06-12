@@ -103,7 +103,7 @@ export interface ParticipationDTO {
   id: string;
   eventId: string;
   memberId: string;
-  role: "driver" | "rider" | "self" | "absent";
+  role: "driver" | "rider" | "self" | "absent" | "undecided";
   /** 同乗可能人数（自分以外）。DB capacity_override から −1。 */
   capacityOverrideSeats: number | null;
   willingness: "always" | "if_needed" | null;

@@ -22,20 +22,19 @@ type Tab = "nodes" | "times" | "settings";
 type NodeKind = "area" | "pickup" | "venue";
 
 const KIND_LABEL: Record<NodeKind, string> = {
-  area: "エリア",
-  pickup: "集合場所",
-  venue: "会場",
+  area: "自宅エリア（最寄り駅など）",
+  pickup: "集合・乗車場所",
+  venue: "会場・駐車場",
 };
 
 export default function MastersClient({ slug }: MastersClientProps) {
   const { toast, toastEl } = useToast();
-  const { actorName, ready, setActor } = useActor(slug);
-
   const [tab, setTab] = useState<Tab>("nodes");
   const [club, setClub] = useState<ClubDTO | null>(null);
   const [nodes, setNodes] = useState<NodeDTO[]>([]);
   const [travelTimes, setTravelTimes] = useState<TravelTimeDTO[]>([]);
   const [members, setMembers] = useState<MemberDTO[]>([]);
+  const { actorName, ready, setActorMember } = useActor(slug, members);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showActorModal, setShowActorModal] = useState(false);
@@ -84,13 +83,13 @@ export default function MastersClient({ slug }: MastersClientProps) {
       />
 
       <main className="mx-auto max-w-2xl px-4 py-6">
-        <h1 className="mb-3 text-lg font-bold text-foreground">マスタ設定</h1>
+        <h1 className="mb-3 text-lg font-bold text-foreground">場所・時間の設定</h1>
 
         <div className="mb-4 flex overflow-hidden rounded-lg border border-border bg-surface">
           {(
             [
-              { value: "nodes", label: "ノード" },
-              { value: "times", label: "移動時間" },
+              { value: "nodes", label: "場所" },
+              { value: "times", label: "場所どうしの移動時間" },
               { value: "settings", label: "クラブ設定" },
             ] as { value: Tab; label: string }[]
           ).map((t) => (
@@ -154,8 +153,10 @@ export default function MastersClient({ slug }: MastersClientProps) {
         <ActorModal
           slug={slug}
           members={members}
-          onSelect={(name) => {
-            setActor(name);
+          actorName={actorName}
+          onSelectMember={(m) => {
+            setActorMember(m);
+            void load();
             setShowActorModal(false);
           }}
           onClose={() => setShowActorModal(false)}
