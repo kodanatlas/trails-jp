@@ -1,6 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function Footer() {
+  const pathname = usePathname();
+
+  // /docs/* は全画面スタンドアロン文書のためサイト chrome を出さない
+  if (pathname?.startsWith("/docs/")) return null;
+
   return (
     <footer className="border-t border-white/10 bg-[#1a2332]">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 py-6 text-xs text-white/40 sm:flex-row sm:justify-between">

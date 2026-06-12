@@ -1,23 +1,26 @@
 import { Metadata } from "next";
-import fs from "fs";
-import path from "path";
-import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { AnalysisSystemReport } from "./AnalysisSystemReport";
+import { getSiteStats } from "@/lib/site-stats";
 
 export const metadata: Metadata = {
-  title: "分析システム構成",
+  title: "システム全体構成",
   description:
-    "trails.jp 分析機能のシステム構成・データソース・処理フローの技術ドキュメント",
+    "trails.jp のシステム全体像・データソース・収集パイプライン・DBスキーマ・分析ロジック・APIの技術ドキュメント。",
+  robots: { index: false, follow: false },
 };
 
-export default function AnalysisSystemDoc() {
-  const md = fs.readFileSync(
-    path.join(process.cwd(), "docs/analysis-system.md"),
-    "utf-8"
-  );
+// KPI の DB 由来値（成績レコード）を 1 日ごとに更新（トップページと共有）
+export const revalidate = 86400;
 
-  return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <MarkdownRenderer content={md} />
-    </div>
-  );
+export default async function AnalysisSystemDoc() {
+  const buildDate = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  const stats = await getSiteStats();
+
+  return <AnalysisSystemReport buildDate={buildDate} stats={stats} />;
 }

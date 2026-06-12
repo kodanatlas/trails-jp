@@ -2,11 +2,14 @@ import Link from "next/link";
 import { CalendarDays, Trophy, ArrowRight, ExternalLink, BarChart3 } from "lucide-react";
 import type { JOEEvent } from "@/lib/scraper/events";
 import eventsJson from "@/data/events.json";
-import rankingsJson from "@/data/rankings.json";
 import { MonthlyMovers } from "@/components/MonthlyMovers";
 import { WeeklyCheerPodium } from "@/components/WeeklyCheerPodium";
+import { getSiteStats } from "@/lib/site-stats";
 
-export default function Home() {
+// DB 由来の数値（成績レコード）を 1 日ごとに更新（頻度は低めで十分）
+export const revalidate = 86400;
+
+export default async function Home() {
   const allEvents = eventsJson as JOEEvent[];
   const now = new Date().toISOString().slice(0, 10);
   const upcomingEvents = allEvents
@@ -14,11 +17,8 @@ export default function Home() {
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 4);
 
-  const rankingAthletes = new Set(
-    Object.values(rankingsJson as Record<string, { athlete_name: string }[]>)
-      .flat()
-      .map((e) => e.athlete_name)
-  ).size;
+  // 規模数値は docs ページと共有のヘルパーから取得（両ページで常に一致）
+  const stats = await getSiteStats();
 
   return (
     <div>
@@ -62,11 +62,12 @@ export default function Home() {
 
       {/* Stats */}
       <section className="border-b border-border bg-card">
-        <div className="mx-auto grid max-w-6xl grid-cols-3 gap-px">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-px sm:grid-cols-4">
           {[
-            { value: allEvents.length, label: "イベント", suffix: "件" },
-            { value: rankingAthletes.toLocaleString(), label: "選手ランキング", suffix: "人" },
-            { value: "47", label: "対応都道府県", suffix: "" },
+            { value: stats.events.toLocaleString(), label: "収集イベント", suffix: "" },
+            { value: stats.athletes.toLocaleString(), label: "ランキング掲載選手", suffix: "" },
+            { value: stats.lcRecords.toLocaleString(), label: "成績レコード", suffix: "" },
+            { value: stats.clubs.toLocaleString(), label: "クラブ", suffix: "" },
           ].map((stat) => (
             <div key={stat.label} className="border-r border-border px-4 py-5 text-center last:border-r-0">
               <div className="text-2xl font-bold text-primary">

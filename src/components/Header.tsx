@@ -17,6 +17,9 @@ export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
+  // /docs/* は全画面スタンドアロン文書のためサイト chrome を出さない
+  if (pathname?.startsWith("/docs/")) return null;
+
   return (
     <header className="sticky top-0 z-50 h-14 border-b border-white/10 bg-[#1a2332]">
       <div className="mx-auto flex h-full max-w-[1920px] items-center justify-between px-4">
