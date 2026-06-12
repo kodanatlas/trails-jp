@@ -179,7 +179,7 @@ export function noDeltaScenario(): SolveInput {
       softNodes: [],
     },
   ];
-  const routes = [
+  const routes: SolveInput["routes"] = [
     // rGood: has a venue time at P (δ defined) but is risky.
     { id: "rGood", riskScore: 5, minutesToVenue: { HOME: 30, P: 30 } },
     // rBad: cheaper (risk 0) but MISSING the P venue time -> δ(d1,P,rBad) undefined.
