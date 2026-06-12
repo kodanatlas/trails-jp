@@ -7,12 +7,14 @@
     "build": "npx tsx scripts/build-analysis-index.ts && next build",
     "start": "next start",
     "lint": "eslint",
-    "build:analysis": "npx tsx scripts/build-analysis-index.ts"
+    "build:analysis": "npx tsx scripts/build-analysis-index.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.97.0",
     "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
+    "highs": "^1.14.2",
     "lucide-react": "^0.575.0",
     "maplibre-gl": "^5.19.0",
     "next": "16.1.6",
@@ -32,6 +34,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.8"
   }
 }
