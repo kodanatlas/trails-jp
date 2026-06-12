@@ -8,6 +8,7 @@ import ActorModal from "./ActorModal";
 import CarpoolHeader from "./CarpoolHeader";
 import { useAthleteSuggest } from "./useAthleteSuggest";
 import { athleteSelectionToFields } from "@/lib/carpool/suggest";
+import { quarterHourStep } from "@/lib/carpool/form-ui";
 import { normalizeNameKey } from "@/lib/name-key";
 import type {
   ClubDTO,
@@ -507,9 +508,13 @@ export default function MembersClient({ slug }: MembersClientProps) {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs text-muted">最早出発</label>
+                  <label className="mb-1 block text-xs text-muted">
+                    最早出発（15分きざみ）
+                  </label>
                   <input
                     type="time"
+                    // R3: 15分刻み。既存の15分外の値は step を緩めて壊さない。
+                    step={quarterHourStep(form.earliestDeparture)}
                     className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                     value={form.earliestDeparture}
                     onChange={(e) =>

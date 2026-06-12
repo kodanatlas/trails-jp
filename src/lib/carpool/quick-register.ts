@@ -25,6 +25,11 @@ export interface QuickRegisterInput {
   className: string | null;
   /** 未登録行の名前確認入力（ユーザーが整形した「姓 名」など・あれば最優先）。 */
   displayNameInput?: string | null;
+  /**
+   * R5: 運転手クイック登録時の同乗可能人数入力（未登録メンバーの最小ステップ）。
+   * 数値として有効（0〜20）なら member 作成 body の seatsAvailable に入れる。
+   */
+  seatsInput?: string | null;
 }
 
 /** member 作成が必要な場合の body 断片（actorName はクライアントが付与）。 */
@@ -33,6 +38,16 @@ export interface QuickMemberBody {
   athleteKey: string;
   /** 運転手として登録するなら車ありで作る（プロフィール既定の妥当化）。 */
   hasCar: boolean;
+  /** R5: 運転手登録時のみ・有効入力時のみ付与（プロフィール既定の同乗可能人数）。 */
+  seatsAvailable?: number;
+}
+
+/** 同乗可能人数入力のパース（0〜20 の整数のみ有効、それ以外は undefined）。 */
+function parseSeats(input: string | null | undefined): number | undefined {
+  const t = (input ?? "").trim();
+  if (!/^\d{1,2}$/.test(t)) return undefined;
+  const n = Number(t);
+  return n >= 0 && n <= 20 ? n : undefined;
 }
 
 export interface QuickRegisterPlan {
@@ -64,11 +79,14 @@ export function planQuickRegister(
     (input.rawName ?? "").trim() ||
     input.nameKey;
 
+  const seats = role === "driver" ? parseSeats(input.seatsInput) : undefined;
+
   return {
     memberBody: {
       displayName,
       athleteKey: input.nameKey,
       hasCar: role === "driver",
+      ...(seats !== undefined ? { seatsAvailable: seats } : {}),
     },
     role,
     className,

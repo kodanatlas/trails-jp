@@ -65,7 +65,13 @@ export function solveCarpool(
   }
 
   if (result.Status === "Infeasible") {
-    return { status: "infeasible", cars: [], kpi: EMPTY_KPI, validationErrors: [] };
+    return {
+      status: "infeasible",
+      cars: [],
+      kpi: EMPTY_KPI,
+      validationErrors: [],
+      solverStatus: result.Status,
+    };
   }
 
   // Accept Optimal and time-limited / bound-reached solutions, but ONLY when an
@@ -102,7 +108,15 @@ export function solveCarpool(
   const cars = extractCars({ model, registry, result });
   const kpi = computeKpi(model, cars);
 
-  return { status: "optimal", cars, kpi, validationErrors: [] };
+  // solverStatus を生のまま伝える: "Optimal" 以外（タイムリミット到達等）で
+  // 実行可能解が得られた場合、UI は「時間内の最良解（最適性未証明）」と表示できる。
+  return {
+    status: "optimal",
+    cars,
+    kpi,
+    validationErrors: [],
+    solverStatus: result.Status,
+  };
 }
 
 // An incumbent exists iff the objective is finite AND at least one assignment

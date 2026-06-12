@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { fetchCarpool, postCarpool } from "./carpoolFetch";
+import { fetchCarpool, postCarpool, CarpoolApiError } from "./carpoolFetch";
 import { useToast } from "./Toast";
+import { useAthleteSuggest } from "./useAthleteSuggest";
 import {
   actorStorageKey,
   rememberActorMember,
@@ -11,6 +12,7 @@ import {
   rememberClub,
 } from "./storageKeys";
 import { filterClubCandidates, clubSelectionToFields } from "@/lib/carpool/suggest";
+import { generateClubSlug, retryClubSlug } from "@/lib/carpool/club-slug";
 import { buildCreatorMemberBody } from "@/lib/carpool/onboarding";
 import type { ClubDTO, MemberDTO } from "@/lib/carpool/api/mappers";
 
@@ -26,11 +28,20 @@ export default function CarpoolIndexClient() {
   // 追加フォーム
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
   const [joeNames, setJoeNames] = useState("");
   const [actorName, setActorName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // R2: slug は入力欄を廃止し、クラブ名から自動生成（決定的）。409 時は別サフィックスで1回リトライ。
+  const clubSlug = useMemo(() => generateClubSlug(name), [name]);
+
+  // R2: 「あなたの名前（記録用）」の氏名サジェスト（正規氏名を選ばせて M1 の member 化と整合）。
+  const actorSuggest = useAthleteSuggest();
+  const pickActorCandidate = (canonicalName: string) => {
+    setActorName(canonicalName.trim());
+    actorSuggest.dismiss();
+  };
 
   // 指摘4: クラブ名の正規候補サジェスト。trails.jp 静的配信の /data/club-stats.json
   // （正規化済みクラブ名がキー）をフォーム表示時に1回 fetch し、キー一覧のみ保持する。
@@ -120,12 +131,25 @@ export default function CarpoolIndexClient() {
 
     setSubmitting(true);
     try {
-      const data = await postCarpool<{ club: ClubDTO }>("/clubs", {
-        actorName: trimmedActor,
-        name: name.trim(),
-        slug: slug.trim(),
-        joeClubNames,
-      });
+      const createClub = (slugAttempt: string) =>
+        postCarpool<{ club: ClubDTO }>("/clubs", {
+          actorName: trimmedActor,
+          name: name.trim(),
+          slug: slugAttempt,
+          joeClubNames,
+        });
+
+      // R2: 自動生成 slug で作成。409（重複）のときだけ別サフィックスで1回リトライ。
+      let data: { club: ClubDTO };
+      try {
+        data = await createClub(clubSlug);
+      } catch (err) {
+        if (err instanceof CarpoolApiError && err.status === 409) {
+          data = await createClub(retryClubSlug(clubSlug, String(Date.now())));
+        } else {
+          throw err;
+        }
+      }
       toast("クラブを作成しました", "success");
 
       // M1: 作成者をその場で member 化し、操作者（actorMember 新キー）として保存する。
@@ -252,21 +276,12 @@ export default function CarpoolIndexClient() {
                 候補から選ぶと JOY エントリーの自動検出が確実になります（JOY 表記名も自動で入ります）。
               </p>
             </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted" htmlFor="club-slug">
-                slug（英小文字・数字・ハイフン）
-              </label>
-              <input
-                id="club-slug"
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                pattern="[a-z0-9][a-z0-9\-]*"
-                minLength={2}
-                maxLength={40}
-                required
-              />
-            </div>
+            {/* R2: slug 入力欄は廃止（クラブ名から自動生成・手修正不要） */}
+            {name.trim() && (
+              <p className="rounded-lg bg-surface px-3 py-2 text-[10px] text-muted">
+                URL: /carpool/{clubSlug}（クラブ名から自動生成されます）
+              </p>
+            )}
             <div>
               <label className="mb-1 block text-xs text-muted" htmlFor="club-joe">
                 JOY クラブ表記名（カンマ区切り・任意）
@@ -287,10 +302,36 @@ export default function CarpoolIndexClient() {
                 id="club-actor"
                 className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
                 value={actorName}
-                onChange={(e) => setActorName(e.target.value)}
+                onChange={(e) => {
+                  setActorName(e.target.value);
+                  actorSuggest.setQuery(e.target.value);
+                }}
                 maxLength={30}
                 required
               />
+              {actorSuggest.results.length > 0 && (
+                <ul className="mt-1 flex flex-col gap-1 rounded-lg bg-surface p-1">
+                  {actorSuggest.results.map((a) => (
+                    <li key={a.name}>
+                      <button
+                        type="button"
+                        onClick={() => pickActorCandidate(a.name)}
+                        className="w-full rounded px-2 py-1 text-left text-sm text-foreground hover:bg-card-hover"
+                      >
+                        {a.name}
+                        {a.clubs.length > 0 && (
+                          <span className="ml-2 text-xs text-muted">
+                            {a.clubs.join(", ")}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-1 text-[10px] text-muted">
+                候補から選ぶと JOY エントリーの自動検出が確実になります（一覧に無ければそのまま入力でOK）。
+              </p>
             </div>
             {formError && <p className="text-sm text-red-400">{formError}</p>}
             <div className="flex gap-2">

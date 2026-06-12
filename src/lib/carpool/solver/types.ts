@@ -94,6 +94,12 @@ export interface SolveResult {
   cars: ResultCar[];
   kpi: Kpi;
   validationErrors: string[];
+  /**
+   * HiGHS の生ステータス（"Optimal" / "Time limit reached" 等）。
+   * status='optimal' でも solverStatus が "Optimal" 以外なら
+   * 「時間内の最良解（最適性未証明）」であることを UI で示せる。後方互換の追加フィールド。
+   */
+  solverStatus?: string;
 }
 
 // --- Minimal local highs interface (avoids importing highs types directly) ---

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { fetchCarpool, postCarpool, patchCarpool, buildUrl } from "./carpoolFetch";
 import { useActor } from "./useActor";
@@ -8,6 +9,13 @@ import ActorModal from "./ActorModal";
 import CarpoolHeader from "./CarpoolHeader";
 import { chunkBulkEntries } from "@/lib/carpool/bulk-plan";
 import { planQuickRegister, type QuickRole } from "@/lib/carpool/quick-register";
+import {
+  toApiRole,
+  participationToFormRole,
+  quarterHourStep,
+  summarizeForPlan,
+  type FormRole,
+} from "@/lib/carpool/form-ui";
 import { cn } from "@/lib/utils";
 import type {
   ClubDTO,
@@ -25,14 +33,18 @@ interface ParticipationClientProps {
   eventId: string;
 }
 
-/** ユーザーが選べるロール（'undecided' は未回答状態であり選択肢に含めない）。 */
-type Role = "driver" | "rider" | "self" | "absent";
+/**
+ * R4: UI のロール（'undecided' は未回答状態であり選択肢に含めない）。
+ * passenger（同乗者 = 乗る車が決まっている）は UI 専用で、API では
+ * role='rider' + fixedDriverMemberId に畳む（DB 変更なし・MILP の確約 hard 制約と整合）。
+ */
 type Willingness = "always" | "if_needed";
 
-const ROLE_SEGMENTS: { value: Role; label: string }[] = [
+const ROLE_SEGMENTS: { value: FormRole; label: string }[] = [
   { value: "driver", label: "運転手" },
+  { value: "passenger", label: "同乗者" },
   { value: "rider", label: "同乗希望" },
-  { value: "self", label: "自力で行く" },
+  { value: "self", label: "自力" },
   { value: "absent", label: "不参加" },
 ];
 
@@ -63,7 +75,7 @@ function formatEventDate(date: string): string {
 
 interface PForm {
   memberId: string;
-  role: Role;
+  role: FormRole;
   capacityOverrideSeats: string;
   willingness: Willingness;
   earliestDepartureOverride: string;
@@ -120,6 +132,8 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   const [form, setForm] = useState<PForm>(EMPTY_PFORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // R7: 乗車エリア（自宅エリア）のテキスト入力。選択メンバーの現在値をプリフィルする。
+  const [homeAreaInput, setHomeAreaInput] = useState("");
 
   // 検出パネルの一括選択状態（detKey → 選択中）と未登録行の表示名入力（detKey → 値）。
   const [selectedDet, setSelectedDet] = useState<Record<string, boolean>>({});
@@ -128,12 +142,21 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   const [bulkError, setBulkError] = useState<string | null>(null);
   // M4: 行単位クイック登録の進行中 detKey（null = 待機）。
   const [quickSavingKey, setQuickSavingKey] = useState<string | null>(null);
+  // R5: 未登録メンバーの運転手クイック登録前に同乗可能人数を聞く最小ステップ（detKey / 入力値）。
+  const [seatsAskKey, setSeatsAskKey] = useState<string | null>(null);
+  const [seatsAskValue, setSeatsAskValue] = useState("");
 
   const memberById = useMemo(() => {
     const map = new Map<string, MemberDTO>();
     for (const m of members) map.set(m.id, m);
     return map;
   }, [members]);
+
+  const nodeById = useMemo(() => {
+    const map = new Map<string, NodeDTO>();
+    for (const n of nodes) map.set(n.id, n);
+    return map;
+  }, [nodes]);
 
   const pickableNodes = useMemo(() => nodes.filter((n) => n.kind !== "venue"), [nodes]);
   const venueNode = useMemo(
@@ -145,6 +168,22 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     () => participations.filter((p) => p.role === "driver"),
     [participations],
   );
+
+  // M5: 現在 driver として参加登録されている member（確約先の事後不整合チェック用）。
+  const currentDriverIds = useMemo(
+    () => new Set(driverParticipations.map((p) => p.memberId)),
+    [driverParticipations],
+  );
+
+  // R7: メンバー選択が変わったら乗車エリア入力を本人の現在値にプリフィルする。
+  useEffect(() => {
+    const m = memberById.get(form.memberId);
+    const name = m?.homeNodeId ? (nodeById.get(m.homeNodeId)?.name ?? "") : "";
+    setHomeAreaInput(name);
+  }, [form.memberId, memberById, nodeById]);
+
+  // R6: 配車計画プレースホルダのサマリ（運転手1+ かつ 同乗1+ で表示）。
+  const planSummary = useMemo(() => summarizeForPlan(participations), [participations]);
 
   const load = async () => {
     setLoading(true);
@@ -221,13 +260,13 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     const existing = participations.find((p) => p.memberId === memberId);
     const member = memberById.get(memberId);
     if (existing) {
-      // 'undecided'（未回答）はセグメントに無いので、回答を促す既定値に倒す。
-      const initialRole: Role =
-        existing.role === "undecided"
-          ? member?.hasCar
-            ? "driver"
-            : "rider"
-          : existing.role;
+      // R4/R5: participation.role を尊重して UI ロールへ変換
+      // （rider は fixedDriver の有無で 同乗者/同乗希望、undecided は hasCar で倒す）。
+      const initialRole: FormRole = participationToFormRole(
+        existing.role,
+        existing.fixedDriverMemberId,
+        member?.hasCar ?? false,
+      );
       setForm({
         memberId,
         role: initialRole,
@@ -305,13 +344,28 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
       setFormError("メンバーを選択してください");
       return;
     }
+    // R4: 同乗者（乗る車が決まっている）は確約相手（運転手）の選択が必須。
+    if (form.role === "passenger" && !form.fixedDriverMemberId) {
+      setFormError("乗る車（運転手）を選択してください");
+      return;
+    }
+    // R7: 運転手/同乗者/同乗希望は乗車エリア（自宅エリア）が必須。
+    // 未設定のまま登録すると配車計算で割当不能になる（plan 画面でブロックされる）。
+    const needsHomeArea =
+      form.role === "driver" || form.role === "passenger" || form.role === "rider";
+    const homeAreaName = homeAreaInput.trim();
+    if (needsHomeArea && !homeAreaName) {
+      setFormError("乗車エリアが未設定です。設定しないと配車の割当ができません");
+      return;
+    }
     setSaving(true);
     setFormError(null);
 
     const body: Record<string, unknown> = {
       actorName,
       memberId: form.memberId,
-      role: form.role,
+      // R4: passenger は API では rider に畳む（DB 変更なし）。
+      role: toApiRole(form.role),
       entrySource: "manual",
       startTime: form.startTime || null,
       className: form.className.trim() || null,
@@ -335,14 +389,45 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
       body.earliestDepartureOverride = formDep === defaultDep ? null : formDep;
 
       body.pickupPrefsOverride = form.pickupPrefsOverride;
+    } else if (form.role === "passenger") {
+      // R4: 同乗者 = rider + 確約運転手（必須・上で検証済み）。
+      body.fixedDriverMemberId = form.fixedDriverMemberId;
+      body.notes = form.notes.trim() || null;
     } else if (form.role === "rider") {
-      body.fixedDriverMemberId = form.fixedDriverMemberId || null;
+      // R4: 同乗希望 = rider で確約なし（明示 null でクリア）。
+      body.fixedDriverMemberId = null;
       body.notes = form.notes.trim() || null;
     }
 
     const exists = participations.some((p) => p.memberId === form.memberId);
 
     try {
+      // R7: 乗車エリアの変更を本人プロフィール（home_node_id）へ反映する。
+      // members API の homeAreaName と同じ規約: 同名の kind=area ノードを再利用、
+      // 無ければ作成してから PATCH /members/[id]（大会別 override は作らない）。
+      if (needsHomeArea) {
+        const member = memberById.get(form.memberId);
+        const currentName = member?.homeNodeId
+          ? (nodeById.get(member.homeNodeId)?.name ?? null)
+          : null;
+        if (homeAreaName !== currentName) {
+          let nodeId = nodes.find(
+            (n) => n.kind === "area" && n.name === homeAreaName,
+          )?.id;
+          if (!nodeId) {
+            const created = await postCarpool<{ node: NodeDTO }>(
+              `/clubs/${slug}/nodes`,
+              { actorName, kind: "area", name: homeAreaName },
+            );
+            nodeId = created.node.id;
+          }
+          await patchCarpool(`/clubs/${slug}/members/${form.memberId}`, {
+            actorName,
+            homeNodeId: nodeId,
+          });
+        }
+      }
+
       const path = `/clubs/${slug}/events/${eventId}/participations`;
       if (exists) {
         await patchCarpool(path, body);
@@ -499,13 +584,19 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   // M4: 検出行の単独クイック登録（運転手/同乗希望）。本人以外による代理操作を想定し、
   // actor_name は操作者のまま change_log に残る（既存設計どおり）。
   // 未登録メンバーは member 作成（athleteKey=検出 nameKey）込みで participation upsert する。
-  const quickRegister = async (d: DetectedEntry, i: number, role: QuickRole) => {
+  const quickRegister = async (
+    d: DetectedEntry,
+    i: number,
+    role: QuickRole,
+    seatsInput?: string,
+  ) => {
     if (!actorName) {
       setShowActorModal(true);
       return;
     }
     const key = detKey(d, i);
     setQuickSavingKey(key);
+    setSeatsAskKey(null);
     setBulkError(null);
     try {
       const plan = planQuickRegister(
@@ -515,6 +606,8 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
           rawName: d.rawName ?? null,
           className: d.className || null,
           displayNameInput: nameInputs[key] ?? null,
+          // R5: 運転手登録時の同乗可能人数（最小ステップの入力。未入力なら付与しない）。
+          seatsInput: seatsInput ?? null,
         },
         role,
       );
@@ -791,7 +884,15 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                             <div className="mt-2 flex gap-2 pl-6">
                               <button
                                 type="button"
-                                onClick={() => void quickRegister(d, i, "driver")}
+                                onClick={() => {
+                                  // R5: 未登録メンバーは同乗可能人数を聞く最小ステップを挟む。
+                                  if (isUnregistered) {
+                                    setSeatsAskKey((k) => (k === key ? null : key));
+                                    setSeatsAskValue("");
+                                  } else {
+                                    void quickRegister(d, i, "driver");
+                                  }
+                                }}
                                 disabled={quickSavingKey !== null || bulkSaving}
                                 className="rounded bg-white/10 px-2 py-1 text-[10px] text-foreground hover:bg-white/15 disabled:opacity-50"
                               >
@@ -806,6 +907,40 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                                 {quickSavingKey === key ? "登録中…" : "同乗希望として登録"}
                               </button>
                             </div>
+
+                            {/* R5: 運転手クイック登録の最小ステップ（同乗可能人数） */}
+                            {seatsAskKey === key && (
+                              <div className="mt-2 flex items-end gap-2 pl-6">
+                                <div className="min-w-0">
+                                  <label className="mb-1 block text-[10px] text-muted">
+                                    自分以外にあと何人乗せられますか？（空欄可）
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={20}
+                                    className="w-24 rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+                                    value={seatsAskValue}
+                                    onChange={(e) => setSeatsAskValue(e.target.value)}
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => void quickRegister(d, i, "driver", seatsAskValue)}
+                                  disabled={quickSavingKey !== null || bulkSaving}
+                                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                                >
+                                  運転手で登録
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setSeatsAskKey(null)}
+                                  className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-foreground hover:bg-white/15"
+                                >
+                                  キャンセル
+                                </button>
+                              </div>
+                            )}
                           </li>
                         );
                       })}
@@ -886,7 +1021,7 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                 </select>
               </div>
 
-              {/* ロール 4 分割セグメント */}
+              {/* ロール 5 分割セグメント（R4: 同乗者を追加） */}
               <div>
                 <span className="mb-1 block text-xs text-muted">参加方法</span>
                 <div className="flex overflow-hidden rounded-lg border border-border bg-surface">
@@ -896,7 +1031,7 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                       type="button"
                       onClick={() => setForm((f) => ({ ...f, role: seg.value }))}
                       className={cn(
-                        "flex-1 py-2 text-center text-sm font-medium",
+                        "flex-1 px-1 py-2 text-center text-xs font-medium",
                         form.role === seg.value
                           ? "bg-primary text-white"
                           : "text-muted hover:text-foreground",
@@ -906,7 +1041,41 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                     </button>
                   ))}
                 </div>
+                <p className="mt-1 text-[10px] text-muted">
+                  同乗者 = 乗る車が決まっている人 ／ 同乗希望 = 配車割り当てを待つ人
+                </p>
               </div>
+
+              {/* R7: 乗車エリア（運転手・同乗者・同乗希望に必須。配車割当の起点） */}
+              {(form.role === "driver" ||
+                form.role === "passenger" ||
+                form.role === "rider") && (
+                <div className="rounded-lg bg-surface p-3">
+                  <label className="mb-1 block text-xs text-muted">
+                    乗車エリア（自宅の最寄り駅・地区など）※必須
+                  </label>
+                  {form.memberId &&
+                    !memberById.get(form.memberId)?.homeNodeId &&
+                    !homeAreaInput.trim() && (
+                      <p className="mb-1 rounded-md bg-red-500/10 px-2 py-1 text-[11px] text-red-400">
+                        乗車エリアが未設定です。設定しないと配車の割当ができません
+                      </p>
+                    )}
+                  <input
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    value={homeAreaInput}
+                    onChange={(e) => setHomeAreaInput(e.target.value)}
+                    placeholder="例: 八王子駅"
+                    maxLength={80}
+                  />
+                  <p className="mt-1 text-[10px] text-muted">
+                    {form.role === "driver"
+                      ? "出発地として配車計算に使われます。"
+                      : "ここを起点に乗車地点・迎えが割り当てられます。"}
+                    変更すると本人のプロフィール（自宅エリア）も更新されます。
+                  </p>
+                </div>
+              )}
 
               {/* 運転手フィールド */}
               {form.role === "driver" && (
@@ -955,9 +1124,13 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                     </div>
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-muted">最早出発</label>
+                    <label className="mb-1 block text-xs text-muted">
+                      最早出発（15分きざみ）
+                    </label>
                     <input
                       type="time"
+                      // R3: 15分刻み。既存の15分外の値は step を緩めて壊さない。
+                      step={quarterHourStep(form.earliestDepartureOverride)}
                       className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                       value={form.earliestDepartureOverride}
                       onChange={(e) =>
@@ -969,7 +1142,9 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                     />
                   </div>
                   <div>
-                    <span className="mb-1 block text-xs text-muted">拾える場所</span>
+                    <span className="mb-1 block text-xs text-muted">
+                      同乗者を拾える場所（運転手として立ち寄れる地点）
+                    </span>
                     <ul className="flex flex-col gap-1">
                       {pickableNodes.map((n) => {
                         const pref = form.pickupPrefsOverride.find(
@@ -1027,12 +1202,12 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                 </div>
               )}
 
-              {/* 同乗希望フィールド */}
-              {form.role === "rider" && (
+              {/* 同乗者フィールド（R4: 乗る車が決まっている人。運転手の選択が必須） */}
+              {form.role === "passenger" && (
                 <div className="flex flex-col gap-4 rounded-lg bg-surface p-3">
                   <div>
                     <label className="mb-1 block text-xs text-muted">
-                      確約する運転手（任意）
+                      乗る車（運転手）※必須
                     </label>
                     <select
                       className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
@@ -1041,14 +1216,34 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                         setForm((f) => ({ ...f, fixedDriverMemberId: e.target.value }))
                       }
                     >
-                      <option value="">指定なし</option>
+                      <option value="">選択してください</option>
                       {driverParticipations.map((p) => (
                         <option key={p.memberId} value={p.memberId}>
                           {memberName(p.memberId)}
                         </option>
                       ))}
                     </select>
+                    {driverParticipations.length === 0 && (
+                      <p className="mt-1 text-[10px] text-muted">
+                        まだ運転手がいません。運転手の登録後に選択できます。
+                      </p>
+                    )}
                   </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-muted">希望・コメント</label>
+                    <textarea
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                      rows={2}
+                      value={form.notes}
+                      onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 同乗希望フィールド（R4: 確約なし。配車割り当てを待つ） */}
+              {form.role === "rider" && (
+                <div className="flex flex-col gap-4 rounded-lg bg-surface p-3">
                   <div>
                     <label className="mb-1 block text-xs text-muted">希望・コメント</label>
                     <textarea
@@ -1073,6 +1268,8 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                   </label>
                   <input
                     type="time"
+                    // R3: 手入力は15分刻み。自動設定（Phase 4 予定）の分単位値は step を緩めて保持。
+                    step={quarterHourStep(form.startTime)}
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
                     value={form.startTime}
                     onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))}
@@ -1129,9 +1326,12 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                   );
                 }}
               />
+              {/* R4: 同乗者（確約あり）と同乗希望（確約なし）を別グループ表示 */}
               <StatusGroup
-                title="同乗希望"
-                items={participations.filter((p) => p.role === "rider")}
+                title="同乗者（乗る車が決まっている）"
+                items={participations.filter(
+                  (p) => p.role === "rider" && p.fixedDriverMemberId,
+                )}
                 onDelete={deleteParticipation}
                 onEdit={editParticipant}
                 render={(p) => (
@@ -1140,10 +1340,31 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                     {p.className && (
                       <span className="ml-2 text-xs text-accent">{p.className}</span>
                     )}
-                    {p.fixedDriverMemberId && (
-                      <span className="ml-2 text-xs text-accent">
-                        → {memberName(p.fixedDriverMemberId)}
-                      </span>
+                    <span className="ml-2 text-xs text-accent">
+                      → {memberName(p.fixedDriverMemberId)} の車
+                    </span>
+                    {/* M5: 確約先が現在 driver でない（役割変更等の事後不整合）場合の警告 */}
+                    {p.fixedDriverMemberId &&
+                      !currentDriverIds.has(p.fixedDriverMemberId) && (
+                        <span className="ml-2 text-xs text-red-400">
+                          ⚠ 確約先が運転手ではありません
+                        </span>
+                      )}
+                  </span>
+                )}
+              />
+              <StatusGroup
+                title="同乗希望"
+                items={participations.filter(
+                  (p) => p.role === "rider" && !p.fixedDriverMemberId,
+                )}
+                onDelete={deleteParticipation}
+                onEdit={editParticipant}
+                render={(p) => (
+                  <span>
+                    {memberName(p.memberId)}
+                    {p.className && (
+                      <span className="ml-2 text-xs text-accent">{p.className}</span>
                     )}
                   </span>
                 )}
@@ -1182,6 +1403,32 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                 )}
               />
             </section>
+
+            {/* 次のステップ: 配車計画（Phase 3 実装済み） */}
+            {planSummary.ready && (
+              <section className="mt-6 rounded-xl border border-primary/40 bg-card p-4">
+                <h2 className="text-sm font-semibold text-foreground">
+                  次のステップ: 配車計画の作成
+                </h2>
+                <p className="mt-1 text-xs text-muted">
+                  確定参加 {planSummary.participantCount} 人・運転手{" "}
+                  {planSummary.driverCount} 台が揃っています。
+                  最適化を実行して配車案を作り、公開すると全員が結果ページで見られます。
+                </p>
+                <Link
+                  href={`/carpool/${slug}/${eventId}/plan`}
+                  className="mt-3 block w-full rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white hover:bg-primary-dark"
+                >
+                  配車計画を作成・調整する
+                </Link>
+                <Link
+                  href={`/carpool/${slug}/${eventId}/result`}
+                  className="mt-2 block w-full rounded-lg bg-white/10 px-4 py-2 text-center text-sm text-foreground hover:bg-white/15"
+                >
+                  配車結果を見る（公開後）
+                </Link>
+              </section>
+            )}
           </>
         )}
       </main>

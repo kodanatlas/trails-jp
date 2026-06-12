@@ -12,6 +12,20 @@ const API_PREFIX = "/api/carpool";
 const RATE_LIMIT_MESSAGE =
   "アクセスが集中しています。しばらく待ってから再試行してください。";
 
+/**
+ * HTTP ステータス付きの API エラー。呼び出し側がステータスで分岐できる
+ * （例: R2 のクラブ作成で 409 を検出して slug を変えて1回リトライ）。
+ * Error 派生なので既存の `err instanceof Error` 分岐はそのまま動く。
+ */
+export class CarpoolApiError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "CarpoolApiError";
+    this.status = status;
+  }
+}
+
 /** path に /api/carpool を前置（既に絶対パスならそのまま）。 */
 export function buildUrl(path: string): string {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
@@ -42,7 +56,7 @@ export async function fetchCarpool<T>(
   });
 
   if (res.status === 429) {
-    throw new Error(RATE_LIMIT_MESSAGE);
+    throw new CarpoolApiError(RATE_LIMIT_MESSAGE, 429);
   }
 
   let parsed: unknown = null;
@@ -57,9 +71,9 @@ export async function fetchCarpool<T>(
 
   if (!res.ok) {
     if (isErrorEnvelope(parsed)) {
-      throw new Error(parsed.error);
+      throw new CarpoolApiError(parsed.error, res.status);
     }
-    throw new Error(`通信に失敗しました（${res.status}）`);
+    throw new CarpoolApiError(`通信に失敗しました（${res.status}）`, res.status);
   }
 
   return parsed as T;
