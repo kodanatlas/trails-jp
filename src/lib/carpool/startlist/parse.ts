@@ -6,22 +6,31 @@
  * 貼り付けテキスト（ページ概念なし）にも対応するため、`parseStartlistText(["<全文>"])`
  * のような 1 要素配列でも動く。
  *
- * 実サンプル（startlist_sample_olk2264.pdf, 42ページ）で実測した構造に基づく:
- *   - ページ1=表紙 / ページ2=もくじ / ページ3=スタートレーン表 はデータ行ヘッダを含まない。
- *   - データページは必ずヘッダ行 `スタート時間 ゼッケン 氏名 所属 Eカード番号` を含む。
- *   - セクション見出し行（例 `ME（レーン１） 10:45~11:14`）で className が切り替わる。
- *     1ページに複数クラスが載るため、className は行を上から走査しながら見出し行で更新し、
- *     以降の行に適用する（ページ単位ではなくセクション単位）。
- *   - データ行: `HH:MM ゼッケン(3〜5桁) <氏名と所属> Eカード番号`。
+ * 主催者ごとにスタートリストの列構成が異なるため、2 系統のフォーマットを統一的に扱う:
+ *
+ *   【A: サンプル系（startlist_sample_olk2264.pdf, 42p）】
+ *     - ヘッダ `スタート時間 ゼッケン 氏名 所属 Eカード番号`
+ *     - データ行 `HH:MM <ゼッケン3〜5桁> <氏名> <所属> <Eカード番号>`
+ *     - セクション見出し `ME（レーン１） 10:45~11:14` で className が切り替わる。
+ *
+ *   【B: 東大OLK前日大会系（getfile/10708）】
+ *     - ヘッダ `出走時刻 名前 所属 SIカード番号 Extra`
+ *     - データ行 `HH:MM:SS <氏名> <所属> <SIカード番号> <○/×>`（ゼッケン列なし・時刻に秒・行末フラグ）
+ *     - 見出しは `レーン1（…）`（日本語始まり）で className を含まない
+ *       → className は "" のまま（呼び出し側はエントリー由来のクラスを保持する）。
+ *
+ * 両系統を 1 つの行パーサで吸収するため、位置固定の単一正規表現はやめ、
+ * 「先頭=時刻 → 末尾から フラグ / カード番号 を剥がす → 残りの先頭が数字なら ゼッケン →
+ * 残り = 氏名+所属」と段階的に削る方式にする。
  *
  * I/O（PDF 読込）は index.ts に分離し、本ファイルは純粋関数のみ。
  */
 
 /** スタートリストの 1 データ行。 */
 export interface StartlistRow {
-  /** スタート時刻（`HH:MM`）。 */
+  /** スタート時刻（`HH:MM`。秒つき入力は分まで丸める）。 */
   startTime: string;
-  /** ゼッケン番号（3〜5桁の数字文字列）。 */
+  /** ゼッケン番号（3〜5桁の数字文字列。ゼッケン列が無いフォーマットでは ""）。 */
   bib: string;
   /** 氏名（姓名連結ケースは 1 トークン、通常は「姓 名」を半角空白で連結した 2 トークン）。 */
   name: string;
@@ -35,26 +44,30 @@ export interface StartlistRow {
  * データページ判定に使うヘッダ行（className 文脈の補助）。
  * このヘッダの有無は採用条件ではなく、貼り付けテキスト対応のため
  * 「データ行が 1 つでもあるページ/ブロックは採用」する方針を採る。
+ * A 系（スタート時間…）/ B 系（出走時刻…）の双方を許容する。
  */
-const HEADER_RE = /スタート時間\s+ゼッケン\s+氏名\s+所属\s+Eカード番号/;
+const HEADER_RE =
+  /(?:スタート時間\s+ゼッケン\s+氏名\s+所属\s+Eカード番号|出走時刻\s+名前\s+所属)/;
 
 /**
- * セクション見出し行 → className。
+ * セクション見出し行 → className（A 系）。
  * 行頭の `[A-Za-z0-9]+`（全角丸括弧 `（` の直前まで）を className とする。
  * 例: `ME（レーン１） 10:45~11:14` → "ME" / `M21A1（レーン2） 11:45~12:06` → "M21A1"。
+ * B 系の `レーン1（…）`（日本語始まり）は意図的に一致させない（競技クラスではないため）。
  */
 const HEADING_RE = /^([A-Za-z0-9]+)（/;
 
-/**
- * データ行の厳密正規表現（実サンプル 863 行を漏れ 0 で捕捉）。
- * 位置キャプチャ（tsconfig target=ES2017 のため named group は使えない）:
- *   [1] time  = スタート時刻 HH:MM
- *   [2] bib   = ゼッケン 3〜5 桁
- *   [3] mid   = 氏名 + 所属（間は半角空白区切り、非貪欲）
- *   [4] ecard = 末尾の Eカード番号（数字）
- */
-const DATA_RE =
-  /^((?:[01]\d|2[0-3]):[0-5]\d)\s+(\d{3,5})\s+(.+?)\s+(\d+)\s*$/;
+/** 先頭の時刻（`HH:MM` または `HH:MM:SS`）+ 残り。 */
+const LEADING_TIME_RE = /^(\d{1,2}):([0-5]\d)(?::[0-5]\d)?[\s　]+(.+)$/;
+
+/** 行末の Extra フラグ（出走可否・レンタル等のマーク。B 系の末尾列）。 */
+const TRAILING_FLAG_RE = /[\s　]+[○◯〇●×✕✗✓✔]+$/u;
+
+/** 行末の SI/E カード番号（4 桁以上。A 系=Eカード, B 系=SIカード。所属末尾の少数桁は剥がさない）。 */
+const TRAILING_CARD_RE = /[\s　]+\d{4,}$/;
+
+/** 先頭のゼッケン（3〜5 桁）+ 残り（次トークンは非数字＝氏名）。A 系のみ該当。 */
+const LEADING_BIB_RE = /^(\d{3,5})[\s　]+(\D.*)$/;
 
 /**
  * `mid`（氏名 + 所属）を氏名と所属に分割する。
@@ -74,14 +87,46 @@ function splitNameAndAffiliation(mid: string): { name: string; affiliation: stri
 }
 
 /**
+ * 1 行を段階的に削ってデータ行として解釈する。データ行でなければ null。
+ *
+ * @param line      trim 済みの 1 行。
+ * @param className 現在のセクション className（A 系見出し由来。無ければ ""）。
+ */
+function parseDataLine(line: string, className: string): StartlistRow | null {
+  const tm = line.match(LEADING_TIME_RE);
+  if (!tm) return null;
+
+  const hour = Number(tm[1]);
+  if (hour > 23) return null;
+  const startTime = `${String(hour).padStart(2, "0")}:${tm[2]}`;
+
+  // 末尾から「Extra フラグ → カード番号」を剥がす（順序固定: フラグが最後尾）。
+  let rest = tm[3].trim();
+  rest = rest.replace(TRAILING_FLAG_RE, "").trim();
+  rest = rest.replace(TRAILING_CARD_RE, "").trim();
+
+  // 先頭がゼッケン（3〜5 桁・直後が非数字）なら剥がして記録（A 系）。B 系は氏名始まりで非該当。
+  let bib = "";
+  const bibMatch = rest.match(LEADING_BIB_RE);
+  if (bibMatch) {
+    bib = bibMatch[1];
+    rest = bibMatch[2].trim();
+  }
+
+  if (!rest) return null;
+
+  const { name, affiliation } = splitNameAndAffiliation(rest);
+  if (!name) return null;
+
+  return { startTime, bib, name, affiliation, className };
+}
+
+/**
  * unpdf のページ別 plain text（または貼り付け全文の 1 要素配列）から
  * スタートリストのデータ行を抽出する純粋関数。
  *
- * className はページをまたいでも継続せず、各ページ（=配列要素）の先頭でリセットする
- * のではなく「直前に出現した見出し行」を引き継ぐ。実 PDF ではデータページ間で
- * 見出しが再掲されるため、各要素内で見出しを見つけ次第更新すれば十分。
- * 安全側として要素境界では className を引き継がず "" に戻す（ページごとに必ず
- * 見出しが先頭付近に出る実構造に合わせる）。
+ * className はページをまたいでも継続せず、各要素内で見出しを見つけ次第更新する
+ * （要素境界では "" にリセット）。実 PDF ではデータページ間で見出しが再掲されるため十分。
  *
  * @param pages ページ別 plain text。貼り付けテキストは `[全文]` の 1 要素でも可。
  * @returns 抽出した StartlistRow の配列（出現順）。
@@ -89,13 +134,12 @@ function splitNameAndAffiliation(mid: string): { name: string; affiliation: stri
 export function parseStartlistText(pages: string[]): StartlistRow[] {
   const rows: StartlistRow[] = [];
 
+  // ヘッダ行の有無は採用条件にしない（貼り付け対応）。className 文脈の補助としてのみ存在を見る。
+  void HEADER_RE;
+
   for (const page of pages) {
     if (!page) continue;
     const lines = page.split(/\r?\n/);
-
-    // ヘッダ行の有無は採用条件にしない（貼り付け対応）。className 文脈の補助としてのみ存在を見る。
-    // データ行が 1 つでもあるページ/ブロックは採用する方針なので、ここでは事前スキップしない。
-    void HEADER_RE;
 
     let className = "";
     for (const rawLine of lines) {
@@ -105,22 +149,12 @@ export function parseStartlistText(pages: string[]): StartlistRow[] {
       const heading = line.match(HEADING_RE);
       if (heading) {
         className = heading[1];
-        // 見出し行はデータ行正規表現に当たらないが、明示的に次へ。
+        // 見出し行はデータ行ではないので次へ。
         continue;
       }
 
-      const m = line.match(DATA_RE);
-      if (!m) continue;
-
-      const [, time, bib, mid] = m;
-      const { name, affiliation } = splitNameAndAffiliation(mid);
-      rows.push({
-        startTime: time,
-        bib,
-        name,
-        affiliation,
-        className,
-      });
+      const row = parseDataLine(line, className);
+      if (row) rows.push(row);
     }
   }
 

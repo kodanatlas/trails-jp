@@ -91,6 +91,68 @@ describe("parseStartlistText (ユニット・小さな文字列)", () => {
   });
 });
 
+// 主催者ごとにフォーマットが異なる（D-4）。B 系（東大OLK前日大会 getfile/10708 実構造）を回帰固定する。
+//   ヘッダ: 出走時刻 名前 所属 SIカード番号 Extra
+//   データ: HH:MM:SS <氏名> <所属> <SIカード番号> <○/×>（ゼッケン列なし・秒つき・行末フラグ）
+describe("parseStartlistText (B系: 秒つき時刻・ゼッケン無し・行末フラグ)", () => {
+  it("B 系データ行: 秒を分に丸め・行末○×とSIカードを剥がし・氏名/所属を取る", () => {
+    const rows = parseStartlistText(["12:02:00 佐藤 遼平 入間市OLC 8761409 ×"]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual<StartlistRow>({
+      startTime: "12:02",
+      bib: "",
+      name: "佐藤 遼平",
+      affiliation: "入間市OLC",
+      className: "",
+    });
+  });
+
+  it("B 系: 複数所属（スラッシュ）・○フラグ", () => {
+    const rows = parseStartlistText(["12:10:00 久保木 航 入間市OLC/杏友会 8538397 ○"]);
+    expect(rows[0].name).toBe("久保木 航");
+    expect(rows[0].affiliation).toBe("入間市OLC/杏友会");
+    expect(rows[0].startTime).toBe("12:10");
+  });
+
+  it("B 系: 外国人名（4トークン）は name=先頭2・affiliation=残り", () => {
+    const rows = parseStartlistText(["12:11:00 Ushakov Dmitry London OK 8644568 ×"]);
+    expect(rows[0].name).toBe("Ushakov Dmitry");
+    expect(rows[0].affiliation).toBe("London OK");
+  });
+
+  it("B 系: 所属 '-' を保持（行末フラグとSIカードのみ剥がす）", () => {
+    const rows = parseStartlistText(["12:18:00 柏田 芳樹 - 8538403 ○"]);
+    expect(rows[0].name).toBe("柏田 芳樹");
+    expect(rows[0].affiliation).toBe("-");
+  });
+
+  it("B 系: ヘッダ行『出走時刻 …』とレーン見出し『レーン1（…）』は無視（className は空のまま）", () => {
+    const text = [
+      "出走時刻 名前 所属 SIカード番号 Extra",
+      "レーン1（L1/OL：30秒間隔）",
+      "12:00:00 丹治 聖陽 東大OLK 8507461 ×",
+      "12:02:00 佐藤 遼平 入間市OLC 8761409 ×",
+    ].join("\n");
+    const rows = parseStartlistText([text]);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].className).toBe("");
+    expect(rows[1].name).toBe("佐藤 遼平");
+  });
+
+  it("B 系: SIカードもフラグも無い行（最小構成）でも取れる", () => {
+    const rows = parseStartlistText(["13:00:00 小林 二郎 入間市OLC"]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].name).toBe("小林 二郎");
+    expect(rows[0].affiliation).toBe("入間市OLC");
+    expect(rows[0].startTime).toBe("13:00");
+  });
+
+  it("1桁時刻はゼロ埋めする", () => {
+    const rows = parseStartlistText(["9:05:00 児玉 健 入間市OLC 8538397 ×"]);
+    expect(rows[0].startTime).toBe("09:05");
+  });
+});
+
 describe("extractStartlistFromPdf (実サンプル PDF)", () => {
   it("実サンプル PDF を解析して 859 行以上抽出する（実測 863）", async () => {
     const data = new Uint8Array(readFileSync(SAMPLE_PDF));
