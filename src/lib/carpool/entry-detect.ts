@@ -16,6 +16,7 @@
 import { splitAffiliations, normalizeClubName } from "@/lib/club-normalize";
 import { normalizeNameKey } from "@/lib/name-key";
 import type { AthleteEntryRef, EntryIndex } from "@/lib/entries/index-types";
+import type { EntryListResult } from "@/lib/scraper/entries";
 
 /** 既存メンバー（突合に必要な最小情報）。athlete_key は null の場合あり。 */
 export interface ExistingMemberRef {
@@ -158,20 +159,70 @@ export function collectEntriesForEvent(
 }
 
 /**
+ * JOY ライブ取得（scrapeEntryList）の結果を EntryWithNameKey[] に変換する。
+ *
+ * scrapeEntryList は複数所属（"A/B"）の同一エントリーを各クラブ team に二重計上するため、
+ * (nameKey, className, affiliation) で重複排除して 1人1エントリーに戻す。
+ * 氏名キーは normalizeNameKey（entry-index と同一関数）で算出するので、突合挙動は
+ * index 由来の EntryWithNameKey と完全に一致する。
+ */
+export function collectEntriesFromEntryList(
+  list: EntryListResult,
+): EntryWithNameKey[] {
+  const seen = new Set<string>();
+  const out: EntryWithNameKey[] = [];
+  for (const team of list.teams) {
+    for (const row of team.entries) {
+      const nameKey = normalizeNameKey(row.name);
+      if (!nameKey) continue;
+      const dedupeKey = `${nameKey}|${row.className}|${row.affiliation}`;
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+      out.push({ nameKey, className: row.className, affiliation: row.affiliation });
+    }
+  }
+  return out;
+}
+
+/**
  * I/O 付きエントリポイント: Storage の entry-index を読み、検出結果を返す。
  * Storage 読込は呼び出し側から注入可能（テスト・将来差し替え用）。
  *
- * @returns 検出結果（index 未生成時は空配列）。
+ * @returns 検出結果。`eventInIndex` は index にこの大会のエントリーが 1件でも
+ *          存在したか（false = 過去大会/未同期/index 欠落 → 呼び出し側がライブ取得に
+ *          フォールバックする判断材料）。
  */
 export async function detectEntriesForEvent(
   joeEventId: number,
   joeClubNames: string[],
   existingMembers: ReadonlyArray<ExistingMemberRef>,
   readIndex: () => Promise<EntryIndex | null>,
-): Promise<{ generatedAt: string | null; detected: DetectedEntry[] }> {
+): Promise<{ generatedAt: string | null; detected: DetectedEntry[]; eventInIndex: boolean }> {
   const index = await readIndex();
-  if (!index) return { generatedAt: null, detected: [] };
+  if (!index) return { generatedAt: null, detected: [], eventInIndex: false };
   const entries = collectEntriesForEvent(index, joeEventId);
   const detected = detectClubEntries(entries, joeClubNames, existingMembers);
-  return { generatedAt: index.generatedAt, detected };
+  return {
+    generatedAt: index.generatedAt,
+    detected,
+    eventInIndex: entries.length > 0,
+  };
+}
+
+/**
+ * I/O 付きエントリポイント（ライブ取得版）: JOY 大会詳細を直接スクレイプして検出する。
+ * entry-index にこの大会が無い（開催日を過ぎて index から脱落・未同期・index 欠落）ときの
+ * フォールバック。これが「大会が過去になるとクラブ員候補が消える」リグレッションを防ぐ。
+ * scrape は呼び出し側から注入可能（テスト・将来差し替え用）。
+ */
+export async function detectEntriesLive(
+  joeEventId: number,
+  joeClubNames: string[],
+  existingMembers: ReadonlyArray<ExistingMemberRef>,
+  scrape: (eventId: number) => Promise<EntryListResult>,
+): Promise<{ generatedAt: string | null; detected: DetectedEntry[] }> {
+  const list = await scrape(joeEventId);
+  const entries = collectEntriesFromEntryList(list);
+  const detected = detectClubEntries(entries, joeClubNames, existingMembers);
+  return { generatedAt: list.fetchedAt, detected };
 }

@@ -1,10 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { readEntryIndex } from "@/lib/entry-index-store";
-import { detectEntriesForEvent, type ExistingMemberRef } from "@/lib/carpool/entry-detect";
+import {
+  detectEntriesForEvent,
+  detectEntriesLive,
+  type ExistingMemberRef,
+} from "@/lib/carpool/entry-detect";
+import { scrapeEntryList } from "@/lib/scraper/entries";
 import { ERR, resolveClub } from "@/lib/carpool/api/helpers";
 
 export const dynamic = "force-dynamic";
+// ライブ取得フォールバック（JOY HTML 取得+解析）が走るため余裕を持たせる。
+export const maxDuration = 30;
 
 // クラブ別の検出結果はメンバー構成に依存し共有キャッシュ不可（PII 漏えい防止）のため no-store。
 const CACHE_HEADERS = {
@@ -46,12 +53,37 @@ export async function GET(
     displayName: m.display_name ?? null,
   }));
 
-  const { generatedAt, detected } = await detectEntriesForEvent(
+  // 1) entry-index（cron 生成・高速）を主に使う。
+  const indexResult = await detectEntriesForEvent(
     event.joe_event_id,
     club.joe_club_names,
     existingMembers,
     readEntryIndex,
   );
+  let generatedAt = indexResult.generatedAt;
+  let detected = indexResult.detected;
+
+  // 2) index にこの大会が無い（開催日を過ぎて脱落・未同期・index 欠落）場合は
+  //    JOY をライブ取得してフォールバック検出する。
+  //    → 大会が過去になるとクラブ員候補が消えるリグレッションを防ぐ。
+  if (!indexResult.eventInIndex) {
+    try {
+      const live = await detectEntriesLive(
+        event.joe_event_id,
+        club.joe_club_names,
+        existingMembers,
+        (eventId) => scrapeEntryList(eventId, { throwOnError: true }),
+      );
+      generatedAt = live.generatedAt;
+      detected = live.detected;
+    } catch (e) {
+      // JOY 取得失敗時は index 結果（空）のまま返す（グレースフル劣化）。
+      console.error(
+        "detect-entries live fallback failed:",
+        e instanceof Error ? e.message : String(e),
+      );
+    }
+  }
 
   return NextResponse.json({ generatedAt, detected }, { headers: CACHE_HEADERS });
 }
