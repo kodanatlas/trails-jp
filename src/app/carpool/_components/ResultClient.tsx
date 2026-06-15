@@ -215,7 +215,7 @@ export default function ResultClient({ slug, eventId }: ResultClientProps) {
 
   return (
     <div className="min-h-screen">
-      <CarpoolHeader clubName={club?.name ?? slug} slug={slug} />
+      <CarpoolHeader clubName={club?.name ?? slug} slug={slug} breadcrumbs={[{label: "イベント一覧", href: `/carpool/${slug}`}, {label: event?.name ?? "イベント", href: `/carpool/${slug}/${eventId}`}]} currentPage="配車結果" />
 
       <main className="mx-auto max-w-2xl px-4 py-6">
         {loading && <p className="text-sm text-muted">読み込み中…</p>}

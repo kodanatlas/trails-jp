@@ -6,6 +6,7 @@ import { fetchCarpool, postCarpool, patchCarpool, CarpoolApiError } from "./carp
 import { useToast } from "./Toast";
 import { minToTime, minToDuration } from "./planFormat";
 import StartlistImport from "./StartlistImport";
+import CarpoolHeader from "./CarpoolHeader";
 import type { PlanWorkerMessage, PlanWorkerRequest } from "./plan.worker";
 import { cn } from "@/lib/utils";
 import {
@@ -1081,30 +1082,24 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
     <div className="min-h-screen">
       {toastEl}
 
-      {/* シンプルヘッダ（共通ヘッダーは別エージェント所有のため自前で最小構成）。 */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/carpool/${slug}/${eventId}`}
-              className="truncate text-sm font-semibold text-foreground hover:text-primary"
-              title="参加状況へ戻る"
-            >
-              🚗 {clubName}
-            </Link>
-            <span className="text-sm text-muted">配車プラン</span>
-          </div>
-          <div className="flex shrink-0 items-center gap-3 text-xs">
-            {/* M2: 結果ページへの常設リンク（公開後の共有 URL）。 */}
-            <Link
-              href={resultPath}
-              className="shrink-0 text-primary hover:underline"
-            >
-              結果ページ
-            </Link>
-          </div>
-        </div>
-      </header>
+      <CarpoolHeader
+        clubName={club?.name ?? slug}
+        slug={slug}
+        breadcrumbs={[
+          { label: "イベント一覧", href: `/carpool/${slug}` },
+          { label: event?.name ?? "イベント", href: `/carpool/${slug}/${eventId}` },
+        ]}
+        currentPage="配車計画"
+        maxWidth="max-w-6xl"
+        actions={
+          <Link
+            href={resultPath}
+            className="shrink-0 text-xs text-primary hover:underline"
+          >
+            結果ページ
+          </Link>
+        }
+      />
 
       <div className="mx-auto max-w-6xl px-4 py-6">
         {event && (

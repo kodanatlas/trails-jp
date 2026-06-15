@@ -290,7 +290,7 @@ export default function MembersClient({ slug }: MembersClientProps) {
   return (
     <div className="min-h-screen">
       {toastEl}
-      <CarpoolHeader clubName={club?.name ?? slug} slug={slug} />
+      <CarpoolHeader clubName={club?.name ?? slug} slug={slug} breadcrumbs={[{label: "イベント一覧", href: `/carpool/${slug}`}]} currentPage="メンバー" />
 
       <main className="mx-auto max-w-2xl px-4 py-6">
         <div className="mb-4 flex items-center justify-between">

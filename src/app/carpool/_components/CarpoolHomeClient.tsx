@@ -162,7 +162,7 @@ export default function CarpoolHomeClient({ slug }: CarpoolHomeClientProps) {
   return (
     <div className="min-h-screen">
       {toastEl}
-      <CarpoolHeader clubName={club?.name ?? slug} slug={slug} />
+      <CarpoolHeader clubName={club?.name ?? slug} slug={slug} breadcrumbs={[]} currentPage="イベント一覧" />
 
       <main className="mx-auto max-w-2xl px-4 py-6">
         {loading && <p className="text-sm text-muted">読み込み中…</p>}

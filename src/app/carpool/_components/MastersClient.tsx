@@ -70,7 +70,7 @@ export default function MastersClient({ slug, focus }: MastersClientProps) {
   return (
     <div className="min-h-screen">
       {toastEl}
-      <CarpoolHeader clubName={club?.name ?? slug} slug={slug} />
+      <CarpoolHeader clubName={club?.name ?? slug} slug={slug} breadcrumbs={[{label: "イベント一覧", href: `/carpool/${slug}`}]} currentPage="設定" />
 
       <main className="mx-auto max-w-2xl px-4 py-6">
         <h1 className="mb-3 text-lg font-bold text-foreground">場所・時間の設定</h1>
