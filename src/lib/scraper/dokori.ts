@@ -1,13 +1,19 @@
 /**
- * どこオリ (dokori.net) 大会ページのスクレイパ。
+ * どこオリ (dokori.net) 大会ページのスクレイパ（日別対応）。
  *
  * どこオリは Next.js (App Router / RSC) アプリで、公開イベントページは全データを
  * React Server Component の "flight" ペイロード
  *   <script>self.__next_f.push([N,"...escaped..."])</script>
  * に server-render する。各 push の文字列を unescape して連結すると、クリーンな
- * JSON 断片を含む ~300KB のテキスト（flight）が得られる。ここからエントリー一覧と
- * 大会メタデータを抽出し、JOY スクレイパと同じ出力契約（EntryListResult / JOEEvent）
- * に整形して、アプリの他の部分を変更せずに使えるようにする。
+ * JSON 断片を含む ~300KB のテキスト（flight）が得られる。
+ *
+ * 複数日大会では各日で参加者が異なる（予選/決勝・会場違い）。flight 内の `byDay` 配列が
+ * 日(dayId)ごとの `individualEntrants`（その日の参加者）を持つので、**1つの publicId を
+ * 日別の複数 JOEEvent に展開**して取り込む（trails.jp 既存モデル＝1イベント=1 joe_event_id
+ * にそのまま乗せる）。日別IDは合成ID（baseEventId + dayIndex）で採番する。
+ *
+ * 出力契約は JOY スクレイパと同一（EntryListResult / JOEEvent）。下流（一覧・選手ページ・
+ * 配車割）は型しか見ないため無改修で日別に動く。
  */
 import { splitAffiliations } from "@/lib/club-normalize";
 import { normalizeNameKey } from "@/lib/name-key";
@@ -18,25 +24,46 @@ export const DOKORI_BASE_URL = "https://www.dokori.net";
 
 /** どこオリ用の合成イベントID予約レンジ（JOYの整数IDと衝突させない）。 */
 export const DOKORI_ID_BASE = 90_000_000;
+/** 1イベント(publicId)に予約するID幅。日別IDは baseEventId + dayIndex で採番する。 */
+export const DOKORI_EVENT_BLOCK = 100;
 
 const NO_AFFILIATION = "所属なし";
 
 export interface DokoriRegistryEntry {
   publicId: string;
-  eventId: number;
+  /** 日別IDの起点。Day1=baseEventId, Day2=baseEventId+1, ... */
+  baseEventId: number;
 }
 
-/** ホワイトリスト（取り込む対象はここに登録した大会のみ）。 */
+/** ホワイトリスト（取り込む対象はここに登録した大会のみ）。1イベント=連続したID幅を専有。 */
 export const DOKORI_EVENTS: DokoriRegistryEntry[] = [
-  { publicId: "evt_tortoise_50th", eventId: DOKORI_ID_BASE + 1 },
+  { publicId: "evt_tortoise_50th", baseEventId: DOKORI_ID_BASE + 1 }, // Day1=90000001, Day2=90000002, Day3=90000003
 ];
 
 export function isDokoriEventId(id: number): boolean {
   return id >= DOKORI_ID_BASE;
 }
 
+export interface DokoriRef {
+  publicId: string;
+  baseEventId: number;
+  /** 0=Day1, 1=Day2, ... （日付昇順） */
+  dayIndex: number;
+}
+
+/** 合成 eventId から (publicId, dayIndex) を解決。 */
+export function getDokoriRef(eventId: number): DokoriRef | null {
+  for (const e of DOKORI_EVENTS) {
+    if (eventId >= e.baseEventId && eventId < e.baseEventId + DOKORI_EVENT_BLOCK) {
+      return { publicId: e.publicId, baseEventId: e.baseEventId, dayIndex: eventId - e.baseEventId };
+    }
+  }
+  return null;
+}
+
+/** 後方互換: publicId だけ要るとき。 */
 export function getDokoriPublicId(eventId: number): string | null {
-  return DOKORI_EVENTS.find((e) => e.eventId === eventId)?.publicId ?? null;
+  return getDokoriRef(eventId)?.publicId ?? null;
 }
 
 /**
@@ -58,6 +85,60 @@ export function reconstructFlight(html: string): string {
   return flight;
 }
 
+/** flight 内の openIdx 位置（'[' or '{'）からバランス対応する閉じ括弧までを切り出す。 */
+function balancedSlice(flight: string, openIdx: number): string | null {
+  const open = flight[openIdx];
+  const close = open === "[" ? "]" : "}";
+  let depth = 0;
+  let inStr = false;
+  for (let i = openIdx; i < flight.length; i++) {
+    const ch = flight[i];
+    if (inStr) {
+      if (ch === "\\") i++;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') inStr = true;
+    else if (ch === open) depth++;
+    else if (ch === close) {
+      if (--depth === 0) return flight.slice(openIdx, i + 1);
+    }
+  }
+  return null;
+}
+
+/** RSC リテラル参照（$undefined / $L4c 等）を JSON 化のため null に置換。 */
+function cleanRsc(raw: string): string {
+  return raw.replace(/"\$undefined"/g, "null").replace(/:\s*\$[A-Za-z0-9_]+/g, ":null");
+}
+
+/** flight から `"<key>":[...]` をバランス抽出して JSON.parse。失敗時は null。 */
+function extractArray<T>(flight: string, key: string): T[] | null {
+  const at = flight.indexOf(`"${key}":[`);
+  if (at < 0) return null;
+  const open = flight.indexOf("[", at);
+  const raw = balancedSlice(flight, open);
+  if (!raw) return null;
+  try {
+    const v = JSON.parse(cleanRsc(raw));
+    return Array.isArray(v) ? (v as T[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+interface DokoriDayMeta {
+  dayId?: string;
+  id?: string;
+  date?: string;
+  raceDistance?: string;
+  label?: string;
+  terrainName?: string;
+  location?: string;
+  venueName?: string;
+  venueGeo?: { lat?: number; lng?: number } | null;
+}
+
 interface DokoriEntrant {
   name: string;
   classes: string[];
@@ -65,36 +146,28 @@ interface DokoriEntrant {
   club: string | null;
 }
 
-/** flight 文字列から entrant オブジェクトを抽出し、name+classes+status で重複排除する。 */
-function extractEntrants(flight: string): DokoriEntrant[] {
-  const entRe =
-    /\{"name":"(?:[^"\\]|\\.)*","classes":\[[^\]]*\],"status":"[^"]*","club":(?:"(?:[^"\\]|\\.)*"|\$undefined|null)\}/g;
-  const seen = new Set<string>();
-  const entrants: DokoriEntrant[] = [];
-  let m: RegExpExecArray | null;
-  while ((m = entRe.exec(flight)) !== null) {
-    // RSC リテラル $undefined（クォート有無の両形）を null に置換してから JSON.parse。
-    const raw = m[0]
-      .replace(/"\$undefined"/g, "null")
-      .replace(/:\$undefined/g, ":null");
-    let obj: DokoriEntrant;
-    try {
-      obj = JSON.parse(raw) as DokoriEntrant;
-    } catch {
-      continue;
-    }
-    const classes = Array.isArray(obj.classes) ? obj.classes : [];
-    const key = `${obj.name}|${classes.join(",")}|${obj.status}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    entrants.push({
-      name: obj.name,
-      classes,
-      status: obj.status,
-      club: obj.club == null ? null : obj.club,
-    });
+interface DokoriByDay {
+  dayId: string;
+  individualEntrants?: DokoriEntrant[];
+}
+
+/** 日メタ（days[]）を日付昇順で返す。dayIndex の基準（Day1=最早日）。 */
+function orderedDays(flight: string): DokoriDayMeta[] {
+  const days = extractArray<DokoriDayMeta>(flight, "days") ?? [];
+  return days
+    .filter((d) => !!d.date)
+    .slice()
+    .sort((a, b) => (a.date as string).localeCompare(b.date as string));
+}
+
+/** byDay[] を dayId → その日の individualEntrants にマップ。 */
+function entrantsByDay(flight: string): Map<string, DokoriEntrant[]> {
+  const arr = extractArray<DokoriByDay>(flight, "byDay") ?? [];
+  const map = new Map<string, DokoriEntrant[]>();
+  for (const d of arr) {
+    if (d && d.dayId) map.set(d.dayId, Array.isArray(d.individualEntrants) ? d.individualEntrants : []);
   }
-  return entrants;
+  return map;
 }
 
 /** confirmed / pending_payment のみ有効（cancelled 等は除外）。 */
@@ -102,30 +175,24 @@ function isValidStatus(status: string): boolean {
   return status === "confirmed" || status === "pending_payment";
 }
 
-/**
- * どこオリ大会ページのHTMLからエントリー一覧を抽出し、所属（クラブ）単位でグループ化する。
- * 複数所属は分割して各クラブに計上（JOY の parseEntryList と同じ二重計上）。純関数。
- */
-export function parseDokoriEntryList(html: string, eventId: number): EntryListResult {
-  const flight = reconstructFlight(html);
-  const fetchedAt = new Date().toISOString();
+/** その日の参加者配列を EntryListResult（所属グループ・total=ユニーク人数）に整形。 */
+function entrantsToResult(
+  entrants: DokoriEntrant[],
+  eventId: number,
+  fetchedAt: string,
+): EntryListResult {
+  const valid = entrants.filter((e) => isValidStatus(e.status));
 
-  const entrants = extractEntrants(flight).filter((e) => isValidStatus(e.status));
-
-  // 各 entrant の各クラスごとに1行（マルチクラスは複数行）。
+  // 各 entrant の各クラスごとに1行（その日のクラス）。
   const rows: EntryRow[] = [];
-  for (const ent of entrants) {
-    const classes = ent.classes.length > 0 ? ent.classes : [""];
+  for (const ent of valid) {
+    const classes = ent.classes && ent.classes.length > 0 ? ent.classes : [""];
     for (const className of classes) {
-      rows.push({
-        className,
-        name: ent.name,
-        affiliation: ent.club ?? "",
-      });
+      rows.push({ className, name: ent.name, affiliation: ent.club ?? "" });
     }
   }
 
-  // 所属でグループ化（複数所属は分割して両方に計上）。
+  // 所属でグループ化（複数所属は分割して両方に計上＝JOY と同じ二重計上）。
   const map = new Map<string, EntryRow[]>();
   for (const row of rows) {
     const clubs = splitAffiliations(row.affiliation);
@@ -139,71 +206,43 @@ export function parseDokoriEntryList(html: string, eventId: number): EntryListRe
 
   const teams: TeamGroup[] = [...map.entries()]
     .map(([affiliation, entries]) => ({ affiliation, count: entries.length, entries }))
-    .sort(
-      (a, b) => b.count - a.count || a.affiliation.localeCompare(b.affiliation, "ja"),
-    );
+    .sort((a, b) => b.count - a.count || a.affiliation.localeCompare(b.affiliation, "ja"));
 
-  // total はユニーク人数（氏名の正準キーで重複排除）。行数でも team count の総和でもない。
+  // total はその日のユニーク人数（氏名の正準キーで重複排除）。
   const persons = new Set<string>();
-  for (const ent of entrants) persons.add(normalizeNameKey(ent.name));
-  const total = persons.size;
+  for (const ent of valid) persons.add(normalizeNameKey(ent.name));
 
-  return { eventId, total, teams, fetchedAt };
+  return { eventId, total: persons.size, teams, fetchedAt };
+}
+
+/**
+ * どこオリ大会ページのHTMLから「指定 eventId の日」のエントリー一覧を返す。純関数。
+ * eventId のレンジで publicId/dayIndex を解決し、その日の individualEntrants を整形する。
+ */
+export function parseDokoriEntryList(html: string, eventId: number): EntryListResult {
+  const flight = reconstructFlight(html);
+  const fetchedAt = new Date().toISOString();
+
+  const ref = getDokoriRef(eventId);
+  const days = orderedDays(flight);
+  const day = days[ref ? ref.dayIndex : 0];
+  // days[] の UUID は `id`、byDay[] 側は同じ UUID を `dayId` で持つ（キー名が違う）。
+  const dayUuid = day?.id ?? day?.dayId;
+  if (!dayUuid) return { eventId, total: 0, teams: [], fetchedAt };
+
+  const ents = entrantsByDay(flight).get(dayUuid) ?? [];
+  return entrantsToResult(ents, eventId, fetchedAt);
 }
 
 // --- 大会メタデータ ---
 
-interface DokoriDay {
-  date?: string;
-  raceDistance?: string;
-  label?: string;
-  terrainName?: string;
-  location?: string;
-  venueName?: string;
-  venueGeo?: { lat?: number; lng?: number } | null;
-}
-
-/** flight から `"days":[...]` をバランス括弧で切り出して JSON.parse する。 */
-function extractDays(flight: string): DokoriDay[] {
-  const marker = '"days":[';
-  const markerIdx = flight.indexOf(marker);
-  if (markerIdx < 0) return [];
-  const start = flight.indexOf("[", markerIdx);
-  if (start < 0) return [];
-  let depth = 0;
-  let end = -1;
-  for (let i = start; i < flight.length; i++) {
-    const ch = flight[i];
-    if (ch === "[") depth++;
-    else if (ch === "]") {
-      depth--;
-      if (depth === 0) {
-        end = i;
-        break;
-      }
-    }
-  }
-  if (end < 0) return [];
-  const raw = flight.slice(start, end + 1);
-  // RSC リテラル参照（$undefined, $123 等）を null に置換してから parse。
-  const json = raw.replace(/:\s*\$[A-Za-z0-9_]+/g, ":null");
-  try {
-    const days = JSON.parse(json) as DokoriDay[];
-    return Array.isArray(days) ? days : [];
-  } catch {
-    return [];
-  }
-}
-
-/** 申込締切（ISO 日時）を flight から抽出。日時形のみを採用（UIラベルを誤取得しないため）。 */
+/** 申込締切（ISO 日時）を flight から抽出。日時形のみ採用（UIラベルを誤取得しない）。 */
 function extractDeadlineMs(flight: string): number | null {
-  // 優先: クリーンな ISO 形 "deadline":"2026-09-05T03:00:00+09:00"
   const isoDeadline = flight.match(/"deadline":"(\d{4}-\d{2}-\d{2}T[^"]*)"/);
   if (isoDeadline) {
     const ms = Date.parse(isoDeadline[1]);
     if (!Number.isNaN(ms)) return ms;
   }
-  // 代替: "registrationDeadline":"2026-09-04 18:00:00+00"（同一インスタント）
   const reg = flight.match(/"registrationDeadline":"(\d{4}-\d{2}-\d{2}[^"]*)"/);
   if (reg) {
     const ms = Date.parse(reg[1].replace(" ", "T"));
@@ -219,65 +258,82 @@ function extractTitle(html: string): string {
   return m[1].replace(/\s*\|\s*どこオリ\s*$/, "").trim();
 }
 
+function distanceJa(raceDistance?: string): string {
+  switch (raceDistance) {
+    case "middle":
+      return "ミドル";
+    case "long":
+      return "ロング";
+    case "sprint":
+      return "スプリント";
+    case "ultralong":
+      return "ウルトラロング";
+    default:
+      return "";
+  }
+}
+
 type DokoriJOEEvent = JOEEvent & {
   source?: "joy" | "dokori";
   dokori_public_id?: string;
 };
 
 /**
- * どこオリ大会ページのHTMLから JOEEvent を生成する。純関数。
+ * どこオリ大会ページのHTMLから **日別の JOEEvent 配列** を生成する。純関数。
+ * 1つの publicId を、日付昇順で Day1..DayN の独立イベント（合成ID = baseEventId + dayIndex）に展開。
  */
-export function parseDokoriEvent(
+export function parseDokoriEvents(
   html: string,
   publicId: string,
-  eventId: number,
+  baseEventId: number,
   now: number = Date.now(),
-): JOEEvent {
+): JOEEvent[] {
   const flight = reconstructFlight(html);
-  const days = extractDays(flight);
-  const dates = days.map((d) => d.date).filter((d): d is string => !!d).sort();
-  const date = dates[0] ?? "";
-  const lastDate = dates[dates.length - 1] ?? "";
-  const end_date = lastDate && lastDate !== date ? lastDate : undefined;
-
-  const first = days[0];
-  const location = first?.location ?? "";
-  const prefMatch = location.match(/^(.+?[都道府県])/);
-  const prefecture = prefMatch ? prefMatch[1] : location;
-
-  const venue = first?.venueName ?? first?.terrainName ?? first?.location ?? undefined;
-
-  let lat: number | null = null;
-  let lng: number | null = null;
-  const geo = first?.venueGeo;
-  if (geo && typeof geo.lat === "number" && typeof geo.lng === "number") {
-    if (geo.lat >= 20 && geo.lat <= 50 && geo.lng >= 120 && geo.lng <= 155) {
-      lat = geo.lat;
-      lng = geo.lng;
-    }
-  }
-
+  const days = orderedDays(flight);
+  const title = extractTitle(html);
   const deadlineMs = extractDeadlineMs(flight);
   const entry_status: JOEEvent["entry_status"] =
     deadlineMs === null ? "none" : now < deadlineMs ? "open" : "closed";
 
-  const event: DokoriJOEEvent = {
-    joe_event_id: eventId,
-    name: extractTitle(html),
-    date,
-    end_date,
-    event_type: first?.raceDistance,
-    prefecture,
-    venue,
-    entry_status,
-    tags: ["どこオリ"],
-    joe_url: `${DOKORI_BASE_URL}/event/${publicId}`,
-    lat,
-    lng,
-    source: "dokori",
-    dokori_public_id: publicId,
-  };
-  return event;
+  return days.map((d, i) => {
+    const date = d.date as string;
+    const location = d.location ?? "";
+    const prefMatch = location.match(/^(.+?[都道府県])/);
+    const prefecture = prefMatch ? prefMatch[1] : location;
+    const venue = d.venueName ?? d.terrainName ?? location ?? undefined;
+
+    let lat: number | null = null;
+    let lng: number | null = null;
+    const geo = d.venueGeo;
+    if (geo && typeof geo.lat === "number" && typeof geo.lng === "number") {
+      if (geo.lat >= 20 && geo.lat <= 50 && geo.lng >= 120 && geo.lng <= 155) {
+        lat = geo.lat;
+        lng = geo.lng;
+      }
+    }
+
+    const [, mm, dd] = date.split("-");
+    const md = `${Number(mm)}/${Number(dd)}`;
+    const distLabel = `${distanceJa(d.raceDistance)}${d.label ?? ""}`.trim();
+    const name = distLabel ? `${title}（${md} ${distLabel}）` : `${title}（${md}）`;
+
+    const event: DokoriJOEEvent = {
+      joe_event_id: baseEventId + i,
+      name,
+      date,
+      event_type: d.raceDistance,
+      prefecture,
+      venue,
+      entry_status,
+      tags: ["どこオリ"],
+      joe_url: `${DOKORI_BASE_URL}/event/${publicId}`,
+      lat,
+      lng,
+      source: "dokori",
+      dokori_public_id: publicId,
+    };
+    return event;
+  });
 }
 
 // --- ネットワーク ---
@@ -286,15 +342,15 @@ const ENTRY_UA = "trails.jp/1.0 (dokori entry list)";
 const EVENT_UA = "trails.jp/1.0 (dokori event sync)";
 
 /**
- * どこオリ大会ページを取得してエントリー一覧を返す。
- * 上流HTMLは1時間キャッシュ。throwOnError の意味論は scrapeEntryList と同一
- * （cron では取得失敗と真の空を区別するため throw、オンデマンドは空を返してグレースフル継続）。
+ * どこオリ大会ページを取得し、指定 eventId の日のエントリー一覧を返す。
+ * 上流HTMLは1時間キャッシュ（同一URLなので複数日分の取得もキャッシュで相乗り）。
+ * throwOnError の意味論は scrapeEntryList と同一。
  */
 export async function scrapeDokoriEntryList(
   eventId: number,
   opts: { signal?: AbortSignal; throwOnError?: boolean } = {},
 ): Promise<EntryListResult> {
-  const publicId = getDokoriPublicId(eventId);
+  const ref = getDokoriRef(eventId);
   const emptyResult = (): EntryListResult => ({
     eventId,
     total: 0,
@@ -302,14 +358,12 @@ export async function scrapeDokoriEntryList(
     fetchedAt: new Date().toISOString(),
   });
 
-  if (!publicId) {
-    if (opts.throwOnError) {
-      throw new Error(`unknown dokori event id: ${eventId}`);
-    }
+  if (!ref) {
+    if (opts.throwOnError) throw new Error(`unknown dokori event id: ${eventId}`);
     return emptyResult();
   }
 
-  const res = await fetch(`${DOKORI_BASE_URL}/event/${publicId}`, {
+  const res = await fetch(`${DOKORI_BASE_URL}/event/${ref.publicId}`, {
     headers: { "User-Agent": ENTRY_UA },
     next: { revalidate: 3600 },
     signal: opts.signal,
@@ -325,8 +379,8 @@ export async function scrapeDokoriEntryList(
 }
 
 /**
- * ホワイトリスト（DOKORI_EVENTS）の各大会ページを取得して JOEEvent[] を返す。
- * 1件の失敗がバッチ全体を落とさないよう、イベント単位で try/catch して skip する。
+ * ホワイトリスト（DOKORI_EVENTS）の各大会ページを取得し、**日別に展開した** JOEEvent[] を返す。
+ * 1ページ取得につき複数日分の JOEEvent を生成。1件の失敗がバッチ全体を落とさないよう隔離。
  */
 export async function scrapeDokoriEvents(
   opts: { signal?: AbortSignal } = {},
@@ -341,7 +395,7 @@ export async function scrapeDokoriEvents(
       });
       if (!res.ok) continue;
       const html = await res.text();
-      events.push(parseDokoriEvent(html, entry.publicId, entry.eventId));
+      events.push(...parseDokoriEvents(html, entry.publicId, entry.baseEventId));
     } catch {
       // イベント単位で隔離: 1件の失敗で他を巻き込まない。
       continue;
