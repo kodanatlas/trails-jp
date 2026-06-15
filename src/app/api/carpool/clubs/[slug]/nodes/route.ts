@@ -4,6 +4,7 @@ import { nodeCreateSchema } from "@/lib/carpool/api/schemas";
 import { toNodeDTO } from "@/lib/carpool/api/mappers";
 import { ERR, zodError, guardWrite, writeChangeLog, resolveClub, resolveClubGeoRef } from "@/lib/carpool/api/helpers";
 import { geocodeAddress } from "@/lib/carpool/geocode";
+import { shouldGeocodeNodeKind } from "@/lib/carpool/venue-coords";
 
 export const dynamic = "force-dynamic";
 
@@ -78,8 +79,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
 
   // C1: 座標未指定（lat/lng とも null）なら名称でジオコーディングして自動補完する。
   // 失敗・候補ゼロ・例外は隔離し、座標 null のまま（=ノード作成は壊さない）。
+  // ただし kind='venue' は除外: 会場は JOY の地図ピンが正で、会場名ジオコーディングは
+  // 曖昧で約8kmずれる実害があるため自動付与しない（座標は events 作成時の scrape か地図ピッカーで入る）。
   let node = data;
-  if (node.lat == null && node.lng == null) {
+  if (node.lat == null && node.lng == null && shouldGeocodeNodeKind(node.kind)) {
     try {
       // 同名異地の誤選択を防ぐ参照点（クラブ既存ノード重心）。作成直後の自ノードは除外。
       // resolveClubGeoRef はエラー時 null を返すためノード作成を壊さない。

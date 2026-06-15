@@ -5,6 +5,8 @@ import { eventCreateSchema } from "@/lib/carpool/api/schemas";
 import { toEventDTO, toNodeDTO, type NodeDTO } from "@/lib/carpool/api/mappers";
 import { ERR, zodError, guardWrite, writeChangeLog, resolveClub } from "@/lib/carpool/api/helpers";
 import { DEFAULT_BUFFER_MIN } from "@/lib/carpool/api/constants";
+import { resolveVenueCoordsWithScrape } from "@/lib/carpool/venue-coords";
+import { scrapeEventCoordinates } from "@/lib/scraper/events";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +59,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     name = input.name ?? joe.name;
     eventDate = input.eventDate ?? joe.date;
 
+    // 会場座標の決定: store座標(joe.lat/lng) → JOY地図ピン(scrapeEventCoordinates) → null。
+    // store が null のことは多く（座標は遅延バッチ任せ）、その場合は JOY 詳細ページの
+    // Leaflet ピンを取りに行く。会場名のジオコーディングは曖昧で約8kmずれるため**使わない**。
+    // scrape は失敗・タイムアウトを隔離（events.ts 側で UA 明示・例外時 null / 本体でも try 隔離）。
+    const venueCoords = await resolveVenueCoordsWithScrape(
+      { lat: joe.lat, lng: joe.lng },
+      joe.joe_url,
+      scrapeEventCoordinates,
+    );
+
     if (joe.venue) {
       // 同名 venue が2件以上あっても 500 にしないよう maybeSingle ではなく limit(1)+先頭参照。
       const { data: existingNodes, error: nodeFindError } = await supabaseAdmin
@@ -80,8 +92,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
             club_id: club.id,
             kind: "venue",
             name: joe.venue || joe.name,
-            lat: joe.lat ?? null,
-            lng: joe.lng ?? null,
+            lat: venueCoords.lat,
+            lng: venueCoords.lng,
           })
           .select("*")
           .single();
@@ -107,8 +119,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
           club_id: club.id,
           kind: "venue",
           name: joe.name,
-          lat: joe.lat ?? null,
-          lng: joe.lng ?? null,
+          lat: venueCoords.lat,
+          lng: venueCoords.lng,
         })
         .select("*")
         .single();
