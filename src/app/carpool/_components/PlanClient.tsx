@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { fetchCarpool, postCarpool, CarpoolApiError } from "./carpoolFetch";
+import { fetchCarpool, postCarpool, patchCarpool, CarpoolApiError } from "./carpoolFetch";
 import { useToast } from "./Toast";
 import { minToTime, minToDuration } from "./planFormat";
 import StartlistImport from "./StartlistImport";
@@ -130,6 +130,21 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
   const [weights, setWeights] = useState<Weights>({ ...DEFAULT_WEIGHTS });
   const [showSliders, setShowSliders] = useState(false);
   const [timeLimitSec, setTimeLimitSec] = useState(5);
+
+  // --- 到着バッファの分解（準備時間 + 会場→スタート所要時間）。event から初期化し、保存で永続化。 ---
+  // 入力欄はテキスト（空欄を許容するため string）。保存時に number/null へ正規化する。
+  const [prepMinInput, setPrepMinInput] = useState<string>("60");
+  const [venueToStartInput, setVenueToStartInput] = useState<string>("");
+  const [bufferSaving, setBufferSaving] = useState(false);
+  const [bufferSuggesting, setBufferSuggesting] = useState(false);
+  // プログラム/要綱 URL（JOY / Google Drive 可）。空なら発行書類から自動走査。
+  const [programUrlInput, setProgramUrlInput] = useState<string>("");
+  // 自動取得で返った所要時間候補（ユーザーがボタンで選ぶ。自動確定はしない）。
+  const [suggestCandidates, setSuggestCandidates] = useState<
+    { minutes: number; context: string; source: string }[]
+  >([]);
+  // 要綱系の発行書類（PDF リンク列挙・自動取得の出典確認用）。
+  const [bulletinDocs, setBulletinDocs] = useState<{ title: string; url: string }[]>([]);
 
   // --- ロック（ボード操作由来）。memberId → driverId。 ---
   const [locks, setLocks] = useState<Lock[]>([]);
@@ -368,6 +383,119 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
     void loadHistory();
   }, [load, loadHistory]);
 
+  // event ロード時に、到着バッファの入力欄を現在値で初期化する。
+  useEffect(() => {
+    if (!event) return;
+    setPrepMinInput(String(event.prepMin ?? 60));
+    setVenueToStartInput(
+      event.venueToStartMin === null || event.venueToStartMin === undefined
+        ? ""
+        : String(event.venueToStartMin),
+    );
+  }, [event]);
+
+  // プログラム/要綱系の発行書類を列挙する（手動で開いて手入力する導線・自動取得の出典確認用）。
+  const loadBulletinDocs = useCallback(async () => {
+    try {
+      const res = await fetchCarpool<{
+        documents: { title: string; url: string }[];
+      }>(`/clubs/${slug}/events/${eventId}/documents`);
+      const kw = ["プログラム", "program", "要項", "要綱", "案内", "競技", "アクセス"];
+      const docs = (res.documents ?? []).filter((d) =>
+        kw.some((k) => d.title.toLowerCase().includes(k.toLowerCase())),
+      );
+      setBulletinDocs(docs);
+    } catch {
+      setBulletinDocs([]);
+    }
+  }, [slug, eventId]);
+
+  useEffect(() => {
+    void loadBulletinDocs();
+  }, [loadBulletinDocs]);
+
+  // 「プログラム/要綱から候補取得」: API がPDFを読み、所要時間の候補を best-effort 抽出する。
+  // 単一自動確定はせず、返った候補をボタン列で見せてユーザーに選ばせる（誤確定防止）。
+  // programUrlInput が空なら発行書類から自動走査、貼付があればその URL（JOY/Drive）を読む。
+  const suggestVenueToStart = useCallback(async () => {
+    setBufferSuggesting(true);
+    try {
+      const url = programUrlInput.trim();
+      const res = await postCarpool<{
+        candidates: { minutes: number; context: string; source: string }[];
+        message?: string;
+      }>(
+        `/clubs/${slug}/events/${eventId}/venue-to-start-suggest`,
+        url ? { actorName, programUrl: url } : { actorName },
+      );
+      const candidates = res.candidates ?? [];
+      setSuggestCandidates(candidates);
+      if (candidates.length === 0) {
+        toast(
+          res.message ??
+            "プログラムから自動取得できませんでした。プログラムを見て手入力してください",
+          "error",
+        );
+      } else {
+        toast(
+          `${candidates.length}件の候補が見つかりました。当てはまるものを選んでください`,
+          "success",
+        );
+      }
+    } catch (e) {
+      setSuggestCandidates([]);
+      toast(
+        e instanceof CarpoolApiError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : "自動取得に失敗しました",
+        "error",
+      );
+    } finally {
+      setBufferSuggesting(false);
+    }
+  }, [slug, eventId, actorName, programUrlInput, toast]);
+
+  // 到着バッファ（準備時間・会場→スタート所要時間）を保存する。空欄の所要は null（未設定）。
+  const saveBuffer = useCallback(async () => {
+    const prep = Number(prepMinInput);
+    if (!Number.isInteger(prep) || prep < 0 || prep > 600) {
+      toast("準備時間は0〜600分の整数で入力してください", "error");
+      return;
+    }
+    const walkTrim = venueToStartInput.trim();
+    let walk: number | null = null;
+    if (walkTrim !== "") {
+      const w = Number(walkTrim);
+      if (!Number.isInteger(w) || w < 0 || w > 600) {
+        toast("会場→スタート所要時間は0〜600分の整数で入力してください", "error");
+        return;
+      }
+      walk = w;
+    }
+    setBufferSaving(true);
+    try {
+      const res = await patchCarpool<{ event: EventDTO }>(
+        `/clubs/${slug}/events/${eventId}`,
+        { actorName, prepMin: prep, venueToStartMin: walk },
+      );
+      setEvent(res.event);
+      toast("到着バッファを保存しました", "success");
+    } catch (e) {
+      toast(
+        e instanceof CarpoolApiError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : "保存に失敗しました",
+        "error",
+      );
+    } finally {
+      setBufferSaving(false);
+    }
+  }, [prepMinInput, venueToStartInput, slug, eventId, actorName, toast]);
+
   // アンマウント時に Worker を確実に終了する。
   useEffect(() => {
     return () => {
@@ -384,13 +512,14 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
 
   const built = useMemo(() => {
     if (!planData) return null;
+    // 到着バッファ B は buildPlanInput が event.prepMin + (venueToStartMin ?? 0) で
+    // 合成する。ここで bufferMin を明示上書きすると旧単一値に戻ってしまうため渡さない。
     return buildPlanInput(planData, {
       provisional,
       weights,
       locks,
-      bufferMin: event?.bufferMin,
     });
-  }, [planData, provisional, weights, locks, event?.bufferMin]);
+  }, [planData, provisional, weights, locks]);
 
   const input: SolveInput | null = built?.input ?? null;
 
@@ -515,11 +644,11 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
     (runLocks: Lock[]) => {
       if (!planData || !event) return;
       // ロックを反映した input を組み立て直す。
+      // B は buildPlanInput が prep+walk から合成する（bufferMin は渡さない＝上の built と同じ）。
       const rebuilt = buildPlanInput(planData, {
         provisional,
         weights,
         locks: runLocks,
-        bufferMin: event.bufferMin,
       });
       const solveInput = rebuilt.input;
 
@@ -1029,6 +1158,119 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
                 <p className="mt-1 text-[11px] text-muted">
                   暫定はスタート時刻を無視して割当のみ最適化します。
                 </p>
+              </div>
+
+              {/* 到着バッファの分解（準備時間 + 会場→スタート所要時間）。
+                  車の現地到着 → 最早スタートの余裕 B = 準備 + 所要。結果ページに内訳表示する。
+                  所要時間は徒歩/大会バス両対応の意味。手入力が主軸、候補取得は補助。 */}
+              <div className="mb-4">
+                <span className="mb-1.5 block text-xs text-muted">
+                  到着バッファ（最早スタートの何分前に会場着）
+                </span>
+                <div className="flex items-center gap-2">
+                  <label className="flex-1">
+                    <span className="mb-1 block text-[11px] text-muted">準備時間(分)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={600}
+                      value={prepMinInput}
+                      onChange={(e) => setPrepMinInput(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+                    />
+                  </label>
+                  <label className="flex-1">
+                    <span className="mb-1 block text-[11px] text-muted">
+                      会場→スタート 所要時間(分)
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={600}
+                      placeholder="未設定"
+                      value={venueToStartInput}
+                      onChange={(e) => setVenueToStartInput(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+                    />
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void saveBuffer()}
+                  disabled={bufferSaving}
+                  className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                >
+                  {bufferSaving ? "保存中…" : "保存"}
+                </button>
+
+                {/* プログラム/要綱から候補取得（URL 貼付は任意。空なら発行書類を自動走査）。 */}
+                <div className="mt-3 rounded-lg border border-border bg-surface/50 p-2.5">
+                  <span className="block text-[11px] font-medium text-muted">
+                    プログラム/要綱から候補取得（任意）
+                  </span>
+                  <input
+                    type="url"
+                    inputMode="url"
+                    placeholder="プログラムURL（JOY / Google Drive 可・空欄なら発行書類を自動探索）"
+                    value={programUrlInput}
+                    onChange={(e) => setProgramUrlInput(e.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void suggestVenueToStart()}
+                    disabled={bufferSuggesting}
+                    className="mt-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs text-foreground hover:bg-white/15 disabled:opacity-50"
+                  >
+                    {bufferSuggesting ? "取得中…" : "プログラム/要綱から候補取得"}
+                  </button>
+                  <p className="mt-1 text-[11px] text-muted">
+                    所要時間（徒歩・大会バス）はプログラムに記載があれば候補を抽出します。
+                    候補から選ぶか、見当たらなければ上の欄に手入力してください。
+                  </p>
+
+                  {/* 候補ボタン列（クリックで上の入力欄にセット。自動確定はしない）。 */}
+                  {suggestCandidates.length > 0 && (
+                    <ul className="mt-2 flex flex-col gap-1">
+                      {suggestCandidates.map((c, i) => (
+                        <li key={`${c.minutes}-${i}`}>
+                          <button
+                            type="button"
+                            onClick={() => setVenueToStartInput(String(c.minutes))}
+                            className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-left text-[11px] text-foreground hover:border-primary/60 hover:bg-primary/10"
+                            title={`${c.source}: …${c.context}…`}
+                          >
+                            <span className="font-semibold text-primary">
+                              {c.minutes}分
+                            </span>{" "}
+                            <span className="text-muted">… {c.context} …</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {bulletinDocs.length > 0 && (
+                  <div className="mt-2">
+                    <span className="block text-[11px] text-muted">プログラム/要綱PDF:</span>
+                    <ul className="mt-1 flex flex-col gap-0.5">
+                      {bulletinDocs.map((d) => (
+                        <li key={d.url}>
+                          <a
+                            href={d.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="truncate text-[11px] text-primary hover:underline"
+                            title={d.title}
+                          >
+                            📄 {d.title}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               {/* P5.5: 重みプリセット・詳細スライダ・時間予算は ⚙ 詳細設定 に畳む。

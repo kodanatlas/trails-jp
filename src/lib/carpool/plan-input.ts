@@ -63,7 +63,7 @@ export interface BuildPlanInputOptions {
   weights?: Weights;
   /** ロック（UI のボード操作由来）。SolveInput.locks にそのまま渡す。 */
   locks?: SolveInput["locks"];
-  /** 到着バッファ分の上書き（未指定は event.bufferMin）。 */
+  /** 到着バッファ B の明示上書き（未指定は event.prepMin + (event.venueToStartMin ?? 0)）。 */
   bufferMin?: number;
   /** 立寄り上限（未指定は DEFAULT_OPTIONS.maxPickups）。 */
   maxPickups?: number;
@@ -418,8 +418,15 @@ export function buildPlanInput(
 
   const weights: Weights = options.weights ?? { ...DEFAULT_WEIGHTS };
 
+  // 到着バッファ B（車の現地到着 → 最早スタート）の合成。
+  //   B = prep_min（準備・既定60）+ (venue_to_start_min ?? 0)（会場→スタート徒歩・未設定=0）。
+  // 既存 event.bufferMin（旧単一値）は後方互換で残すが B の算定には使わない。
+  // options.bufferMin の明示上書きは最優先（UI のボード再求解・テスト互換のため維持）。
+  const eventBufferMin =
+    (event.prepMin ?? DEFAULT_OPTIONS.bufferMin) + (event.venueToStartMin ?? 0);
+
   const solveOptions: SolveOptions = {
-    bufferMin: options.bufferMin ?? event.bufferMin ?? DEFAULT_OPTIONS.bufferMin,
+    bufferMin: options.bufferMin ?? eventBufferMin,
     maxPickups: options.maxPickups ?? DEFAULT_OPTIONS.maxPickups,
     accessMaxMin: options.accessMaxMin ?? DEFAULT_OPTIONS.accessMaxMin,
     provisional,

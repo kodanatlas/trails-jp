@@ -112,6 +112,9 @@ export async function PATCH(
   if (input.eventDate !== undefined) patch.event_date = input.eventDate;
   if (input.status !== undefined) patch.status = input.status;
   if (input.bufferMin !== undefined) patch.buffer_min = input.bufferMin;
+  if (input.prepMin !== undefined) patch.prep_min = input.prepMin;
+  if (input.venueToStartMin !== undefined)
+    patch.venue_to_start_min = input.venueToStartMin;
   if (input.venueNodeId !== undefined) patch.venue_node_id = input.venueNodeId;
   if (input.bulletinUrl !== undefined) patch.bulletin_url = input.bulletinUrl;
   if (input.startlistUrl !== undefined) patch.startlist_url = input.startlistUrl;

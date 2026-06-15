@@ -34,6 +34,48 @@ export function minToDuration(min: number | null | undefined): string {
   return mm === 0 ? `${hh}時間` : `${hh}時間${mm}分`;
 }
 
+/** "HH:MM[:SS]" → 0時からの分。不正・null は null。 */
+export function parseHHMM(t: string | null | undefined): number | null {
+  if (!t) return null;
+  const m = /^(\d{1,2}):(\d{2})/.exec(t);
+  if (!m) return null;
+  const hh = Number(m[1]);
+  const mm = Number(m[2]);
+  if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+  return hh * 60 + mm;
+}
+
+/**
+ * 到着バッファの内訳説明文を組み立てる（純粋・配車割 Phase 4 追補）。
+ *
+ * 「会場 HH:MM 着 ＝ 最早スタート HH:MM の 準備60分＋スタートまでN分（計M分）前」。
+ * walk（venueToStartMin）が null のときは「準備60分前（会場→スタート未設定）」に縮約する。
+ * 「N分」は徒歩・大会バス両対応の意味で中立に表現する（徒歩限定にしない）。
+ *
+ * @param arrivalMin 会場到着（0時からの分）。null なら null（表示しない）。
+ * @param earliestStartMin 最早スタート（0時からの分）。null なら null。
+ * @param prepMin 準備時間（分）。
+ * @param venueToStartMin 会場→スタート所要時間（分）。null=未設定。
+ */
+export function buildArrivalBreakdown(params: {
+  arrivalMin: number | null;
+  earliestStartMin: number | null;
+  prepMin: number;
+  venueToStartMin: number | null;
+}): string | null {
+  const { arrivalMin, earliestStartMin, prepMin, venueToStartMin } = params;
+  if (arrivalMin === null && earliestStartMin === null) return null;
+
+  const arr = arrivalMin !== null ? minToTime(arrivalMin) : "—";
+  const start = earliestStartMin !== null ? minToTime(earliestStartMin) : "—";
+
+  if (venueToStartMin === null) {
+    return `会場 ${arr} 着 ＝ 最早スタート ${start} の 準備${prepMin}分前（会場→スタート未設定）`;
+  }
+  const total = prepMin + venueToStartMin;
+  return `会場 ${arr} 着 ＝ 最早スタート ${start} の 準備${prepMin}分＋スタートまで${venueToStartMin}分（計${total}分）前`;
+}
+
 /**
  * Google Maps ナビリンク（04 §5）。
  * destination は会場ノードに座標があれば "lat,lng" を優先、無ければ名称。

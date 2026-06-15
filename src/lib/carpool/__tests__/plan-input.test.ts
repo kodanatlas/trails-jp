@@ -91,6 +91,8 @@ const baseEvent: EventDTO = {
   eventDate: "2026-06-12",
   venueNodeId: "venue1",
   bufferMin: 75,
+  prepMin: 60,
+  venueToStartMin: null,
   status: "planning",
   bulletinUrl: null,
   startlistUrl: null,
@@ -449,10 +451,11 @@ describe("buildPlanInput — pickupNodes & travel", () => {
 });
 
 describe("buildPlanInput — weights & options", () => {
-  it("defaults to DEFAULT_WEIGHTS and event.bufferMin", () => {
+  it("defaults to DEFAULT_WEIGHTS; B は prep+walk 合成（旧 event.bufferMin は無視）", () => {
     const members = [member("d1", { seatsAvailable: 3 })];
     const data: PlanInputData = {
-      event: { ...baseEvent, bufferMin: 90 },
+      // 旧単一バッファ 90 を持つが、B 算定には使わない。prep60 + walk(null=0) = 60。
+      event: { ...baseEvent, bufferMin: 90, prepMin: 60, venueToStartMin: null },
       routes: [route("k1", { d1_home: 90 })],
       participations: [participation("d1", "driver")],
       members,
@@ -461,7 +464,63 @@ describe("buildPlanInput — weights & options", () => {
     };
     const { input } = buildPlanInput(data);
     expect(input.weights).toEqual(DEFAULT_WEIGHTS);
-    expect(input.options.bufferMin).toBe(90);
+    expect(input.options.bufferMin).toBe(60);
+  });
+
+  it("B 合成: prep + walk（prep70 + walk15 = 85）", () => {
+    const members = [member("d1", { seatsAvailable: 3 })];
+    const data: PlanInputData = {
+      event: { ...baseEvent, bufferMin: 75, prepMin: 70, venueToStartMin: 15 },
+      routes: [route("k1", { d1_home: 90 })],
+      participations: [participation("d1", "driver")],
+      members,
+      nodes: [],
+      travelTimes: [],
+    };
+    const { input } = buildPlanInput(data);
+    expect(input.options.bufferMin).toBe(85);
+  });
+
+  it("B 合成: walk=null は prep のみ（prep60 + null = 60）", () => {
+    const members = [member("d1", { seatsAvailable: 3 })];
+    const data: PlanInputData = {
+      event: { ...baseEvent, prepMin: 60, venueToStartMin: null },
+      routes: [route("k1", { d1_home: 90 })],
+      participations: [participation("d1", "driver")],
+      members,
+      nodes: [],
+      travelTimes: [],
+    };
+    const { input } = buildPlanInput(data);
+    expect(input.options.bufferMin).toBe(60);
+  });
+
+  it("B 合成: walk=0 を明示しても prep のみ（prep60 + 0 = 60）", () => {
+    const members = [member("d1", { seatsAvailable: 3 })];
+    const data: PlanInputData = {
+      event: { ...baseEvent, prepMin: 60, venueToStartMin: 0 },
+      routes: [route("k1", { d1_home: 90 })],
+      participations: [participation("d1", "driver")],
+      members,
+      nodes: [],
+      travelTimes: [],
+    };
+    const { input } = buildPlanInput(data);
+    expect(input.options.bufferMin).toBe(60);
+  });
+
+  it("options.bufferMin の明示上書きが prep+walk 合成より優先される", () => {
+    const members = [member("d1", { seatsAvailable: 3 })];
+    const data: PlanInputData = {
+      event: { ...baseEvent, prepMin: 70, venueToStartMin: 15 }, // 合成すると 85
+      routes: [route("k1", { d1_home: 90 })],
+      participations: [participation("d1", "driver")],
+      members,
+      nodes: [],
+      travelTimes: [],
+    };
+    const { input } = buildPlanInput(data, { bufferMin: 50 });
+    expect(input.options.bufferMin).toBe(50);
   });
 
   it("applies a weight preset when passed", () => {

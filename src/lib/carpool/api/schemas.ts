@@ -246,6 +246,21 @@ export const eventUpdateSchema = z.object({
   eventDate: dateString.optional(),
   status: z.enum(["planning", "provisional", "final", "closed"]).optional(),
   bufferMin: z.number().int().nonnegative().max(600).optional(),
+  /** 準備時間（分）。到着バッファ B = prepMin + (venueToStartMin ?? 0) の第1項。 */
+  prepMin: z
+    .number()
+    .int()
+    .nonnegative({ message: "準備時間は0以上で入力してください" })
+    .max(600, { message: "準備時間は600分以内で入力してください" })
+    .optional(),
+  /** 会場→スタート徒歩（分）。B の第2項。null で未設定に戻せる。 */
+  venueToStartMin: z
+    .number()
+    .int()
+    .nonnegative({ message: "会場→スタート徒歩は0以上で入力してください" })
+    .max(600, { message: "会場→スタート徒歩は600分以内で入力してください" })
+    .nullable()
+    .optional(),
   venueNodeId: z.string().uuid().nullable().optional(),
   bulletinUrl: z.string().url().nullable().optional(),
   startlistUrl: z.string().url().nullable().optional(),

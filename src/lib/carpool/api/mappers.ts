@@ -73,7 +73,15 @@ export interface EventDTO {
   name: string;
   eventDate: string;
   venueNodeId: string | null;
+  /**
+   * 後方互換の旧単一バッファ（既定75）。到着バッファ B の算定には使わない
+   * （B = prepMin + (venueToStartMin ?? 0)。plan-input.ts 参照）。表示・移行用に残す。
+   */
   bufferMin: number;
+  /** 準備時間（分・会場到着後の着替え等）。到着バッファ B の第1項。既定60。 */
+  prepMin: number;
+  /** 会場→スタート徒歩（分）。到着バッファ B の第2項。null=未設定（B では 0 扱い）。 */
+  venueToStartMin: number | null;
   status: "planning" | "provisional" | "final" | "closed";
   bulletinUrl: string | null;
   startlistUrl: string | null;
@@ -191,6 +199,8 @@ export function toEventDTO(r: any): EventDTO {
     eventDate: r.event_date,
     venueNodeId: r.venue_node_id ?? null,
     bufferMin: r.buffer_min,
+    prepMin: r.prep_min ?? 60,
+    venueToStartMin: r.venue_to_start_min ?? null,
     status: r.status,
     bulletinUrl: r.bulletin_url ?? null,
     startlistUrl: r.startlist_url ?? null,

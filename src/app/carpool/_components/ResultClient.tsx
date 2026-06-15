@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchCarpool, CarpoolApiError } from "./carpoolFetch";
 import CarpoolHeader from "./CarpoolHeader";
-import { trimTime, buildMapsDirUrl } from "./planFormat";
+import {
+  trimTime,
+  buildMapsDirUrl,
+  parseHHMM,
+  buildArrivalBreakdown,
+} from "./planFormat";
 import { cn } from "@/lib/utils";
 import { calcFare } from "@/lib/carpool/fare";
 import { calcDepartRecommend } from "@/lib/carpool/depart-recommend";
@@ -309,6 +314,8 @@ export default function ResultClient({ slug, eventId }: ResultClientProps) {
                       memberName={memberName}
                       venueNode={venueNode}
                       clubSettings={(club?.settings ?? {}) as FareSettings}
+                      prepMin={event.prepMin}
+                      venueToStartMin={event.venueToStartMin}
                     />
                   ))}
                   {plan.cars.length === 0 && (
@@ -363,6 +370,8 @@ function CarCard({
   memberName,
   venueNode,
   clubSettings,
+  prepMin,
+  venueToStartMin,
 }: {
   car: PlanCarDTO;
   isOwn: boolean;
@@ -373,6 +382,8 @@ function CarCard({
   memberName: (id: string | null) => string;
   venueNode: NodeDTO | null;
   clubSettings: FareSettings;
+  prepMin: number;
+  venueToStartMin: number | null;
 }) {
   const driver = memberById.get(car.driverMemberId) ?? null;
   const driverName = memberName(car.driverMemberId);
@@ -419,6 +430,33 @@ function CarCard({
   }, [driver, car.pickupNodeIds, nodeById, venueNode]);
 
   const driverParticipation = participationByMemberId.get(car.driverMemberId);
+
+  // 到着バッファの内訳表示用: この車の最早スタート（運転手＋同乗者のスタート時刻の最小）。
+  // 会場到着（car.arrivalTime）= 最早スタート − B（準備 + 徒歩）になっているはずなので、
+  // 「会場 HH:MM 着 ＝ 最早スタート HH:MM の 準備X分＋徒歩Y分（計Z分）前」を提示する。
+  const earliestStartMin = useMemo(() => {
+    const times: number[] = [];
+    const push = (t: string | null | undefined) => {
+      const m = parseHHMM(t);
+      if (m !== null) times.push(m);
+    };
+    push(driverParticipation?.startTime);
+    for (const r of car.riders) push(participationByMemberId.get(r.memberId)?.startTime);
+    return times.length > 0 ? Math.min(...times) : null;
+  }, [driverParticipation, car.riders, participationByMemberId]);
+
+  const arrivalMin = useMemo(() => parseHHMM(car.arrivalTime), [car.arrivalTime]);
+
+  const arrivalBreakdown = useMemo(
+    () =>
+      buildArrivalBreakdown({
+        arrivalMin,
+        earliestStartMin,
+        prepMin,
+        venueToStartMin,
+      }),
+    [arrivalMin, earliestStartMin, prepMin, venueToStartMin],
+  );
 
   // 割り勘計算。
   const route = car.routeId ? routeById.get(car.routeId) ?? null : null;
@@ -520,6 +558,11 @@ function CarCard({
 
         {/* ルート名 */}
         <p className="text-xs text-muted">ルート: {routeName}</p>
+
+        {/* 到着バッファの内訳（準備時間＋会場→スタート徒歩） */}
+        {arrivalBreakdown && (
+          <p className="text-xs text-foreground">⏱ {arrivalBreakdown}</p>
+        )}
 
         {/* 渋滞メモ */}
         {departRec && departRec.kind === "avoid" && (
