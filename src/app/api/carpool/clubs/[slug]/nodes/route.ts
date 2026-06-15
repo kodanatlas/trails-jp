@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { nodeCreateSchema } from "@/lib/carpool/api/schemas";
 import { toNodeDTO } from "@/lib/carpool/api/mappers";
 import { ERR, zodError, guardWrite, writeChangeLog, resolveClub, resolveClubGeoRef } from "@/lib/carpool/api/helpers";
-import { geocodeAddress } from "@/lib/carpool/geocode";
+import { geocodeAddressDetailed } from "@/lib/carpool/geocode";
 import { shouldGeocodeNodeKind } from "@/lib/carpool/venue-coords";
 
 export const dynamic = "force-dynamic";
@@ -82,12 +82,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
   // ただし kind='venue' は除外: 会場は JOY の地図ピンが正で、会場名ジオコーディングは
   // 曖昧で約8kmずれる実害があるため自動付与しない（座標は events 作成時の scrape か地図ピッカーで入る）。
   let node = data;
+  // 名称ジオコーディングが走り採用された解決先（GSI title）と入力名の完全一致。
+  // UI が exact=false のとき「『入力』→『解決先』に設定しました」確認バナーを出すために返す。
+  let geocodeInfo: { resolvedTitle: string; exact: boolean } | null = null;
   if (node.lat == null && node.lng == null && shouldGeocodeNodeKind(node.kind)) {
     try {
       // 同名異地の誤選択を防ぐ参照点（クラブ既存ノード重心）。作成直後の自ノードは除外。
       // resolveClubGeoRef はエラー時 null を返すためノード作成を壊さない。
       const ref = await resolveClubGeoRef(club.id, { excludeNodeId: node.id });
-      const hit = await geocodeAddress(node.name, { ref: ref ?? undefined });
+      const hit = await geocodeAddressDetailed(node.name, { ref: ref ?? undefined });
       if (hit) {
         const { data: updated, error: updateError } = await supabaseAdmin
           .from("carpool_nodes")
@@ -98,6 +101,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
           .single();
         if (!updateError && updated) {
           node = updated;
+          geocodeInfo = { resolvedTitle: hit.title, exact: hit.exact };
           await writeChangeLog({
             clubId: club.id,
             tableName: "carpool_nodes",
@@ -114,5 +118,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     }
   }
 
-  return NextResponse.json({ node: toNodeDTO(node) }, { status: 201 });
+  // geocode は名称解決が走り命中した場合のみ非 null（DB スキーマ変更なし・レスポンスのみ）。
+  return NextResponse.json({ node: toNodeDTO(node), geocode: geocodeInfo }, { status: 201 });
 }

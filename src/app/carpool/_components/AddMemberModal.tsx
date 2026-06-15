@@ -35,6 +35,14 @@ export default function AddMemberModal({
   const [homeAreaName, setHomeAreaName] = useState("");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // 再発防止 UX: 自宅エリアを名前ジオコーディングした結果、入力名と解決先が違った
+  // （exact=false）ときに出す確認バナー。{ input, resolved, member }。
+  // exact=true は静かに閉じる（バナーなし）。OK 押下で onCreated を確定して閉じる。
+  const [geocodeNotice, setGeocodeNotice] = useState<{
+    input: string;
+    resolved: string;
+    member: MemberDTO;
+  } | null>(null);
 
   // major1: 自宅エリアのチップ候補（クラブの場所 = area / pickup ノード）。開いたとき1度だけ取得。
   // 0 件のクラブ（初期）はチップを出さずテキスト入力のみ（従来どおり）。
@@ -107,11 +115,21 @@ export default function AddMemberModal({
     if (area) body.homeAreaName = area;
 
     try {
-      const data = await postCarpool<{ member: MemberDTO }>(
-        `/clubs/${slug}/members`,
-        body,
-      );
-      onCreated(data.member);
+      const data = await postCarpool<{
+        member: MemberDTO;
+        geocode?: { resolvedTitle: string; exact: boolean } | null;
+      }>(`/clubs/${slug}/members`, body);
+      // 自宅エリアを名前ジオコーディングし、入力名と解決先が違ったら確認バナーを出して
+      // ユーザーに気づかせてから閉じる。完全一致（または geocode 無し）は従来どおり即確定。
+      if (data.geocode && data.geocode.exact === false) {
+        setGeocodeNotice({
+          input: area,
+          resolved: data.geocode.resolvedTitle,
+          member: data.member,
+        });
+      } else {
+        onCreated(data.member);
+      }
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "登録に失敗しました");
     } finally {
@@ -138,6 +156,34 @@ export default function AddMemberModal({
           メンバーの情報を登録します（あとで設定から変更できます）。
         </p>
 
+        {geocodeNotice ? (
+          // 再発防止 UX: 自宅エリアの解決先が入力名と違ったときの確認バナー（小さめ amber）。
+          // 登録自体は成功している。OK で確定し、地図調整したいときはマスタの「場所」へ誘導する。
+          <div className="flex flex-col gap-3">
+            <div className="rounded-lg border border-yellow-400/60 bg-yellow-400/10 p-3 text-xs text-yellow-200">
+              <p className="leading-relaxed">
+                「<span className="font-semibold">{geocodeNotice.input}</span>」→「
+                <span className="font-semibold">
+                  {geocodeNotice.resolved || "別の地点"}
+                </span>
+                」に設定しました。違う場合はマスタの「場所」で地図調整できます。
+              </p>
+              <a
+                href={`/carpool/${slug}/masters`}
+                className="mt-2 inline-block text-yellow-100 underline hover:text-white"
+              >
+                マスタの「場所」を開く
+              </a>
+            </div>
+            <button
+              type="button"
+              onClick={() => onCreated(geocodeNotice.member)}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+            >
+              OK（このまま登録する）
+            </button>
+          </div>
+        ) : (
         <form onSubmit={submitRegister} className="flex flex-col gap-3">
           <div>
             <label className="mb-1 block text-xs text-muted" htmlFor="add-member-name">
@@ -286,6 +332,7 @@ export default function AddMemberModal({
             キャンセル
           </button>
         </form>
+        )}
       </div>
     </div>
   );

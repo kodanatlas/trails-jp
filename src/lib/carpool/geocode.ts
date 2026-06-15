@@ -197,6 +197,14 @@ interface GeocodeCandidate {
 }
 
 /**
+ * 候補タイトルとクエリの「完全一致」判定用の正規化。
+ * NFKC 統一 + 空白（半角/全角）除去。例: "目黒 駅" と "目黒駅" を同一視。
+ */
+export function compactForMatch(s: string): string {
+  return (s ?? "").normalize("NFKC").replace(/[\s　]/g, "");
+}
+
+/**
  * GSI features から有効候補（日本ドメイン正規化済み）を抽出する内部パーサ。
  *
  * 各候補は pickFirstLatLng と同じゲートを通す:
@@ -222,7 +230,22 @@ function parseGeocodeCandidates(features: unknown): GeocodeCandidate[] {
 }
 
 /**
- * GSI レスポンス（feature 配列）から「参照点に最も近い候補」を選ぶ純粋関数。
+ * pickBestCandidate の結果（採用候補の座標 + 解決先タイトル + 完全一致フラグ）。
+ *
+ * - title: 採用した GSI 候補の properties.title（解決先の地点名）。
+ * - exact: compactForMatch(title) === compactForMatch(normalizeGeocodeQuery(query))。
+ *   入力名と解決先名が（NFKC・空白無視で）完全一致したか。false は「目黒駅と入力したのに
+ *   中目黒駅が採用された」のような同名近接の誤解決の可能性を示し、UI 側の確認導線に使う。
+ */
+export interface GeocodeResolution extends LatLng {
+  title: string;
+  exact: boolean;
+}
+
+/**
+ * GSI レスポンス（feature 配列）から「参照点に最も近い候補」を選び、その座標・解決先タイトル・
+ * 完全一致フラグを返す純粋関数。pickBestLatLng の本体であり、UI が解決先を提示するための
+ * title/exact もここで決める。
  *
  * GSI は同名異地（例: クエリ "目黒駅" に対し正解の目黒駅と、北海道広尾郡大樹町字目黒）を
  * 返すことがあり、いずれも日本ドメイン内のため isJapanDomain では弾けない。先頭採用だと
@@ -230,23 +253,42 @@ function parseGeocodeCandidates(features: unknown): GeocodeCandidate[] {
  *
  * ロジック:
  *   1. 候補抽出（parseGeocodeCandidates）。空なら null。
- *   2. 駅優先: normalizeGeocodeQuery(query) が "駅" を含むとき、title が "駅" で終わる候補
- *      （stationSubset）を作る。stationSubset が非空 **かつ** その少なくとも 1 つが ref から
- *      GEOCODE_NEAR_KM(300km) 以内なら、検討対象を stationSubset に絞る。
+ *   2. 完全一致優先: title がクエリ名と完全一致する候補があれば、それだけに絞る。
+ *      これが「目黒駅」を「中目黒駅」より必ず優先する（両者とも都内の "駅" で近接しており、
+ *      距離だけでは判別できず GSI が中目黒駅を上位に返すことがあるため）。
+ *      完全一致が複数（同名異地）なら下の ref 最近傍で決着する。
+ *   3. 駅優先: 完全一致が無く normalizeGeocodeQuery(query) が "駅" を含むとき、title が "駅" で
+ *      終わる候補（stationSubset）を作る。stationSubset が非空 **かつ** その少なくとも 1 つが ref
+ *      から GEOCODE_NEAR_KM(300km) 以内なら、検討対象を stationSubset に絞る。
  *      逆に駅候補がすべて 300km 超で非駅候補が存在する場合は絞らない（= 全候補で比較）。
  *      これが「目黒駅 → 北海道目黒（駅ではない）」の逆ケースを保護する。
- *   3. ref への haversine 最近傍を返す。
+ *   4. ref への haversine 最近傍を返す。
  *      **距離で棄却は一切しない**: すべての候補が 300km 超でも、最も近い候補を返す
  *      （遠征大会の会場登録を阻害しないため）。
+ *   5. 採用候補の title と exact（入力名との完全一致）を付与して返す。
  */
-export function pickBestLatLng(features: unknown, ref: LatLng, query: string): LatLng | null {
+export function pickBestCandidate(
+  features: unknown,
+  ref: LatLng,
+  query: string,
+): GeocodeResolution | null {
   const candidates = parseGeocodeCandidates(features);
   if (candidates.length === 0) return null;
 
   let pool: GeocodeCandidate[] = candidates;
 
-  // 駅優先（条件付き）。
-  if (normalizeGeocodeQuery(query).includes("駅")) {
+  // 完全一致優先（同名近接の誤選択＝目黒駅/中目黒駅 対策）。
+  // ただし駅優先と同じ近接ガードを掛ける: 完全一致候補が ref から GEOCODE_NEAR_KM 以内に
+  // 1 つでもある場合のみ絞る。遠地のみの完全一致（例: 北海道の同名駅）には引きずられない。
+  const nq = compactForMatch(normalizeGeocodeQuery(query));
+  const exactSubset = candidates.filter((c) => compactForMatch(c.title) === nq);
+  if (
+    exactSubset.length > 0 &&
+    exactSubset.some((c) => haversineKm({ lat: c.lat, lng: c.lng }, ref) <= GEOCODE_NEAR_KM)
+  ) {
+    pool = exactSubset;
+  } else if (normalizeGeocodeQuery(query).includes("駅")) {
+    // 駅優先（条件付き）。
     const stationSubset = candidates.filter((c) => c.title.endsWith("駅"));
     if (
       stationSubset.length > 0 &&
@@ -267,7 +309,24 @@ export function pickBestLatLng(features: unknown, ref: LatLng, query: string): L
       bestDist = d;
     }
   }
-  return { lat: best.lat, lng: best.lng };
+
+  // exact は採用 title と入力名（正規化）の完全一致。比較規約は完全一致優先の絞り込み（上の nq）
+  // と同じ compactForMatch（NFKC + 空白除去）に揃える。
+  return {
+    lat: best.lat,
+    lng: best.lng,
+    title: best.title,
+    exact: compactForMatch(best.title) === nq,
+  };
+}
+
+/**
+ * pickBestCandidate の座標だけを返す後方互換ラッパ。
+ * 既存の呼び出し側・回帰テスト（pickBestLatLng）は座標のみを期待するため、薄く包む。
+ */
+export function pickBestLatLng(features: unknown, ref: LatLng, query: string): LatLng | null {
+  const r = pickBestCandidate(features, ref, query);
+  return r ? { lat: r.lat, lng: r.lng } : null;
 }
 
 /**
@@ -303,19 +362,33 @@ export type FetchLike = (
   init?: { headers?: Record<string, string>; signal?: AbortSignal },
 ) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
 
+/** geocodeAddress / geocodeAddressDetailed の共通オプション。 */
+export interface GeocodeOpts {
+  fetchImpl?: FetchLike;
+  timeoutMs?: number;
+  signal?: AbortSignal;
+  ref?: LatLng;
+}
+
 /**
- * 名称 → LatLng を国土地理院 AddressSearch で解決する I/O 関数。
+ * 名称 → 解決先（座標 + GSI title + 完全一致フラグ）を国土地理院 AddressSearch で解決する I/O 関数。
+ *
+ * geocodeAddress の詳細版。座標に加えて UI が「どこに解決したか」を提示するための
+ * title（採用候補の GSI title）と exact（入力名と解決先名の完全一致）を返す。
  *
  * - buildGeocodeQueries で 正規化クエリ → 駅サフィックス の順に試す。
- * - 各クエリの候補から pickBestLatLng（参照点 ref への最近傍 + 駅優先）で 1 件を採用。
+ * - 各クエリの候補から pickBestCandidate（参照点 ref への最近傍 + 完全一致/駅優先）で 1 件を採用。
  *   ref 省略時は東京駅（TOKYO_STATION）。最初に命中したものを返す。
+ * - exact は **その命中を出したクエリ q** との完全一致で判定する。例: 入力 "八王子" が空振りし
+ *   駅サフィックス "八王子駅" で命中した場合、exact は "八王子駅" 基準で評価される（解決先が
+ *   "八王子駅" なら exact=true）。これにより「入力どおりの駅に解決できた」ケースを静かに通せる。
  * - すべて失敗・タイムアウト・例外は null。User-Agent を明示。AbortController でタイムアウト。
  *   失敗は隔離して null を返す（= 従来動作: 座標 null のまま）。
  */
-export async function geocodeAddress(
+export async function geocodeAddressDetailed(
   raw: string,
-  opts?: { fetchImpl?: FetchLike; timeoutMs?: number; signal?: AbortSignal; ref?: LatLng },
-): Promise<LatLng | null> {
+  opts?: GeocodeOpts,
+): Promise<GeocodeResolution | null> {
   const queries = buildGeocodeQueries(raw);
   if (queries.length === 0) return null;
 
@@ -337,7 +410,7 @@ export async function geocodeAddress(
       });
       if (!res.ok) continue;
       const json = await res.json();
-      const hit = pickBestLatLng(json, ref, q);
+      const hit = pickBestCandidate(json, ref, q);
       if (hit) return hit;
     } catch {
       // タイムアウト/ネットワーク失敗は隔離し、次のクエリ or null へ。
@@ -347,4 +420,18 @@ export async function geocodeAddress(
     }
   }
   return null;
+}
+
+/**
+ * 名称 → LatLng を国土地理院 AddressSearch で解決する I/O 関数（後方互換）。
+ *
+ * geocodeAddressDetailed の座標だけを返す薄いラッパ。title/exact が不要な既存呼び出しは
+ * こちらをそのまま使える（戻り値・挙動は従来と不変: 失敗・候補ゼロは null）。
+ */
+export async function geocodeAddress(
+  raw: string,
+  opts?: GeocodeOpts,
+): Promise<LatLng | null> {
+  const r = await geocodeAddressDetailed(raw, opts);
+  return r ? { lat: r.lat, lng: r.lng } : null;
 }

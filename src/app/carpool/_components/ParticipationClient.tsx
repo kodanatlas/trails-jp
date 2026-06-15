@@ -182,6 +182,12 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   const [homeAreaInput, setHomeAreaInput] = useState("");
   // major1: 乗車エリアを「その他（入力）」でテキスト入力中か（チップ非該当値の編集用）。
   const [areaOtherOpen, setAreaOtherOpen] = useState(false);
+  // 再発防止 UX: 乗車エリアを新規作成・名前ジオコーディングした結果、入力名と解決先が
+  // 違った（exact=false）ときの確認バナー。{ input, resolved }。exact=true は静か（null）。
+  const [areaGeocodeNotice, setAreaGeocodeNotice] = useState<{
+    input: string;
+    resolved: string;
+  } | null>(null);
 
   // 検出パネルの一括選択状態（detKey → 選択中）と未登録行の表示名入力（detKey → 値）。
   const [selectedDet, setSelectedDet] = useState<Record<string, boolean>>({});
@@ -453,6 +459,7 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     }
     setSaving(true);
     setFormError(null);
+    setAreaGeocodeNotice(null);
 
     const body: Record<string, unknown> = {
       actorName,
@@ -508,11 +515,18 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
             (n) => n.kind === "area" && n.name === homeAreaName,
           )?.id;
           if (!nodeId) {
-            const created = await postCarpool<{ node: NodeDTO }>(
-              `/clubs/${slug}/nodes`,
-              { actorName, kind: "area", name: homeAreaName },
-            );
+            const created = await postCarpool<{
+              node: NodeDTO;
+              geocode?: { resolvedTitle: string; exact: boolean } | null;
+            }>(`/clubs/${slug}/nodes`, { actorName, kind: "area", name: homeAreaName });
             nodeId = created.node.id;
+            // 入力名と解決先が違ったら確認バナーを出す（exact=true は静か）。
+            if (created.geocode && created.geocode.exact === false) {
+              setAreaGeocodeNotice({
+                input: homeAreaName,
+                resolved: created.geocode.resolvedTitle,
+              });
+            }
           }
           await patchCarpool(`/clubs/${slug}/members/${form.memberId}`, {
             actorName,
@@ -1488,6 +1502,26 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                       : "ここを起点に乗車地点・迎えが割り当てられます。"}
                     変更すると本人のプロフィール（自宅エリア）も更新されます。
                   </p>
+                  {/* 再発防止 UX: 入力名と解決先が違う（exact=false）ときの小さな確認バナー。
+                      toast に warning レベルが無いため、赤(error)と区別した amber ボックスで出す。 */}
+                  {areaGeocodeNotice && (
+                    <div className="mt-2 rounded-md border border-yellow-400/50 bg-yellow-400/10 px-2 py-1.5 text-[11px] text-yellow-200">
+                      「
+                      <span className="font-semibold">{areaGeocodeNotice.input}</span>
+                      」→「
+                      <span className="font-semibold">
+                        {areaGeocodeNotice.resolved || "別の地点"}
+                      </span>
+                      」に設定しました。違う場合は
+                      <a
+                        href={`/carpool/${slug}/masters`}
+                        className="underline hover:text-white"
+                      >
+                        マスタの「場所」
+                      </a>
+                      で地図調整できます。
+                    </div>
+                  )}
                 </div>
               )}
 

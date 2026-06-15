@@ -13,7 +13,7 @@ import {
   assertOwnedByClub,
   resolveClubGeoRef,
 } from "@/lib/carpool/api/helpers";
-import { geocodeAddress } from "@/lib/carpool/geocode";
+import { geocodeAddressDetailed } from "@/lib/carpool/geocode";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +77,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
   // 再利用 or 作成し、その id を home_node_id に使う（UI からノード概念を隠すための糖衣）。
   // homeNodeId が指定されていれば homeAreaName は無視する（homeNodeId 優先）。
   let resolvedHomeNodeId: string | null | undefined = input.homeNodeId;
+  // homeAreaName で新規エリアノードを名称ジオコーディングした場合の解決先（GSI title）と
+  // 入力名の完全一致。UI が exact=false のとき確認バナーを出すために返す（DB 変更なし）。
+  let geocodeInfo: { resolvedTitle: string; exact: boolean } | null = null;
   if (
     input.homeAreaName !== undefined &&
     (input.homeNodeId === undefined || input.homeNodeId === null)
@@ -116,7 +119,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       try {
         // 同名異地の誤選択を防ぐ参照点（クラブ既存ノード重心）。作成直後の自エリアノードは除外。
         const ref = await resolveClubGeoRef(club.id, { excludeNodeId: areaNode.id });
-        const hit = await geocodeAddress(areaName, { ref: ref ?? undefined });
+        const hit = await geocodeAddressDetailed(areaName, { ref: ref ?? undefined });
         if (hit) {
           const { error: geoUpdateErr } = await supabaseAdmin
             .from("carpool_nodes")
@@ -124,6 +127,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
             .eq("id", areaNode.id)
             .eq("club_id", club.id);
           if (!geoUpdateErr) {
+            geocodeInfo = { resolvedTitle: hit.title, exact: hit.exact };
             await writeChangeLog({
               clubId: club.id,
               tableName: "carpool_nodes",
@@ -211,5 +215,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     });
   }
 
-  return NextResponse.json({ member: toMemberDTO(member, pickupPrefs) }, { status: 201 });
+  // geocode は homeAreaName で新規エリアを名称解決し命中した場合のみ非 null。
+  // exact=false のとき UI が「『入力』→『解決先』に設定しました」確認バナーを出す。
+  return NextResponse.json(
+    { member: toMemberDTO(member, pickupPrefs), geocode: geocodeInfo },
+    { status: 201 },
+  );
 }

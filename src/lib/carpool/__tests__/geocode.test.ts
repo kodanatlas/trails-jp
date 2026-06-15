@@ -5,8 +5,10 @@ import {
   buildGeocodeQueries,
   pickFirstLatLng,
   pickBestLatLng,
+  pickBestCandidate,
   centroidLatLng,
   geocodeAddress,
+  geocodeAddressDetailed,
   isJapanDomain,
   normalizeJapanLatLng,
   TOKYO_STATION,
@@ -153,6 +155,15 @@ describe("pickBestLatLng", () => {
     expect(pickBestLatLng(features, TOKYO_STATION, "目黒駅")).toEqual({ lat: 35.633, lng: 139.716 });
   });
 
+  it("中目黒駅 regression: 近接の中目黒駅でなく完全一致の目黒駅を採る", () => {
+    // GSI が "目黒駅" に対し中目黒駅(上位)と目黒駅を両方返す実ケース。両者とも都内で近接。
+    const features = [
+      { geometry: { coordinates: [139.699218, 35.644236] }, properties: { title: "中目黒駅" } },
+      { geometry: { coordinates: [139.716091, 35.632862] }, properties: { title: "目黒駅" } },
+    ];
+    expect(pickBestLatLng(features, TOKYO_STATION, "目黒駅")).toEqual({ lat: 35.632862, lng: 139.716091 });
+  });
+
   it("非駅クエリは純粋に最近傍（タイトル無関係）", () => {
     const features = [
       { geometry: { coordinates: [143.25, 42.13] }, properties: { title: "昭和記念公園(北海道)" } },
@@ -269,5 +280,114 @@ describe("geocodeAddress (fetch mocked)", () => {
     // ref 未指定（既定=東京駅）だと東京の目黒駅を採る。
     const def = await geocodeAddress("目黒駅", { fetchImpl: mkFetch(), timeoutMs: 1000 });
     expect(def).toEqual({ lat: 35.633, lng: 139.716 });
+  });
+});
+
+describe("pickBestCandidate", () => {
+  it("pickBestLatLng と同じ座標を返し、title と exact を付与する", () => {
+    // 完全一致（入力 "目黒駅" → 解決 "目黒駅"）。
+    const features = [
+      { geometry: { coordinates: [139.699218, 35.644236] }, properties: { title: "中目黒駅" } },
+      { geometry: { coordinates: [139.716091, 35.632862] }, properties: { title: "目黒駅" } },
+    ];
+    const r = pickBestCandidate(features, TOKYO_STATION, "目黒駅");
+    expect(r).toEqual({ lat: 35.632862, lng: 139.716091, title: "目黒駅", exact: true });
+    // pickBestLatLng は同じ座標（後方互換ラッパ）。
+    expect(pickBestLatLng(features, TOKYO_STATION, "目黒駅")).toEqual({
+      lat: 35.632862,
+      lng: 139.716091,
+    });
+  });
+
+  it("入力名と解決先が異なるとき exact=false（目黒駅→中目黒駅の誤解決）", () => {
+    // 完全一致候補（目黒駅）が無く、中目黒駅だけが返る同名近接の誤解決ケース。
+    const features = [
+      { geometry: { coordinates: [139.699218, 35.644236] }, properties: { title: "中目黒駅" } },
+    ];
+    const r = pickBestCandidate(features, TOKYO_STATION, "目黒駅");
+    expect(r).toEqual({ lat: 35.644236, lng: 139.699218, title: "中目黒駅", exact: false });
+  });
+
+  it("exact は空白・全角半角を無視して判定（compactForMatch 規約）", () => {
+    const features = [
+      { geometry: { coordinates: [139.31, 35.65] }, properties: { title: "八王子駅" } },
+    ];
+    // 入力 "八王子 駅"（空白入り）でも解決先 "八王子駅" と完全一致扱い。
+    const r = pickBestCandidate(features, TOKYO_STATION, "八王子 駅");
+    expect(r?.exact).toBe(true);
+    expect(r?.title).toBe("八王子駅");
+  });
+
+  it("title が空（properties 無し）でも落ちず exact=false で返す", () => {
+    const features = [{ geometry: { coordinates: [139.767, 35.681] } }];
+    const r = pickBestCandidate(features, TOKYO_STATION, "東京駅");
+    expect(r).toEqual({ lat: 35.681, lng: 139.767, title: "", exact: false });
+  });
+
+  it("有効候補ゼロは null", () => {
+    expect(pickBestCandidate([], TOKYO_STATION, "x")).toBeNull();
+    expect(
+      pickBestCandidate([{ geometry: { coordinates: [10, 10] } }], TOKYO_STATION, "x"),
+    ).toBeNull();
+  });
+});
+
+describe("geocodeAddressDetailed (fetch mocked)", () => {
+  const okJson = (features: unknown): ReturnType<FetchLike> =>
+    Promise.resolve({ ok: true, json: () => Promise.resolve(features) });
+
+  it("座標 + title + exact を返す（完全一致は exact=true）", async () => {
+    const fetchImpl: FetchLike = vi.fn(() =>
+      okJson([{ geometry: { coordinates: [139.31, 35.65] }, properties: { title: "八王子駅" } }]),
+    );
+    const r = await geocodeAddressDetailed("八王子駅", { fetchImpl, timeoutMs: 1000 });
+    expect(r).toEqual({ lat: 35.65, lng: 139.31, title: "八王子駅", exact: true });
+  });
+
+  it("同名近接の誤解決は exact=false（目黒駅→中目黒駅のみ返るケース）", async () => {
+    const fetchImpl: FetchLike = vi.fn(() =>
+      okJson([
+        { geometry: { coordinates: [139.699218, 35.644236] }, properties: { title: "中目黒駅" } },
+      ]),
+    );
+    const r = await geocodeAddressDetailed("目黒駅", { fetchImpl, timeoutMs: 1000 });
+    expect(r).toEqual({ lat: 35.644236, lng: 139.699218, title: "中目黒駅", exact: false });
+  });
+
+  it("駅サフィックス再試行で命中した場合 exact はその命中クエリ基準（八王子→八王子駅で exact=true）", async () => {
+    const fetchImpl: FetchLike = vi.fn((url: string) => {
+      // 1回目（"八王子"）は空、2回目（"八王子駅"）で "八王子駅" 命中。
+      if (url.includes("%E9%A7%85")) {
+        return okJson([
+          { geometry: { coordinates: [139.31, 35.65] }, properties: { title: "八王子駅" } },
+        ]);
+      }
+      return okJson([]);
+    });
+    const r = await geocodeAddressDetailed("八王子", { fetchImpl, timeoutMs: 1000 });
+    expect(r).toEqual({ lat: 35.65, lng: 139.31, title: "八王子駅", exact: true });
+  });
+
+  it("空入力は外部を叩かず null", async () => {
+    const fetchImpl: FetchLike = vi.fn(() => okJson([]));
+    const r = await geocodeAddressDetailed("  ", { fetchImpl });
+    expect(r).toBeNull();
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("ネットワーク失敗は隔離して null", async () => {
+    const fetchImpl: FetchLike = vi.fn(() => Promise.reject(new Error("boom")));
+    const r = await geocodeAddressDetailed("八王子駅", { fetchImpl, timeoutMs: 1000 });
+    expect(r).toBeNull();
+  });
+
+  it("geocodeAddress は geocodeAddressDetailed の座標だけを返す（後方互換）", async () => {
+    const features = [
+      { geometry: { coordinates: [139.31, 35.65] }, properties: { title: "八王子駅" } },
+    ];
+    const mk = (): FetchLike => vi.fn(() => okJson(features));
+    const detailed = await geocodeAddressDetailed("八王子駅", { fetchImpl: mk(), timeoutMs: 1000 });
+    const plain = await geocodeAddress("八王子駅", { fetchImpl: mk(), timeoutMs: 1000 });
+    expect(plain).toEqual({ lat: detailed!.lat, lng: detailed!.lng });
   });
 });

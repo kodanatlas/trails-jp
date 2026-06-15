@@ -185,10 +185,20 @@ function NodesTab({
   const [formError, setFormError] = useState<string | null>(null);
   // C: 座標再取得（ジオコーディング）の進行中ノード id（null = 待機）。
   const [geocodingId, setGeocodingId] = useState<string | null>(null);
+  // 再発防止 UX: 入力名と解決先名が違う（exact=false）とき、編集フォーム内に出す警告。
+  // nodeId は対象ノード、input=入力した場所名、resolved=GSI が返した解決先名。
+  // null = 警告なし。次の「再取得」成功（exact=true）や保存・キャンセルでクリアする。
+  const [geocodeWarning, setGeocodeWarning] = useState<{
+    nodeId: string;
+    input: string;
+    resolved: string;
+  } | null>(null);
 
   // P5.5: 最初の座標なし行への ref（マウント後に一度だけ scrollIntoView する）。
   const firstMissingRef = useRef<HTMLLIElement | null>(null);
   const didScrollRef = useRef(false);
+  // 再発防止 UX: exact=false 警告時に編集フォーム（地図ピッカー）へ確実にスクロールする ref。
+  const editFormRef = useRef<HTMLFormElement | null>(null);
 
   const filtered = useMemo(
     () => nodes.filter((n) => n.kind === subKind),
@@ -220,7 +230,10 @@ function NodesTab({
   );
 
   // C: 住所/名称から座標を再取得（サーバ側ジオコーディング）。
-  // geocoded:true → 取得成功でトースト＋再読込、false → サーバの message を案内表示。
+  // geocoded:true → 取得成功。さらに exact=false（入力名と解決先が違う＝目黒駅→中目黒駅の
+  // ような誤解決の疑い）なら、編集フォームを開いて地図ピッカーへスクロールし、amber 警告で
+  // ピン調整を促す（黙って保存して地図で初めて気づく事故の再発防止）。exact=true は静かに成功。
+  // geocoded:false → サーバの message を案内表示。
   const geocode = async (n: NodeDTO) => {
     setGeocodingId(n.id);
     try {
@@ -228,10 +241,27 @@ function NodesTab({
         node: NodeDTO;
         geocoded: boolean;
         message?: string;
+        resolvedTitle?: string | null;
+        exact?: boolean | null;
       }>(`/clubs/${slug}/nodes/${n.id}/geocode`, { actorName: GUEST });
       if (res.geocoded) {
-        toast("座標を取得しました", "success");
         await onChanged();
+        if (res.exact === false) {
+          // 誤解決の疑い: 編集フォームを開き（地図ピッカーが出る）、警告＋スクロール。
+          openEdit(res.node);
+          setGeocodeWarning({
+            nodeId: res.node.id,
+            input: res.node.name,
+            resolved: res.resolvedTitle ?? "",
+          });
+          // フォーム描画後に地図ピッカーへ寄せる（次フレーム）。
+          requestAnimationFrame(() => {
+            editFormRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+          });
+        } else {
+          setGeocodeWarning(null);
+          toast("座標を取得しました", "success");
+        }
       } else {
         toast(res.message ?? "座標を取得できませんでした", "success");
       }
@@ -246,6 +276,7 @@ function NodesTab({
     setForm(EMPTY_NODE_FORM);
     setEditing("new");
     setFormError(null);
+    setGeocodeWarning(null);
   };
 
   const openEdit = (n: NodeDTO) => {
@@ -258,6 +289,9 @@ function NodesTab({
     });
     setEditing(n.id);
     setFormError(null);
+    // 別ノードを開いたら前ノードの誤解決警告は消す（同一ノードを開く geocode 経路では
+    // 呼び出し側が setGeocodeWarning を上書きするので、ここで消えても問題ない）。
+    setGeocodeWarning((w) => (w && w.nodeId === n.id ? w : null));
   };
 
   const submit = async (e: FormEvent) => {
@@ -286,6 +320,7 @@ function NodesTab({
         toast("場所を更新しました", "success");
       }
       setEditing(null);
+      setGeocodeWarning(null);
       await onChanged();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "保存に失敗しました");
@@ -321,6 +356,7 @@ function NodesTab({
             onClick={() => {
               setSubKind(k);
               setEditing(null);
+              setGeocodeWarning(null);
             }}
             className={cn(
               "rounded-lg px-3 py-1.5 text-sm",
@@ -418,12 +454,26 @@ function NodesTab({
 
       {editing !== null && (
         <form
+          ref={editFormRef}
           onSubmit={submit}
           className="mt-4 flex flex-col gap-3 rounded-xl border border-border bg-card p-4"
         >
           <h3 className="text-sm font-semibold text-foreground">
             {editing === "new" ? `${KIND_LABEL[subKind]}を追加` : `${KIND_LABEL[subKind]}を編集`}
           </h3>
+          {/* 再発防止 UX: 入力名と解決先が違う（exact=false）ときの目立つ amber 警告。
+              toast に warning レベルが無いため、赤(error)と区別したインライン amber ボックスで出す。
+              直下の地図ピッカーでピンを調整させる導線。 */}
+          {geocodeWarning && editing === geocodeWarning.nodeId && (
+            <div className="rounded-lg border border-yellow-400/60 bg-yellow-400/10 p-3 text-xs text-yellow-200">
+              <p className="font-semibold">⚠ 解決先が入力と違う可能性があります</p>
+              <p className="mt-1 leading-relaxed">
+                「<span className="font-semibold">{geocodeWarning.input}</span>」を検索→「
+                <span className="font-semibold">{geocodeWarning.resolved || "別の地点"}</span>
+                」が見つかりました。違う場合は下の地図でピンを調整してください。
+              </p>
+            </div>
+          )}
           <div>
             <label className="mb-1 block text-xs text-muted">名前</label>
             <input
@@ -497,7 +547,10 @@ function NodesTab({
             </button>
             <button
               type="button"
-              onClick={() => setEditing(null)}
+              onClick={() => {
+                setEditing(null);
+                setGeocodeWarning(null);
+              }}
               className="rounded-lg bg-white/10 px-4 py-2 text-sm text-foreground hover:bg-white/15"
             >
               キャンセル

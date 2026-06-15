@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { nodeGeocodeSchema } from "@/lib/carpool/api/schemas";
 import { toNodeDTO } from "@/lib/carpool/api/mappers";
 import { ERR, zodError, guardWrite, writeChangeLog, resolveClub, resolveClubGeoRef } from "@/lib/carpool/api/helpers";
-import { geocodeAddress } from "@/lib/carpool/geocode";
+import { geocodeAddressDetailed } from "@/lib/carpool/geocode";
 import { shouldGeocodeNodeKind } from "@/lib/carpool/venue-coords";
 import { scrapeEventCoordinates } from "@/lib/scraper/events";
 import { readEvents } from "@/lib/events-store";
@@ -52,6 +52,11 @@ export async function POST(
   // 会場名ジオコーディング（曖昧で約8kmずれる）は使わない。area/pickup は従来どおり名前で引く。
   let hit: { lat: number; lng: number } | null = null;
   let source = "gsi";
+  // area/pickup の名称ジオコーディングで採用された解決先（GSI title）と入力名との完全一致。
+  // UI が「『目黒駅』→『中目黒駅』が見つかりました」と確認させるために返す。
+  // venue（JOY ピン）は名称解決ではないため null のまま（exact は提示しない）。
+  let resolvedTitle: string | null = null;
+  let exact: boolean | null = null;
 
   if (!shouldGeocodeNodeKind(existing.kind)) {
     // --- venue: この会場ノードを参照する大会の joe_url から JOY ピンを取り直す ---
@@ -104,7 +109,12 @@ export async function POST(
       // 再ジオコーディング対象の自ノード（北海道目黒のような遠地誤座標を持ちうる）は
       // 参照点の重心から必ず除外する。さもないと誤座標が自分を引き寄せて補正できない。
       const ref = await resolveClubGeoRef(club.id, { excludeNodeId: id });
-      hit = await geocodeAddress(existing.name, { ref: ref ?? undefined });
+      const detailed = await geocodeAddressDetailed(existing.name, { ref: ref ?? undefined });
+      if (detailed) {
+        hit = { lat: detailed.lat, lng: detailed.lng };
+        resolvedTitle = detailed.title;
+        exact = detailed.exact;
+      }
     } catch {
       hit = null;
     }
@@ -137,5 +147,12 @@ export async function POST(
     ipHash: guard.ctx.ipHash,
   });
 
-  return NextResponse.json({ node: toNodeDTO(updated), geocoded: true });
+  // resolvedTitle/exact は area/pickup の名称解決時のみ非 null。venue（JOY ピン）は null。
+  // exact=false のとき UI が「入力名と違う地点に解決した」警告＋地図調整を促す。
+  return NextResponse.json({
+    node: toNodeDTO(updated),
+    geocoded: true,
+    resolvedTitle,
+    exact,
+  });
 }
