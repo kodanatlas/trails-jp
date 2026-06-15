@@ -10,10 +10,10 @@ import StartlistImport from "./StartlistImport";
 import { chunkBulkEntries } from "@/lib/carpool/bulk-plan";
 import { planQuickRegister, type QuickRole } from "@/lib/carpool/quick-register";
 import {
-  buildSelfPickChoices,
-  filterSelfPickChoices,
-  type SelfPickChoice,
-} from "@/lib/carpool/self-pick";
+  detectedDisplayName,
+  matchesNameQuery,
+  sortDetectedByName,
+} from "@/lib/carpool/participant-filter";
 import {
   toApiRole,
   participationToFormRole,
@@ -52,52 +52,6 @@ const ROLE_SEGMENTS: { value: FormRole; label: string }[] = [
   { value: "self", label: "自力" },
   { value: "absent", label: "不参加" },
 ];
-
-/**
- * 「あなたはどれ？」カードのバッジ用ロールラベル・色分け。
- * participation.role は rider が fixedDriver の有無で 同乗者/同乗希望 に分かれるが、
- * チップのバッジでは「同乗」とだけ示し、詳細は役割選択を開いたときに区別する。
- */
-const ROLE_BADGE: Record<string, { label: string; cls: string }> = {
-  driver: { label: "運転手", cls: "bg-blue-500/20 text-blue-400" },
-  rider: { label: "同乗", cls: "bg-green-500/20 text-green-400" },
-  self: { label: "自力", cls: "bg-white/10 text-muted" },
-  absent: { label: "不参加", cls: "bg-white/10 text-muted" },
-  undecided: { label: "回答待ち", cls: "bg-yellow-500/20 text-yellow-400" },
-};
-
-function roleBadgeFor(role: string | null): { label: string; cls: string } {
-  if (!role) return { label: "未登録", cls: "bg-white/10 text-muted" };
-  return ROLE_BADGE[role] ?? { label: role, cls: "bg-white/10 text-muted" };
-}
-
-/** 「あなたはどれ？」役割選択ボタンの定義（FormRole に対応）。 */
-const SELF_PICK_ROLE_BUTTONS: { role: FormRole; label: string }[] = [
-  { role: "driver", label: "🚗 運転手" },
-  { role: "rider", label: "🙋 同乗希望（配車を待つ）" },
-  { role: "passenger", label: "⛓ 同乗者（乗る車が決まっている）" },
-  { role: "self", label: "自力で行く" },
-  { role: "absent", label: "不参加" },
-];
-
-const SELF_PICK_ROLE_TOAST: Record<FormRole, string> = {
-  driver: "運転手",
-  passenger: "同乗者",
-  rider: "同乗希望",
-  self: "自力",
-  absent: "不参加",
-};
-
-/** participation.role + fixedDriver の有無 → カード役割選択の現在ハイライト（FormRole）。 */
-function choiceCurrentFormRole(
-  role: string | null,
-  fixedDriverMemberId: string | null,
-): FormRole | null {
-  if (role === null) return null;
-  if (role === "rider") return fixedDriverMemberId ? "passenger" : "rider";
-  if (role === "driver" || role === "self" || role === "absent") return role;
-  return null; // undecided 等はハイライトしない
-}
 
 const STATUS_LABEL: Record<EventDTO["status"], string> = {
   planning: "募集中",
@@ -203,14 +157,9 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   const [driverAskKey, setDriverAskKey] = useState<string | null>(null);
   const [driverAskValue, setDriverAskValue] = useState("");
 
-  // Phase 5.5 blocker: 「あなたはどれ？」カードの状態（端末に保存しない＝毎回選び直す）。
-  const [selfPickQuery, setSelfPickQuery] = useState("");
-  // 展開中チップの SelfPickChoice.key（null = どれも展開していない）。
-  const [selfPickKey, setSelfPickKey] = useState<string | null>(null);
-  // ⛓同乗者の最小ステップで選択中の運転手 member id。
-  const [selfPickDriver, setSelfPickDriver] = useState("");
-  // カード経由の登録進行中フラグ（多重送信防止）。
-  const [selfPickSaving, setSelfPickSaving] = useState(false);
+  // 参加者一覧（③）の名前検索（任意・端末に保存しない＝毎回入力）。
+  // 未登録（JOY検出）サブグループと登録済み行の両方を横断フィルタする。
+  const [nameQuery, setNameQuery] = useState("");
 
   // Phase 5.5 major3: 「詳細を編集」セクションの開閉（既定は閉じる。行タップ/行追加で自動展開）。
   const [showEdit, setShowEdit] = useState(false);
@@ -254,23 +203,6 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     }
     return out.sort((a, b) => a.localeCompare(b, "ja"));
   }, [nodes]);
-
-  // blocker: 「あなたはどれ？」カードの統合チップ（検出 + 登録済み + active メンバー）。
-  const selfPickChoices = useMemo(
-    () => buildSelfPickChoices(detected, members, participations),
-    [detected, members, participations],
-  );
-  const filteredSelfPick = useMemo(
-    () => filterSelfPickChoices(selfPickChoices, selfPickQuery),
-    [selfPickChoices, selfPickQuery],
-  );
-
-  // カードの役割選択ハイライト用に、memberId → 既存 participation を引く。
-  const participationByMemberId = useMemo(() => {
-    const map = new Map<string, ParticipationDTO>();
-    for (const p of participations) map.set(p.memberId, p);
-    return map;
-  }, [participations]);
 
   const driverParticipations = useMemo(
     () => participations.filter((p) => p.role === "driver"),
@@ -557,30 +489,60 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   );
 
   // 検出パネルに出す行（既に参加登録済みの member は出さない）。
+  // ②の並びを踏襲: 検出はすべてクラブ一致のため氏名順（ja）に並び替える（自分を見つけやすく）。
+  // 並び替えはこの base 配列で一度だけ行い、detKey(d, i) の index 整合を render / bulk と共有する。
   const pendingDetected = useMemo(
     () =>
-      detected.filter((d) => !d.memberId || !participatedMemberIds.has(d.memberId)),
+      sortDetectedByName(
+        detected.filter((d) => !d.memberId || !participatedMemberIds.has(d.memberId)),
+      ),
     [detected, participatedMemberIds],
   );
 
+  // 名前検索で実際に表示される行（任意絞込）。index は base(pendingDetected)のものを保持し、
+  // detKey/選択/bulk の対応を崩さない。空クエリは全行表示。
+  const detRowVisible = useCallback(
+    (d: (typeof pendingDetected)[number]) =>
+      matchesNameQuery(d.memberId ? memberName(d.memberId) : detectedDisplayName(d), nameQuery),
+    [nameQuery, memberName],
+  );
+
+  // 表示中（=検索一致）の検出行だけを対象に選択・一括登録する。
+  const visibleDetected = useMemo(
+    () =>
+      pendingDetected
+        .map((d, i) => ({ d, i }))
+        .filter(({ d }) => detRowVisible(d)),
+    [pendingDetected, detRowVisible],
+  );
+
   const selectedKeys = useMemo(
-    () => Object.keys(selectedDet).filter((k) => selectedDet[k]),
-    [selectedDet],
+    () =>
+      visibleDetected
+        .map(({ d, i }) => detKey(d, i))
+        .filter((k) => selectedDet[k]),
+    [visibleDetected, selectedDet],
   );
 
   const allSelected =
-    pendingDetected.length > 0 &&
-    pendingDetected.every((d, i) => selectedDet[detKey(d, i)]);
+    visibleDetected.length > 0 &&
+    visibleDetected.every(({ d, i }) => selectedDet[detKey(d, i)]);
 
   const toggleSelectAll = () => {
     if (allSelected) {
-      setSelectedDet({});
-    } else {
-      const next: Record<string, boolean> = {};
-      pendingDetected.forEach((d, i) => {
-        next[detKey(d, i)] = true;
+      // 表示中の行だけ解除（検索で隠れている選択は保持）。
+      setSelectedDet((s) => {
+        const next = { ...s };
+        for (const { d, i } of visibleDetected) next[detKey(d, i)] = false;
+        return next;
       });
-      setSelectedDet(next);
+    } else {
+      // 表示中の行だけ全選択（検索で隠れている選択は保持）。
+      setSelectedDet((s) => {
+        const next = { ...s };
+        for (const { d, i } of visibleDetected) next[detKey(d, i)] = true;
+        return next;
+      });
     }
   };
 
@@ -625,9 +587,9 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     setBulkSaving(true);
     setBulkError(null);
 
+    // 表示中（検索一致）かつ選択中の行だけを対象にする（selectedKeys と件数を一致させる）。
     const entries: Array<Record<string, unknown>> = [];
-    for (let i = 0; i < pendingDetected.length; i++) {
-      const d = pendingDetected[i];
+    for (const { d, i } of visibleDetected) {
       const key = detKey(d, i);
       if (!selectedDet[key]) continue;
       const className = d.className || null;
@@ -760,107 +722,6 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
     }
   };
 
-  // blocker: 「あなたはどれ？」カードからの自己登録（≤4タップ・テキスト入力ゼロ）。
-  // choice.memberId が null（未登録検出）は planQuickRegister 機構を再利用して member 作成込みで登録。
-  // member 確定済みは participation を upsert（POST = upsert なので新規/更新を分岐しない）。
-  // 役割変更の actorName は対象本人の displayName を使う（調整さんモデル）。
-  const registerFromCard = async (
-    choice: SelfPickChoice,
-    role: FormRole,
-    fixedDriverMemberId?: string,
-  ) => {
-    if (selfPickSaving) return;
-    setSelfPickSaving(true);
-    try {
-      const roleLabel = SELF_PICK_ROLE_TOAST[role];
-
-      if (choice.memberId === null) {
-        // 未登録検出 → member 作成込み。
-        const det = choice.detected;
-        const nameKey = det?.nameKey ?? "";
-        const className = det?.className ?? null;
-        const rawName = det?.rawName ?? choice.displayName;
-
-        if (role === "driver" || role === "rider" || role === "passenger") {
-          // planQuickRegister を再利用（driver は seats を聞かない＝ゼロ入力）。
-          const quickRole: QuickRole =
-            role === "passenger" ? "passenger" : role === "driver" ? "driver" : "rider";
-          const plan = planQuickRegister(
-            {
-              memberId: null,
-              nameKey,
-              rawName,
-              className,
-              displayNameInput: choice.displayName,
-              seatsInput: null,
-              fixedDriverMemberId: fixedDriverMemberId ?? null,
-            },
-            quickRole,
-          );
-          const actorName = plan.memberBody?.displayName ?? choice.displayName;
-          let memberId = "";
-          if (plan.memberBody) {
-            const created = await postCarpool<{ member: MemberDTO }>(
-              `/clubs/${slug}/members`,
-              { actorName, ...plan.memberBody },
-            );
-            memberId = created.member.id;
-          }
-          await postCarpool(`/clubs/${slug}/events/${eventId}/participations`, {
-            actorName,
-            memberId,
-            role: plan.role,
-            className: plan.className,
-            entrySource: "auto",
-            ...(plan.fixedDriverMemberId !== undefined
-              ? { fixedDriverMemberId: plan.fixedDriverMemberId }
-              : { fixedDriverMemberId: null }),
-          });
-        } else {
-          // self / absent: 車なしで member 作成 → participation role=self/absent。
-          const actorName = choice.displayName;
-          const created = await postCarpool<{ member: MemberDTO }>(
-            `/clubs/${slug}/members`,
-            { actorName, displayName: choice.displayName, athleteKey: nameKey, hasCar: false },
-          );
-          await postCarpool(`/clubs/${slug}/events/${eventId}/participations`, {
-            actorName,
-            memberId: created.member.id,
-            role: toApiRole(role),
-            className,
-            entrySource: "auto",
-            fixedDriverMemberId: null,
-          });
-        }
-      } else {
-        // member 確定済み → participation upsert（POST=upsert）。
-        const memberId = choice.memberId;
-        const actorName = memberName(memberId);
-        const className = choice.detected?.className ?? null;
-        await postCarpool(`/clubs/${slug}/events/${eventId}/participations`, {
-          actorName,
-          memberId,
-          role: toApiRole(role),
-          className,
-          entrySource: "manual",
-          // passenger のみ確約運転手を付帯。それ以外は明示 null でクリア。
-          fixedDriverMemberId:
-            role === "passenger" ? (fixedDriverMemberId ?? null) : null,
-        });
-      }
-
-      toast(`${choice.displayName} さんを${roleLabel}で登録しました`, "success");
-      // 端末に「自分」を保存しない（調整さんモデル）。展開を畳んで再読込。
-      setSelfPickKey(null);
-      setSelfPickDriver("");
-      await load();
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "登録に失敗しました", "error");
-    } finally {
-      setSelfPickSaving(false);
-    }
-  };
-
   // M4: 登録状況一覧の行タップ → その人をフォームへ読込（代理編集の導線）。
   // major3: 「詳細を編集」セクションを自動展開してからスクロールする。
   const editParticipant = (memberId: string) => {
@@ -884,6 +745,15 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
         </p>
       </section>
     ) : null;
+
+  // 名前検索は登録済み行（StatusGroup）も横断フィルタする。空クエリは全件。
+  const filterRegistered = useCallback(
+    (items: ParticipationDTO[]): ParticipationDTO[] =>
+      nameQuery.trim()
+        ? items.filter((p) => matchesNameQuery(memberName(p.memberId), nameQuery))
+        : items,
+    [nameQuery, memberName],
+  );
 
   return (
     <div className="min-h-screen">
@@ -925,36 +795,15 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
               </p>
             </section>
 
-            {/* ② あなたはどれ？カード（最上部の唯一のプライマリ CTA） */}
-            <SelfPickCard
-              choices={filteredSelfPick}
-              totalCount={selfPickChoices.length}
-              query={selfPickQuery}
-              onQueryChange={setSelfPickQuery}
-              expandedKey={selfPickKey}
-              onToggleExpand={(key) => {
-                setSelfPickKey((k) => (k === key ? null : key));
-                setSelfPickDriver("");
-              }}
-              saving={selfPickSaving}
-              driverParticipations={driverParticipations}
-              memberName={memberName}
-              participationByMemberId={participationByMemberId}
-              driverSelectValue={selfPickDriver}
-              onDriverSelectChange={setSelfPickDriver}
-              onRegister={(choice, role, fixedDriver) =>
-                void registerFromCard(choice, role, fixedDriver)
-              }
-              onAddMember={() => setShowAddMember(true)}
-            />
-
             {/* 大会全体の状況案内バナー（major3: 上部だが視覚的に副次） */}
             {bannerEl}
 
-            {/* ③ 参加者（検出者＋登録者を統合した1つの一覧。1カード・サブヘッダ区切り＝全体ビュー） */}
-            <section className="rounded-xl border border-border bg-card p-4">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold text-foreground">
+            {/* ② 参加者（検出者＋登録者を統合した1つの一覧。最上部の主要コンテンツ。
+                 旧「あなたはどれ？」カードを廃止し、その名前検索を本一覧の先頭に畳み込んだ。
+                 1カード・サブヘッダ区切り＝全体ビュー） */}
+            <section className="rounded-xl border border-primary/40 bg-card p-4">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <h2 className="text-base font-bold text-foreground">
                   参加者（{participations.length}）
                 </h2>
                 {/* 行を追加: 新しいメンバーを作成してそのままフォームに読み込む。 */}
@@ -966,6 +815,19 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                   ＋行を追加（新メンバー）
                 </button>
               </div>
+              <p className="mb-3 text-xs text-muted">
+                自分の行のボタンをタップして役割を登録できます（誰の行でも編集できます）。
+              </p>
+
+              {/* 名前検索（任意・即時絞込。未登録=JOY検出と登録済みの両方を横断フィルタ。
+                  小規模クラブはスクロールで足りるため autoFocus しない＝キーボードを出さない）。 */}
+              <input
+                className="mb-3 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+                value={nameQuery}
+                onChange={(e) => setNameQuery(e.target.value)}
+                placeholder="名前で探す（任意）"
+                maxLength={40}
+              />
 
               <div className="flex flex-col gap-4">
                 {/* 未登録（JOY検出）サブグループ。同一リスト内の先頭に置く（FEATURE B 完全保持）。 */}
@@ -993,7 +855,7 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                         className="flex min-w-0 items-center gap-2 text-left"
                       >
                         <span className="text-xs font-semibold text-muted">
-                          未登録（JOY検出）（{pendingDetected.length}）
+                          未登録（JOY検出）（{visibleDetected.length}）
                         </span>
                         <span className="text-[10px] text-muted">
                           {showDetect ? "閉じる" : "開く"}
@@ -1014,6 +876,8 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                       <>
                         <ul className="flex flex-col gap-2">
                           {pendingDetected.map((d, i) => {
+                            // 名前検索で隠れる行はスキップ（index は base のまま保持）。
+                            if (!detRowVisible(d)) return null;
                             const key = detKey(d, i);
                             const checked = !!selectedDet[key];
                             const isUnregistered = !d.memberId;
@@ -1215,6 +1079,13 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                           })}
                         </ul>
 
+                        {/* 検索で未登録行が全部隠れたときの案内（pendingDetected はあるが一致0）。 */}
+                        {visibleDetected.length === 0 && (
+                          <p className="text-xs text-muted">
+                            「{nameQuery}」に一致する未登録の人はいません。
+                          </p>
+                        )}
+
                         {bulkError && (
                           <p className="mt-2 text-sm text-red-400">{bulkError}</p>
                         )}
@@ -1237,7 +1108,9 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                 {/* 登録済みの参加者（役割グループをサブヘッダとして同一カード内に表示） */}
                 <StatusGroup
                   title="運転手"
-                  items={participations.filter((p) => p.role === "driver")}
+                  items={filterRegistered(
+                    participations.filter((p) => p.role === "driver"),
+                  )}
                   onDelete={deleteParticipation}
                   onEdit={editParticipant}
                   render={(p) => {
@@ -1264,8 +1137,10 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                 {/* R4: 同乗者（確約あり）と同乗希望（確約なし）を別グループ表示 */}
                 <StatusGroup
                   title="同乗者（乗る車が決まっている）"
-                  items={participations.filter(
-                    (p) => p.role === "rider" && p.fixedDriverMemberId,
+                  items={filterRegistered(
+                    participations.filter(
+                      (p) => p.role === "rider" && p.fixedDriverMemberId,
+                    ),
                   )}
                   onDelete={deleteParticipation}
                   onEdit={editParticipant}
@@ -1290,8 +1165,10 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                 />
                 <StatusGroup
                   title="同乗希望"
-                  items={participations.filter(
-                    (p) => p.role === "rider" && !p.fixedDriverMemberId,
+                  items={filterRegistered(
+                    participations.filter(
+                      (p) => p.role === "rider" && !p.fixedDriverMemberId,
+                    ),
                   )}
                   onDelete={deleteParticipation}
                   onEdit={editParticipant}
@@ -1307,7 +1184,9 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                 <StatusGroup
                   title="自力で行く"
                   compact
-                  items={participations.filter((p) => p.role === "self")}
+                  items={filterRegistered(
+                    participations.filter((p) => p.role === "self"),
+                  )}
                   onDelete={deleteParticipation}
                   onEdit={editParticipant}
                   render={(p) => <span>{memberName(p.memberId)}</span>}
@@ -1315,7 +1194,9 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                 <StatusGroup
                   title="不参加"
                   compact
-                  items={participations.filter((p) => p.role === "absent")}
+                  items={filterRegistered(
+                    participations.filter((p) => p.role === "absent"),
+                  )}
                   onDelete={deleteParticipation}
                   onEdit={editParticipant}
                   render={(p) => <span>{memberName(p.memberId)}</span>}
@@ -1324,7 +1205,9 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                   title="回答待ち"
                   compact
                   muted
-                  items={participations.filter((p) => p.role === "undecided")}
+                  items={filterRegistered(
+                    participations.filter((p) => p.role === "undecided"),
+                  )}
                   onDelete={deleteParticipation}
                   onEdit={editParticipant}
                   editLabel="役割を設定"
@@ -1343,14 +1226,14 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                   (event.joeEventId === null || pendingDetected.length === 0) && (
                     <p className="text-sm text-muted">
                       {event.joeEventId === null
-                        ? "まだ参加者がいません。上のフォームから登録してください。"
+                        ? "まだ参加者がいません。「＋行を追加」から参加者を登録してください。"
                         : "まだ参加者がいません。JOY エントリーからの未登録者もありません。"}
                     </p>
                   )}
               </div>
             </section>
 
-            {/* ④ 詳細を編集（major3: 既定は閉じる。行タップ/行追加で自動展開） */}
+            {/* ③ 詳細を編集（major3: 既定は閉じる。行タップ/行追加で自動展開） */}
             <section id="edit-section" className="mb-6 mt-6">
               <button
                 type="button"
@@ -1748,11 +1631,11 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
               )}
             </section>
 
-            {/* ⑤ 配車係向け（major3: 取込・配車計画・公開などの主催者向けツールをまとめる） */}
+            {/* ④ 配車係向け（major3: 取込・配車計画・公開などの主催者向けツールをまとめる） */}
             <section className="mt-6 rounded-xl border border-border bg-card p-4">
               <h2 className="text-sm font-semibold text-foreground">配車係向け</h2>
               <p className="mt-1 text-xs text-muted">
-                参加者の取込や配車計画の作成・公開を行います（普段の役割登録は上の「あなたはどれ？」から）。
+                参加者の取込や配車計画の作成・公開を行います（普段の役割登録は上の「参加者」一覧から）。
               </p>
 
               {/* スタートリスト取込（発行書類 / URL / テキスト → 参加へ反映） */}
@@ -1812,198 +1695,6 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
         />
       )}
     </div>
-  );
-}
-
-/**
- * 「あなたはどれ？」カード（Phase 5.5 blocker）。
- *
- * 自分の名前チップをタップ → 役割ボタンをタップで登録（テキスト入力ゼロ・≤4タップ）。
- * 端末に「自分」を保存しない（調整さんモデル: 毎回ここから選び直す）。
- */
-function SelfPickCard({
-  choices,
-  totalCount,
-  query,
-  onQueryChange,
-  expandedKey,
-  onToggleExpand,
-  saving,
-  driverParticipations,
-  memberName,
-  participationByMemberId,
-  driverSelectValue,
-  onDriverSelectChange,
-  onRegister,
-  onAddMember,
-}: {
-  choices: SelfPickChoice[];
-  totalCount: number;
-  query: string;
-  onQueryChange: (q: string) => void;
-  expandedKey: string | null;
-  onToggleExpand: (key: string) => void;
-  saving: boolean;
-  driverParticipations: ParticipationDTO[];
-  memberName: (id: string | null) => string;
-  participationByMemberId: Map<string, ParticipationDTO>;
-  driverSelectValue: string;
-  onDriverSelectChange: (v: string) => void;
-  onRegister: (choice: SelfPickChoice, role: FormRole, fixedDriver?: string) => void;
-  onAddMember: () => void;
-}) {
-  return (
-    <section className="mb-4 rounded-xl border border-primary/40 bg-card p-4">
-      <h2 className="text-base font-bold text-foreground">あなたはどれ？</h2>
-      <p className="mt-0.5 text-xs text-muted">
-        自分の名前をタップして役割を選ぶだけで登録できます（毎回ここから選びます）。
-      </p>
-
-      {/* 名前検索（任意・即時絞込。モバイルでキーボードが出ないよう autoFocus しない） */}
-      <input
-        className="mt-3 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
-        value={query}
-        onChange={(e) => onQueryChange(e.target.value)}
-        placeholder="名前で探す"
-        maxLength={40}
-      />
-
-      {/* チップ列（クラブ一致が先頭・lib がソート済み） */}
-      <div className="mt-3 flex flex-wrap gap-2">
-        {choices.map((c) => {
-          const badge = roleBadgeFor(c.role);
-          const expanded = expandedKey === c.key;
-          return (
-            <button
-              key={c.key}
-              type="button"
-              onClick={() => onToggleExpand(c.key)}
-              className={cn(
-                "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm",
-                expanded
-                  ? "bg-primary text-white"
-                  : "bg-surface text-foreground hover:bg-white/10",
-              )}
-            >
-              <span>{c.displayName}</span>
-              <span
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] font-medium",
-                  expanded ? "bg-white/20 text-white" : badge.cls,
-                )}
-              >
-                {badge.label}
-              </span>
-            </button>
-          );
-        })}
-        {choices.length === 0 && (
-          <p className="text-xs text-muted">
-            {totalCount === 0
-              ? "候補がまだありません。下のリンクからメンバーを追加してください。"
-              : "一致する名前がありません。検索を変えるか、下のリンクから追加してください。"}
-          </p>
-        )}
-      </div>
-
-      {/* 展開中チップの役割選択（チップ列の下にインライン表示） */}
-      {expandedKey !== null &&
-        (() => {
-          const choice = choices.find((c) => c.key === expandedKey);
-          if (!choice) return null;
-          const existing = choice.memberId
-            ? participationByMemberId.get(choice.memberId)
-            : undefined;
-          const currentRole = choiceCurrentFormRole(
-            choice.role,
-            existing?.fixedDriverMemberId ?? null,
-          );
-          return (
-            <div className="mt-3 rounded-lg border border-border bg-surface p-3">
-              <p className="mb-2 text-xs text-muted">
-                {choice.displayName} さんの役割を選んでください
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {SELF_PICK_ROLE_BUTTONS.map((b) => {
-                  const isPassenger = b.role === "passenger";
-                  const active = currentRole === b.role;
-                  return (
-                    <button
-                      key={b.role}
-                      type="button"
-                      disabled={saving}
-                      onClick={() => {
-                        if (isPassenger) return; // 同乗者は下の運転手選択を経由
-                        onRegister(choice, b.role);
-                      }}
-                      className={cn(
-                        "rounded-lg px-3 py-2 text-xs font-medium disabled:opacity-50",
-                        isPassenger
-                          ? "bg-background text-foreground hover:bg-white/10"
-                          : active
-                            ? "bg-primary text-white"
-                            : "bg-background text-foreground hover:bg-white/10",
-                      )}
-                    >
-                      {b.label}
-                      {active && !isPassenger && (
-                        <span className="ml-1 text-[10px]">（現在）</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* ⛓同乗者: 運転手を選ぶ最小ステップ → 確定 */}
-              <div className="mt-3 rounded-lg bg-background p-2">
-                <label className="mb-1 block text-[10px] text-muted">
-                  ⛓ 同乗者にするには、乗る車（運転手）を選んでください
-                  {currentRole === "passenger" && (
-                    <span className="ml-1 text-accent">（現在 同乗者）</span>
-                  )}
-                </label>
-                <div className="flex items-end gap-2">
-                  <select
-                    className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground disabled:opacity-50"
-                    value={driverSelectValue}
-                    onChange={(e) => onDriverSelectChange(e.target.value)}
-                    disabled={driverParticipations.length === 0}
-                  >
-                    <option value="">運転手を選択</option>
-                    {driverParticipations.map((p) => (
-                      <option key={p.memberId} value={p.memberId}>
-                        {memberName(p.memberId)}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    disabled={saving || !driverSelectValue}
-                    onClick={() => onRegister(choice, "passenger", driverSelectValue)}
-                    className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark disabled:opacity-50"
-                  >
-                    同乗者で登録
-                  </button>
-                </div>
-                {driverParticipations.length === 0 && (
-                  <p className="mt-1 text-[10px] text-muted">
-                    先に運転手を登録してください
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })()}
-
-      {/* フォールバック: 一覧にいないメンバーを追加 */}
-      <button
-        type="button"
-        onClick={onAddMember}
-        className="mt-3 text-xs text-accent hover:underline"
-      >
-        一覧にいない → メンバーを追加
-      </button>
-    </section>
   );
 }
 
