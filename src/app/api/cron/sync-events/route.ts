@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { scrapeEvents, scrapeArchive } from "@/lib/scraper/events";
 import type { JOEEvent } from "@/lib/scraper/events";
+import { scrapeDokoriEvents } from "@/lib/scraper/dokori";
 import { readEvents, writeEvents } from "@/lib/events-store";
 import { matchLapCenterEvents } from "@/lib/scraper/lapcenter";
 import { logCron } from "@/lib/cron-logger";
@@ -43,12 +44,22 @@ export async function GET(request: Request) {
     // マージ前の topEvents だけを見る（過去保持分の空dateに引きずられないため）。
     const topEmptyDates = topEvents.filter((e) => !e.date).length;
 
+    // どこオリ（dokori.net）のホワイトリスト大会を取得。JOY本体を絶対に巻き込まないよう
+    // 完全隔離（例外は握りつぶし空配列）。合成ID（DOKORI_ID_BASE 以上）なので JOY と衝突しない。
+    let dokoriEvents: JOEEvent[] = [];
+    try {
+      dokoriEvents = await scrapeDokoriEvents();
+    } catch (dkErr) {
+      console.error("dokori event sync failed (ignored):", dkErr);
+    }
+
     // 全イベントをマージ（ID重複排除、トップページ優先）
     const eventMap = new Map<number, JOEEvent>();
     for (const events of archiveResults) {
       for (const e of events) eventMap.set(e.joe_event_id, e);
     }
     for (const e of topEvents) eventMap.set(e.joe_event_id, e);
+    for (const e of dokoriEvents) eventMap.set(e.joe_event_id, e);
 
     // 既存データから座標・Lap Center情報を引き継ぎ
     const stored = new Map(
@@ -69,8 +80,18 @@ export async function GET(request: Request) {
           event.date = existing.date;
           event.end_date = existing.end_date;
         }
-        event.lat = existing.lat;
-        event.lng = existing.lng;
+        if (event.source === "dokori") {
+          // どこオリはスクレイプ時に会場座標を持つため store で上書きしない（会場変更にも追従）。
+          // 万一スクレイプで座標が取れなかった場合のみ store からフォールバック。
+          if (event.lat == null && existing.lat != null) {
+            event.lat = existing.lat;
+            event.lng = existing.lng;
+          }
+        } else {
+          // JOY は座標を遅延バッチで補完するため、毎回のライブ取得では座標が無い → store から復元。
+          event.lat = existing.lat;
+          event.lng = existing.lng;
+        }
         event.lapcenter_event_id = existing.lapcenter_event_id;
         event.lapcenter_url = existing.lapcenter_url;
         event.recently_updated = existing.recently_updated;

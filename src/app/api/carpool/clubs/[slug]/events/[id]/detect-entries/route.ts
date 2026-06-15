@@ -6,7 +6,7 @@ import {
   detectEntriesLive,
   type ExistingMemberRef,
 } from "@/lib/carpool/entry-detect";
-import { scrapeEntryList } from "@/lib/scraper/entries";
+import { scrapeEntryListByEventId } from "@/lib/scraper/entry-source";
 import { ERR, resolveClub } from "@/lib/carpool/api/helpers";
 
 export const dynamic = "force-dynamic";
@@ -72,7 +72,7 @@ export async function GET(
         event.joe_event_id,
         club.joe_club_names,
         existingMembers,
-        (eventId) => scrapeEntryList(eventId, { throwOnError: true }),
+        (eventId) => scrapeEntryListByEventId(eventId, { throwOnError: true }),
       );
       generatedAt = live.generatedAt;
       detected = live.detected;

@@ -6,7 +6,7 @@
  * 経過時間を上限付きに保つ。予算切れ時は部分結果を返す（scrapedEventCount に反映）。
  */
 import type { JOEEvent } from "@/lib/scraper/events";
-import { scrapeEntryList } from "@/lib/scraper/entries";
+import { scrapeEntryListByEventId } from "@/lib/scraper/entry-source";
 import { normalizeNameKey, expandAliasKeys } from "@/lib/name-key";
 import type { AthleteEntryRef, EntryIndex } from "./index-types";
 
@@ -56,7 +56,9 @@ async function scrapeOne(ev: JOEEvent, timeoutMs: number): Promise<ScrapedEvent 
   try {
     // throwOnError: 非2xx(403/500等)を「失敗」として throw させ、空データとして集計しない。
     // → catch で null を返し scraped に数えない（古い良いインデックスを空で潰さない）。
-    const result = await scrapeEntryList(ev.joe_event_id, {
+    // ev.joe_event_id が どこオリの合成ID（DOKORI_ID_BASE 以上）なら どこオリ から取得。
+    // それ以外は従来どおり JOY。索引化以降のロジックはソース非依存で共通。
+    const result = await scrapeEntryListByEventId(ev.joe_event_id, {
       signal: controller.signal,
       throwOnError: true,
     });

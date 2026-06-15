@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { scrapeEntryList } from "@/lib/scraper/entries";
+import { scrapeEntryListByEventId } from "@/lib/scraper/entry-source";
 
 /**
  * GET /api/events/[id]/entries
- * JOY のエントリーリストを所属（クラブ）単位でグループ化して返す。
- * 展開時にオンデマンド取得。上流HTMLは1時間キャッシュ（scrapeEntryList 内）。
+ * エントリーリストを所属（クラブ）単位でグループ化して返す。
+ * eventId のレンジで JOY / どこオリ を自動振り分け。
+ * 展開時にオンデマンド取得。上流HTMLは1時間キャッシュ（各スクレイパ内）。
  */
 export async function GET(
   _request: Request,
@@ -17,7 +18,7 @@ export async function GET(
   }
 
   try {
-    const result = await scrapeEntryList(eventId);
+    const result = await scrapeEntryListByEventId(eventId);
     return NextResponse.json(result, {
       headers: {
         "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",

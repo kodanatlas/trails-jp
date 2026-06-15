@@ -18,6 +18,14 @@ export interface JOEEvent {
   /** 大会詳細ページから取得した座標（null = ページに座標なし） */
   lat?: number | null;
   lng?: number | null;
+  /**
+   * イベントの取得元。未指定/"joy" は japan-o-entry.com（既存・全件の既定）。
+   * "dokori" は dokori.net（どこオリ）。joe_event_id は dokori 用に予約した
+   * 合成ID（DOKORI_ID_BASE 以上）で、JOY の整数IDと衝突しない。
+   */
+  source?: "joy" | "dokori";
+  /** source==="dokori" のときの どこオリ publicId（例: "evt_tortoise_50th"）。 */
+  dokori_public_id?: string;
 }
 
 const BASE_URL = "https://japan-o-entry.com";
