@@ -152,6 +152,38 @@ export async function POST(
       // 同一バッチ内の後続 newMember が同名を指したときに再利用できるよう索引へ追加。
       indexKey(member.athlete_key as string, member.id as string);
       if (member.display_name) indexKey(member.display_name as string, member.id as string);
+      // Auto-assign homeNodeId from club defaultStations mapping.
+      const defaultStations = (club.settings as Record<string, unknown>)?.defaultStations;
+      if (defaultStations && typeof defaultStations === "object") {
+        const dsMap = defaultStations as Record<string, string>;
+        const memberName = member.display_name as string;
+        // Find station by surname prefix match
+        let stationName: string | undefined;
+        for (const [surname, station] of Object.entries(dsMap)) {
+          if (memberName.startsWith(surname)) {
+            stationName = station;
+            break;
+          }
+        }
+        if (stationName) {
+          // Look up existing area node
+          const { data: areaNode } = await supabaseAdmin
+            .from("carpool_nodes")
+            .select("id")
+            .eq("club_id", club.id)
+            .eq("kind", "area")
+            .eq("name", stationName)
+            .maybeSingle();
+
+          const homeNodeId = areaNode?.id as string | undefined;
+          if (homeNodeId) {
+            await supabaseAdmin
+              .from("carpool_members")
+              .update({ home_node_id: homeNodeId })
+              .eq("id", member.id);
+          }
+        }
+      }
       createdMembers.push(toMemberDTO(member, []));
       resolved.push({
         memberId: member.id as string,

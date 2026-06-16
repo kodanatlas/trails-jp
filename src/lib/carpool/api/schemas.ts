@@ -91,6 +91,7 @@ const clubSettings = z.object({
   driver_coefficient: z.union([z.literal(0), z.literal(0.5), z.literal(1)]).optional(),
   default_buffer_min: z.number().int().nonnegative().max(600).optional(),
   rounding_unit_yen: z.number().int().positive().max(10000).optional(),
+  defaultStations: z.record(z.string(), z.string()).optional(),
 });
 
 export const clubCreateSchema = z.object({
