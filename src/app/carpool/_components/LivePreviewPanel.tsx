@@ -203,6 +203,14 @@ function PreviewBody({
           {built.errors.map((err, i) => (
             <li key={i} className="list-disc">
               {err}
+              {err.includes("ルート候補") && (
+                <Link
+                  href={"/carpool/" + slug + "/" + eventId + "/plan"}
+                  className="ml-1.5 whitespace-nowrap text-primary hover:underline"
+                >
+                  配車計画ページで自動作成 →
+                </Link>
+              )}
             </li>
           ))}
         </ul>
