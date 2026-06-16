@@ -195,19 +195,17 @@ function PreviewBody({
   // ── Prerequisite errors ──────────────────────────────────────────────
   if (built.errors.length > 0) {
     return (
-      <div className="min-h-[120px] rounded-xl border border-border bg-card p-4">
-        <details>
-          <summary className="cursor-pointer text-sm text-muted">
-            配車プレビューの前提条件（{built.errors.length}件の不足）
-          </summary>
-          <ul className="mt-2 space-y-1 pl-4 text-xs text-muted">
-            {built.errors.map((err, i) => (
-              <li key={i} className="list-disc">
-                {err}
-              </li>
-            ))}
-          </ul>
-        </details>
+      <div className="min-h-[120px] rounded-xl border border-red-500/30 bg-red-500/5 p-4">
+        <h3 className="text-sm font-semibold text-red-400">
+          エラー（解消するまで配車の自動計算ができません）
+        </h3>
+        <ul className="mt-2 space-y-1 pl-4 text-xs text-red-300/90">
+          {built.errors.map((err, i) => (
+            <li key={i} className="list-disc">
+              {err}
+            </li>
+          ))}
+        </ul>
       </div>
     );
   }
