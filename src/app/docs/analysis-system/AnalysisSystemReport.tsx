@@ -23,8 +23,9 @@ const LAYERS: {
     stroke: "rgba(251,191,36,.45)",
     title: "DATA SOURCES ｜ 外部データ源",
     chips: [
-      { x: 170, w: 300, t: "JOY — japan-o-entry.com" },
-      { x: 510, w: 300, t: "LapCenter — mulka2.com" },
+      { x: 72, w: 260, t: "JOY — japan-o-entry.com" },
+      { x: 360, w: 260, t: "LapCenter — mulka2.com" },
+      { x: 648, w: 260, t: "どこオリ — dokori.net" },
     ],
   },
   {
@@ -34,10 +35,11 @@ const LAYERS: {
     stroke: "rgba(34,211,238,.4)",
     title: "SCRAPERS ｜ src/lib/scraper（cheerio + undici）",
     chips: [
-      { x: 48, w: 200, t: "events.ts" },
-      { x: 276, w: 200, t: "rankings.ts" },
-      { x: 504, w: 200, t: "lapcenter.ts" },
-      { x: 732, w: 200, t: "entries.ts" },
+      { x: 48, w: 160, t: "events.ts" },
+      { x: 228, w: 160, t: "rankings.ts" },
+      { x: 408, w: 160, t: "lapcenter.ts" },
+      { x: 588, w: 160, t: "dokori.ts" },
+      { x: 768, w: 160, t: "entries.ts" },
     ],
   },
   {
@@ -249,9 +251,9 @@ export function AnalysisSystemReport({
             データを、1枚に。
           </h1>
           <p className="lead">
-            trails.jp は、エントリーサイト <b>JOY</b> と成績データベース{" "}
-            <b>LapCenter</b>{" "}
-            の2大ソースを毎日自動収集し、イベント・ランキング・選手分析・クラブ統計・対戦履歴までを横断する、オリエンテーリング専用のデータプラットフォームです。本ページは、その{" "}
+            trails.jp は、エントリーサイト <b>JOY</b>・成績データベース{" "}
+            <b>LapCenter</b>・大会受付サイト <b>どこオリ</b>{" "}
+            の3つのソースを毎日自動収集し、イベント・ランキング・選手分析・クラブ統計・対戦履歴までを横断する、オリエンテーリング専用のデータプラットフォームです。本ページは、その{" "}
             <b>システム全体像と技術スタック</b> を1枚にまとめた技術ドキュメントです。
           </p>
           <div className="kpis">
@@ -305,7 +307,7 @@ export function AnalysisSystemReport({
               <div className="ghost">E</div>
               <span className="tag">EVENTS</span>
               <h3>イベント</h3>
-              <p>JOY 全大会を日次取得。リスト／カレンダー2ビュー。</p>
+              <p>JOY ＋ どこオリ大会を日次取得。リスト／カレンダー2ビュー。</p>
               <ul>
                 <li>都道府県・受付状態・日付での<b>絞り込み</b></li>
                 <li>受付中・直近30日は<b>所属別エントリー</b>を展開</li>
@@ -375,11 +377,12 @@ export function AnalysisSystemReport({
           <div className="sec-head">
             <span className="sec-no">03</span>
             <h2>
-              2大<span className="grad">データソース</span>
+              3つの<span className="grad">データソース</span>
             </h2>
             <span className="sec-sub">
               who 列 — <span style={{ color: "var(--cyan)" }}>シアン=JOY</span> ／{" "}
-              <span style={{ color: "var(--violet)" }}>紫=LapCenter</span>。両者を日付＋名称のファジーマッチで突合する。
+              <span style={{ color: "var(--violet)" }}>紫=LapCenter</span> ／{" "}
+              <span style={{ color: "var(--amber)" }}>アンバー=どこオリ</span>。各ソースを日付＋名称のファジーマッチで突合する。
             </span>
           </div>
           <div className="contract">
@@ -408,9 +411,20 @@ export function AnalysisSystemReport({
               <span className="key">miss-rate</span>
               <span className="use">→ ナビゲーションロスの割合（%）</span>
             </div>
+            <div className="row">
+              <span className="who dkr">どこオリ</span>
+              <span className="key">events（複数日展開）</span>
+              <span className="use">→ 大会名・日程・座標・受付状態（ホワイトリスト制）</span>
+            </div>
+            <div className="row">
+              <span className="who dkr">どこオリ</span>
+              <span className="key">entry-list</span>
+              <span className="use">→ 日別エントリー（RSC flight ペイロード解析）</span>
+            </div>
             <div className="note">
               名寄せ：全角→半角、大学/クラブ略称の展開、回次・期数の除去。Forest／Sprint
               区分は LapCenter 側に無いため、JOY ランキングの日付で判定する。
+              どこオリ大会は合成 ID（90,000,000〜）で JOY と衝突を回避し、取得失敗時は JOY 同期と既存保存分を維持するグレースフル劣化設計。
             </div>
           </div>
         </section>
@@ -428,7 +442,7 @@ export function AnalysisSystemReport({
             <div className="wave">
               <div className="w">03:00 JST</div>
               <div className="t">sync-events</div>
-              <div className="d">JOY イベント同期 ＋ LapCenter マッチング。<b>水曜は再デプロイを起動</b>。</div>
+              <div className="d">JOY ＋ どこオリ イベント同期 ＋ LapCenter マッチング。<b>水曜は再デプロイを起動</b>。</div>
             </div>
             <div className="wave">
               <div className="w">04:00 JST</div>

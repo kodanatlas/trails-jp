@@ -5,7 +5,7 @@ import { getSiteStats } from "@/lib/site-stats";
 export const metadata: Metadata = {
   title: "システム全体構成",
   description:
-    "trails.jp のシステム全体像・データソース・収集パイプライン・DBスキーマ・分析ロジック・APIの技術ドキュメント。",
+    "trails.jp のシステム全体像・データソース（JOY・LapCenter・どこオリ）・収集パイプライン・DBスキーマ・分析ロジック・APIの技術ドキュメント。",
   robots: { index: false, follow: false },
 };
 

@@ -163,7 +163,7 @@
 .report-root .contract .row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:9px 0;border-bottom:1px dashed rgba(148,163,184,.15);}
 .report-root .contract .row:last-child{border-bottom:none;}
 .report-root .contract .who{flex:0 0 118px;font-size:11px;font-weight:700;letter-spacing:.1em;}
-.report-root .who.cdk{color:var(--violet);} .report-root .who.tf{color:var(--cyan);}
+.report-root .who.cdk{color:var(--violet);} .report-root .who.tf{color:var(--cyan);} .report-root .who.dkr{color:var(--amber);}
 .report-root .who.get{color:var(--green);} .report-root .who.post{color:var(--amber);}
 .report-root .contract .key{font-family:"SF Mono","Consolas",monospace;font-size:12.5px;color:var(--code-ink);overflow-wrap:anywhere;}
 .report-root .contract .use{font-size:12px;color:var(--muted);}
