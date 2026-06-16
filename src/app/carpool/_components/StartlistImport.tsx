@@ -390,6 +390,9 @@ export default function StartlistImport({
         </span>
         <span className="text-xs text-muted">{open ? "閉じる" : "開く"}</span>
       </button>
+      <p className="mt-1 text-xs text-muted">
+        参加者を登録後、スタートリストを取込・反映すると各参加者のスタート時刻が自動でセットされます。
+      </p>
 
       {open && (
         <div className="mt-3 space-y-4">
