@@ -30,7 +30,10 @@ import type {
   ParticipationDTO,
   PickupPrefDTO,
   RouteDTO,
+  TravelTimeDTO,
 } from "@/lib/carpool/api/mappers";
+import type { PlanDetailDTO } from "@/lib/carpool/api/plan-schemas";
+import LivePreviewPanel from "./LivePreviewPanel";
 import type { DetectedEntry } from "./carpoolTypes";
 
 interface ParticipationClientProps {
@@ -117,6 +120,9 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   const [participations, setParticipations] = useState<ParticipationDTO[]>([]);
   const [members, setMembers] = useState<MemberDTO[]>([]);
   const [nodes, setNodes] = useState<NodeDTO[]>([]);
+  const [routes, setRoutes] = useState<RouteDTO[]>([]);
+  const [travelTimes, setTravelTimes] = useState<TravelTimeDTO[]>([]);
+  const [publishedPlan, setPublishedPlan] = useState<PlanDetailDTO | null>(null);
   const [detected, setDetected] = useState<DetectedEntry[]>([]);
   const [detectError, setDetectError] = useState<string | null>(null);
   const [detectLoading, setDetectLoading] = useState(false);
@@ -230,7 +236,7 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
   const load = async () => {
     setLoading(true);
     try {
-      const [clubRes, detailRes, membersRes, nodesRes] = await Promise.all([
+      const [clubRes, detailRes, membersRes, nodesRes, ttRes, planRes] = await Promise.all([
         fetchCarpool<{ club: ClubDTO }>(`/clubs/${slug}`),
         fetchCarpool<{
           event: EventDTO;
@@ -239,12 +245,17 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
         }>(`/clubs/${slug}/events/${eventId}`),
         fetchCarpool<{ members: MemberDTO[] }>(`/clubs/${slug}/members`),
         fetchCarpool<{ nodes: NodeDTO[] }>(`/clubs/${slug}/nodes`),
+        fetchCarpool<{ travelTimes: TravelTimeDTO[] }>(`/clubs/${slug}/travel-times`),
+        fetchCarpool<{ plan: PlanDetailDTO | null }>(`/clubs/${slug}/events/${eventId}/plans?status=published&latest=1`),
       ]);
       setClub(clubRes.club);
       setEvent(detailRes.event);
       setParticipations(detailRes.participations);
       setMembers(membersRes.members);
       setNodes(nodesRes.nodes);
+      setRoutes(detailRes.routes);
+      setTravelTimes(ttRes.travelTimes);
+      setPublishedPlan(planRes.plan);
 
       await loadDetect();
     } catch (e) {
@@ -1631,7 +1642,23 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
               )}
             </section>
 
-            {/* ④ 配車係向け（major3: 取込・配車計画・公開などの主催者向けツールをまとめる） */}
+            {/* ④ ライブ配車プレビュー */}
+            {planSummary.ready && event && (
+              <LivePreviewPanel
+                event={event}
+                routes={routes}
+                participations={participations}
+                members={members}
+                nodes={nodes}
+                travelTimes={travelTimes}
+                publishedPlan={publishedPlan}
+                memberName={memberName}
+                slug={slug}
+                eventId={eventId}
+              />
+            )}
+
+            {/* ⑤ 配車係向け（major3: 取込・配車計画・公開などの主催者向けツールをまとめる） */}
             <section className="mt-6 rounded-xl border border-border bg-card p-4">
               <h2 className="text-sm font-semibold text-foreground">配車係向け</h2>
               <p className="mt-1 text-xs text-muted">
