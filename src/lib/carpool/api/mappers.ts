@@ -7,6 +7,12 @@
 
 import { capacityToSeats } from "./schemas";
 
+/** PostgreSQL time → "HH:MM"（DB は "HH:MM:SS" で返すため秒を落とす）。 */
+function trimTime(v: unknown): string | null {
+  if (typeof v !== "string" || v === "") return null;
+  return v.slice(0, 5);
+}
+
 // ---------------------------------------------------------------------------
 // API レスポンス型（UI 契約）
 // ---------------------------------------------------------------------------
@@ -170,7 +176,7 @@ export function toMemberDTO(r: any, pickupPrefs?: PickupPrefDTO[]): MemberDTO {
     hasCar: !!r.has_car,
     seatsAvailable: capacityToSeats(r.default_capacity),
     defaultWillingness: r.default_willingness,
-    earliestDeparture: r.earliest_departure ?? null,
+    earliestDeparture: trimTime(r.earliest_departure),
     luggageInCar: !!r.luggage_in_car,
     active: !!r.active,
     ...(pickupPrefs ? { pickupPrefs } : {}),
@@ -236,10 +242,10 @@ export function toParticipationDTO(r: any): ParticipationDTO {
     role: r.role,
     capacityOverrideSeats: capacityToSeats(r.capacity_override),
     willingness: r.willingness ?? null,
-    earliestDepartureOverride: r.earliest_departure_override ?? null,
+    earliestDepartureOverride: trimTime(r.earliest_departure_override),
     fixedDriverMemberId: r.fixed_driver_member_id ?? null,
     pickupPrefsOverride: r.pickup_prefs_override ?? null,
-    startTime: r.start_time ?? null,
+    startTime: trimTime(r.start_time),
     className: r.class_name ?? null,
     estCourseMin: r.est_course_min ?? null,
     entrySource: r.entry_source,
