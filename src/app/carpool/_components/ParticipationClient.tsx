@@ -1610,8 +1610,7 @@ export default function ParticipationClient({ slug, eventId }: ParticipationClie
                   </label>
                   <input
                     type="time"
-                    // R3: 手入力は15分刻み。自動設定（Phase 4 予定）の分単位値は step を緩めて保持。
-                    step={quarterHourStep(form.startTime)}
+                    step={60}
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
                     value={form.startTime}
                     onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))}
