@@ -199,6 +199,7 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
   // Auto-run flags: prevent repeated auto-execution after the first page load.
   const autoCalcRanRef = useRef(false);
   const autoRouteRanRef = useRef(false);
+  const autoSuggestRanRef = useRef(false);
 
   // 調整さんモデル: 配車プランの保存・公開・移動時間の自動計算はメンバー文脈を持たない
   // クラブ全体の操作のため、change_log の actorName は固定文字列 "guest"。
@@ -661,6 +662,15 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
     autoRouteRanRef.current = true;
     void autoCreateRoute();
   }, [event, routes, creatingRoute, autoCreateRoute]);
+
+  // Auto-suggest venue-to-start time on first load when not yet set.
+  useEffect(() => {
+    if (autoSuggestRanRef.current) return;
+    if (!event || bufferSuggesting) return;
+    if (event.venueToStartMin != null) return;
+    autoSuggestRanRef.current = true;
+    void suggestVenueToStart();
+  }, [event, bufferSuggesting, suggestVenueToStart]);
 
   // --- 最適化実行（Worker 起動） ---
   const runSolve = useCallback(
