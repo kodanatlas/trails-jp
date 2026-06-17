@@ -5,6 +5,7 @@ import eventsJson from "@/data/events.json";
 import weekendPointsJson from "@/data/weekend-points.json";
 import { WeekendHighlights } from "@/components/WeekendHighlights";
 import { WeeklyCheerPodium } from "@/components/WeeklyCheerPodium";
+import { UpdatesNews } from "@/components/UpdatesNews";
 import { getSiteStats } from "@/lib/site-stats";
 
 // DB 由来の数値（成績レコード）を 1 日ごとに更新（頻度は低めで十分）
@@ -197,6 +198,9 @@ export default async function Home() {
 
       {/* 今週の応援 表彰台（likes はクライアント fetch — SSG 維持） */}
       <WeeklyCheerPodium />
+
+      {/* 更新情報（データ更新の自動フィード・サーバーで supabaseAdmin 取得） */}
+      <UpdatesNews />
 
     </div>
   );
