@@ -196,6 +196,10 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
   // 実行の世代番号。Worker を使い回すため、古い実行からの応答を無視するのに使う。
   const runIdRef = useRef(0);
 
+  // Auto-run flags: prevent repeated auto-execution after the first page load.
+  const autoCalcRanRef = useRef(false);
+  const autoRouteRanRef = useRef(false);
+
   // 調整さんモデル: 配車プランの保存・公開・移動時間の自動計算はメンバー文脈を持たない
   // クラブ全体の操作のため、change_log の actorName は固定文字列 "guest"。
   const actorName = "guest";
@@ -639,6 +643,24 @@ export default function PlanClient({ slug, eventId }: PlanClientProps) {
   const hasMissingTravelTime = [...allCheckErrors, ...warnings].some((m) =>
     m.includes("移動時間が未入力"),
   );
+
+  // Auto-run travel time calculation on first load when missing times are detected.
+  useEffect(() => {
+    if (autoCalcRanRef.current) return;
+    if (!event || autoCalculating) return;
+    if (!hasMissingTravelTime) return;
+    autoCalcRanRef.current = true;
+    void autoCalcTravelTimes();
+  }, [event, hasMissingTravelTime, autoCalculating, autoCalcTravelTimes]);
+
+  // Auto-create default route on first load when no routes exist.
+  useEffect(() => {
+    if (autoRouteRanRef.current) return;
+    if (!event?.venueNodeId || creatingRoute) return;
+    if (routes.length > 0) return;
+    autoRouteRanRef.current = true;
+    void autoCreateRoute();
+  }, [event, routes, creatingRoute, autoCreateRoute]);
 
   // --- 最適化実行（Worker 起動） ---
   const runSolve = useCallback(
