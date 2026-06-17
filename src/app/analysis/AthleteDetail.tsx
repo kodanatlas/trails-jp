@@ -318,13 +318,6 @@ function PointBreakdownTable({
         ))}
         {rest.length > 0 && (
           <>
-            <button
-              onClick={() => setShowAll((v) => !v)}
-              className="flex w-full items-center justify-center gap-1 rounded px-2 py-1 text-[9px] text-muted/60 hover:text-muted transition-colors"
-            >
-              {showAll ? "閉じる" : `他 ${rest.length} 大会を表示`}
-              <ChevronDown className={`h-2.5 w-2.5 transition-transform ${showAll ? "rotate-180" : ""}`} />
-            </button>
             {showAll && rest.map((e, i) => (
               <div
                 key={`rest-${e.date}-${i}`}
@@ -340,6 +333,14 @@ function PointBreakdownTable({
                 </span>
               </div>
             ))}
+            {/* 展開/閉じるボタン（リスト下部・ボタン体裁） */}
+            <button
+              onClick={() => setShowAll((v) => !v)}
+              className="mt-1 flex w-full items-center justify-center gap-1 rounded-md border border-border bg-surface px-3 py-1.5 text-[10px] font-medium text-muted transition-colors hover:border-primary/30 hover:bg-card-hover hover:text-foreground"
+            >
+              {showAll ? "閉じる" : `他 ${rest.length} 大会を表示`}
+              <ChevronDown className={`h-3 w-3 transition-transform ${showAll ? "rotate-180" : ""}`} />
+            </button>
           </>
         )}
       </div>

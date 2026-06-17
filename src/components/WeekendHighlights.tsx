@@ -84,7 +84,7 @@ function PointRow({ item, rank }: { item: WeekendPointItem; rank: number }) {
   return (
     <Link
       href={`/analysis?athlete=${encodeURIComponent(item.key)}`}
-      className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover sm:gap-4"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover"
     >
       <RankBadge n={rank} />
       <div className="min-w-0 flex-1">
@@ -99,10 +99,11 @@ function PointRow({ item, rank }: { item: WeekendPointItem; rank: number }) {
           <p className="mt-0.5 truncate text-[10px] text-muted">{item.eventName}</p>
         )}
       </div>
-      <div className="flex-shrink-0 text-right">
+      {/* 指標: モバイルは名前の下に全幅で回り込み、sm以上は右寄せ（崩れ防止） */}
+      <div className="flex w-full flex-col items-start gap-0.5 sm:w-auto sm:items-end">
         <p className="font-mono text-sm font-bold text-green-400">+{num(item.delta)} pt</p>
         {/* 内訳はモバイルでも表示（ユーザー必須要望） */}
-        <p className="text-[10px] text-muted">
+        <p className="text-[10px] text-muted sm:text-right">
           今回 {num(item.pRecent)}・平均 {num(item.pAvg)}
         </p>
       </div>
@@ -118,7 +119,7 @@ function StandoutRowItem({ row, rank }: { row: StandoutRow; rank: number }) {
   return (
     <Link
       href={`/analysis?athlete=${encodeURIComponent(key)}`}
-      className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover sm:gap-4"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover"
     >
       <RankBadge n={rank} />
       <div className="min-w-0 flex-1">
@@ -133,9 +134,9 @@ function StandoutRowItem({ row, rank }: { row: StandoutRow; rank: number }) {
           <p className="mt-0.5 truncate text-[10px] text-muted">{row.event_name}</p>
         )}
       </div>
-      <div className="flex flex-shrink-0 flex-col items-end gap-0.5">
-        {/* 狭幅でも溢れ/潰れないよう flex-wrap 可・右寄せ */}
-        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-0.5">
+      {/* 指標: モバイルは名前の下に全幅で回り込み、sm以上は右寄せ（崩れ防止） */}
+      <div className="flex w-full flex-col items-start gap-0.5 sm:w-auto sm:items-end">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 sm:justify-end">
           <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-green-400">
             <Gauge className="h-3 w-3" />巡航 +{num(row.speed_gain_pct)}% 速
           </span>
@@ -143,9 +144,9 @@ function StandoutRowItem({ row, rank }: { row: StandoutRow; rank: number }) {
             <Target className="h-3 w-3" />{miss.text}
           </span>
         </div>
-        {/* 内訳はモバイルでも表示（ユーザー必須要望）。巡航値は小さいほど速い。 */}
-        <p className="text-right text-[10px] text-muted">
-          巡航 今回 {num(row.target_speed)}/平均 {num(row.baseline_speed)}（小さいほど速い）
+        {/* 内訳はモバイルでも表示（ユーザー必須要望） */}
+        <p className="text-[10px] text-muted sm:text-right">
+          巡航 今回 {num(row.target_speed)}/平均 {num(row.baseline_speed)}
           {" ・ "}ミス {num(row.target_miss)}/平均 {num(row.baseline_miss)}
         </p>
       </div>
@@ -192,7 +193,7 @@ export async function WeekendHighlights() {
   const compositeDates = standouts[0]?.cluster_dates ?? [];
 
   return (
-    <section className="border-b border-border py-12 sm:py-16">
+    <section id="weekend-highlights" className="scroll-mt-20 border-b border-border py-12 sm:py-16">
       <div className="mx-auto max-w-6xl px-4">
         {/* セクション見出し */}
         <div className="flex items-center justify-between">
@@ -272,7 +273,7 @@ export async function WeekendHighlights() {
             <p className="mt-1 text-xs text-muted">
               巡航速度の改善度とミス率の改善度を、同じ週末に出場した選手どうしで比べて
               <strong className="font-semibold text-foreground">スコア化（両方良いほど高い）</strong>。
-              巡航は速い（値が小さい）ほど＋、ミスは少ないほど＋。
+              巡航は速いほど＋、ミスは少ないほど＋。
             </p>
             <details className="mt-1 text-xs text-muted">
               <summary className="cursor-pointer select-none text-primary hover:underline">
@@ -281,8 +282,7 @@ export async function WeekendHighlights() {
               <p className="mt-1 leading-relaxed">
                 合成スコア＝〈巡航速度が自己平均より何%速いか〉と〈ミス率が自己平均より何%ポイント少ないか〉を、
                 同じ週末の出場者の中で“偏差値のように”標準化（平均0・ばらつき1に揃える）して合算。
-                対象は同種目で過去5戦以上の実績があり、今回の巡航速度が自己平均より速かった（値が小さい）選手。
-                ※巡航値は小さいほど速い。
+                対象は同種目で過去5戦以上の実績があり、今回の巡航速度が自己平均より速かった選手。
               </p>
             </details>
 

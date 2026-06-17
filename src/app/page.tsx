@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { CalendarDays, Trophy, ArrowRight, ExternalLink, BarChart3 } from "lucide-react";
+import { CalendarDays, Trophy, ArrowRight, ExternalLink, BarChart3, TrendingUp, ChevronDown } from "lucide-react";
 import type { JOEEvent } from "@/lib/scraper/events";
 import eventsJson from "@/data/events.json";
+import weekendPointsJson from "@/data/weekend-points.json";
 import { WeekendHighlights } from "@/components/WeekendHighlights";
 import { WeeklyCheerPodium } from "@/components/WeeklyCheerPodium";
 import { getSiteStats } from "@/lib/site-stats";
@@ -19,6 +20,10 @@ export default async function Home() {
 
   // 規模数値は docs ページと共有のヘルパーから取得（両ページで常に一致）
   const stats = await getSiteStats();
+
+  // ハイライトの上部リンク表示判定（ポイントリストが3件以上＝必ずセクションが出る時のみ）
+  const hasHighlights =
+    ((weekendPointsJson as { items?: unknown[] }).items ?? []).length >= 3;
 
   return (
     <div>
@@ -57,6 +62,17 @@ export default async function Home() {
               選手分析
             </Link>
           </div>
+          {/* 直近の大会ハイライトへのジャンプ（特にスマホで上部から気づけるように） */}
+          {hasHighlights && (
+            <a
+              href="#weekend-highlights"
+              className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/10 px-4 py-1.5 text-xs font-medium text-green-400 transition-colors hover:bg-green-500/20"
+            >
+              <TrendingUp className="h-3.5 w-3.5" />
+              直近の大会ハイライトを見る
+              <ChevronDown className="h-3.5 w-3.5" />
+            </a>
+          )}
         </div>
       </section>
 

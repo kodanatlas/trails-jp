@@ -476,11 +476,11 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
               {h2h.records.length > 10 && (
                 <button
                   onClick={() => setShowAllHistory((v) => !v)}
-                  className="mt-1 flex w-full items-center justify-center gap-1 rounded px-2 py-1 text-[10px] text-muted/70 transition-colors hover:text-muted"
+                  className="mt-1 flex w-full items-center justify-center gap-1 rounded-md border border-border bg-surface px-3 py-1.5 text-[10px] font-medium text-muted transition-colors hover:border-primary/30 hover:bg-card-hover hover:text-foreground"
                 >
                   {showAllHistory ? "閉じる" : `全 ${h2h.records.length} 戦を表示`}
                   <ChevronDown
-                    className={`h-2.5 w-2.5 transition-transform ${showAllHistory ? "rotate-180" : ""}`}
+                    className={`h-3 w-3 transition-transform ${showAllHistory ? "rotate-180" : ""}`}
                   />
                 </button>
               )}
