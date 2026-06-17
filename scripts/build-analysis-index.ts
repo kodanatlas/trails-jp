@@ -8,6 +8,7 @@ import * as path from "path";
 import { splitAffiliations } from "../src/lib/club-normalize";
 import { computeWeekendPoints } from "../src/lib/weekend-points";
 import { jstNowLabel, jstToday } from "../src/lib/weekend-window";
+import { eventFuzzyMatch } from "../src/lib/analysis/event-match";
 
 // --- Types ---
 interface RawEntry {
@@ -870,6 +871,111 @@ fs.writeFileSync(path.join(OUTPUT_DIR, "club-stats.json"), clubJson);
 
 console.log(`✓ athlete-index.json: ${athleteCount} athletes (${(athleteJson.length / 1024).toFixed(0)} KB)`);
 console.log(`✓ club-stats.json: ${clubMap.size} clubs (${(clubJson.length / 1024).toFixed(0)} KB)`);
+
+// ---- race_type バックフィル（JOY ランキングの種目を正として lc_performances を補正） ----
+// lc_performances.race_type はイベント名キーワード由来で誤判定があるため、ビルド毎に
+// JOY ランキングの種目で自己修復する。完全隔離（例外でビルドを止めない）。
+async function backfillRaceTypeFromJoy(): Promise<void> {
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn("⚠ race_type backfill: Supabase 未設定のためスキップ");
+    return;
+  }
+  const sbHeaders = {
+    apikey: supabaseKey,
+    Authorization: `Bearer ${supabaseKey}`,
+    "Content-Type": "application/json",
+  };
+
+  // 1) JOY 種目マップ: date → { forest: 正規化名 Set, sprint: 正規化名 Set }
+  const normKey = (name: string) => normalizeEventName(name).replace(/\s+/g, "");
+  const joyByDate = new Map<string, { forest: Set<string>; sprint: Set<string> }>();
+  for (const data of athleteMap.values()) {
+    for (const e of dedupeEvents(data.allEvents)) {
+      if (!e.date) continue;
+      let byDate = joyByDate.get(e.date);
+      if (!byDate) {
+        byDate = { forest: new Set<string>(), sprint: new Set<string>() };
+        joyByDate.set(e.date, byDate);
+      }
+      byDate[e.discipline].add(normKey(e.eventName));
+    }
+  }
+
+  // 2) 現 lc 大会一覧（distinct）を RPC で取得
+  const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/lc_distinct_events`, {
+    method: "POST",
+    headers: sbHeaders,
+    body: JSON.stringify({}),
+  });
+  if (!rpcRes.ok) {
+    console.warn(`⚠ race_type backfill: lc_distinct_events RPC 失敗 HTTP ${rpcRes.status} → スキップ`);
+    return;
+  }
+  const lcEvents = (await rpcRes.json()) as { event_date: string; event_name: string; race_type: string }[];
+
+  // 3) 各 lc 大会の desired 種目を判定
+  const changes: { date: string; name: string; from: string; to: string }[] = [];
+  for (const lc of lcEvents) {
+    const byDate = joyByDate.get(lc.event_date);
+    if (!byDate) continue; // JOY に当日データ無し → キーワード判定を尊重
+    const hasF = byDate.forest.size > 0;
+    const hasS = byDate.sprint.size > 0;
+
+    let desired: "forest" | "sprint" | null = null;
+    if (hasF && !hasS) desired = "forest";
+    else if (hasS && !hasF) desired = "sprint";
+    else if (hasF && hasS) {
+      // 両種目あり → 名前で曖昧一致した方を採用
+      const lcKey = normKey(lc.event_name);
+      const matchF = [...byDate.forest].some((n) => eventFuzzyMatch(lcKey, n));
+      const matchS = [...byDate.sprint].some((n) => eventFuzzyMatch(lcKey, n));
+      if (matchF && !matchS) desired = "forest";
+      else if (matchS && !matchF) desired = "sprint";
+      // 両方マッチ or 不一致 → skip（曖昧すぎる）
+    }
+    if (!desired) continue;
+    if (desired !== lc.race_type) {
+      changes.push({ date: lc.event_date, name: lc.event_name, from: lc.race_type, to: desired });
+    }
+  }
+
+  if (changes.length === 0) {
+    console.log("✓ race_type backfill: 変更対象なし（lc と JOY 種目が一致）");
+    return;
+  }
+
+  // 4) 暴走ガード: 80 件超は適用せず警告して終了（DB 非変更）
+  if (changes.length > 80) {
+    console.warn(`⚠ race_type backfill: 変更対象 ${changes.length} 件 (>80) のため適用中止（DB 非変更）`);
+    return;
+  }
+
+  // 5) 適用（大会単位で PATCH）
+  let applied = 0;
+  for (const c of changes) {
+    const url =
+      `${supabaseUrl}/rest/v1/lc_performances` +
+      `?event_date=eq.${c.date}&event_name=eq.${encodeURIComponent(c.name)}`;
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: { ...sbHeaders, Prefer: "return=minimal" },
+      body: JSON.stringify({ race_type: c.to }),
+    });
+    if (res.ok) {
+      applied++;
+      console.log(`✓ race_type: ${c.date} ${c.name} ${c.from}→${c.to}`);
+    } else {
+      console.warn(`⚠ race_type PATCH 失敗 HTTP ${res.status}: ${c.date} ${c.name}`);
+    }
+  }
+  console.log(`✓ race_type backfill: ${applied}/${changes.length} 件適用`);
+}
+
+try {
+  await backfillRaceTypeFromJoy();
+} catch (e) {
+  console.warn("⚠ race_type backfill 例外（ビルドは継続）:", (e as Error).message);
+}
 
 } // end main()
 main().catch((e) => { console.error(e); process.exit(1); });
