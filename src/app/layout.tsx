@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { Analytics } from "@vercel/analytics/next";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -53,6 +54,9 @@ export default function RootLayout({
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
+        {/* Vercel Web Analytics: ページ別アクセス数を計測（Cookie不使用）。
+            データ収集には Vercel ダッシュボードで Web Analytics を有効化する必要がある。 */}
+        <Analytics />
       </body>
     </html>
   );
