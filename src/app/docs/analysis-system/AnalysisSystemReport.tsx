@@ -14,7 +14,7 @@ const LAYERS: {
   fill: string;
   stroke: string;
   title: string;
-  chips: { x: number; w: number; t: string }[];
+  chips: { x: number; w: number; t: string; manual?: boolean }[];
 }[] = [
   {
     y: 20,
@@ -33,13 +33,13 @@ const LAYERS: {
     accent: "#67e8f9",
     fill: "rgba(34,211,238,.05)",
     stroke: "rgba(34,211,238,.4)",
-    title: "SCRAPERS ｜ src/lib/scraper（cheerio + undici）",
+    title: "INGEST ｜ スクレイパー（cheerio + undici）＋ 手動取込",
     chips: [
       { x: 48, w: 160, t: "events.ts" },
       { x: 228, w: 160, t: "rankings.ts" },
       { x: 408, w: 160, t: "lapcenter.ts" },
-      { x: 588, w: 160, t: "dokori.ts" },
-      { x: 768, w: 160, t: "entries.ts" },
+      { x: 588, w: 160, t: "entries.ts" },
+      { x: 768, w: 160, t: "どこオリ手動取込", manual: true },
     ],
   },
   {
@@ -134,14 +134,14 @@ function SystemMap() {
                 width={c.w}
                 height="30"
                 rx="8"
-                fill="rgba(15,23,42,.7)"
-                stroke="rgba(148,163,184,.3)"
+                fill={c.manual ? "rgba(251,191,36,.14)" : "rgba(15,23,42,.7)"}
+                stroke={c.manual ? "rgba(251,191,36,.55)" : "rgba(148,163,184,.3)"}
               />
               <text
                 x={c.x + c.w / 2}
                 y={L.y + 61}
                 textAnchor="middle"
-                fill="#e2e8f0"
+                fill={c.manual ? "#fbbf24" : "#e2e8f0"}
                 fontSize="11.5"
               >
                 {c.t}
@@ -252,8 +252,9 @@ export function AnalysisSystemReport({
           </h1>
           <p className="lead">
             trails.jp は、エントリーサイト <b>JOY</b>・成績データベース{" "}
-            <b>LapCenter</b>・大会受付サイト <b>どこオリ</b>{" "}
-            の3つのソースを毎日自動収集し、イベント・ランキング・選手分析・クラブ統計・対戦履歴までを横断する、オリエンテーリング専用のデータプラットフォームです。本ページは、その{" "}
+            <b>LapCenter</b> から毎日自動でデータを集め、さらに大会受付サイト{" "}
+            <b>どこオリ</b>{" "}
+            などの大会情報を手動で一覧化して取り込み、イベント・ランキング・選手分析・クラブ統計・対戦履歴までを横断する、オリエンテーリング専用のデータプラットフォームです。本ページは、その{" "}
             <b>システム全体像と技術スタック</b> を1枚にまとめた技術ドキュメントです。
           </p>
           <div className="kpis">
@@ -284,7 +285,7 @@ export function AnalysisSystemReport({
               システム<span className="grad">全体マップ</span>
             </h2>
             <span className="sec-sub">
-              色の意味 — アンバー：外部源 ／ シアン：スクレイパー ／ 紫：自動化 ／
+              色の意味 — アンバー：外部源／どこオリ手動取込 ／ シアン：取込（スクレイパー＋手動） ／ 紫：自動化 ／
               スレート：永続化 ／ 緑：API ／ ピンク：フロント。上から下へデータが流れる。
             </span>
           </div>
@@ -307,7 +308,7 @@ export function AnalysisSystemReport({
               <div className="ghost">E</div>
               <span className="tag">EVENTS</span>
               <h3>イベント</h3>
-              <p>JOY ＋ どこオリ大会を日次取得。リスト／カレンダー2ビュー。</p>
+              <p>JOY 大会を日次取得、どこオリ大会は手動で一覧化して取込。リスト／カレンダー2ビュー。</p>
               <ul>
                 <li>都道府県・受付状態・日付での<b>絞り込み</b></li>
                 <li>受付中・直近30日は<b>所属別エントリー</b>を展開</li>
@@ -413,18 +414,18 @@ export function AnalysisSystemReport({
             </div>
             <div className="row">
               <span className="who dkr">どこオリ</span>
-              <span className="key">events（複数日展開）</span>
+              <span className="key">大会一覧（手動取込）</span>
               <span className="use">→ 大会名・日程・座標・受付状態（ホワイトリスト制）</span>
             </div>
             <div className="row">
               <span className="who dkr">どこオリ</span>
-              <span className="key">entry-list</span>
-              <span className="use">→ 日別エントリー（RSC flight ペイロード解析）</span>
+              <span className="key">entry-list（手動取込）</span>
+              <span className="use">→ 日別エントリーを手動で一覧化</span>
             </div>
             <div className="note">
               名寄せ：全角→半角、大学/クラブ略称の展開、回次・期数の除去。Forest／Sprint
               区分は LapCenter 側に無いため、JOY ランキングの日付で判定する。
-              どこオリ大会は合成 ID（90,000,000〜）で JOY と衝突を回避し、取得失敗時は JOY 同期と既存保存分を維持するグレースフル劣化設計。
+              どこオリ大会は合成 ID（90,000,000〜）で JOY と衝突を回避し、手動取込分が無い回でも JOY 同期と既存保存分を維持するグレースフル劣化設計。
             </div>
           </div>
         </section>
@@ -442,7 +443,7 @@ export function AnalysisSystemReport({
             <div className="wave">
               <div className="w">03:00 JST</div>
               <div className="t">sync-events</div>
-              <div className="d">JOY ＋ どこオリ イベント同期 ＋ LapCenter マッチング。<b>水曜は再デプロイを起動</b>。</div>
+              <div className="d">JOY イベント同期＋どこオリ手動取込分の反映＋LapCenter マッチング。<b>水曜は再デプロイを起動</b>。</div>
             </div>
             <div className="wave">
               <div className="w">04:00 JST</div>
