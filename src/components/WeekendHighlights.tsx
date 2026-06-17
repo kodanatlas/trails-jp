@@ -16,6 +16,7 @@ interface WeekendPointItem {
   key: string;
   club: string;
   discipline: "forest" | "sprint";
+  eventName: string;
   pRecent: number;
   pAvg: number;
   delta: number;
@@ -30,12 +31,13 @@ interface WeekendPointsData {
 interface StandoutRow {
   athlete_name: string;
   race_type: "forest" | "sprint";
+  event_name: string; // 選択された大会名（合成最大の大会）
   target_speed: number;
   baseline_speed: number;
   target_miss: number;
   baseline_miss: number;
   baseline_n: number;
-  speed_gain_pct: number;
+  speed_gain_pct: number; // (baseline-target)/baseline*100 ＝ ＋なら自己平均より速い（巡航値が小さい）
   miss_drop_pp: number;
   composite: number;
   class_name: string;
@@ -52,7 +54,7 @@ const disciplineLabel = (d: "forest" | "sprint") =>
 
 /**
  * ミス率改善の表示テキストと色を値から導出する。
- * miss_drop_pp は ＋＝ミス減（改善）／−＝悪化。採用ゲートは速度のみ(ts>bs)なので
+ * miss_drop_pp は ＋＝ミス減（改善）／−＝悪化。採用ゲートは速度のみ(今回<平均=速い)なので
  * ミス悪化行も出得る → 固定符号ではなく値から符号・色を決める。単位は「%pt」。
  */
 function missDisplay(pp: number): { text: string; cls: string } {
@@ -168,6 +170,9 @@ export async function WeekendHighlights() {
                       </span>
                     </div>
                     <p className="mt-0.5 truncate text-xs text-muted">{item.club}</p>
+                    {item.eventName && (
+                      <p className="mt-0.5 truncate text-[10px] text-muted">{item.eventName}</p>
+                    )}
                   </div>
                   <div className="flex-shrink-0 text-right">
                     <p className="font-mono text-sm font-bold text-green-400">
@@ -203,7 +208,7 @@ export async function WeekendHighlights() {
             <p className="mt-1 text-xs text-muted">
               巡航速度の改善度とミス率の改善度を、同じ週末に出場した選手どうしで比べて
               <strong className="font-semibold text-foreground">スコア化（両方良いほど高い）</strong>。
-              巡航は速いほど＋、ミスは少ないほど＋。
+              巡航は速い（値が小さい）ほど＋、ミスは少ないほど＋。
             </p>
             <details className="mt-1 text-xs text-muted">
               <summary className="cursor-pointer select-none text-primary hover:underline">
@@ -212,7 +217,8 @@ export async function WeekendHighlights() {
               <p className="mt-1 leading-relaxed">
                 合成スコア＝〈巡航速度が自己平均より何%速いか〉と〈ミス率が自己平均より何%ポイント少ないか〉を、
                 同じ週末の出場者の中で“偏差値のように”標準化（平均0・ばらつき1に揃える）して合算。
-                対象は同種目で過去5戦以上の実績があり、今回の巡航速度が自己平均を上回った選手。
+                対象は同種目で過去5戦以上の実績があり、今回の巡航速度が自己平均より速かった（値が小さい）選手。
+                ※巡航値は小さいほど速い。
               </p>
             </details>
 
@@ -235,20 +241,23 @@ export async function WeekendHighlights() {
                         </span>
                       </div>
                       <p className="mt-0.5 truncate text-xs text-muted">{clubFor(key)}</p>
+                      {row.event_name && (
+                        <p className="mt-0.5 truncate text-[10px] text-muted">{row.event_name}</p>
+                      )}
                     </div>
                     <div className="flex flex-shrink-0 flex-col items-end gap-0.5">
                       {/* 狭幅でも溢れ/潰れないよう flex-wrap 可・右寄せ */}
                       <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-0.5">
                         <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-green-400">
-                          <Gauge className="h-3 w-3" />巡航 +{num(row.speed_gain_pct)}%
+                          <Gauge className="h-3 w-3" />巡航 +{num(row.speed_gain_pct)}% 速
                         </span>
                         <span className={`inline-flex items-center gap-1 font-mono text-xs font-bold ${miss.cls}`}>
                           <Target className="h-3 w-3" />{miss.text}
                         </span>
                       </div>
-                      {/* 内訳はモバイルでも表示（ユーザー必須要望） */}
+                      {/* 内訳はモバイルでも表示（ユーザー必須要望）。巡航値は小さいほど速い。 */}
                       <p className="text-right text-[10px] text-muted">
-                        今回 {num(row.target_speed)}/平均 {num(row.baseline_speed)}
+                        巡航 今回 {num(row.target_speed)}/平均 {num(row.baseline_speed)}（小さいほど速い）
                         {" ・ "}ミス {num(row.target_miss)}/平均 {num(row.baseline_miss)}
                       </p>
                     </div>

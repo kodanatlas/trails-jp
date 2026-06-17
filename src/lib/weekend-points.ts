@@ -13,7 +13,7 @@ import {
 export interface WPInputAthlete {
   key: string;
   club: string;
-  events: { date: string; points: number; discipline: "forest" | "sprint" }[];
+  events: { date: string; eventName: string; points: number; discipline: "forest" | "sprint" }[];
 }
 
 export interface WeekendPointItem {
@@ -21,6 +21,7 @@ export interface WeekendPointItem {
   key: string;
   club: string;
   discipline: "forest" | "sprint";
+  eventName: string; // 採用した（最大ポイントの）大会名
   pRecent: number;
   pAvg: number;
   delta: number;
@@ -71,10 +72,11 @@ export function computeWeekendPoints(
     let best: WeekendPointItem | null = null;
     for (const discipline of ["forest", "sprint"] as const) {
       const sameDisc = a.events.filter((e) => e.discipline === discipline);
-      // 対象: 対象日かつ当該種目 → pRecent = points の最大
+      // 対象: 対象日かつ当該種目 → pRecent = points 最大の大会を採用（大会名も保持）
       const recent = sameDisc.filter((e) => targetSet.has(e.date));
       if (recent.length === 0) continue;
-      const pRecent = Math.max(...recent.map((e) => e.points));
+      const bestRecent = recent.reduce((m, e) => (e.points > m.points ? e : m));
+      const pRecent = bestRecent.points;
 
       // baseline: 対象クラスタより前（date < clusterMin）かつ当該種目の平均
       const baseEvents = sameDisc.filter((e) => e.date < clusterMin);
@@ -89,6 +91,7 @@ export function computeWeekendPoints(
         key: a.key,
         club: a.club,
         discipline,
+        eventName: bestRecent.eventName,
         pRecent: round1(pRecent),
         pAvg: round1(pAvg),
         delta,

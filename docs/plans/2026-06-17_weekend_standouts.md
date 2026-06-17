@@ -30,28 +30,33 @@
 - `sync-lapcenter` Cron は**日次**。先週末6/13–14は反映済（552/233名）。
 - `build-analysis-index.ts` は各選手の `allEvents:{date,eventName,points,discipline}` を保持済（=上リストの素材）。
 - ホームは ISR(`revalidate=86400`) の async サーバーコンポーネントで既にDBを叩く（getSiteStats）。
-- **スモーク実測（6/13–14）**: 合成は min5・速度改善で224名／速度もミスも改善で133名 → 表示余裕。
+- **★巡航速度の向き（実測 ground truth で確定）**: LapCenter の cruising_speed は「巡航ペース指数」で
+  **値が小さいほど速い（良い）**。実証: mulka2 split-list で優勝者(rank1)=98.2≈最小、遅い順に増加（最大193.5）。
+  既存 `AthleteDetail.valOpacity`（706行・速度939/956行で使用）も「低=良」で配色。
+  → 改善＝「値が下がった（速くなった）」。**当初の『高い=速い』は誤りで修正済み**。
 - **罠**: 合成は単純合算でスケール破綻＆%比はミス率支配（普段ミス多い人＝小母数で暴れる）。
-  → コホート内 **z-score**＋**外れ値クリップ(速度30–250/ミス0–80)**＋**最小実績**で是正。
+  → コホート内 **z-score**＋**外れ値クリップ(速度70–300/ミス0–80。低すぎ=計測誤り)**＋**最小実績**で是正。
 
 ## 4. アルゴリズム
 
 ### 4-A. 上「ポイント上昇度」（ビルド時・純JS）
 1. 対象日 = 全 `allEvents` の日付のうち**土日祝**かつ存在する最大日クラスタ（`weekend-window.ts` 共有）。
-2. 各選手で対象日に event_scores があるもの: `p_recent` = 対象大会の獲得P（複数なら最大）。種目 d。
+2. 各選手で対象日に event_scores があるもの: **複数大会あれば獲得Pが最大の大会を1つ選択（=良い方）**し `p_recent`＝そのP・`eventName`＝その大会名。種目 d。
 3. `baseline` = その選手の **同種目・対象前** の event_scores 平均P。`件数 >= MIN_P_SAMPLES`(=3)。
 4. `delta = p_recent − baseline`。`delta>0` を採用、降順、上位 N(=5)。
-5. `weekend-points.json` を出力: `{generatedAtJst, targetDates, items:[{name,key,club,discipline,pRecent,pAvg,delta}]}`。
+5. `weekend-points.json` を出力: `{generatedAtJst, targetDates, items:[{name,key,club,discipline,eventName,pRecent,pAvg,delta}]}`。
    - 名前は空白除去キーで表示（下リストと統一）。delta は生値（=ユーザー選択。高得点層に寄る旨は注記）。
 
 ### 4-B. 下「合成上昇度」（ランタイム・RPC）
 - `weekend_standouts(candidate_dates date[], min_samples int, max_results int)`:
-  1. clean: 速度30–250 かつ ミス0–80。
+  1. clean: 速度70–300 かつ ミス0–80（低すぎ速度＝計測誤りを除外）。
   2. 対象クラスタ: 候補日のうちclean存在の最大日＋[−2d]ブロック。
-  3. target (athlete,race_type) avg速度`ts`/avgミス`tm`。baseline: 対象前 avg`bs`/`bm`/件数`bn>=min_samples`(=5)。対象週は除外。
-  4. `speedGainPct=(ts-bs)/bs*100`、`missDropPP=bm-tm`。コホート内 z化し `composite=z(speed)+z(miss)`。
-  5. 採用ゲート `ts>bs`、並び `composite` 降順、上位 max_results(=8)。
-  6. 返却: name,race_type,ts,bs,tm,bm,bn,speedGainPct,missDropPP,composite,class_name,対象日。
+  3. **同一週末に複数大会あれば選手×種目ごとに「合成最大の大会を1つ選択（平均しない）」**＝(athlete,race_type,event)単位に集約し、
+     同一大会の複数クラスは最速(=最小s)行を代表。選手ごとに best 大会を1件。
+  4. baseline: 対象前 avg`bs`/`bm`/件数`bn>=min_samples`(=5)。対象週除外。
+  5. `speedGainPct=(bs−s)/bs*100`（**＋＝速い＝値が下がった**）、`missDropPP=bm−m`（＋＝ミス減）。コホート内 z化し `composite=z(speed)+z(miss)`。
+  6. 採用ゲート **`s<bs`（自己平均より速い）**、並び `composite` 降順→athlete_name、上位 max_results(=8)。
+  7. 返却: name,race_type,target_speed,baseline_speed,target_miss,baseline_miss,bn,speedGainPct,missDropPP,composite,class_name,**event_name(選択大会名)**,cluster_dates。
 - 呼び出しは **`supabaseAdmin`（サーバー専用）**。関数は anon 非公開（権限最小化）。
 
 ### 4-C. 共有 `src/lib/weekend-window.ts`（純関数・両経路で使用）
@@ -62,8 +67,9 @@
 
 - `page.tsx` の `<MonthlyMovers/>` を撤去し、本コンポーネントを同位置に。`revalidate=86400` 継承。
 - 1セクション内に上下2リスト。各リスト見出し＋対象日ラベル＋指標バッジ「自己平均比」。
-  - 上「ポイント上昇度」: `weekend-points.json`(静的import)。行=順位/氏名(→`/analysis?athlete=key`)/種目/club/「P +Δ（今回X·平均Y）」。
-  - 下「合成上昇度」: `supabaseAdmin.rpc` → `athlete-index.json`でclub補完。行=順位/氏名/クラス・種目/「巡航 +X%」「ミス −Y pt」。
+  - 上「ポイント上昇度」: `weekend-points.json`(静的import)。行=順位/氏名(→`/analysis?athlete=key`)/種目/club/**大会名**/「P +Δ（今回X·平均Y）」。
+  - 下「合成上昇度」: `supabaseAdmin.rpc` → `athlete-index.json`でclub補完。行=順位/氏名/クラス・種目/**大会名**/「巡航 +X% 速」「ミス −Y%pt」。
+    - 巡航は**値が小さいほど速い**ため、内訳「今回X/平均Y」は今回<平均。「小さいほど速い」ヒントを1箇所付す。
 - 各リスト 3件未満は当該リスト非表示。両方空ならブロックごと非表示。エラーは握りつぶし非表示。
 - モバイルは movers 同様レスポンシブ（副次列 `sm:` 出し分け、相対値・flex/grid＝reporting.md準拠）。
 

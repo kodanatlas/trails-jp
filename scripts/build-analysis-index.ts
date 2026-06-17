@@ -838,6 +838,7 @@ if (supabaseUrl && supabaseKey) {
     club: [...d.clubs][0] ?? "",
     events: dedupeEvents(d.allEvents).map((e) => ({
       date: e.date,
+      eventName: e.eventName,
       points: e.points,
       discipline: e.discipline,
     })),

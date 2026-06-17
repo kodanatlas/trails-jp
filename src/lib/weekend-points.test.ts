@@ -6,6 +6,18 @@ import {
 
 const TODAY = "2026-06-15"; // 月曜 → 直近土日祝クラスタは 6/13(土),6/14(日)
 
+type Ev = WPInputAthlete["events"][number];
+
+/** 単一イベント生成ヘルパー（eventName 省略可・既定は date 由来の名前）。 */
+function ev(
+  date: string,
+  points: number,
+  discipline: "forest" | "sprint",
+  eventName = `大会-${date}`,
+): Ev {
+  return { date, eventName, points, discipline };
+}
+
 /** baseline 用の過去イベント（clusterMin より前）を n 件、指定 points 平均になるよう生成 */
 function pastEvents(
   points: number,
@@ -16,7 +28,7 @@ function pastEvents(
   const out: WPInputAthlete["events"] = [];
   for (let i = 0; i < n; i++) {
     const day = String(10 + i).padStart(2, "0");
-    out.push({ date: `2026-04-${day}`, points, discipline });
+    out.push(ev(`2026-04-${day}`, points, discipline));
   }
   return out;
 }
@@ -29,7 +41,7 @@ describe("computeWeekendPoints", () => {
         club: "東京OLC",
         events: [
           ...pastEvents(1000, 4, "forest"), // 平均 1000
-          { date: "2026-06-13", points: 1200, discipline: "forest" }, // 今回 +200
+          ev("2026-06-13", 1200, "forest"), // 今回 +200
         ],
       },
     ];
@@ -52,7 +64,7 @@ describe("computeWeekendPoints", () => {
         club: "A",
         events: [
           ...pastEvents(1000, 2, "forest"), // 2件 < 3 → 除外
-          { date: "2026-06-13", points: 1500, discipline: "forest" },
+          ev("2026-06-13", 1500, "forest"),
         ],
       },
     ];
@@ -67,7 +79,7 @@ describe("computeWeekendPoints", () => {
         club: "A",
         events: [
           ...pastEvents(1000, 4, "forest"),
-          { date: "2026-06-13", points: 900, discipline: "forest" }, // 自己平均割れ
+          ev("2026-06-13", 900, "forest"), // 自己平均割れ
         ],
       },
     ];
@@ -83,8 +95,8 @@ describe("computeWeekendPoints", () => {
         events: [
           ...pastEvents(1000, 4, "forest"),
           ...pastEvents(800, 4, "sprint"),
-          { date: "2026-06-13", points: 1100, discipline: "forest" }, // +100
-          { date: "2026-06-14", points: 1100, discipline: "sprint" }, // +300（最大）
+          ev("2026-06-13", 1100, "forest"), // +100
+          ev("2026-06-14", 1100, "sprint"), // +300（最大）
         ],
       },
     ];
@@ -103,7 +115,7 @@ describe("computeWeekendPoints", () => {
         club: "A",
         events: [
           ...pastEvents(1000, 4, "forest"),
-          { date: "2026-06-13", points: 1000 + i * 100, discipline: "forest" },
+          ev("2026-06-13", 1000 + i * 100, "forest"),
         ],
       });
     }
@@ -132,13 +144,31 @@ describe("computeWeekendPoints", () => {
         club: "A",
         events: [
           ...pastEvents(1000, 4, "forest"),
-          { date: "2026-06-13", points: 1100, discipline: "forest" },
-          { date: "2026-06-14", points: 1300, discipline: "forest" }, // 最大
+          ev("2026-06-13", 1100, "forest"),
+          ev("2026-06-14", 1300, "forest"), // 最大
         ],
       },
     ];
     const r = computeWeekendPoints(athletes, TODAY);
     expect(r.items[0].pRecent).toBe(1300);
     expect(r.items[0].delta).toBe(300);
+  });
+
+  it("同一週末に複数大会あれば最大ポイントの大会名を採用する", () => {
+    const athletes: WPInputAthlete[] = [
+      {
+        key: "二大会七郎",
+        club: "A",
+        events: [
+          ...pastEvents(1000, 4, "forest"),
+          ev("2026-06-13", 1100, "forest", "土曜スプリント大会"),
+          ev("2026-06-14", 1400, "forest", "日曜ロング大会"), // 最大ポイント → これが採用
+        ],
+      },
+    ];
+    const r = computeWeekendPoints(athletes, TODAY);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0].pRecent).toBe(1400);
+    expect(r.items[0].eventName).toBe("日曜ロング大会");
   });
 });
