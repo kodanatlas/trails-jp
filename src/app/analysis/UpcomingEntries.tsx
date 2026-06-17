@@ -9,11 +9,27 @@ interface Props {
   data: { entries: AthleteEntryRef[]; generatedAt: string | null } | null;
 }
 
+/** これより索引が古い(時間)と「更新が遅れています」ヒントを付す。 */
+const STALE_HINT_HOURS = 36;
+
 /** YYYY-MM-DD 同士の日数差（to - from）。UTC基準で整数日。 */
 function daysBetween(from: string, to: string): number {
   const a = new Date(from + "T00:00:00Z").getTime();
   const b = new Date(to + "T00:00:00Z").getTime();
   return Math.round((b - a) / 86_400_000);
+}
+
+/** ISO 文字列を JST(UTC+9) の「M/D HH:mm」に整形。パース不能なら null。 */
+function formatJstDateTime(iso: string): string | null {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  // JST 補正後の UTC ゲッタで各成分を取り出す（既存の +9h 規約に合わせる）。
+  const j = new Date(t + 9 * 3600 * 1000);
+  const m = j.getUTCMonth() + 1;
+  const d = j.getUTCDate();
+  const hh = String(j.getUTCHours()).padStart(2, "0");
+  const mm = String(j.getUTCMinutes()).padStart(2, "0");
+  return `${m}/${d} ${hh}:${mm}`;
 }
 
 /** 「最近の大会参加状況」(RecentEvents) の下に置く、出場予定（エントリー済）大会カード。 */
@@ -32,6 +48,16 @@ export function UpcomingEntries({ data }: Props) {
         (a, b) => a.date.localeCompare(b.date) || a.eventName.localeCompare(b.eventName),
       );
   }, [data, today]);
+
+  // 索引の鮮度表示（generatedAt がパース可能なときのみ）。エントリー有無に依らず索引の属性として出す。
+  const freshness = useMemo(() => {
+    const gen = data?.generatedAt;
+    if (!gen) return null;
+    const label = formatJstDateTime(gen);
+    if (!label) return null;
+    const ageHours = (Date.now() - Date.parse(gen)) / 3_600_000;
+    return { label, stale: ageHours > STALE_HINT_HOURS };
+  }, [data]);
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
@@ -118,6 +144,16 @@ export function UpcomingEntries({ data }: Props) {
             );
           })}
         </div>
+      )}
+
+      {/* 索引鮮度（読み込み中・generatedAt 不在のときは出さない）。空状態でも表示する。 */}
+      {data !== null && freshness && (
+        <p className="mt-2 text-[10px] text-muted/70">
+          エントリー情報: {freshness.label} 時点
+          {freshness.stale && (
+            <span className="ml-1 text-amber-500/60">（更新が遅れています）</span>
+          )}
+        </p>
       )}
     </div>
   );

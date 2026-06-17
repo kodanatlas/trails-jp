@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { readEvents } from "@/lib/events-store";
+import { readEventsStrict } from "@/lib/events-store";
 import { buildEntryIndex } from "@/lib/entries/build-index";
-import { writeEntryIndex } from "@/lib/entry-index-store";
+import { readEntryIndex, writeEntryIndex } from "@/lib/entry-index-store";
+import { isIndexRegression } from "@/lib/entries/index-quality";
 import { logCron } from "@/lib/cron-logger";
 import { notifyCronWarning } from "@/lib/cron-notifier";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -96,7 +97,29 @@ export async function GET(request: Request) {
 
   const start = Date.now();
   try {
-    const events = await readEvents();
+    // fail-closed: Storage から events.json を読めなければ、古いバンドルで作り直さず既存 index を保持。
+    const events = await readEventsStrict();
+    if (!events) {
+      await logCron(
+        "sync-entries",
+        "error",
+        { error: "events_read_failed_failclosed" },
+        Date.now() - start,
+      );
+      await notifyCronWarning(
+        "sync-entries",
+        "events_read_failed",
+        {
+          warning: "events_read_failed",
+          hint: "Supabase Storage の events.json 読込失敗。古いバンドルで索引を作り直さないため再生成をスキップ（既存索引を保持）。",
+        },
+        Date.now() - start,
+      );
+      return NextResponse.json(
+        { error: "events read failed; existing index preserved" },
+        { status: 500 },
+      );
+    }
 
     const today = jstDateStr(0);
     const horizon = jstDateStr(HORIZON_DAYS);
@@ -135,6 +158,43 @@ export async function GET(request: Request) {
       return NextResponse.json(
         { error: "all scrapes failed; existing index preserved" },
         { status: 500 },
+      );
+    }
+
+    // 劣化上書き防止: 既存 index に対し athletes が大幅減なら上書きしない（低品質 index で良い index を潰さない）。
+    // 全滅(scraped=0)は上で別処理済み。ここは「成功扱いだが品質が落ちた」部分失敗・競合を弾く。
+    const prevIndex = await readEntryIndex();
+    if (isIndexRegression(prevIndex, index, { minRatio: 0.6, floor: 100 })) {
+      const prevAthletes = prevIndex ? Object.keys(prevIndex.athletes).length : 0;
+      const newAthletes = Object.keys(index.athletes).length;
+      await logCron(
+        "sync-entries",
+        "error",
+        {
+          error: "index_regression_blocked",
+          prevAthletes,
+          newAthletes,
+          scraped: index.scrapedEventCount,
+          targets: targets.length,
+        },
+        Date.now() - start,
+      );
+      await notifyCronWarning(
+        "sync-entries",
+        "index_regression_blocked",
+        {
+          warning: "index_regression_blocked",
+          prevAthletes,
+          newAthletes,
+          scraped: index.scrapedEventCount,
+          targets: targets.length,
+          hint: "新 index の athletes が既存比で大幅減。JOY/どこオリの一時遮断や競合の可能性。既存 index を保持。",
+        },
+        Date.now() - start,
+      );
+      return NextResponse.json(
+        { success: false, blocked: "index_regression", prevAthletes, newAthletes },
+        { status: 200 },
       );
     }
 

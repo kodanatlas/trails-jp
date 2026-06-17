@@ -1,0 +1,51 @@
+name: entry-index-backstop
+
+# Vercel Hobby の cron はベストエフォートで「無音スキップ」しうる（実際に sync-entries が
+# 1日滑り、entry-index.json が固定化して最近の申込者が選手ページに出ない事故が起きた）。
+# その保険として、GitHub Actions から本番 sync-entries を叩いて索引を作り直させる。
+# サーバ側に「品質ガード（低品質上書き拒否）」と「events.json fail-closed」があるため、
+# Vercel cron との二重実行・冪等な再生成は安全。
+#
+# 必要な Secret: CRON_SECRET（Vercel 本番の CRON_SECRET と同値）。
+# 手動実行も可（Actions 画面の "Run workflow" / workflow_dispatch）。
+
+on:
+  schedule:
+    # 20:30 UTC = 05:30 JST。Vercel の sync-entries(19:00 UTC 枠・実行は枠内のどこか)より十分後。
+    - cron: "30 20 * * *"
+  workflow_dispatch: {}
+
+# 同時実行を避ける（手動 + スケジュールの重なり対策）。
+concurrency:
+  group: entry-index-backstop
+  cancel-in-progress: false
+
+jobs:
+  trigger-sync-entries:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-entries (retry x3)
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret が未設定です（リポジトリ Secrets に登録してください）"
+            exit 1
+          fi
+          url="https://trailsjp.vercel.app/api/cron/sync-entries"
+          for i in 1 2 3; do
+            code=$(curl -sS -o resp.json -w '%{http_code}' --max-time 90 \
+              -H "authorization: Bearer $CRON_SECRET" "$url" || echo 000)
+            echo "attempt $i -> HTTP $code"
+            cat resp.json 2>/dev/null || true
+            echo
+            # 200: 成功 or サーバ側で品質ガードによる no-op（どちらも正常終了扱い）。
+            # 500: 全滅 or events 読込失敗（fail-closed）→ リトライ。
+            if [ "$code" = "200" ]; then
+              echo "done (HTTP 200)"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "::error::sync-entries が3回とも非200。Vercel/JOY/どこオリ側を確認してください。"
+          exit 1

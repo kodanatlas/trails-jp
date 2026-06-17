@@ -5,6 +5,13 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { readFileSync } from "fs";
 import { logCron } from "@/lib/cron-logger";
 import { join } from "path";
+import { readEntryIndex } from "@/lib/entry-index-store";
+import { notifyCronWarning } from "@/lib/cron-notifier";
+import { entryIndexAgeHours, isEntryIndexStale } from "@/lib/entries/freshness";
+
+// 索引鮮度ウォッチドッグの閾値（時間）。これより古ければ sync-entries の無音停止を疑い警告。
+// このジョブは sync-entries の8h後(03:00 UTC)に走るため、26h で「前夜の定期実行スキップ」を検知できる。
+const STALE_INDEX_WARN_HOURS = 26;
 
 // 多クラスの大規模イベントでも壁時計予算内で処理できるよう実行時間上限を延長。
 export const maxDuration = 60;
@@ -102,6 +109,34 @@ export async function GET(request: Request) {
       runners: runnersResult,
       synced_at: new Date().toISOString(),
     };
+
+    // ---- 索引鮮度ウォッチドッグ (非致命・隔離) ----
+    // sync-entries が無音で停止すると entry-index.json が古くなり、最近の申込者が選手ページに出ない。
+    // 既存通知は「実行された上での異常」しか拾わないため、実行自体のスキップはここで初めて可視化する。
+    // この処理は lapcenter 本処理の結果に一切影響させない（例外は握りつぶしログのみ）。
+    try {
+      const now = Date.now();
+      const index = await readEntryIndex();
+      const generatedAt = index?.generatedAt ?? null;
+      if (isEntryIndexStale(generatedAt, now, STALE_INDEX_WARN_HOURS)) {
+        const ageHours = entryIndexAgeHours(generatedAt, now);
+        await notifyCronWarning(
+          "sync-entries",
+          "stale_entry_index",
+          {
+            warning: "stale_entry_index",
+            generatedAt,
+            ageHours,
+            threshold_hours: STALE_INDEX_WARN_HOURS,
+            hint: "sync-entries が定期実行をスキップした可能性。索引が古いと最近の申込者が選手ページに出ない。",
+          },
+          0,
+        );
+      }
+    } catch (e) {
+      console.error("entry-index freshness check failed (ignored):", e);
+    }
+
     await logCron("sync-lapcenter", "success", payload, Date.now() - start);
     return NextResponse.json(payload);
   } catch (error) {

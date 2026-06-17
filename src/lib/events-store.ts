@@ -36,6 +36,30 @@ export async function readEvents(): Promise<JOEEvent[]> {
 }
 
 /**
+ * sync 系 cron 専用の厳格読み込み。Supabase Storage から読めなければ **null** を返す
+ * （静的バンドル `data/events.json` へはフォールバックしない）。
+ *
+ * 通常の `readEvents()` は表示用にバンドルへフォールバックするが、cron でそれをやると
+ * 「古い・どこオリ無しのバンドル events」で entry-index を作り直し、良い index を潰す危険がある。
+ * cron は fail-closed（読めなければ再生成しない）にしたいので、本関数を使う。
+ */
+export async function readEventsStrict(): Promise<JOEEvent[] | null> {
+  try {
+    const { data, error } = await supabaseAdmin.storage
+      .from(BUCKET)
+      .download(FILE_PATH);
+
+    if (!error && data) {
+      const text = await data.text();
+      return JSON.parse(text) as JOEEvent[];
+    }
+  } catch {
+    // Storage 障害・未設定 → null（呼び出し側で再生成をスキップ）
+  }
+  return null;
+}
+
+/**
  * イベントデータの最終同期時刻（sync-events cron の最新成功時刻）を返す。
  * cron_log テーブルから取得。取得できなければ null。
  */
