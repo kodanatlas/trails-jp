@@ -6,6 +6,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import { splitAffiliations } from "../src/lib/club-normalize";
+import { computeWeekendPoints } from "../src/lib/weekend-points";
+import { jstNowLabel, jstToday } from "../src/lib/weekend-window";
 
 // --- Types ---
 interface RawEntry {
@@ -255,7 +257,7 @@ async function fetchRankingPage(typeId: number, classId: number, page: number): 
 
 /** 既存スコアのマージキー（同姓同名の衝突回避のため所属も含める） */
 function scoreMergeKey(e: { athlete_name: string; club: string }): string {
-  return `${e.athlete_name} ${e.club}`;
+  return `${e.athlete_name} ${e.club}`;
 }
 
 /**
@@ -711,19 +713,6 @@ if (supabaseUrl && supabaseKey) {
 }
 
 // ---- ランキング順位・ポイントの前月比・前年比算出（全クラス対象） ----
-// movers.json 用の候補（delta 付与時に収集）
-interface MoverCandidate {
-  name: string;       // 表示用生名（スペース保持）
-  club: string;
-  type: string;       // 例: age_forest
-  className: string;  // 例: 無差別
-  rank: number;
-  mom: number;        // rank_delta.mom（順位上昇幅）
-  pointsMom: number;  // points_delta.mom
-}
-const moverCandidates: MoverCandidate[] = [];
-// 前月スナップショット GET が成功したか（false の間は movers.json を温存する）
-let rankingSnapshotFetched = false;
 
 if (supabaseUrl && supabaseKey) {
   try {
@@ -763,7 +752,6 @@ if (supabaseUrl && supabaseKey) {
       fetchMonthSnapshots(prevMonth),
       fetchMonthSnapshots(prevYear),
     ]);
-    rankingSnapshotFetched = pmMonthMap !== null;
 
     // 存在する全ランキングファイルを対象に (a) スナップショット行構築 (b) delta 付与
     const snapshotRows: { month: string; file_key: string; stats: Record<string, { r: number; p: number }> }[] = [];
@@ -811,23 +799,6 @@ if (supabaseUrl && supabaseKey) {
             yoy: py ? Math.round((e.total_points - py.p) * 10) / 10 : null,
           };
           deltaCount++;
-          // movers 候補: points 実増（受動上昇の除外）× 順位も実上昇 × 上位200位 × アクティブ
-          // 順位 mom <= 0 を通すと「↑0」「↑-n」が急上昇として緑表示されてしまう
-          if (pm) {
-            const pointsMom = Math.round((e.total_points - pm.p) * 10) / 10;
-            const rankMom = pm.r - e.rank;
-            if (pointsMom > 0 && rankMom > 0 && e.rank <= 200 && e.is_active) {
-              moverCandidates.push({
-                name: e.athlete_name,
-                club: e.club,
-                type: parsed.type,
-                className: parsed.className,
-                rank: e.rank,
-                mom: rankMom,
-                pointsMom,
-              });
-            }
-          }
         }
       }
       fs.writeFileSync(filePath, JSON.stringify(entries, null, 2));
@@ -859,43 +830,30 @@ if (supabaseUrl && supabaseKey) {
   console.warn("⚠ Supabase not configured, skipping ranking deltas");
 }
 
-// ---- movers.json 生成（トップページ「今月の急上昇」用） ----
+// ---- weekend-points.json 生成（トップページ上「ポイント上昇度」用） ----
+// athleteMap から純関数の入力を構築し、直近土日祝クラスタの自己平均超え delta を算出。
 {
-  const moversPath = path.resolve(__dirname, "../src/data/movers.json");
-  if (!rankingSnapshotFetched) {
-    // env なし・スナップショット GET 失敗時は捏造防止のため既存ファイルを温存
-    console.warn("⚠ movers.json: スナップショット未取得のため既存ファイルを温存（書き込みスキップ）");
-  } else {
-    // 選手単位 dedupe（キー = 空白除去名、最良 mom を採用）→ mom 降順 top10
-    const byAthlete = new Map<string, MoverCandidate>();
-    for (const c of moverCandidates) {
-      const key = c.name.replace(/\s+/g, "");
-      const prev = byAthlete.get(key);
-      if (!prev || c.mom > prev.mom) byAthlete.set(key, c);
-    }
-    const topMovers = [...byAthlete.values()].sort((a, b) => b.mom - a.mom).slice(0, 10);
-    if (topMovers.length < 3) {
-      // 月初など候補が正味空のときは前回分を温存（セクション消滅を防ぐ）
-      console.warn(`⚠ movers.json: 候補 ${topMovers.length} 件 (<3) のため既存ファイルを温存（書き込みスキップ）`);
-    } else {
-      const generatedAtJst = `${new Date().toLocaleString("sv-SE", {
-        timeZone: "Asia/Tokyo",
-        year: "numeric", month: "2-digit", day: "2-digit",
-        hour: "2-digit", minute: "2-digit",
-      })} JST`;
-      const items = topMovers.map((c) => ({
-        name: c.name,                       // 表示用生名（スペース保持）
-        key: c.name.replace(/\s+/g, ""),    // /analysis?athlete= リンク用（encodeURIComponent して使う）
-        club: c.club,
-        type: c.type,
-        className: c.className,
-        rank: c.rank,
-        mom: c.mom,
-        pointsMom: c.pointsMom,
-      }));
-      fs.writeFileSync(moversPath, JSON.stringify({ generatedAtJst, items }, null, 2) + "\n");
-      console.log(`✓ movers.json: ${items.length} movers (top mom=${items[0].mom})`);
-    }
+  const wpInput = [...athleteMap].map(([key, d]) => ({
+    key,
+    club: [...d.clubs][0] ?? "",
+    events: dedupeEvents(d.allEvents).map((e) => ({
+      date: e.date,
+      points: e.points,
+      discipline: e.discipline,
+    })),
+  }));
+  const wp = computeWeekendPoints(wpInput, jstToday());
+  fs.writeFileSync(
+    path.resolve(__dirname, "../src/data/weekend-points.json"),
+    JSON.stringify(
+      { generatedAtJst: jstNowLabel() + " JST", targetDates: wp.targetDates, items: wp.items },
+      null,
+      2,
+    ) + "\n",
+  );
+  console.log(`✓ weekend-points.json: ${wp.items.length} items (target ${wp.targetDates.join(",")})`);
+  if (wp.items.length === 0) {
+    console.warn("⚠ weekend-points.json: 0 items (直近の土日祝にランキング対象大会データ無し? 窓/鮮度を確認)");
   }
 }
 

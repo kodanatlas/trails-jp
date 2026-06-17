@@ -1,0 +1,54 @@
+{
+  "generatedAtJst": "2026-06-17 18:14 JST",
+  "targetDates": [
+    "2026-05-16",
+    "2026-05-17"
+  ],
+  "items": [
+    {
+      "name": "熊田和貴",
+      "key": "熊田和貴",
+      "club": "東大OLK",
+      "discipline": "sprint",
+      "pRecent": 2964,
+      "pAvg": 2479.7,
+      "delta": 484.3
+    },
+    {
+      "name": "佐々木晴都",
+      "key": "佐々木晴都",
+      "club": "筑波大学",
+      "discipline": "sprint",
+      "pRecent": 2875,
+      "pAvg": 2610.3,
+      "delta": 264.7
+    },
+    {
+      "name": "小畑萌",
+      "key": "小畑萌",
+      "club": "東大OLK",
+      "discipline": "sprint",
+      "pRecent": 2693,
+      "pAvg": 2477.7,
+      "delta": 215.3
+    },
+    {
+      "name": "石井遥花",
+      "key": "石井遥花",
+      "club": "OLP兵庫",
+      "discipline": "sprint",
+      "pRecent": 2324,
+      "pAvg": 2109.3,
+      "delta": 214.7
+    },
+    {
+      "name": "遠藤永子",
+      "key": "遠藤永子",
+      "club": "千葉大学",
+      "discipline": "sprint",
+      "pRecent": 2562,
+      "pAvg": 2358.5,
+      "delta": 203.5
+    }
+  ]
+}

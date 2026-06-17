@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CalendarDays, Trophy, ArrowRight, ExternalLink, BarChart3 } from "lucide-react";
 import type { JOEEvent } from "@/lib/scraper/events";
 import eventsJson from "@/data/events.json";
-import { MonthlyMovers } from "@/components/MonthlyMovers";
+import { WeekendHighlights } from "@/components/WeekendHighlights";
 import { WeeklyCheerPodium } from "@/components/WeeklyCheerPodium";
 import { getSiteStats } from "@/lib/site-stats";
 
@@ -106,8 +106,8 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 今月の急上昇（ビルド時静的データ） */}
-      <MonthlyMovers />
+      {/* 直近の大会ハイライト（上=ビルド時静的・下=ランタイム RPC） */}
+      <WeekendHighlights />
 
       {/* Upcoming Events (JOY連携) */}
       <section className="border-b border-border bg-surface py-12 sm:py-16">
