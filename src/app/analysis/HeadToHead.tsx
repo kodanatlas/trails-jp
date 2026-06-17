@@ -139,68 +139,65 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
       .slice(0, 8);
   }, [athleteIndex, query, profile.name]);
 
-  // デフォルト候補チップ: 同クラブのランキング選手＋無差別クラスの近順位（±5）
+  // デフォルト候補チップ: 「成績が近い選手」を同クラブ・他クラブ両方から提示する。
+  // 近さ = 自分と共通の (type, className) ランキングでの順位差（最小）。bestRank（カテゴリ横断の
+  // 最小順位＝クラブの強者に寄る）ではなく、共通クラスでの近順位で“同レベルのライバル”を選ぶ。
+  // 同クラブはプロフィールの全クラブを対象（複数兼部も全部）。
   const candidates = useMemo(() => {
-    const list: { athlete: AthleteSummary; label: string }[] = [];
-    const seen = new Set<string>([profile.name]);
-
-    // 同クラブ（bestRank 順に3人）
     const myClubs = new Set(profile.clubs);
-    const clubmates = Object.values(athleteIndex.athletes)
-      .filter(
-        (a) =>
-          a.name !== profile.name &&
-          !hasMergedNamesakes(a) &&
-          a.clubs.some((c) => myClubs.has(c))
-      )
-      .sort((a, b) => a.bestRank - b.bestRank)
-      .slice(0, 3);
-    for (const a of clubmates) {
-      if (seen.has(a.name)) continue;
-      seen.add(a.name);
-      list.push({ athlete: a, label: "同クラブ" });
-    }
+    const myRankByPair = new Map<string, number>();
+    for (const r of profile.appearances) myRankByPair.set(`${r.type}__${r.className}`, r.rank);
 
-    // 無差別クラスの近順位 ±5（Forest 優先、足りなければ Sprint も）
-    const isFemale = profile.appearances.some(
-      (r) => r.className === "女子無差別" || r.className === "S_女子無差別"
-    );
-    const openTargets = isFemale
-      ? [
-          { type: "age_forest", className: "女子無差別" },
-          { type: "age_sprint", className: "S_女子無差別" },
-        ]
-      : [
-          { type: "age_forest", className: "無差別" },
-          { type: "age_sprint", className: "S_無差別" },
-        ];
-    for (const target of openTargets) {
-      if (list.length >= 8) break;
-      const mine = profile.appearances.find(
-        (r) => r.type === target.type && r.className === target.className
-      );
-      if (!mine) continue;
-      const near = Object.values(athleteIndex.athletes)
-        .map((a) => {
-          if (a.name === profile.name || hasMergedNamesakes(a)) return null;
-          const app = a.appearances.find(
-            (r) => r.type === target.type && r.className === target.className
-          );
-          if (!app) return null;
-          const diff = Math.abs(app.rank - mine.rank);
-          return diff <= 5 ? { a, rank: app.rank, diff } : null;
-        })
-        .filter((x): x is { a: AthleteSummary; rank: number; diff: number } => x !== null)
-        .sort((x, y) => x.diff - y.diff)
-        .slice(0, 5);
-      for (const x of near) {
-        if (list.length >= 8) break;
-        if (seen.has(x.a.name)) continue;
-        seen.add(x.a.name);
-        list.push({ athlete: x.a, label: `${target.className} ${x.rank}位` });
+    type Scored = {
+      athlete: AthleteSummary;
+      className: string;
+      rank: number;
+      diff: number;
+      sameClub: boolean;
+    };
+    const scored: Scored[] = [];
+    for (const a of Object.values(athleteIndex.athletes)) {
+      if (a.name === profile.name || hasMergedNamesakes(a)) continue;
+      // 共通クラスのうち最も順位が近いものを採用（無ければ候補外）
+      let best: { className: string; rank: number; diff: number } | null = null;
+      for (const app of a.appearances) {
+        const myRank = myRankByPair.get(`${app.type}__${app.className}`);
+        if (myRank == null) continue;
+        const diff = Math.abs(app.rank - myRank);
+        if (!best || diff < best.diff) best = { className: app.className, rank: app.rank, diff };
       }
+      if (!best) continue;
+      scored.push({ athlete: a, ...best, sameClub: a.clubs.some((c) => myClubs.has(c)) });
     }
-    return list;
+    // 近い順（同差なら順位昇順→名前で決定的に）
+    scored.sort(
+      (x, y) => x.diff - y.diff || x.rank - y.rank || x.athlete.name.localeCompare(y.athlete.name)
+    );
+
+    // 同クラブの近成績を先に最大4、残りを他クラブの近成績で埋めて最大8（片方が少なければ補充）
+    const MAX = 8;
+    const SAME_CLUB_QUOTA = 4;
+    const sameClubList = scored.filter((s) => s.sameClub);
+    const otherClubList = scored.filter((s) => !s.sameClub);
+    const picked: Scored[] = [];
+    const seen = new Set<string>([profile.name]);
+    const take = (arr: Scored[], n: number) => {
+      for (const s of arr) {
+        if (picked.length >= MAX || n <= 0) break;
+        if (seen.has(s.athlete.name)) continue;
+        seen.add(s.athlete.name);
+        picked.push(s);
+        n--;
+      }
+    };
+    take(sameClubList, SAME_CLUB_QUOTA);
+    take(otherClubList, MAX - picked.length);
+    take(sameClubList, MAX - picked.length); // 他クラブが少なければ同クラブで補充
+
+    return picked.map((s) => ({
+      athlete: s.athlete,
+      label: `${s.sameClub ? "同クラブ・" : ""}${s.className} ${s.rank}位`,
+    }));
   }, [profile, athleteIndex]);
 
   // 突合: 共通 (type, className) ペアの event_scores を date＋イベント名で突合 →
@@ -362,7 +359,7 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
           {/* デフォルト候補チップ */}
           {candidates.length > 0 && (
             <div className="mt-3">
-              <p className="mb-1.5 text-[10px] text-muted">候補（同クラブ・無差別クラス近順位）</p>
+              <p className="mb-1.5 text-[10px] text-muted">候補（成績が近い選手・同クラブ／他クラブ）</p>
               <div className="flex flex-wrap gap-1.5">
                 {candidates.map(({ athlete, label }) => (
                   <button

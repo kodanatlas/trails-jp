@@ -39,7 +39,7 @@ function round1(n: number): number {
 
 /**
  * 直近土日祝クラスタにおける「自己平均超え」ポイント上昇度を算出。
- * 既定: windowDays=35, minSamples=3, topN=5。
+ * 既定: windowDays=35, minSamples=3, topN=20（先頭5件常時表示＋残りはUIのアコーディオン）。
  */
 export function computeWeekendPoints(
   athletes: WPInputAthlete[],
@@ -48,7 +48,7 @@ export function computeWeekendPoints(
 ): WeekendPointsResult {
   const windowDays = opts?.windowDays ?? 35;
   const minSamples = opts?.minSamples ?? 3;
-  const topN = opts?.topN ?? 5;
+  const topN = opts?.topN ?? 20;
 
   // 1. 候補日（直近 windowDays の土日祝）
   const candidateSet = new Set(recentWeekendCandidates(today, windowDays));

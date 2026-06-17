@@ -79,13 +79,92 @@ function RankBadge({ n }: { n: number }) {
   );
 }
 
+/** 上「ポイント上昇度」の1行。rank は連番（先頭5＋アコーディオンで継続）。 */
+function PointRow({ item, rank }: { item: WeekendPointItem; rank: number }) {
+  return (
+    <Link
+      href={`/analysis?athlete=${encodeURIComponent(item.key)}`}
+      className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover sm:gap-4"
+    >
+      <RankBadge n={rank} />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h4 className="text-sm font-semibold">{item.name}</h4>
+          <span className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-muted">
+            {disciplineLabel(item.discipline)}
+          </span>
+        </div>
+        <p className="mt-0.5 truncate text-xs text-muted">{item.club}</p>
+        {item.eventName && (
+          <p className="mt-0.5 truncate text-[10px] text-muted">{item.eventName}</p>
+        )}
+      </div>
+      <div className="flex-shrink-0 text-right">
+        <p className="font-mono text-sm font-bold text-green-400">+{num(item.delta)} pt</p>
+        {/* 内訳はモバイルでも表示（ユーザー必須要望） */}
+        <p className="text-[10px] text-muted">
+          今回 {num(item.pRecent)}・平均 {num(item.pAvg)}
+        </p>
+      </div>
+      <ArrowRight className="hidden h-4 w-4 flex-shrink-0 text-muted sm:block" />
+    </Link>
+  );
+}
+
+/** 下「合成上昇度」の1行。rank は連番（先頭5＋アコーディオンで継続）。 */
+function StandoutRowItem({ row, rank }: { row: StandoutRow; rank: number }) {
+  const key = row.athlete_name;
+  const miss = missDisplay(row.miss_drop_pp);
+  return (
+    <Link
+      href={`/analysis?athlete=${encodeURIComponent(key)}`}
+      className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover sm:gap-4"
+    >
+      <RankBadge n={rank} />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h4 className="text-sm font-semibold">{key}</h4>
+          <span className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-muted">
+            {row.class_name}・{disciplineLabel(row.race_type)}
+          </span>
+        </div>
+        <p className="mt-0.5 truncate text-xs text-muted">{clubFor(key)}</p>
+        {row.event_name && (
+          <p className="mt-0.5 truncate text-[10px] text-muted">{row.event_name}</p>
+        )}
+      </div>
+      <div className="flex flex-shrink-0 flex-col items-end gap-0.5">
+        {/* 狭幅でも溢れ/潰れないよう flex-wrap 可・右寄せ */}
+        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-0.5">
+          <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-green-400">
+            <Gauge className="h-3 w-3" />巡航 +{num(row.speed_gain_pct)}% 速
+          </span>
+          <span className={`inline-flex items-center gap-1 font-mono text-xs font-bold ${miss.cls}`}>
+            <Target className="h-3 w-3" />{miss.text}
+          </span>
+        </div>
+        {/* 内訳はモバイルでも表示（ユーザー必須要望）。巡航値は小さいほど速い。 */}
+        <p className="text-right text-[10px] text-muted">
+          巡航 今回 {num(row.target_speed)}/平均 {num(row.baseline_speed)}（小さいほど速い）
+          {" ・ "}ミス {num(row.target_miss)}/平均 {num(row.baseline_miss)}
+        </p>
+      </div>
+      <ArrowRight className="hidden h-4 w-4 flex-shrink-0 text-muted sm:block" />
+    </Link>
+  );
+}
+
 /**
  * トップページ「直近の大会ハイライト」セクション。
  * 上 = ポイント上昇度（ビルド時静的・週次）／下 = 合成上昇度（ランタイム RPC・日次）。
  */
+/** 先頭 N 件を常時表示・残りをアコーディオンに分割する上限と境界。 */
+const VISIBLE = 5; // 常時表示件数
+const MAX_ITEMS = 20; // 展開後の最大件数
+
 export async function WeekendHighlights() {
-  // 上: 静的 JSON
-  const pointItems = (wp.items ?? []).slice(0, 5);
+  // 上: 静的 JSON（最大 20 件扱い）
+  const pointItems = (wp.items ?? []).slice(0, MAX_ITEMS);
   const showPoints = pointItems.length >= 3;
 
   // 下: ランタイム RPC（service_role 専用 → supabaseAdmin）
@@ -95,7 +174,7 @@ export async function WeekendHighlights() {
     const { data, error } = await supabaseAdmin.rpc("weekend_standouts", {
       candidate_dates: candidates,
       min_samples: 5,
-      max_results: 8,
+      max_results: MAX_ITEMS,
     });
     // 無言全滅検知: error が返ったら必ずログを残してから空フォールバック
     if (error) console.warn("weekend_standouts rpc:", error);
@@ -155,38 +234,23 @@ export async function WeekendHighlights() {
             </p>
 
             <div className="mt-4 space-y-2">
-              {pointItems.map((item, i) => (
-                <Link
-                  key={item.key}
-                  href={`/analysis?athlete=${encodeURIComponent(item.key)}`}
-                  className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover sm:gap-4"
-                >
-                  <RankBadge n={i + 1} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-sm font-semibold">{item.name}</h4>
-                      <span className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-muted">
-                        {disciplineLabel(item.discipline)}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 truncate text-xs text-muted">{item.club}</p>
-                    {item.eventName && (
-                      <p className="mt-0.5 truncate text-[10px] text-muted">{item.eventName}</p>
-                    )}
-                  </div>
-                  <div className="flex-shrink-0 text-right">
-                    <p className="font-mono text-sm font-bold text-green-400">
-                      +{num(item.delta)} pt
-                    </p>
-                    {/* 内訳はモバイルでも表示（ユーザー必須要望） */}
-                    <p className="text-[10px] text-muted">
-                      今回 {num(item.pRecent)}・平均 {num(item.pAvg)}
-                    </p>
-                  </div>
-                  <ArrowRight className="hidden h-4 w-4 flex-shrink-0 text-muted sm:block" />
-                </Link>
+              {pointItems.slice(0, VISIBLE).map((item, i) => (
+                <PointRow key={item.key} item={item} rank={i + 1} />
               ))}
             </div>
+            {/* 6件目以降をアコーディオンで展開（CSS details・サーバーコンポーネント維持） */}
+            {pointItems.length > VISIBLE && (
+              <details className="group mt-2">
+                <summary className="cursor-pointer select-none list-none rounded-lg border border-border bg-card px-4 py-2.5 text-center text-xs font-medium text-primary transition-colors hover:bg-card-hover">
+                  さらに表示（あと {pointItems.length - VISIBLE} 名）
+                </summary>
+                <div className="mt-2 space-y-2">
+                  {pointItems.slice(VISIBLE).map((item, i) => (
+                    <PointRow key={item.key} item={item} rank={VISIBLE + i + 1} />
+                  ))}
+                </div>
+              </details>
+            )}
 
             <p className="mt-3 text-right text-[10px] text-muted">
               対象 {formatDateRangeJp(wp.targetDates)}・{wp.generatedAtJst}（毎週水曜ごろ更新）
@@ -223,49 +287,27 @@ export async function WeekendHighlights() {
             </details>
 
             <div className="mt-4 space-y-2">
-              {standouts.slice(0, 8).map((row, i) => {
-                const key = row.athlete_name;
-                const miss = missDisplay(row.miss_drop_pp);
-                return (
-                  <Link
-                    key={`${key}-${row.race_type}`}
-                    href={`/analysis?athlete=${encodeURIComponent(key)}`}
-                    className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover sm:gap-4"
-                  >
-                    <RankBadge n={i + 1} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-sm font-semibold">{key}</h4>
-                        <span className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-muted">
-                          {row.class_name}・{disciplineLabel(row.race_type)}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 truncate text-xs text-muted">{clubFor(key)}</p>
-                      {row.event_name && (
-                        <p className="mt-0.5 truncate text-[10px] text-muted">{row.event_name}</p>
-                      )}
-                    </div>
-                    <div className="flex flex-shrink-0 flex-col items-end gap-0.5">
-                      {/* 狭幅でも溢れ/潰れないよう flex-wrap 可・右寄せ */}
-                      <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-0.5">
-                        <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-green-400">
-                          <Gauge className="h-3 w-3" />巡航 +{num(row.speed_gain_pct)}% 速
-                        </span>
-                        <span className={`inline-flex items-center gap-1 font-mono text-xs font-bold ${miss.cls}`}>
-                          <Target className="h-3 w-3" />{miss.text}
-                        </span>
-                      </div>
-                      {/* 内訳はモバイルでも表示（ユーザー必須要望）。巡航値は小さいほど速い。 */}
-                      <p className="text-right text-[10px] text-muted">
-                        巡航 今回 {num(row.target_speed)}/平均 {num(row.baseline_speed)}（小さいほど速い）
-                        {" ・ "}ミス {num(row.target_miss)}/平均 {num(row.baseline_miss)}
-                      </p>
-                    </div>
-                    <ArrowRight className="hidden h-4 w-4 flex-shrink-0 text-muted sm:block" />
-                  </Link>
-                );
-              })}
+              {standouts.slice(0, VISIBLE).map((row, i) => (
+                <StandoutRowItem key={`${row.athlete_name}-${row.race_type}`} row={row} rank={i + 1} />
+              ))}
             </div>
+            {/* 6件目以降をアコーディオンで展開（CSS details・サーバーコンポーネント維持） */}
+            {standouts.length > VISIBLE && (
+              <details className="group mt-2">
+                <summary className="cursor-pointer select-none list-none rounded-lg border border-border bg-card px-4 py-2.5 text-center text-xs font-medium text-primary transition-colors hover:bg-card-hover">
+                  さらに表示（あと {standouts.length - VISIBLE} 名）
+                </summary>
+                <div className="mt-2 space-y-2">
+                  {standouts.slice(VISIBLE).map((row, i) => (
+                    <StandoutRowItem
+                      key={`${row.athlete_name}-${row.race_type}`}
+                      row={row}
+                      rank={VISIBLE + i + 1}
+                    />
+                  ))}
+                </div>
+              </details>
+            )}
 
             <p className="mt-3 text-right text-[10px] text-muted">
               対象 {formatDateRangeJp(compositeDates)}・{jstNowLabel()} JST 時点（毎日更新）
