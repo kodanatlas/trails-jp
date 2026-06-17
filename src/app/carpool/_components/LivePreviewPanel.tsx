@@ -269,6 +269,11 @@ function PreviewBody({
                     >
                       <p className="text-xs text-muted">
                         {memberName(car.driverId)}（{total}人乗車）
+                        {car.spreadMin > 0 && (
+                          <span className="ml-1.5 text-amber-300/80">
+                            待ち{car.spreadMin}分
+                          </span>
+                        )}
                       </p>
                       <div className="mt-1 flex flex-wrap gap-1">
                         <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-foreground">
