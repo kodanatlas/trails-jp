@@ -208,7 +208,7 @@ export async function WeekendHighlights() {
 
         {/* 対象の明示 + 更新タイミング注記（表示中のリストに応じて動的に） */}
         <p className="mt-2 text-xs text-muted">
-          直近の土日祝（1大会）の出場者が対象です。
+          直近の土日祝の大会の出場者が対象です。
         </p>
         <p className="mt-1 text-xs text-muted">
           {showPoints && showComposite ? "※更新タイミングが異なります（" : "※更新タイミング: "}

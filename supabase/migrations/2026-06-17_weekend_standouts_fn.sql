@@ -63,19 +63,27 @@ as $$
   -- 対象クラスタ内を (選手, 種目, 大会名) 単位に集約。
   -- 同一大会で複数クラス出走時はその大会での最速（=最小 s）行を代表値とする。
   ev as (
-    select c.athlete_name, c.race_type, c.event_name,
+    select c.athlete_name, c.race_type, c.event_date, c.event_name,
            min(c.s) as s,
            (array_agg(c.m order by c.s asc))[1] as m,
            (array_agg(c.class_name order by c.s asc))[1] as class_name
     from clean c
     where c.event_date in (select event_date from cluster)
-    group by c.athlete_name, c.race_type, c.event_name
+    group by c.athlete_name, c.race_type, c.event_date, c.event_name
   ),
-  baseline as (
-    select c.athlete_name, c.race_type, avg(c.s) as bs, avg(c.m) as bm, count(*) as bn
+  -- baseline も「大会単位の代表値(最速)」に集約してから平均する（target と粒度を揃える）。
+  -- 同一大会で複数クラス出走した過去レースが生行のまま平均に効いて自己平均が歪むのを防ぐ。
+  baseline_ev as (
+    select c.athlete_name, c.race_type, c.event_date, c.event_name,
+           min(c.s) as s, (array_agg(c.m order by c.s asc))[1] as m
     from clean c, cluster_min
     where c.event_date < cluster_min.d
-    group by c.athlete_name, c.race_type
+    group by c.athlete_name, c.race_type, c.event_date, c.event_name
+  ),
+  baseline as (
+    select athlete_name, race_type, avg(s) as bs, avg(m) as bm, count(*) as bn
+    from baseline_ev
+    group by athlete_name, race_type
   ),
   ev_scored as (
     select e.athlete_name, e.race_type, e.event_name, e.class_name, e.s, e.m,

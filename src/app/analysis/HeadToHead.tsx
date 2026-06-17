@@ -161,6 +161,7 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
       // 共通クラスのうち最も順位が近いものを採用（無ければ候補外）
       let best: { className: string; rank: number; diff: number } | null = null;
       for (const app of a.appearances) {
+        if (!app.isActive) continue; // 現役（out_ranker でない）順位のみで近さを測る
         const myRank = myRankByPair.get(`${app.type}__${app.className}`);
         if (myRank == null) continue;
         const diff = Math.abs(app.rank - myRank);

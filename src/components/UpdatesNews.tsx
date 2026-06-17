@@ -73,6 +73,7 @@ export async function UpdatesNews() {
     const { data } = await supabaseAdmin
       .from("lc_performances")
       .select("event_date, event_name")
+      .lte("event_date", new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" }))
       .order("event_date", { ascending: false })
       .limit(1);
     const row = ((data as LcPerfRow[] | null) ?? [])[0];
