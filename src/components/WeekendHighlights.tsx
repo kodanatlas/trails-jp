@@ -99,11 +99,11 @@ function PointRow({ item, rank }: { item: WeekendPointItem; rank: number }) {
           <p className="mt-0.5 truncate text-[10px] text-muted">{item.eventName}</p>
         )}
       </div>
-      {/* 指標: モバイルは名前の下に全幅で回り込み、sm以上は右寄せ（崩れ防止） */}
-      <div className="flex w-full flex-col items-start gap-0.5 sm:w-auto sm:items-end">
+      {/* 指標: モバイルは名前の下に全幅で回り込み（崩れ防止）。常に右寄せ。 */}
+      <div className="flex w-full flex-col items-end gap-0.5 sm:w-auto">
         <p className="font-mono text-sm font-bold text-green-400">+{num(item.delta)} pt</p>
         {/* 内訳はモバイルでも表示（ユーザー必須要望） */}
-        <p className="text-[10px] text-muted sm:text-right">
+        <p className="text-right text-[10px] text-muted">
           今回 {num(item.pRecent)}・平均 {num(item.pAvg)}
         </p>
       </div>
@@ -134,9 +134,9 @@ function StandoutRowItem({ row, rank }: { row: StandoutRow; rank: number }) {
           <p className="mt-0.5 truncate text-[10px] text-muted">{row.event_name}</p>
         )}
       </div>
-      {/* 指標: モバイルは名前の下に全幅で回り込み、sm以上は右寄せ（崩れ防止） */}
-      <div className="flex w-full flex-col items-start gap-0.5 sm:w-auto sm:items-end">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 sm:justify-end">
+      {/* 指標: モバイルは名前の下に全幅で回り込み（崩れ防止）。常に右寄せ。 */}
+      <div className="flex w-full flex-col items-end gap-0.5 sm:w-auto">
+        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-0.5">
           <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-green-400">
             <Gauge className="h-3 w-3" />巡航 +{num(row.speed_gain_pct)}% 速
           </span>
@@ -145,7 +145,7 @@ function StandoutRowItem({ row, rank }: { row: StandoutRow; rank: number }) {
           </span>
         </div>
         {/* 内訳はモバイルでも表示（ユーザー必須要望） */}
-        <p className="text-[10px] text-muted sm:text-right">
+        <p className="text-right text-[10px] text-muted">
           巡航 今回 {num(row.target_speed)}/平均 {num(row.baseline_speed)}
           {" ・ "}ミス {num(row.target_miss)}/平均 {num(row.baseline_miss)}
         </p>
