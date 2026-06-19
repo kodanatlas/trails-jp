@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { nodeGeocodeSchema } from "@/lib/carpool/api/schemas";
 import { toNodeDTO } from "@/lib/carpool/api/mappers";
 import { ERR, zodError, guardWrite, writeChangeLog, resolveClub, resolveClubGeoRef } from "@/lib/carpool/api/helpers";
-import { geocodeAddressDetailed } from "@/lib/carpool/geocode";
+import { geocodeAddressDetailed, geocodeAreaNode } from "@/lib/carpool/geocode";
 import { shouldGeocodeNodeKind } from "@/lib/carpool/venue-coords";
 import { scrapeEventCoordinates } from "@/lib/scraper/events";
 import { readEvents } from "@/lib/events-store";
@@ -104,14 +104,18 @@ export async function POST(
       });
     }
   } else {
-    // --- area / pickup: 従来どおり名称ジオコーディング ---
+    // --- area: HeartRails（鉄道駅DB）優先 → GSI フォールバック ---
+    // --- pickup: 従来どおり名称ジオコーディング ---
     try {
       // 再ジオコーディング対象の自ノード（北海道目黒のような遠地誤座標を持ちうる）は
       // 参照点の重心から必ず除外する。さもないと誤座標が自分を引き寄せて補正できない。
       const ref = await resolveClubGeoRef(club.id, { excludeNodeId: id });
-      const detailed = await geocodeAddressDetailed(existing.name, { ref: ref ?? undefined });
+      const detailed = existing.kind === "area"
+        ? await geocodeAreaNode(existing.name, { ref: ref ?? undefined })
+        : await geocodeAddressDetailed(existing.name, { ref: ref ?? undefined });
       if (detailed) {
         hit = { lat: detailed.lat, lng: detailed.lng };
+        source = (detailed as { source?: string }).source ?? "gsi";
         resolvedTitle = detailed.title;
         exact = detailed.exact;
       }

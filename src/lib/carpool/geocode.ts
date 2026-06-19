@@ -435,3 +435,112 @@ export async function geocodeAddress(
   const r = await geocodeAddressDetailed(raw, opts);
   return r ? { lat: r.lat, lng: r.lng } : null;
 }
+
+// ---------------------------------------------------------------------------
+// HeartRails Express API（鉄道駅専用ジオコーディング）
+// ---------------------------------------------------------------------------
+
+/** HeartRails Express API のベース URL。 */
+export const HEARTRAILS_API_URL = "https://express.heartrails.com/api/json";
+
+interface HeartrailsResponse {
+  response?: {
+    station?: Array<{
+      name: string;
+      line: string;
+      x: string;
+      y: string;
+      prefecture: string;
+    }>;
+  };
+}
+
+/**
+ * HeartRails Express API で鉄道駅の座標を取得する。
+ *
+ * - 駅名（「駅」サフィックスを除去して問い合わせ）で検索。
+ * - 同名駅が複数路線にある場合は参照点 ref に最も近い候補を採用。
+ * - 不命中・エラー・タイムアウトは null を返す。
+ */
+export async function geocodeStation(
+  raw: string,
+  opts?: GeocodeOpts,
+): Promise<GeocodeResolution | null> {
+  const name = normalizeGeocodeQuery(raw).replace(/駅$/, "");
+  if (!name) return null;
+
+  const fetchImpl = (opts?.fetchImpl ?? (globalThis.fetch as unknown)) as FetchLike;
+  const timeoutMs = opts?.timeoutMs ?? GEOCODE_TIMEOUT_MS;
+  const ref = opts?.ref ?? TOKYO_STATION;
+
+  const url = `${HEARTRAILS_API_URL}?method=getStations&name=${encodeURIComponent(name)}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const onAbort = () => controller.abort();
+  opts?.signal?.addEventListener("abort", onAbort, { once: true });
+
+  try {
+    const res = await fetchImpl(url, {
+      headers: { "User-Agent": "trails.jp/1.0 (carpool geocode; +https://trails.jp)" },
+      signal: controller.signal,
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as HeartrailsResponse;
+    const stations = json?.response?.station;
+    if (!Array.isArray(stations) || stations.length === 0) return null;
+
+    const candidates = stations
+      .map((s) => ({
+        lat: parseFloat(s.y),
+        lng: parseFloat(s.x),
+        title: s.name + "駅",
+      }))
+      .filter((c) => isJapanDomain(c.lat, c.lng));
+
+    if (candidates.length === 0) return null;
+
+    let best = candidates[0];
+    let bestDist = haversineKm(best, ref);
+    for (let i = 1; i < candidates.length; i++) {
+      const d = haversineKm(candidates[i], ref);
+      if (d < bestDist) {
+        best = candidates[i];
+        bestDist = d;
+      }
+    }
+
+    const nq = compactForMatch(normalizeGeocodeQuery(raw));
+    const titleCompact = compactForMatch(best.title);
+    const titleNoEki = compactForMatch(best.title.replace(/駅$/, ""));
+    return {
+      lat: best.lat,
+      lng: best.lng,
+      title: best.title,
+      exact: titleCompact === nq || titleNoEki === nq,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+    opts?.signal?.removeEventListener("abort", onAbort);
+  }
+}
+
+/**
+ * area ノード用の複合ジオコーディング。
+ *
+ * HeartRails Express（鉄道駅 DB）を第一選択肢とし、不命中時に GSI AddressSearch にフォールバック。
+ * 返り値に source ("heartrails" | "gsi") を付与して changeLog 記録に使う。
+ */
+export async function geocodeAreaNode(
+  raw: string,
+  opts?: GeocodeOpts,
+): Promise<(GeocodeResolution & { source: string }) | null> {
+  const station = await geocodeStation(raw, opts);
+  if (station) return { ...station, source: "heartrails" };
+
+  const gsi = await geocodeAddressDetailed(raw, opts);
+  if (gsi) return { ...gsi, source: "gsi" };
+
+  return null;
+}

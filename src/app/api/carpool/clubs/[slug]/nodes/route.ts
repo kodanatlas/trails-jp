@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { nodeCreateSchema } from "@/lib/carpool/api/schemas";
 import { toNodeDTO } from "@/lib/carpool/api/mappers";
 import { ERR, zodError, guardWrite, writeChangeLog, resolveClub, resolveClubGeoRef } from "@/lib/carpool/api/helpers";
-import { geocodeAddressDetailed } from "@/lib/carpool/geocode";
+import { geocodeAddressDetailed, geocodeAreaNode } from "@/lib/carpool/geocode";
 import { shouldGeocodeNodeKind } from "@/lib/carpool/venue-coords";
 
 export const dynamic = "force-dynamic";
@@ -90,8 +90,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       // 同名異地の誤選択を防ぐ参照点（クラブ既存ノード重心）。作成直後の自ノードは除外。
       // resolveClubGeoRef はエラー時 null を返すためノード作成を壊さない。
       const ref = await resolveClubGeoRef(club.id, { excludeNodeId: node.id });
-      const hit = await geocodeAddressDetailed(node.name, { ref: ref ?? undefined });
+      const hit = node.kind === "area"
+        ? await geocodeAreaNode(node.name, { ref: ref ?? undefined })
+        : await geocodeAddressDetailed(node.name, { ref: ref ?? undefined });
       if (hit) {
+        const source = (hit as { source?: string }).source ?? "gsi";
         const { data: updated, error: updateError } = await supabaseAdmin
           .from("carpool_nodes")
           .update({ lat: hit.lat, lng: hit.lng })
@@ -107,7 +110,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
             tableName: "carpool_nodes",
             recordId: node.id,
             action: "update",
-            payload: { geocoded: true, source: "gsi", lat: hit.lat, lng: hit.lng },
+            payload: { geocoded: true, source, lat: hit.lat, lng: hit.lng },
             actorName: guard.ctx.actorName,
             ipHash: guard.ctx.ipHash,
           });
