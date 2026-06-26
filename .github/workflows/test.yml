@@ -25,6 +25,9 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      # npm ci ではなく npm install: リポジトリの package-lock.json が厳密同期でない
+      # （@tailwindcss/oxide wasm32-wasi のオプショナル依存が npm メジャー間で解決差）。
+      # Vercel/ローカルと同じ npm install なら自己修復して通る。
+      - run: npm install --no-audit --no-fund
       - name: Run unit tests (vitest)
         run: npm test

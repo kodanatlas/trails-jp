@@ -44,7 +44,8 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      # npm ci ではなく npm install（test.yml と同じ理由: lockfile が厳密同期でない）。
+      - run: npm install --no-audit --no-fund
       - name: geocode smoke (real GSI)
         shell: bash
         run: |
