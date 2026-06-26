@@ -74,3 +74,17 @@ scheduled gate が**実際に再発失敗を出し**、次がすべて満たさ�
 - マージ/デプロイ前に人間レビュー
 
 それまでは cron で十分・安く・確実。
+
+---
+
+## 実装で判明した事実（2026-06-26 PR #1 でドッグフード）
+
+PR #1 で両ワークフローを実際に走らせて判明（＝ゲートが既存問題を炙り出した）:
+
+1. **lockfile ドリフト**: `package-lock.json` が厳密同期でない（`@tailwindcss/oxide` wasm32-wasi のオプショナル依存が npm メジャー間で解決差）。`npm ci` は落ち `npm install` は通る → CI は `npm install --no-audit --no-fund` に変更。`npm ci` 復帰は canonical な lock 再生成後に。
+2. **geocode-smoke は GitHub-hosted では成立しない**: GSI(`msearch.gsi.go.jp`) が GH ランナーの海外IPに空応答 → `SyntaxError: Unexpected end of JSON input`。→ `geocode-smoke.yml` は**削除**。geocode の回帰保護は (a) mock GSI のユニットテスト `geocode.test.ts`(50件・CIで緑) と (b) ローカル pre-deploy 手動 `npx tsx scripts/geocode-smoke.ts`(JP IP) で担保。定期実行が要るなら JP-IP の self-hosted runner（将来）。
+3. **既存の非ポータブルテスト2件**: `startlist/parse.test.ts`・`match.test.ts` の「実サンプル PDF」describe がリポジトリ外の絶対パス PDF を読む（選手氏名含みで未コミット）。`describe.skipIf(!HAS_SAMPLE_PDF)` で fixture 不在時 skip に修正。**テスト CI が無かったため main にこの非ポータブル性が潜在化**していた。
+
+### Phase 0 の最終形
+- ✅ `test.yml`（vitest CI）= 採用。`npm install` ベース、PDF統合テストは fixture-gated skip。
+- ❌ `geocode-smoke.yml` = 削除（GH-hosted で GSI 不達）。geocode はローカル/ユニットで担保。
