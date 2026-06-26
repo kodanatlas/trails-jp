@@ -188,10 +188,16 @@ function parsePage(html: string): RawEntry[] {
   return entries;
 }
 
-// 全カテゴリ取得時のビルド時間/JOY負荷を抑えるための制御値
-const FETCH_CONCURRENCY = 4;   // 同時取得カテゴリ数
-const REQUEST_DELAY_MS = 150;  // 同一カテゴリ内のページ間スロットル
-const MAX_PAGES = 60;          // 1カテゴリあたりページ数の安全上限
+// 全カテゴリ取得時のビルド時間/JOY負荷の制御値（環境変数で上書き可）。
+// 既定の並列度を 4→8 に引き上げてビルドを高速化。JOY がレート制限を返す/失敗が増える場合は
+// BUILD_FETCH_CONCURRENCY=4 などに下げる（失敗カテゴリは既存ファイル保持なのでデータは壊れない）。
+const envNum = (v: string | undefined, dflt: number): number => {
+  const n = v != null ? Number(v) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : dflt;
+};
+const FETCH_CONCURRENCY = envNum(process.env.BUILD_FETCH_CONCURRENCY, 8);  // 同時取得カテゴリ数（旧既定4）
+const REQUEST_DELAY_MS = envNum(process.env.BUILD_REQUEST_DELAY_MS, 120);  // 同一カテゴリ内のページ間スロットル（旧150）
+const MAX_PAGES = envNum(process.env.BUILD_MAX_PAGES, 60);                 // 1カテゴリあたりページ数の安全上限
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -333,6 +339,7 @@ async function fetchCategory(cls: RankingClassRef): Promise<string> {
 
 /** 全カテゴリを並列度を絞って取得。失敗カテゴリは既存ファイルを保持する。 */
 async function fetchFreshRankings() {
+  const t0 = Date.now();
   const queue = [...ALL_CLASSES];
   let updated = 0, kept = 0, failed = 0;
 
@@ -352,7 +359,8 @@ async function fetchFreshRankings() {
   }
 
   await Promise.all(Array.from({ length: FETCH_CONCURRENCY }, () => worker()));
-  console.log(`Rankings fetch done: ${updated} updated, ${kept} kept(empty), ${failed} failed(kept existing).`);
+  const elapsedSec = ((Date.now() - t0) / 1000).toFixed(1);
+  console.log(`Rankings fetch done in ${elapsedSec}s (concurrency=${FETCH_CONCURRENCY}): ${updated} updated, ${kept} kept(empty), ${failed} failed(kept existing).`);
 }
 
 // --- メイン処理（async fetch後に同期処理を続行） ---
@@ -362,7 +370,7 @@ async function main() {
 if (process.env.SKIP_FETCH === "1") {
   console.log("⚠ SKIP_FETCH=1: JOY 再取得をスキップし、ローカル既存 JSON を使用します");
 } else {
-  console.log(`Fetching fresh rankings from JOY (all ${ALL_CLASSES.length} categories)...`);
+  console.log(`Fetching fresh rankings from JOY (all ${ALL_CLASSES.length} categories, concurrency=${FETCH_CONCURRENCY})...`);
   await fetchFreshRankings().catch((e: unknown) => console.warn("Ranking fetch failed, using local files:", e));
 }
 
