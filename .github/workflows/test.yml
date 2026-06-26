@@ -1,0 +1,30 @@
+name: test
+
+# ユニットテスト(vitest, 約463件)を PR と main への push で実行する CI ゲート。
+# 純ロジックのみ（ネットワーク/secret 不要）なので決定論的・高速。
+# 生成PRや自動化を信頼する前提となる table stakes のゲート。
+# 手動実行も可（Actions 画面の "Run workflow" / workflow_dispatch）。
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# 同一 ref の重複実行はキャンセル（新しい push を優先）。
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vitest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run unit tests (vitest)
+        run: npm test
