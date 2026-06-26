@@ -11,6 +11,9 @@ const SAMPLE_PDF_CANDIDATES = [
   "/mnt/c/Users/user/Downloads/orienteering-carpool/docs/spec/samples/startlist_sample_olk2264.pdf",
 ];
 const SAMPLE_PDF = SAMPLE_PDF_CANDIDATES.find((p) => existsSync(p)) ?? SAMPLE_PDF_CANDIDATES[0];
+// 実サンプル PDF はリポジトリ外のローカル実ファイル（選手氏名を含むため未コミット）。
+// 存在しない環境（CI・他マシン）では該当 describe を skip する。
+const HAS_SAMPLE_PDF = SAMPLE_PDF_CANDIDATES.some((p) => existsSync(p));
 
 const row = (name: string, affiliation: string, className = "M21A", startTime = "11:00"): StartlistRow => ({
   startTime,
@@ -150,7 +153,7 @@ describe("matchStartlistRows (フィクスチャ)", () => {
   });
 });
 
-describe("matchStartlistRows (実サンプル PDF・クラブ員フィルタ実地)", () => {
+describe.skipIf(!HAS_SAMPLE_PDF)("matchStartlistRows (実サンプル PDF・クラブ員フィルタ実地)", () => {
   it("members=[] でも 入間市OLC 行が 40 件以上残る（実測 46）", async () => {
     const data = new Uint8Array(readFileSync(SAMPLE_PDF));
     const rows = await extractStartlistFromPdf(data);

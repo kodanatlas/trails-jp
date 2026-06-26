@@ -10,6 +10,9 @@ const SAMPLE_PDF_CANDIDATES = [
   "/mnt/c/Users/user/Downloads/orienteering-carpool/docs/spec/samples/startlist_sample_olk2264.pdf",
 ];
 const SAMPLE_PDF = SAMPLE_PDF_CANDIDATES.find((p) => existsSync(p)) ?? SAMPLE_PDF_CANDIDATES[0];
+// 実サンプル PDF はリポジトリ外のローカル実ファイル（選手氏名を含むため未コミット）。
+// 存在しない環境（CI・他マシン）では該当 describe を skip する。
+const HAS_SAMPLE_PDF = SAMPLE_PDF_CANDIDATES.some((p) => existsSync(p));
 
 describe("parseStartlistText (ユニット・小さな文字列)", () => {
   it("3 トークン行を 姓名(先頭2) + 所属(残り) に分割する", () => {
@@ -153,7 +156,7 @@ describe("parseStartlistText (B系: 秒つき時刻・ゼッケン無し・行�
   });
 });
 
-describe("extractStartlistFromPdf (実サンプル PDF)", () => {
+describe.skipIf(!HAS_SAMPLE_PDF)("extractStartlistFromPdf (実サンプル PDF)", () => {
   it("実サンプル PDF を解析して 859 行以上抽出する（実測 863）", async () => {
     const data = new Uint8Array(readFileSync(SAMPLE_PDF));
     const rows = await extractStartlistFromPdf(data);
