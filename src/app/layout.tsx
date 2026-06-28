@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Sans_JP, IBM_Plex_Mono } from "next/font/google";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
@@ -7,13 +7,30 @@ import { Analytics } from "@vercel/analytics/next";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+// 本文・UI・選手名など動的な日本語を担う唯一の和文ファミリ。
+// 動的な漢字はサブセット不可のため preload:false + display:swap + 強い
+// システムフォールバックで「初回はネイティブ和ゴシック→Plex が無段差で差し替わる」運用。
+// （CJK は size-adjust 自動補正が効かず軽微な FOUT/CLS は許容トレード）
+const plexJp = IBM_Plex_Sans_JP({
+  weight: ["400", "500", "700"],
+  subsets: ["latin"], // 'japanese' はサブセットキーに無い。和文グリフは unicode-range で遅延取得
+  display: "swap",
+  preload: false,
+  variable: "--font-plex-jp",
+  fallback: [
+    "Hiragino Kaku Gothic ProN",
+    "Hiragino Sans",
+    "Yu Gothic",
+    "Meiryo",
+    "sans-serif",
+  ],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// 数値（順位・ポイント・タイム・速度）専用。和文の IBM Plex Sans JP と同ファミリで
+// 一体感を出しつつ、Geist Mono より字幅がありデータが読みやすい。tabular-nums で桁揃え。
+const plexMono = IBM_Plex_Mono({
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-plex-mono",
   subsets: ["latin"],
 });
 
@@ -48,7 +65,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col font-sans antialiased`}
+        className={`${plexJp.variable} ${plexMono.variable} flex min-h-screen flex-col font-sans antialiased`}
       >
         <ServiceWorkerRegistration />
         <Header />

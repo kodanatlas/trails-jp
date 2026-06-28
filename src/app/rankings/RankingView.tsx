@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { ChevronDown, ChevronUp, Trophy, Medal, Search, ExternalLink, BarChart3, Loader2, User } from "lucide-react";
+import { ChevronDown, ChevronUp, Search, ExternalLink, BarChart3, Loader2, User } from "lucide-react";
 import Link from "next/link";
 import type { JOERankingEntry } from "@/lib/scraper/rankings";
 
@@ -17,10 +17,20 @@ interface RankingViewProps {
 }
 
 function RankBadge({ rank }: { rank: number }) {
-  if (rank === 1) return <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 text-[10px] font-bold text-white shadow"><Trophy className="h-3 w-3" /></div>;
-  if (rank === 2) return <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-gray-300 to-gray-500 text-[10px] font-bold text-white shadow"><Medal className="h-3 w-3" /></div>;
-  if (rank === 3) return <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-700 text-[10px] font-bold text-white shadow"><Medal className="h-3 w-3" /></div>;
-  return <div className="flex h-6 w-6 items-center justify-center text-xs text-muted">{rank}</div>;
+  // 上位3のみ tier 色、それ以外は muted な mono アンカー（装飾でなく序列を読ませる）
+  const tier =
+    rank === 1
+      ? "text-yellow-300"
+      : rank === 2
+        ? "text-slate-300"
+        : rank === 3
+          ? "text-amber-500"
+          : "text-muted";
+  return (
+    <div className={`w-7 flex-shrink-0 text-right font-mono text-lg font-bold tabular-nums tracking-tight ${tier}`}>
+      {rank}
+    </div>
+  );
 }
 
 function PointsBar({ points, maxPoints }: { points: number; maxPoints: number }) {
@@ -33,7 +43,7 @@ function PointsBar({ points, maxPoints }: { points: number; maxPoints: number })
           style={{ width: `${width}%` }}
         />
       </div>
-      <span className="w-16 text-right font-mono text-sm font-bold text-primary">
+      <span className="w-16 text-right font-mono text-sm font-bold tabular-nums text-primary">
         {points.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
       </span>
     </div>
@@ -182,19 +192,28 @@ export function RankingView({ rankingConfigs }: RankingViewProps) {
             {rankings.length !== filtered.length && ` / 全 ${rankings.length} 人`}
           </p>
 
-          <div className="space-y-1.5">
+          {/* エディトリアルなテーブル見出し（太い primary 下線で「表」を明示） */}
+          <div className="flex items-center gap-3 border-b-2 border-primary/40 px-2 pb-2 text-[10px] font-medium uppercase tracking-wider text-muted">
+            <span className="w-7 text-right">#</span>
+            <span className="w-8" />
+            <span className="min-w-0 flex-1">選手 / 所属</span>
+            <span className="hidden w-48 text-right sm:block">ポイント</span>
+            <span className="w-4" />
+          </div>
+
+          <div className="divide-y divide-border">
             {filtered.map((entry) => (
               <div key={`${dataKey}:${entry.rank}`}>
                 <button
                   onClick={() => setExpandedRank(expandedRank === entry.rank ? null : entry.rank)}
-                  className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
-                    expandedRank === entry.rank
-                      ? "border-primary/30 bg-card-hover"
-                      : "border-border bg-card hover:border-primary/20 hover:bg-card-hover"
+                  className={`flex w-full items-center gap-3 px-2 py-2 text-left transition-colors ${
+                    expandedRank === entry.rank ? "bg-card-hover" : "hover:bg-card-hover"
                   } ${!entry.is_active ? "opacity-50" : ""}`}
                 >
                   <RankBadge rank={entry.rank} />
-                  <RankDelta delta={entry.rank_delta} />
+                  <div className="w-8 flex-shrink-0 text-center">
+                    <RankDelta delta={entry.rank_delta} />
+                  </div>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -217,7 +236,7 @@ export function RankingView({ rankingConfigs }: RankingViewProps) {
                   </div>
 
                   <div className="text-right">
-                    <div className="block font-mono text-sm font-bold text-primary sm:hidden">
+                    <div className="block font-mono text-sm font-bold tabular-nums text-primary sm:hidden">
                       {entry.total_points.toLocaleString(undefined, { minimumFractionDigits: 1 })}
                     </div>
                     <PointsDelta delta={entry.points_delta} />
@@ -254,7 +273,7 @@ export function RankingView({ rankingConfigs }: RankingViewProps) {
                                   style={{ width: `${barWidth}%` }}
                                 />
                               </div>
-                              <span className={`w-12 text-right font-mono text-xs ${isTop3 ? "font-bold text-primary" : "text-muted"}`}>
+                              <span className={`w-12 text-right font-mono text-xs tabular-nums ${isTop3 ? "font-bold text-primary" : "text-muted"}`}>
                                 {score.points}
                               </span>
                             </div>
@@ -302,7 +321,7 @@ function RankDelta({ delta }: { delta?: { mom: number | null; yoy: number | null
   const v = delta.mom ?? delta.yoy;
   if (v == null || v === 0) return null;
   return (
-    <span className={`flex-shrink-0 text-[9px] font-mono font-bold ${v > 0 ? "text-green-400" : "text-red-400"}`} title={`前月比: ${delta.mom ?? "—"} / 前年比: ${delta.yoy ?? "—"}`}>
+    <span className={`text-[9px] font-mono font-bold tabular-nums ${v > 0 ? "text-positive" : "text-negative"}`} title={`前月比: ${delta.mom ?? "—"} / 前年比: ${delta.yoy ?? "—"}`}>
       {v > 0 ? `↑${v}` : `↓${Math.abs(v)}`}
     </span>
   );
@@ -319,10 +338,10 @@ function PointsDelta({ delta }: { delta?: { mom: number | null; yoy: number | nu
     return v > 0 ? `+${s}` : `-${s}`;
   };
   const color = (v: number) =>
-    v > 0 ? "text-green-400" : v < 0 ? "text-red-400" : "text-muted/50";
+    v > 0 ? "text-positive" : v < 0 ? "text-negative" : "text-muted/50";
 
   return (
-    <span className="text-[8px] font-mono">
+    <span className="text-[8px] font-mono tabular-nums">
       {mom != null && (
         <span className={color(mom)} title="前月比">
           {fmt(mom)}

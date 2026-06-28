@@ -1,16 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0f1720;
-  --foreground: #e8eaed;
+  /* surfaces — 暗色既定。コントラスト確保のため背景を一段深く */
+  --background: #0b111b;
+  --foreground: #e6e8ec;
+  --muted: #8a9bb0;
+  --card: #18222f;
+  --card-hover: #1f2b3d;
+  --surface: #131c2a;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  /* brand — オリエンの統制旗(オレンジ)/ウェイポイント(シアン)に対応。維持 */
   --primary: #f97316;
   --primary-dark: #ea580c;
   --accent: #00e5ff;
-  --muted: #8a9bb0;
-  --card: #1a2332;
-  --card-hover: #1f2b3d;
-  --border: rgba(255, 255, 255, 0.08);
-  --surface: #151e2b;
+
+  /* semantic status — 散在していた green-400/red-400 を意味トークンに昇格 */
+  --positive: #10b981; /* 上昇・好調 */
+  --negative: #ef4444; /* 下降・ミス */
+  --optimal: #84cc16; /* クリーンレース */
+  --warning: #f59e0b;
 }
 
 @theme inline {
@@ -23,9 +33,27 @@
   --color-card: var(--card);
   --color-card-hover: var(--card-hover);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-surface: var(--surface);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-optimal: var(--optimal);
+  --color-warning: var(--warning);
+  /* 本文・UI・和文 = IBM Plex Sans JP / 数値 = IBM Plex Mono */
+  --font-sans: var(--font-plex-jp);
+  --font-mono: var(--font-plex-mono);
+}
+
+/* モーション抑制を尊重（署名アニメ含め全演出を無効化） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 body {

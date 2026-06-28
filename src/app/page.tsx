@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Trophy, ArrowRight, ExternalLink, BarChart3, TrendingUp, ChevronDown } from "lucide-react";
+import { CalendarDays, Trophy, ExternalLink, BarChart3, TrendingUp, ChevronDown } from "lucide-react";
 import type { JOEEvent } from "@/lib/scraper/events";
 import eventsJson from "@/data/events.json";
 import weekendPointsJson from "@/data/weekend-points.json";
@@ -28,98 +28,78 @@ export default async function Home() {
 
   return (
     <div>
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-border bg-surface py-16 sm:py-24">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-        <div className="relative mx-auto max-w-6xl px-4 text-center">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            <span className="text-primary">オリエンティア</span>を、ライバルを、
-            <br className="hidden sm:inline" />
-            データで読む。
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base text-muted sm:text-lg">
-            巡航速度・ミス率・調子まで、選手をまるごと分析。
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/events"
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
-            >
-              <CalendarDays className="h-4 w-4" />
-              イベント
-            </Link>
-            <Link
-              href="/rankings"
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
-            >
-              <Trophy className="h-4 w-4" />
-              ランキング
-            </Link>
-            <Link
-              href="/analysis"
-              className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-6 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
-            >
-              <BarChart3 className="h-4 w-4" />
-              選手分析
-            </Link>
+      {/* Hero — エディトリアル（テキストのみ・左寄せ・余白で構成） */}
+      <section className="border-b border-border bg-surface">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20 lg:py-24">
+          <div className="max-w-3xl">
+              <p className="flex items-center gap-2.5 text-xs font-medium tracking-wide text-muted">
+                <span className="h-px w-8 bg-primary/70" />
+                日本のオリエンテーリング・データプラットフォーム
+              </p>
+              <h1 className="mt-5 text-4xl font-bold leading-[1.18] tracking-tight sm:text-5xl lg:text-6xl">
+                <span className="text-primary">オリエンティア</span>を、
+                <br />
+                ライバルを、
+                <br />
+                データで読む。
+              </h1>
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-foreground/75 sm:text-lg">
+                巡航速度・ミス率・調子まで、選手をまるごと分析。
+              </p>
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link
+                  href="/analysis"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-bold text-background transition-colors hover:bg-primary-dark"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  選手分析
+                </Link>
+                <Link
+                  href="/rankings"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border-strong px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
+                >
+                  <Trophy className="h-4 w-4" />
+                  ランキング
+                </Link>
+                <Link
+                  href="/events"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border-strong px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  イベント
+                </Link>
+              </div>
+              {/* 直近の大会ハイライトへのジャンプ */}
+              {hasHighlights && (
+                <a
+                  href="#weekend-highlights"
+                  className="mt-6 inline-flex items-center gap-1.5 text-xs font-medium text-positive transition-colors hover:text-foreground"
+                >
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  直近の大会ハイライトを見る
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </a>
+              )}
           </div>
-          {/* 直近の大会ハイライトへのジャンプ（特にスマホで上部から気づけるように） */}
-          {hasHighlights && (
-            <a
-              href="#weekend-highlights"
-              className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/10 px-4 py-1.5 text-xs font-medium text-green-400 transition-colors hover:bg-green-500/20"
-            >
-              <TrendingUp className="h-3.5 w-3.5" />
-              直近の大会ハイライトを見る
-              <ChevronDown className="h-3.5 w-3.5" />
-            </a>
-          )}
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Stats — エディトリアルなコールアウト（アクセント左ボーダー・mono 数値・カード装飾なし） */}
       <section className="border-b border-border bg-card">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-px sm:grid-cols-4">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-6 px-4 py-8 sm:grid-cols-4">
           {[
-            { value: stats.events.toLocaleString(), label: "収集イベント", suffix: "" },
-            { value: stats.athletes.toLocaleString(), label: "ランキング掲載選手", suffix: "" },
-            { value: stats.lcRecords.toLocaleString(), label: "成績レコード", suffix: "" },
-            { value: stats.clubs.toLocaleString(), label: "クラブ", suffix: "" },
+            { value: stats.events.toLocaleString(), label: "収集イベント" },
+            { value: stats.athletes.toLocaleString(), label: "ランキング掲載選手" },
+            { value: stats.lcRecords.toLocaleString(), label: "成績レコード" },
+            { value: stats.clubs.toLocaleString(), label: "クラブ" },
           ].map((stat) => (
-            <div key={stat.label} className="border-r border-border px-4 py-5 text-center last:border-r-0">
-              <div className="text-2xl font-bold text-primary">
+            <div key={stat.label} className="border-l-2 border-primary/60 pl-4">
+              <div className="font-mono text-2xl font-bold tabular-nums text-foreground sm:text-3xl">
                 {stat.value}
-                <span className="text-sm text-muted">{stat.suffix}</span>
               </div>
               <div className="mt-1 text-xs text-muted">{stat.label}</div>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="border-b border-border py-12 sm:py-16">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              { icon: CalendarDays, title: "イベント", desc: "JOY連携で最新大会情報を自動取得・Lap Center連携", href: "/events", color: "text-[#00e5ff]" },
-              { icon: Trophy, title: "ランキング", desc: "JOYランキング全カテゴリ対応", href: "/rankings", color: "text-[#ffab00]" },
-              { icon: BarChart3, title: "選手分析", desc: "成績傾向・特性分類・クラブ統計・選手比較", href: "/analysis", color: "text-[#e040fb]" },
-            ].map((f) => (
-              <Link
-                key={f.title}
-                href={f.href}
-                className="group rounded-lg border border-border bg-card p-5 transition-all hover:border-primary/30 hover:bg-card-hover"
-              >
-                <f.icon className={`h-8 w-8 ${f.color}`} />
-                <h3 className="mt-3 text-sm font-semibold">{f.title}</h3>
-                <p className="mt-1 text-xs text-muted">{f.desc}</p>
-                <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                  開く <ArrowRight className="h-3 w-3" />
-                </span>
-              </Link>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -157,7 +137,7 @@ export default async function Home() {
                   className="flex items-center gap-4 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover"
                 >
                   <div className="hidden w-16 flex-shrink-0 text-center sm:block">
-                    <div className="text-xl font-bold text-primary">
+                    <div className="font-mono text-xl font-bold tabular-nums text-primary">
                       {new Date(event.date).getDate()}
                     </div>
                     <div className="text-xs text-muted">
