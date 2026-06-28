@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
@@ -23,6 +23,50 @@ import { HeadToHead } from "./HeadToHead";
 interface Props {
   summary: AthleteSummary;
   athleteIndex: AthleteIndex;
+}
+
+/**
+ * 子（recharts チャート等の重量コンポーネント）を viewport 近接までマウント遅延する。
+ * iOS Safari の WebContent メモリ上限対策: 選手ページで複数チャートが一斉マウントすると
+ * ピークメモリが端末上限を超え、間欠的にタブがクラッシュ（"問題が繰り返し起きました"）する。
+ * 同時マウント数を抑えて緩和する。表示前はプレースホルダで領域を確保し CLS を出さない。
+ */
+function DeferUntilVisible({
+  minHeight,
+  children,
+}: {
+  minHeight: number;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // 非対応環境（IntersectionObserver なし）は遅延せず即マウント
+    if (typeof IntersectionObserver === "undefined") {
+      setShown(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setShown(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "300px" }, // 画面到達の少し手前で先読みマウント
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} style={shown ? undefined : { minHeight }}>
+      {shown ? children : null}
+    </div>
+  );
 }
 
 export function AthleteDetail({ summary, athleteIndex }: Props) {
@@ -82,8 +126,14 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
       <ProfileHeader profile={profile} />
       <TypeBadge profile={profile} />
       <StatsCards profile={profile} />
-      <ScoreChart profile={profile} />
-      {lcData && lcData.length >= 2 && <LapCenterChart data={lcData} profile={profile} />}
+      <DeferUntilVisible minHeight={320}>
+        <ScoreChart profile={profile} />
+      </DeferUntilVisible>
+      {lcData && lcData.length >= 2 && (
+        <DeferUntilVisible minHeight={560}>
+          <LapCenterChart data={lcData} profile={profile} />
+        </DeferUntilVisible>
+      )}
       <RecentEvents profile={profile} />
       {/* key で選手切替時に相手選択をリセット */}
       <HeadToHead
@@ -654,6 +704,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
                 strokeWidth={2}
                 dot={{ fill: "#4ade80", r: 3 }}
                 activeDot={{ r: 5 }}
+                isAnimationActive={false}
                 connectNulls
               />
             )}
@@ -666,6 +717,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
                 strokeWidth={2}
                 dot={{ fill: "#60a5fa", r: 3 }}
                 activeDot={{ r: 5 }}
+                isAnimationActive={false}
                 connectNulls
               />
             )}
@@ -679,6 +731,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
                 strokeDasharray="4 3"
                 dot={false}
                 activeDot={false}
+                isAnimationActive={false}
                 connectNulls
                 legendType="none"
               />
@@ -693,6 +746,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
                 strokeDasharray="4 3"
                 dot={false}
                 activeDot={false}
+                isAnimationActive={false}
                 connectNulls
                 legendType="none"
               />
@@ -936,11 +990,12 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
                 strokeWidth={2}
                 dot={({ cx, cy, payload }: any) => {
                   const v = payload.fSpeed;
-                  if (v == null) return <></>;
+                  if (v == null) return null;
                   const op = valOpacity(v, speedMin, speedMax);
                   return <circle cx={cx} cy={cy} r={3.5} fill={`rgba(74,222,128,${op})`} />;
                 }}
                 activeDot={{ r: 5, fill: "#4ade80" }}
+                isAnimationActive={false}
                 connectNulls
               />
             )}
@@ -953,11 +1008,12 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
                 strokeWidth={2}
                 dot={({ cx, cy, payload }: any) => {
                   const v = payload.sSpeed;
-                  if (v == null) return <></>;
+                  if (v == null) return null;
                   const op = valOpacity(v, speedMin, speedMax);
                   return <circle cx={cx} cy={cy} r={3.5} fill={`rgba(96,165,250,${op})`} />;
                 }}
                 activeDot={{ r: 5, fill: "#60a5fa" }}
+                isAnimationActive={false}
                 connectNulls
               />
             )}
@@ -971,6 +1027,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
                 strokeDasharray="4 3"
                 dot={false}
                 activeDot={false}
+                isAnimationActive={false}
                 connectNulls
                 legendType="none"
               />
@@ -985,6 +1042,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
                 strokeDasharray="4 3"
                 dot={false}
                 activeDot={false}
+                isAnimationActive={false}
                 connectNulls
                 legendType="none"
               />
@@ -1039,11 +1097,12 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
                 strokeWidth={2}
                 dot={({ cx, cy, payload }: any) => {
                   const v = payload.fMiss;
-                  if (v == null) return <></>;
+                  if (v == null) return null;
                   const op = valOpacity(v, missMin, missMax);
                   return <circle cx={cx} cy={cy} r={3.5} fill={`rgba(74,222,128,${op})`} />;
                 }}
                 activeDot={{ r: 5, fill: "#4ade80" }}
+                isAnimationActive={false}
                 connectNulls
               />
             )}
@@ -1056,11 +1115,12 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
                 strokeWidth={2}
                 dot={({ cx, cy, payload }: any) => {
                   const v = payload.sMiss;
-                  if (v == null) return <></>;
+                  if (v == null) return null;
                   const op = valOpacity(v, missMin, missMax);
                   return <circle cx={cx} cy={cy} r={3.5} fill={`rgba(96,165,250,${op})`} />;
                 }}
                 activeDot={{ r: 5, fill: "#60a5fa" }}
+                isAnimationActive={false}
                 connectNulls
               />
             )}
@@ -1074,6 +1134,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
                 strokeDasharray="4 3"
                 dot={false}
                 activeDot={false}
+                isAnimationActive={false}
                 connectNulls
                 legendType="none"
               />
@@ -1088,6 +1149,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
                 strokeDasharray="4 3"
                 dot={false}
                 activeDot={false}
+                isAnimationActive={false}
                 connectNulls
                 legendType="none"
               />
