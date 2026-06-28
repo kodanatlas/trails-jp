@@ -115,12 +115,14 @@ export async function buildEntryIndex(
   const startedAt = Date.now();
 
   const athletes: Record<string, AthleteEntryRef[]> = {};
+  const scrapedEventIds: number[] = [];
   let scraped = 0;
   let nextIdx = 0;
 
   const ingest = (s: ScrapedEvent): void => {
     scraped++;
     const { ev, total, rows } = s;
+    scrapedEventIds.push(ev.joe_event_id); // エントリー0件(ロゲイニング/講習等)もフェッチ成功として記録
     const entryStatus = ev.entry_status; // "open" | "closed" | "none"（そのまま保持）
     for (const row of rows) {
       const baseKey = normalizeNameKey(row.name);
@@ -181,6 +183,7 @@ export async function buildEntryIndex(
     generatedAt: new Date().toISOString(),
     targetEventCount: targetEvents.length,
     scrapedEventCount: scraped,
+    scrapedEventIds,
     athletes,
   };
 }

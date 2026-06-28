@@ -34,5 +34,11 @@ export interface EntryIndex {
   targetEventCount: number;
   /** 実際に取得成功した大会数（部分許容の可視化） */
   scrapedEventCount: number;
+  /**
+   * 実際にフェッチ成功した大会の joe_event_id 一覧（エントリー0件の大会＝ロゲイニング/講習等も含む）。
+   * 劣化判定(index-quality)が「窓外へ出た大会=正常減少」と「同一大会の取りこぼし=劣化」を
+   * 区別するために使う。旧 index には存在しない（undefined）ため optional。
+   */
+  scrapedEventIds?: number[];
   athletes: Record<string, AthleteEntryRef[]>;
 }

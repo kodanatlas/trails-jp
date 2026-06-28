@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { readEventsStrict } from "@/lib/events-store";
 import { buildEntryIndex } from "@/lib/entries/build-index";
 import { readEntryIndex, writeEntryIndex } from "@/lib/entry-index-store";
-import { isIndexRegression } from "@/lib/entries/index-quality";
+import { assessRegression } from "@/lib/entries/index-quality";
 import { logCron } from "@/lib/cron-logger";
 import { notifyCronWarning } from "@/lib/cron-notifier";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -161,22 +161,32 @@ export async function GET(request: Request) {
       );
     }
 
-    // 劣化上書き防止: 既存 index に対し athletes が大幅減なら上書きしない（低品質 index で良い index を潰さない）。
-    // 全滅(scraped=0)は上で別処理済み。ここは「成功扱いだが品質が落ちた」部分失敗・競合を弾く。
+    // 劣化上書き防止: 「同一大会のエントリー数」が既存比で大幅減なら上書きしない（低品質 index で良い index を潰さない）。
+    // 大会が窓外へ出たことによる athletes 総数の正常減少は per-event 比較で中和される（誤発火しない）。
+    // 全滅(scraped=0)は上で別処理済み。ここは「成功扱いだが同一大会で取りこぼした」部分失敗・競合を弾く。
     const prevIndex = await readEntryIndex();
-    if (isIndexRegression(prevIndex, index, { minRatio: 0.6, floor: 100 })) {
+    const reg = assessRegression(prevIndex, index, {
+      minRatio: 0.6,
+      floor: 100,
+      minCommonEvents: 8,
+    });
+    if (reg.regression) {
       const prevAthletes = prevIndex ? Object.keys(prevIndex.athletes).length : 0;
       const newAthletes = Object.keys(index.athletes).length;
+      const detail = {
+        mode: reg.mode,
+        commonEvents: reg.commonEvents,
+        prevEntries: reg.prevBasis,
+        nextEntries: reg.nextBasis,
+        prevAthletes,
+        newAthletes,
+        scraped: index.scrapedEventCount,
+        targets: targets.length,
+      };
       await logCron(
         "sync-entries",
         "error",
-        {
-          error: "index_regression_blocked",
-          prevAthletes,
-          newAthletes,
-          scraped: index.scrapedEventCount,
-          targets: targets.length,
-        },
+        { error: "index_regression_blocked", ...detail },
         Date.now() - start,
       );
       await notifyCronWarning(
@@ -184,16 +194,15 @@ export async function GET(request: Request) {
         "index_regression_blocked",
         {
           warning: "index_regression_blocked",
-          prevAthletes,
-          newAthletes,
-          scraped: index.scrapedEventCount,
-          targets: targets.length,
-          hint: "新 index の athletes が既存比で大幅減。JOY/どこオリの一時遮断や競合の可能性。既存 index を保持。",
+          ...detail,
+          hint:
+            "同一大会(共通 scraped 大会)でエントリーが既存比 60% 未満に減少。JOY/どこオリの一時遮断やパース不全の可能性。既存 index を保持。" +
+            "（mode=fallback-count の場合は旧 index か共通大会が薄く、総数比較にフォールバックした判定）",
         },
         Date.now() - start,
       );
       return NextResponse.json(
-        { success: false, blocked: "index_regression", prevAthletes, newAthletes },
+        { success: false, blocked: "index_regression", mode: reg.mode, prevAthletes, newAthletes },
         { status: 200 },
       );
     }
