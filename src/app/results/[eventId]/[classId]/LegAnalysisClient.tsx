@@ -8,6 +8,7 @@ import { lapStrToSeconds } from "@/lib/scraper/lapcenter-detail";
 import type { LapCenterPerformance } from "@/lib/analysis/types";
 import {
   buildLegView,
+  buildLegPrizes,
   deriveAve3PerLeg,
   legLabel,
   fmtSignedSeconds,
@@ -173,11 +174,77 @@ export function LegAnalysisClient({
       ) : (
         <CompareGrid runners={runners} names={ordered} athleteName={athleteName} onRemove={remove} />
       )}
+      <LegPrizeBoardView runners={runners} athleteName={athleteName} />
       <Glossary />
 
       <p className="mt-4 text-center text-[10px] leading-relaxed text-muted">
         データ: LapCenter (mulka2.com) を trails.jp が再構成。基準=上位3平均(Ave3)。
       </p>
+    </div>
+  );
+}
+
+/** ③ 区間賞ボード（折りたたみ）: 各レッグ最速＝区間賞。獲得数ランキング＋レッグ別最速。レース全体の読み物。 */
+function LegPrizeBoardView({ runners, athleteName }: { runners: LapCenterRunnerDetail[]; athleteName: string | null }) {
+  const board = useMemo(() => buildLegPrizes(runners), [runners]);
+  const [open, setOpen] = useState(false);
+  if (!board || board.legs.length === 0) return null;
+  const top = board.tally.slice(0, 8);
+  const maxCount = Math.max(...top.map((t) => t.count), 1);
+  const subjectKey = athleteName ? norm(athleteName) : null;
+  return (
+    <div className="mt-5 rounded-2xl border border-border bg-card p-4">
+      <p className="text-[11px] tracking-wider text-muted">区間賞 獲得数（各レッグの最速＝区間1位）</p>
+      <div className="mt-2 space-y-1">
+        {top.map((t, i) => {
+          const isSubj = subjectKey != null && norm(t.name) === subjectKey;
+          const w = (t.count / maxCount) * 100;
+          return (
+            <div key={`${t.name}-${i}`} className="flex items-center gap-2 text-xs">
+              <span className="w-4 flex-shrink-0 text-right font-mono text-[10px] text-muted">{i + 1}</span>
+              <span
+                className={`w-24 flex-shrink-0 truncate sm:w-32 ${isSubj ? "font-bold text-primary" : "text-foreground"}`}
+                title={t.club ? `${t.name}（${t.club}）` : t.name}
+              >
+                {t.name}
+              </span>
+              <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-border">
+                <div className={`h-full rounded-full ${isSubj ? "bg-primary" : "bg-primary/45"}`} style={{ width: `${w}%` }} />
+              </div>
+              <span className="w-11 flex-shrink-0 text-right font-mono font-bold tabular-nums">
+                {t.count}
+                <span className="ml-0.5 text-[9px] font-normal text-muted">区間</span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="mt-3 text-[11px] font-medium text-primary transition-colors hover:underline"
+      >
+        {open ? "レッグ別の最速を閉じる ▲" : "レッグ別の最速を見る ▼"}
+      </button>
+      {open && (
+        <div className="mt-2 overflow-hidden rounded-lg border border-border">
+          {board.legs.map((p, i) => {
+            const isSubj = subjectKey != null && p.winner != null && norm(p.winner) === subjectKey;
+            return (
+              <div
+                key={p.legIndex}
+                className={`flex items-center gap-3 px-2.5 py-1.5 text-xs ${i % 2 ? "bg-surface/50" : ""}`}
+              >
+                <span className="w-12 flex-shrink-0 font-mono text-muted">{p.label}</span>
+                <span className={`min-w-0 flex-1 truncate ${isSubj ? "font-bold text-primary" : "text-foreground"}`}>
+                  {p.winner ?? "—"}
+                </span>
+                <span className="flex-shrink-0 font-mono text-muted">{p.time}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <p className="mt-2 text-[9px] text-muted/70">区間賞＝そのレッグの最速タイム。獲得数が多い＝多くの区間でトップ。</p>
     </div>
   );
 }
@@ -194,6 +261,8 @@ function Glossary() {
     ["比較相手とのタイム差", "各CPでの自分と比較相手の実経過タイム差。上=遅れ・下=リード。段差が大きいレッグで差がついた。"],
     ["区間順位", "そのレッグ単独での順位（完走者中）。"],
     ["平均比", "自分の同種目(Forest/Sprint別)平均との差。負＝平均より良い。"],
+    ["罠レッグ vs 自分のミス", "自分のロスをフィールド全体と比較。フィールド中央値も大きい＝罠レッグ(コースが難しく皆ロス)、フィールドは速いのに自分だけ＝自分のミス。コース起因(フィールド中央値)と自分の超過に分解。"],
+    ["区間賞", "そのレッグの最速タイム（区間1位）。獲得数が多いほど多くの区間でトップ。"],
   ];
   return (
     <details className="mt-4 rounded-lg border border-border bg-card/50 p-3 text-[11px] text-muted">
@@ -407,6 +476,65 @@ function SingleView({
           </div>
         </div>
       )}
+
+      {view.n >= 5 &&
+        (() => {
+          // 罠レッグ判定: 自分の各ロスを「コース起因(フィールド中央値) + 自分の超過」に分解。
+          const FLOOR = 5; // これ未満の小ロスは判定対象外（秒）
+          const rows = view.legs
+            .flatMap((l, i) => {
+              const your = l.lossSec;
+              const fieldMed = l.fieldMedianLossSec;
+              if (your <= FLOOR || fieldMed == null) return [];
+              const course = Math.max(0, Math.min(fieldMed, your)); // コース起因はフィールド中央値（自分のロスで頭打ち）
+              const own = your - course; // 自分の超過
+              const ratio = your > 0 ? course / your : 0;
+              const verdict = ratio >= 0.5 ? "trap" : ratio <= 0.2 ? "own" : "mixed";
+              return [{ i, label: l.label, your, course, own, verdict }];
+            })
+            .sort((a, b) => b.your - a.your)
+            .slice(0, 6);
+          if (rows.length === 0) return null;
+          const totCourse = rows.reduce((s, r) => s + r.course, 0);
+          const totOwn = rows.reduce((s, r) => s + r.own, 0);
+          return (
+            <div className="mt-5 rounded-2xl border border-border bg-card p-4">
+              <p className="text-[11px] tracking-wider text-muted">罠レッグ vs 自分のミス</p>
+              <p className="mb-2 text-[10px] text-muted/80">
+                各ロスをフィールド全体と比較。フィールドも遅い＝<span className="text-warning">罠レッグ（コース要因）</span>／フィールドは速いのに自分だけ＝<span className="text-red-400">自分のミス</span>。
+                {view.n < 8 && <span className="text-muted/60">（n&lt;8 は参考値）</span>}
+              </p>
+              <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px]">
+                <span className="text-muted">上位ロスの内訳:</span>
+                <span className="text-warning">コース起因 {fmtSignedSeconds(totCourse)}</span>
+                <span className="text-red-400">自分の超過 {fmtSignedSeconds(totOwn)}</span>
+              </div>
+              <div className="space-y-1.5">
+                {rows.map((r) => {
+                  const cw = r.your > 0 ? (r.course / r.your) * 100 : 0;
+                  return (
+                    <div key={r.i} className="flex items-center gap-2 text-xs">
+                      <span className="w-12 flex-shrink-0 font-mono text-muted">{r.label}</span>
+                      <span className="w-12 flex-shrink-0 text-right font-mono font-bold text-red-400">{fmtSignedSeconds(r.your)}</span>
+                      <div className="flex h-2 flex-1 overflow-hidden rounded-full bg-border" title={`コース起因 ${fmtSignedSeconds(r.course)} / 自分の超過 ${fmtSignedSeconds(r.own)}`}>
+                        <div className="h-full bg-warning/70" style={{ width: `${cw}%` }} />
+                        <div className="h-full bg-red-400/80" style={{ width: `${100 - cw}%` }} />
+                      </div>
+                      <span className={`w-16 flex-shrink-0 text-right text-[10px] font-bold ${
+                        r.verdict === "trap" ? "text-warning" : r.verdict === "own" ? "text-red-400" : "text-muted"
+                      }`}>
+                        {r.verdict === "trap" ? "罠レッグ" : r.verdict === "own" ? "自分のミス" : "半々"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-1.5 text-[9px] text-muted/70">
+                コース起因 ≈ フィールドのロス中央値、自分の超過 = 自分のロス − コース起因。LapCenter/WinSplits はフィールド分布を出さないため判定不能。
+              </p>
+            </div>
+          );
+        })()}
 
       <p className="mb-2 mt-5 px-1 text-[11px] tracking-wider text-muted">
         レッグ別 ロス（基準＝上位平均 / 緑=基準より速い）

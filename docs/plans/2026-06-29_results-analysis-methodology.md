@@ -357,4 +357,15 @@ C(l) = Cov(split_l, Total − split_l) / Var(Total)     ※自己分散を除去
 - **ランディング `/results/page.tsx` ＋ `ResultsBrowse.tsx`**: LapCenter対応大会を新しい順に検索付き一覧 → クラス選択へ。
 - **クラス選択 `/results/[eventId]/page.tsx`**: `fetchEventClasses` でクラス一覧 → レッグ分析へ（runtime=nodejs）。
 - 両入口確立: ①選手ページ→`レッグ▸`→`/results/go`→leg ／ ②`/results`→大会→クラス→leg。**tsc 0・37テスト green・全ページ実機確認**。
-- 状態: ローカルのみ（未コミット）。**残＝コミット/本番デプロイ判断のみ**（trails.jp は main マージ＝本番デプロイ。`/api/lc`・events 同期元 Supabase 依存部は本番で初めて目視可）。
+
+### 本番デプロイ＋追加分析＋運用修正  ✅ 2026-06-29（PR #3〜#13 main マージ＝本番反映・#14 は未マージ）
+- **本番反映済（trailsjp.vercel.app）**: 結果分析セクション一式・①②③④・テーマ切替・更新情報の新機能告知。前川/児玉健の選手ページで `レッグ▸`→leg 全データ描画を実機確認。
+- **②タイム差グラフに作り替え**: 累積 `legLossTime` 重ねは各自別基準で比較不能だった（優勝者のロスが多く見える）→ **比較相手との実経過タイム差(GapChart・0=比較相手基準)**。比較相手はプルダウン切替・全完走者選択可。
+- **ノーミス推定の意味確定**: 単一=「あなたがノーミスなら○位」(理想 vs 他者実記録)、**グリッドは順位非表示=ノーミスタイムのみ**（複数1位の混乱回避）。
+- **③区間賞ボード**: 各レッグ最速(lapRank==1)の獲得数ランキング＋レッグ別（折りたたみ）。
+- **④罠レッグ判定**: 自分のロスをフィールドのロス中央値と比較し「コース起因(中央値)＋自分の超過」に分解→罠レッグ/自分のミス。n≥5ゲート。**LapCenter/WinSplitsに無い差別化**。
+- **LapCenter手動マッチ表**（`lapcenter.ts` `MANUAL_LC_OVERRIDES`）: 自動マッチ漏れを `joe_event_id→lc_id` で強制上書き。現在 2448→9845/2197→9714/2286→9644/2282→9647。**反映は次回日次cron後**。
+- **選手レッグ▸の補完**: ランキング行に無いLapCenter取込レース(前日大会等ポイント対象外/古いバンドル欠落)を **lc_performances由来の「LCのみ行」でunion**（`AthleteDetail.tsx`）。
+- **Service Worker恒久対策**: `public/sw.js` CACHE_NAME v1→v2＋静的SWR化（デプロイ後に旧表示が残る問題＝prod影響を解消。[[reference_trails_dev_service_worker_cache]]）。
+- **未実装（次フェーズ）**: ⑤決定的レッグ、⑥クロスレース ミス指紋（=堀・per-leg DB ingestion 要）。
+- 状態: ④③＋テストは **PR #14（未マージ）** で停止中＝レビュー後マージで本番反映。運用知見は [[reference_trails_results_analysis]] に集約。

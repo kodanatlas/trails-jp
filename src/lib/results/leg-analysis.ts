@@ -23,6 +23,7 @@ export interface LegCell {
   lapRank: number | null;   // そのレッグの区間順位
   legSpeed: number | null;  // 相対ペース（100=Ave3, 小さいほど速い）
   isTopMiss: boolean;       // ロス上位3レッグ
+  fieldMedianLossSec: number | null; // フィールド全体のロス中央値（罠レッグ判定用・高い=コースが難しい）
 }
 
 export interface LegViewSubject {
@@ -62,6 +63,50 @@ export interface LegView {
   cumulativeLoss: number[]; // 各CP時点の累積ロス秒（積み上げカーブ用・legs と同順）
 }
 
+export interface LegPrize {
+  legIndex: number;
+  label: string;
+  winner: string | null; // そのレッグの最速（lapRank==1）
+  club: string;
+  time: string; // 区間タイム
+}
+
+export interface LegPrizeBoard {
+  legs: LegPrize[];
+  tally: { name: string; club: string; count: number }[]; // 区間賞 獲得数ランキング
+  legCount: number;
+}
+
+/** ③ 区間賞ボード: 各レッグの最速（lapRank==1）と、選手別の区間賞獲得数ランキング。 */
+export function buildLegPrizes(runners: LapCenterRunnerDetail[]): LegPrizeBoard | null {
+  const finishers = runners.filter((r) => r.rank != null);
+  if (finishers.length === 0) return null;
+  const legCount = Math.max(...finishers.map((r) => r.lapRank.length), 0);
+  if (legCount === 0) return null;
+
+  const legs: LegPrize[] = [];
+  const tally = new Map<string, { name: string; club: string; count: number }>();
+  for (let l = 0; l < legCount; l++) {
+    const winners = finishers.filter((r) => r.lapRank[l] === 1);
+    const w = winners[0] ?? null;
+    legs.push({
+      legIndex: l,
+      label: legLabel(l, legCount),
+      winner: w ? w.name : null,
+      club: w ? w.club : "",
+      time: w && w.lapTime[l] != null ? w.lapTime[l] : "",
+    });
+    for (const win of winners) {
+      const key = normalizeName(win.name);
+      const cur = tally.get(key);
+      if (cur) cur.count++;
+      else tally.set(key, { name: win.name, club: win.club, count: 1 });
+    }
+  }
+  const tallyArr = [...tally.values()].sort((a, b) => b.count - a.count);
+  return { legs, tally: tallyArr, legCount };
+}
+
 /** 自分の同種目平均との比較を算出。history は選手の LC 全履歴、discipline は現レースの種目。 */
 function buildSelfComparison(
   subject: LapCenterRunnerDetail,
@@ -95,6 +140,13 @@ function mean(xs: number[]): number | null {
 
 function round1(x: number | null): number | null {
   return x == null ? null : Math.round(x * 10) / 10;
+}
+
+function median(xs: number[]): number | null {
+  if (xs.length === 0) return null;
+  const s = [...xs].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
 
 /** "S→1" / "i→i+1" / "(L-1)→F" のレッグ表記。 */
@@ -183,6 +235,16 @@ export function buildLegView(
     }));
   const topMissSet = new Set(topMistakes.map((x) => x.index));
 
+  // 罠レッグ判定: 各レッグのフィールド全体のロス中央値（全完走者の legLossTime[l]）。
+  // 高い=多くの走者が自分のペース基準で遅れた=コースが難しい(罠)。≈0=易しい→自分のロスは自分のミス。
+  const fieldMedianLossByLeg: (number | null)[] = [];
+  for (let l = 0; l < legCount; l++) {
+    const vals = finishers
+      .map((r) => (r.legLossTime[l] != null ? lapStrToSeconds(r.legLossTime[l]) : null))
+      .filter((v): v is number => v != null);
+    fieldMedianLossByLeg.push(median(vals));
+  }
+
   const legs: LegCell[] = subject.lapTime.map((lap, i) => {
     const lossSec = losses[i] ?? 0;
     return {
@@ -196,6 +258,7 @@ export function buildLegView(
       lapRank: subject.lapRank[i] ?? null,
       legSpeed: subject.legSpeed[i] ?? null,
       isTopMiss: topMissSet.has(i),
+      fieldMedianLossSec: fieldMedianLossByLeg[i],
     };
   });
 
