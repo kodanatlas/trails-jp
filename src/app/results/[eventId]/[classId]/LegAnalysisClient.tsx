@@ -190,34 +190,50 @@ function LegPrizeBoardView({ runners, athleteName }: { runners: LapCenterRunnerD
   const [open, setOpen] = useState(false);
   if (!board || board.legs.length === 0) return null;
   const top = board.tally.slice(0, 8);
+  const maxCount = Math.max(...top.map((t) => t.count), 1);
   const subjectKey = athleteName ? norm(athleteName) : null;
   return (
     <div className="mt-5 rounded-2xl border border-border bg-card p-4">
-      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between text-left">
-        <span className="text-[11px] tracking-wider text-muted">区間賞ボード（各レッグの最速）</span>
-        <span className="text-[10px] text-muted">{open ? "レッグ別を閉じる ▲" : "レッグ別を開く ▼"}</span>
-      </button>
-      <div className="mt-2 flex flex-wrap gap-1.5">
+      <p className="text-[11px] tracking-wider text-muted">区間賞 獲得数（各レッグの最速＝区間1位）</p>
+      <div className="mt-2 space-y-1">
         {top.map((t, i) => {
           const isSubj = subjectKey != null && norm(t.name) === subjectKey;
+          const w = (t.count / maxCount) * 100;
           return (
-            <span
-              key={`${t.name}-${i}`}
-              className={`rounded-full border px-2 py-0.5 text-[11px] ${
-                isSubj ? "border-primary bg-primary/15 text-primary" : "border-border bg-surface text-foreground"
-              }`}
-            >
-              {t.name} <b className="font-mono">{t.count}</b>
-            </span>
+            <div key={`${t.name}-${i}`} className="flex items-center gap-2 text-xs">
+              <span className="w-4 flex-shrink-0 text-right font-mono text-[10px] text-muted">{i + 1}</span>
+              <span
+                className={`w-24 flex-shrink-0 truncate sm:w-32 ${isSubj ? "font-bold text-primary" : "text-foreground"}`}
+                title={t.club ? `${t.name}（${t.club}）` : t.name}
+              >
+                {t.name}
+              </span>
+              <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-border">
+                <div className={`h-full rounded-full ${isSubj ? "bg-primary" : "bg-primary/45"}`} style={{ width: `${w}%` }} />
+              </div>
+              <span className="w-11 flex-shrink-0 text-right font-mono font-bold tabular-nums">
+                {t.count}
+                <span className="ml-0.5 text-[9px] font-normal text-muted">区間</span>
+              </span>
+            </div>
           );
         })}
       </div>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="mt-3 text-[11px] font-medium text-primary transition-colors hover:underline"
+      >
+        {open ? "レッグ別の最速を閉じる ▲" : "レッグ別の最速を見る ▼"}
+      </button>
       {open && (
-        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
-          {board.legs.map((p) => {
+        <div className="mt-2 overflow-hidden rounded-lg border border-border">
+          {board.legs.map((p, i) => {
             const isSubj = subjectKey != null && p.winner != null && norm(p.winner) === subjectKey;
             return (
-              <div key={p.legIndex} className="flex items-center gap-2 text-[11px]">
+              <div
+                key={p.legIndex}
+                className={`flex items-center gap-3 px-2.5 py-1.5 text-xs ${i % 2 ? "bg-surface/50" : ""}`}
+              >
                 <span className="w-12 flex-shrink-0 font-mono text-muted">{p.label}</span>
                 <span className={`min-w-0 flex-1 truncate ${isSubj ? "font-bold text-primary" : "text-foreground"}`}>
                   {p.winner ?? "—"}
@@ -228,9 +244,7 @@ function LegPrizeBoardView({ runners, athleteName }: { runners: LapCenterRunnerD
           })}
         </div>
       )}
-      <p className="mt-2 text-[9px] text-muted/70">
-        区間賞＝そのレッグの最速タイム（区間1位）。獲得数が多い＝区間で何度もトップ。
-      </p>
+      <p className="mt-2 text-[9px] text-muted/70">区間賞＝そのレッグの最速タイム。獲得数が多い＝多くの区間でトップ。</p>
     </div>
   );
 }
