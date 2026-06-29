@@ -11,6 +11,7 @@ const navItems = [
   { href: "/events", label: "イベント" },
   { href: "/rankings", label: "ランキング" },
   { href: "/analysis", label: "選手分析" },
+  { href: "/results", label: "結果分析" },
 ];
 
 export function Header() {

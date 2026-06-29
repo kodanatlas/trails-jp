@@ -1,5 +1,8 @@
 import * as cheerio from "cheerio";
 import { fetch as lcFetch, Agent } from "undici";
+import { parseSplitListDetailed } from "./lapcenter-detail";
+
+export type { LapCenterRunnerDetail } from "./lapcenter-detail";
 
 // mulka2.com は 2026-06 の証明書更新でチェーンが不完全になり、Node(undici)の厳格TLS検証では
 // "unable to get local issuer certificate"（中間CA: Let's Encrypt YR2）で失敗する。
@@ -392,4 +395,25 @@ export async function fetchSplitList(
   }
 
   return runners;
+}
+
+// ---------------------------------------------------------------------------
+// split-list.jsp から全ランナーの per-leg 詳細（全配列）を取得（relay-first）
+// 既存 fetchSplitList（集計2値のみ）は破棄せず併存。詳細解析「結果分析」セクション用。
+// パースは純関数 parseSplitListDetailed（lapcenter-detail.ts）に委譲。
+// ---------------------------------------------------------------------------
+
+export async function fetchSplitListDetailed(
+  eventId: number,
+  classId: number
+) {
+  const url = `${BASE_URL}/lapcombat2/split-list.jsp?event=${eventId}&file=1&class=${classId}`;
+  const res = await lcFetch(url, {
+    headers: { "User-Agent": "trails.jp/1.0 (lapcenter sync)" },
+    dispatcher: mulka2Dispatcher,
+  });
+  if (!res.ok) return [];
+
+  const html = await res.text();
+  return parseSplitListDetailed(html);
 }

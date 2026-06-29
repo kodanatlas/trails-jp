@@ -1,0 +1,594 @@
+﻿
+
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, user-scalable=yes">
+<meta name="robots" content="noindex, nofollow" />
+<meta name="description" content="オリエンテーリング大会のリザルト・ラップ解析データを集めた情報サイトです。" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="-1">
+<link href="/framework/mulka2.ico" type="image/vnd.microsoft.icon" rel="icon" />
+<script src="/framework/jquery-2.2.3.min.js" type="text/javascript"></script>
+<script src="/framework/fixed_midashi.js" type="text/javascript"></script>
+<link href="/framework/c3.min.css" type="text/css" rel="stylesheet" />
+<script src="/framework/d3.min.js" type="text/javascript"></script>
+<script src="/framework/c3.min.js" type="text/javascript"></script>
+<link href="/lapcenter/lib/bootstrap.min.css" type="text/css" rel="stylesheet" />
+<script src="/lapcenter/lib/bootstrap.min.js" type="text/javascript"></script>
+<link href="/lapcenter/lib/lapcenter-common.css" type="text/css" rel="stylesheet" />
+<link href="/framework/matoba-common.css" type="text/css" rel="stylesheet" />
+<script src="/framework/matoba-common.js" type="text/javascript"></script>
+<script src="split-list-201901.js" type="text/javascript"></script>
+<link href="split-list-201901.css" type="text/css" rel="stylesheet" />
+<title>新春KO</title>
+</head>
+<body>
+
+	
+
+	<div class="container-fluid" style="margin-top: 16px;">
+
+		
+		<div class="row">
+			<div class="col-xs-12">
+				<a href="../index.jsp"><img src="../image/lapcenter2_header.png" width="150" height="40"></a>
+				<a href="index.jsp?event=9534&file=1" class="btn btn-default" role="button" >戻る</a>
+
+				
+					
+						
+							&nbsp;&nbsp;
+							<a id="btnOldView" href="../../lapcenter-static/9534/18849/pc/lap_1.htm" 
+									class="btn btn-default" role="button" target="_blank">従来表示</a>
+						
+					
+				
+			</div>
+		</div>
+		
+		
+		<div style="line-height: 2; padding-top: 20px;">
+			
+				<span style="padding-right: 10px;">2026/01/01 (木)</span>
+			
+			新春KO
+		</div>
+
+		
+		<form id="frmContents" class="form-horizontal" method="GET" action="split-list.jsp">
+			<input type="hidden" name="event" value="9534" >
+			<input type="hidden" name="file" value="1" >
+			<div class="row" style="padding-top: 5px;">
+				<div class="col-xs-6">
+					<select id="selClass" name="classCourse" class="form-control" style="">
+<option value="cls-0" selected >F1</option>
+<option value="cls-1" >F2</option>
+<option value="cls-2" >F3</option>
+<option value="cls-3" >F4</option>
+<option value="cls-4" >FME</option>
+<option value="cls-5" >FWE</option>
+<option value="cls-6" >Q1</option>
+<option value="cls-7" >Q2</option>
+<option value="cls-8" >Q3</option>
+<option value="cls-9" >Q4</option>
+<option value="cls-10" >QME</option>
+<option value="cls-11" >QWE</option>
+<option value="cor-1" >F1 / F2 / F3 / F4 / FME / FWE</option>
+</select>
+
+				</div>
+				<div class="col-xs-6">
+					<p class="form-control-static">
+						
+							<span style="padding-right: 10px;">2.0km</span>
+						
+						
+							<span style="padding-right: 10px;"></span>
+						
+					</p>
+				</div>
+			</div>
+			<div class="row" style="padding-top: 5px;">
+				<div class="col-sm-6">
+					<select id="selContent" name="content" class="form-control" style="">
+<option value="resultList" >記録一覧</option>
+<option value="analysis" selected >ラップ解析</option>
+<option value="legList" >レッグ分析</option>
+<option value="chartRelative100" >チャート (レッグ上位平均相対)</option>
+<option value="chartRealtime" >チャート (リアルタイム)</option>
+<option value="chartSpeedLoss" >チャート (巡航速度-ミス率)</option>
+</select>
+
+				</div>
+			</div>
+		</form>
+
+		<br>
+
+		
+		<div id="divTable" style="display:none;">
+
+			<div class="analysis-control" style="padding-bottom: 10px;">
+				文字サイズ&nbsp;
+				<button type="button" class="btn btn-default" id="btnAnalysis1">1</button>
+				<button type="button" class="btn btn-default" id="btnAnalysis2">2</button>
+				<button type="button" class="btn btn-default" id="btnAnalysis3">3</button>
+				<button type="button" class="btn btn-default" id="btnAnalysis4">4</button>
+				<button type="button" class="btn btn-default" id="btnAnalysis5">5</button>
+				&nbsp;
+				<label class="checkbox-inline">
+<input type="checkbox" id="chkFixHeader" name="fixHeader" value="true" >
+見出し固定
+</label>
+
+			</div>
+
+			
+			
+				<table id="tblList" _fixedhead="rows:1; cols:1">
+					<colgroup></colgroup>
+					<tbody></tbody>
+				</table>
+			
+
+			<div id="lblWait" class="alert alert-warning" role="alert">表を作成しています。しばらくお待ち下さい。</div>
+			<br>
+			Special Thanks to Mr.Sakurai and Mr.Hatori. 
+
+		</div>
+
+		
+		<div id="divChart" style="display:none;">
+			<div class="chart-control" style="padding-bottom: 10px;">
+				<button type="button" class="btn btn-default" id="btnHeightPlus">
+					<span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
+					拡大
+				</button>
+				<button type="button" class="btn btn-default" id="btnHeightMinus">
+					<span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
+					縮小
+				</button>
+			</div>
+			<div id="lblChartWait" class="alert alert-warning" role="alert">チャートを作成しています。しばらくお待ち下さい。</div>
+
+			<div id="divChartBody">
+			</div>
+			<div class="chart-control">
+				<button type="button" class="btn btn-default" id="btnClearAll">全員非表示</button>
+				<button type="button" class="btn btn-default" id="btnSelectAll">全員表示</button>
+				<br><br>
+				
+				名前をクリックすると表示/非表示を切り替えられます。 
+			</div>
+			
+		</div>
+	</div>
+	<br>
+
+	<script>
+
+var eventNumber = 9534;
+var fileIndex = 1;
+
+	var classFileNumber = 18849;
+	var classFileName = '1';
+	var classId = 0;
+
+
+
+var runnerList = [];
+
+var runnerData = {};
+runnerData['index'] = 0;
+runnerData['runnerName'] = '亞宸';
+runnerData['clubName'] = '';
+runnerData['runnerId'] = '0';
+runnerData['rank'] = '1';
+runnerData['result'] = '0:11:13';
+runnerData['start'] = '10:35:00';
+runnerData['speed'] = '93.7';
+runnerData['lossRate'] = '9.4';
+runnerData['totalRelative'] = '101';
+runnerData['totalLossTime'] = '1:03';
+runnerData['idealTime'] = '10:10';
+runnerData['lapTime'] = ['1:06','0:21','0:39','0:30','1:47','0:19','0:41','1:07','0:21','1:00','0:30','1:04','0:42','0:35','0:13','0:18'];
+runnerData['lapRank'] = ['3','2','4','5','1','1','1','7','4','1','2','2','2','1','1','6'];
+runnerData['elapsedTime'] = ['1:06','1:27','2:06','2:36','4:23','4:42','5:23','6:30','6:51','7:51','8:21','9:25','10:07','10:42','10:55','11:13'];
+runnerData['elapsedRank'] = ['3','3','3','3','1','1','1','1','1','1','1','1','1','1','1','1'];
+runnerData['legLossTime'] = ['0:06','0:02','0:06','0:05','-0:07','0:01','0:02','0:19','0:04','-0:01','0:02','0:05','0:06','-0:02','0:01','0:04'];
+runnerData['legSpeed'] = ['103','102','110','113','88','98','98','130','119','93','100','101','110','88','100','117'];
+runnerList.push(runnerData);
+
+var runnerData = {};
+runnerData['index'] = 1;
+runnerData['runnerName'] = 'Billy';
+runnerData['clubName'] = '';
+runnerData['runnerId'] = '1';
+runnerData['rank'] = '2';
+runnerData['result'] = '0:11:26';
+runnerData['start'] = '10:35:00';
+runnerData['speed'] = '96.9';
+runnerData['lossRate'] = '7.4';
+runnerData['totalRelative'] = '103';
+runnerData['totalLossTime'] = '0:51';
+runnerData['idealTime'] = '10:35';
+runnerData['lapTime'] = ['1:04','0:19','0:34','0:28','2:20','0:19','0:42','0:50','0:19','1:07','0:36','1:05','0:31','0:42','0:13','0:17'];
+runnerData['lapRank'] = ['2','1','1','2','5','1','2','1','3','2','4','3','1','2','1','4'];
+runnerData['elapsedTime'] = ['1:04','1:23','1:57','2:25','4:45','5:04','5:46','6:36','6:55','8:02','8:38','9:43','10:14','10:56','11:09','11:26'];
+runnerData['elapsedRank'] = ['2','1','1','1','2','2','2','2','2','2','2','2','2','2','2','2'];
+runnerData['legLossTime'] = ['0:02','-0:01','0:00','0:02','0:22','0:00','0:02','0:00','0:02','0:04','0:07','0:04','-0:06','0:04','0:00','0:02'];
+runnerData['legSpeed'] = ['99','92','96','105','115','98','101','97','108','104','120','103','81','106','100','111'];
+runnerList.push(runnerData);
+
+var runnerData = {};
+runnerData['index'] = 2;
+runnerData['runnerName'] = '許文梧';
+runnerData['clubName'] = '';
+runnerData['runnerId'] = '2';
+runnerData['rank'] = '3';
+runnerData['result'] = '0:12:14';
+runnerData['start'] = '10:35:00';
+runnerData['speed'] = '103.9';
+runnerData['lossRate'] = '6.8';
+runnerData['totalRelative'] = '111';
+runnerData['totalLossTime'] = '0:50';
+runnerData['idealTime'] = '11:24';
+runnerData['lapTime'] = ['1:09','0:30','0:44','0:35','2:02','0:20','0:50','0:55','0:21','1:09','0:31','1:09','0:47','0:43','0:13','0:16'];
+runnerData['lapRank'] = ['5','7','7','6','2','3','8','3','4','4','3','5','7','4','1','2'];
+runnerData['elapsedTime'] = ['1:09','1:39','2:23','2:58','5:00','5:20','6:10','7:05','7:26','8:35','9:06','10:15','11:02','11:45','11:58','12:14'];
+runnerData['elapsedRank'] = ['5','5','6','6','5','5','5','5','5','5','3','3','4','3','3','3'];
+runnerData['legLossTime'] = ['0:02','0:09','0:07','0:07','-0:05','0:00','0:07','0:01','0:03','0:02','0:00','0:03','0:07','0:02','-0:01','0:00'];
+runnerData['legSpeed'] = ['107','145','125','131','100','103','120','106','119','107','103','109','123','108','100','104'];
+runnerList.push(runnerData);
+
+var runnerData = {};
+runnerData['index'] = 3;
+runnerData['runnerName'] = '許文桐';
+runnerData['clubName'] = '';
+runnerData['runnerId'] = '3';
+runnerData['rank'] = '4';
+runnerData['result'] = '0:12:16';
+runnerData['start'] = '10:35:00';
+runnerData['speed'] = '103.5';
+runnerData['lossRate'] = '7.9';
+runnerData['totalRelative'] = '111';
+runnerData['totalLossTime'] = '0:58';
+runnerData['idealTime'] = '11:18';
+runnerData['lapTime'] = ['1:03','0:22','0:34','0:28','2:29','0:21','0:43','1:01','0:16','1:13','0:39','1:09','0:42','0:46','0:14','0:16'];
+runnerData['lapRank'] = ['1','3','1','2','6','4','4','5','1','6','5','5','2','6','5','2'];
+runnerData['elapsedTime'] = ['1:03','1:25','1:59','2:27','4:56','5:17','6:00','7:01','7:17','8:30','9:09','10:18','11:00','11:46','12:00','12:16'];
+runnerData['elapsedRank'] = ['1','2','2','2','4','3','3','3','3','3','4','4','3','4','4','4'];
+runnerData['legLossTime'] = ['-0:04','0:01','-0:03','0:00','0:23','0:01','0:00','0:08','-0:02','0:06','0:08','0:03','0:02','0:05','0:01','0:00'];
+runnerData['legSpeed'] = ['98','106','96','105','122','109','103','118','91','113','130','109','110','116','108','104'];
+runnerList.push(runnerData);
+
+var runnerData = {};
+runnerData['index'] = 4;
+runnerData['runnerName'] = '周怡廷';
+runnerData['clubName'] = '';
+runnerData['runnerId'] = '4';
+runnerData['rank'] = '5';
+runnerData['result'] = '0:12:40';
+runnerData['start'] = '10:35:00';
+runnerData['speed'] = '104.7';
+runnerData['lossRate'] = '9.1';
+runnerData['totalRelative'] = '115';
+runnerData['totalLossTime'] = '1:09';
+runnerData['idealTime'] = '11:31';
+runnerData['lapTime'] = ['1:06','0:24','0:38','0:29','2:17','0:24','0:43','1:02','0:21','1:07','1:07','1:07','0:43','0:42','0:13','0:17'];
+runnerData['lapRank'] = ['3','5','3','4','3','6','4','6','4','2','8','4','4','2','1','4'];
+runnerData['elapsedTime'] = ['1:06','1:30','2:08','2:37','4:54','5:18','6:01','7:03','7:24','8:31','9:38','10:45','11:28','12:10','12:23','12:40'];
+runnerData['elapsedRank'] = ['3','4','4','4','3','4','4','4','4','4','5','5','5','5','5','5'];
+runnerData['legLossTime'] = ['-0:01','0:02','0:01','0:01','0:09','0:04','-0:01','0:08','0:03','-0:01','0:36','0:01','0:03','0:00','-0:01','0:01'];
+runnerData['legSpeed'] = ['103','116','108','109','112','124','103','120','119','104','223','106','112','106','100','111'];
+runnerList.push(runnerData);
+
+var runnerData = {};
+runnerData['index'] = 5;
+runnerData['runnerName'] = '賴允荃';
+runnerData['clubName'] = '';
+runnerData['runnerId'] = '5';
+runnerData['rank'] = '6';
+runnerData['result'] = '0:13:21';
+runnerData['start'] = '10:35:00';
+runnerData['speed'] = '110.3';
+runnerData['lossRate'] = '9.1';
+runnerData['totalRelative'] = '121';
+runnerData['totalLossTime'] = '1:13';
+runnerData['idealTime'] = '12:08';
+runnerData['lapTime'] = ['1:27','0:26','0:40','0:43','2:17','0:21','0:44','0:59','0:22','1:11','0:51','1:09','0:46','0:49','0:16','0:20'];
+runnerData['lapRank'] = ['7','6','5','8','3','4','7','4','7','5','7','5','5','7','6','7'];
+runnerData['elapsedTime'] = ['1:27','1:53','2:33','3:16','5:33','5:54','6:38','7:37','7:59','9:10','10:01','11:10','11:56','12:45','13:01','13:21'];
+runnerData['elapsedRank'] = ['7','7','7','7','6','6','6','6','6','6','6','6','6','6','6','6'];
+runnerData['legLossTime'] = ['0:16','0:03','0:01','0:14','0:02','0:00','-0:02','0:02','0:03','0:00','0:18','-0:01','0:04','0:05','0:02','0:03'];
+runnerData['legSpeed'] = ['135','126','113','161','112','109','106','114','125','110','170','109','120','124','123','130'];
+runnerList.push(runnerData);
+
+var runnerData = {};
+runnerData['index'] = 6;
+runnerData['runnerName'] = '白知穎';
+runnerData['clubName'] = '';
+runnerData['runnerId'] = '6';
+runnerData['rank'] = '7';
+runnerData['result'] = '0:17:53';
+runnerData['start'] = '10:35:00';
+runnerData['speed'] = '129.6';
+runnerData['lossRate'] = '21.8';
+runnerData['totalRelative'] = '162';
+runnerData['totalLossTime'] = '3:54';
+runnerData['idealTime'] = '13:59';
+runnerData['lapTime'] = ['4:04','0:38','0:59','0:41','2:52','0:31','0:42','1:12','0:28','1:26','0:45','1:23','0:46','0:45','0:19','0:22'];
+runnerData['lapRank'] = ['8','8','8','7','7','8','2','8','8','8','6','8','5','5','7','8'];
+runnerData['elapsedTime'] = ['4:04','4:42','5:41','6:22','9:14','9:45','10:27','11:39','12:07','13:33','14:18','15:41','16:27','17:12','17:31','17:53'];
+runnerData['elapsedRank'] = ['8','8','8','8','8','8','8','8','8','8','8','8','8','7','7','7'];
+runnerData['legLossTime'] = ['2:41','0:11','0:13','0:06','0:14','0:06','-0:12','0:05','0:05','0:02','0:06','0:01','-0:04','-0:06','0:02','0:02'];
+runnerData['legSpeed'] = ['379','184','167','154','141','160','101','139','158','133','150','131','120','113','146','143'];
+runnerList.push(runnerData);
+
+var runnerData = {};
+runnerData['index'] = 7;
+runnerData['runnerName'] = '王彰盟';
+runnerData['clubName'] = '';
+runnerData['runnerId'] = '7';
+runnerData['rank'] = '';
+runnerData['result'] = 'DQ';
+runnerData['start'] = '10:35:00';
+runnerData['speed'] = '102.7';
+runnerData['lossRate'] = '';
+runnerData['totalRelative'] = '';
+runnerData['totalLossTime'] = '';
+runnerData['idealTime'] = '';
+runnerData['lapTime'] = ['1:17','0:23','0:40','0:24','4:05','0:25','0:43','0:50','0:18','1:15','0:29','1:01','0:51','X','0:42','0:14'];
+runnerData['lapRank'] = ['6','4','5','1','8','7','4','1','2','7','1','1','8','','','1'];
+runnerData['elapsedTime'] = ['1:17','1:40','2:20','2:44','6:49','7:14','7:57','8:47','9:05','10:20','10:49','11:50','12:41','','13:23','13:37'];
+runnerData['elapsedRank'] = ['6','6','5','5','7','7','7','7','7','7','7','7','7','','',''];
+runnerData['legLossTime'] = ['0:11','0:02','0:04','-0:03','2:00','0:05','0:00','-0:03','0:00','0:09','-0:02','-0:04','0:12','','','-0:02'];
+runnerData['legSpeed'] = ['120','111','113','90','201','129','103','97','102','116','97','96','133','','','91'];
+runnerList.push(runnerData);
+
+
+var analysisTableSize = 3;
+var tableHeaderFixStatus = false;
+
+var legList = [];
+
+var legData = {};
+legData['index'] = 0;
+legData['name'] = '△→1';
+legData['from'] = '△';
+legData['to'] = '1';
+legData['topAverage'] = '1:04';
+legData['topAverageLapElapsed'] = '1:04';
+legData['length'] = 9.7;
+legData['elapsedLength'] = 9.7;
+legData['difficulty'] = 132.7;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 1;
+legData['name'] = '1→2';
+legData['from'] = '1';
+legData['to'] = '2';
+legData['topAverage'] = '0:20';
+legData['topAverageLapElapsed'] = '1:24';
+legData['length'] = 3.1;
+legData['elapsedLength'] = 12.8;
+legData['difficulty'] = 35.8;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 2;
+legData['name'] = '2→3';
+legData['from'] = '2';
+legData['to'] = '3';
+legData['topAverage'] = '0:35';
+legData['topAverageLapElapsed'] = '2:00';
+legData['length'] = 5.3;
+legData['elapsedLength'] = 18.1;
+legData['difficulty'] = 86.2;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 3;
+legData['name'] = '3→4';
+legData['from'] = '3';
+legData['to'] = '4';
+legData['topAverage'] = '0:26';
+legData['topAverageLapElapsed'] = '2:26';
+legData['length'] = 4.0;
+legData['elapsedLength'] = 22.1;
+legData['difficulty'] = 94.8;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 4;
+legData['name'] = '4→5';
+legData['from'] = '4';
+legData['to'] = '5';
+legData['topAverage'] = '2:02';
+legData['topAverageLapElapsed'] = '4:28';
+legData['length'] = 18.4;
+legData['elapsedLength'] = 40.5;
+legData['difficulty'] = 358.4;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 5;
+legData['name'] = '5→6';
+legData['from'] = '5';
+legData['to'] = '6';
+legData['topAverage'] = '0:19';
+legData['topAverageLapElapsed'] = '4:48';
+legData['length'] = 2.9;
+legData['elapsedLength'] = 43.4;
+legData['difficulty'] = 39.7;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 6;
+legData['name'] = '6→7';
+legData['from'] = '6';
+legData['to'] = '7';
+legData['topAverage'] = '0:41';
+legData['topAverageLapElapsed'] = '5:29';
+legData['length'] = 6.3;
+legData['elapsedLength'] = 49.7;
+legData['difficulty'] = 101.8;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 7;
+legData['name'] = '7→8';
+legData['from'] = '7';
+legData['to'] = '8';
+legData['topAverage'] = '0:51';
+legData['topAverageLapElapsed'] = '6:21';
+legData['length'] = 7.8;
+legData['elapsedLength'] = 57.5;
+legData['difficulty'] = 114.4;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 8;
+legData['name'] = '8→9';
+legData['from'] = '8';
+legData['to'] = '9';
+legData['topAverage'] = '0:17';
+legData['topAverageLapElapsed'] = '6:39';
+legData['length'] = 2.7;
+legData['elapsedLength'] = 60.2;
+legData['difficulty'] = 61.5;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 9;
+legData['name'] = '9→10';
+legData['from'] = '9';
+legData['to'] = '10';
+legData['topAverage'] = '1:04';
+legData['topAverageLapElapsed'] = '7:43';
+legData['length'] = 9.7;
+legData['elapsedLength'] = 69.9;
+legData['difficulty'] = 77.6;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 10;
+legData['name'] = '10→11';
+legData['from'] = '10';
+legData['to'] = '11';
+legData['topAverage'] = '0:30';
+legData['topAverageLapElapsed'] = '8:13';
+legData['length'] = 4.5;
+legData['elapsedLength'] = 74.4;
+legData['difficulty'] = 104.8;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 11;
+legData['name'] = '11→12';
+legData['from'] = '11';
+legData['to'] = '12';
+legData['topAverage'] = '1:03';
+legData['topAverageLapElapsed'] = '9:17';
+legData['length'] = 9.5;
+legData['elapsedLength'] = 84.0;
+legData['difficulty'] = 84.7;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 12;
+legData['name'] = '12→13';
+legData['from'] = '12';
+legData['to'] = '13';
+legData['topAverage'] = '0:38';
+legData['topAverageLapElapsed'] = '9:55';
+legData['length'] = 5.8;
+legData['elapsedLength'] = 89.8;
+legData['difficulty'] = 125.1;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 13;
+legData['name'] = '13→14';
+legData['from'] = '13';
+legData['to'] = '14';
+legData['topAverage'] = '0:39';
+legData['topAverageLapElapsed'] = '10:35';
+legData['length'] = 6.0;
+legData['elapsedLength'] = 95.7;
+legData['difficulty'] = 95.3;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 14;
+legData['name'] = '14→15';
+legData['from'] = '14';
+legData['to'] = '15';
+legData['topAverage'] = '0:13';
+legData['topAverageLapElapsed'] = '10:48';
+legData['length'] = 2.0;
+legData['elapsedLength'] = 97.7;
+legData['difficulty'] = 31.0;
+legList.push(legData);
+
+var legData = {};
+legData['index'] = 15;
+legData['name'] = '15→◎';
+legData['from'] = '15';
+legData['to'] = '◎';
+legData['topAverage'] = '0:15';
+legData['topAverageLapElapsed'] = '11:03';
+legData['length'] = 2.3;
+legData['elapsedLength'] = 100.0;
+legData['difficulty'] = 56.1;
+legList.push(legData);
+
+legListTotalTopAverage = '11:03';
+
+var chartObject = null;
+var chartDataIdList = null;
+var chartHeight = 400 + runnerList.length / 5 * 10;
+var chartMinTime = -1;
+var chartMaxTime = -1;
+
+var resHour = "時刻"; // 時刻
+var resTimeDistance = "時間距離[％]"; // 時間距離
+var resTimeBehindMins = "差[分]"; // 差[分]
+var resSpeedIndex = "巡航速度"; // 巡航速度
+var resMistakeRate = "ミス率"; // ミス率
+var resLegLength = "レッグ長"; // レッグ長
+var resAverageOfTop = "上位平均"; // 上位平均
+var resDeviation = "難易度"; // 難易度
+var resRankPrefix = ""; // 
+var resRankSuffixfix = "位"; // 位
+var resTotal = "合計"; // 合計
+var resPercent = "％"; // ％
+
+var resName = "氏名"; // 氏名
+var resClub = "所属"; // 所属
+var resRank = "順位"; // 順位
+var resResult = "記録"; // 記録
+var resSplit = "ラップ"; // ラップ
+var resElapsed = "積算"; // 積算
+
+var resTimePercent = "相対値"; // 相対値
+var resMistake = "ミス"; // ミス
+var resWithoutMistake = "ミス抜き"; // ミス抜き
+
+var resSplitInfo = "各レッグの所要時間"; 
+var resElapsedInfo = "そのコントロールまでの所要時間"; 
+var resSpeedIndexInfo = "理想的なウイニングタイムに対する自分の理想タイムの比率 (％)"; 
+var resMistakeRateInfo = "総タイムに占めるロスしたタイムの割合 (％)"; 
+var resTimePercentInfo = "各レッグ上位３人の平均値に対する自分のタイムの割合 (％)"; 
+var resMistakeInfo = "巡航速度で走った場合のタイムとの差"; 
+var resWithoutMistakeInfo = "実タイムからミスを除いたタイム"; 
+
+	</script>
+
+</body></html>

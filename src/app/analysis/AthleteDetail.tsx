@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
+import Link from "next/link";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
@@ -134,7 +135,7 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
           <LapCenterChart data={lcData} profile={profile} />
         </DeferUntilVisible>
       )}
-      <RecentEvents profile={profile} />
+      <RecentEvents profile={profile} lcData={lcData} />
       {/* key で選手切替時に相手選択をリセット */}
       <HeadToHead
         key={profile.name}
@@ -1162,7 +1163,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
 }
 
 /** 最近の大会参加状況 */
-function RecentEvents({ profile }: { profile: AthleteProfile }) {
+function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: LapCenterPerformance[] | null }) {
   const allEvents = useMemo(() => getAllEvents(profile), [profile]);
 
   if (allEvents.length === 0) return null;
@@ -1291,6 +1292,17 @@ function RecentEvents({ profile }: { profile: AthleteProfile }) {
           const colors = levelColors[level];
           const dt = new Date(e.date + "T00:00:00");
           const dateStr = `${dt.getFullYear()}/${dt.getMonth() + 1}/${dt.getDate()}`;
+          // LapCenter 取込済みレースなら「レッグ分析」リンク。
+          // 同日・同種目で照合し、候補が複数（同日に2レース等）なら大会名で曖昧解消、
+          // それでも一意でなければリンクを抑止して誤レースへ飛ばさない（レビュー D）。
+          const lcCands = lcData?.filter((p) => p.d === e.date && p.t === e.discipline) ?? [];
+          let lcMatch: LapCenterPerformance | null = null;
+          if (lcCands.length === 1) {
+            lcMatch = lcCands[0];
+          } else if (lcCands.length > 1) {
+            const byName = lcCands.filter((p) => p.e === e.eventName);
+            lcMatch = byName.length === 1 ? byName[0] : null;
+          }
           return (
             <div
               key={`${e.date}-${e.eventName}-${i}`}
@@ -1317,6 +1329,15 @@ function RecentEvents({ profile }: { profile: AthleteProfile }) {
               <span className={`w-12 flex-shrink-0 text-right font-mono text-xs font-bold ${colors.text}`}>
                 {e.points.toLocaleString()}
               </span>
+              {lcMatch && (
+                <Link
+                  href={`/results/go?e=${encodeURIComponent(lcMatch.e)}&d=${encodeURIComponent(lcMatch.d)}&c=${encodeURIComponent(lcMatch.c)}&athlete=${encodeURIComponent(profile.name)}&disc=${lcMatch.t}`}
+                  className="flex-shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary transition-colors hover:bg-primary/25"
+                  title="このレースのレッグ分析"
+                >
+                  レッグ▸
+                </Link>
+              )}
             </div>
           );
         })}
