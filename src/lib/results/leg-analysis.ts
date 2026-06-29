@@ -209,11 +209,17 @@ export function buildLegView(
     }
   }
 
+  // ノーミス推定順位 = 「全員がノーミスで走った場合」の順位（理想タイム同士で比較）。
+  // 旧実装は自分の理想を他者の"実記録"と比べていたため複数人が1位になり意味不明だった。
   const idealSec = lapStrToSeconds(subject.idealTime);
   const idealRank =
     idealSec == null
       ? null
-      : 1 + finishers.filter((r) => (lapStrToSeconds(r.result) ?? Infinity) < idealSec).length;
+      : 1 +
+        finishers.filter((r) => {
+          const ri = lapStrToSeconds(r.idealTime);
+          return ri != null && ri < idealSec;
+        }).length;
 
   return {
     subject: {

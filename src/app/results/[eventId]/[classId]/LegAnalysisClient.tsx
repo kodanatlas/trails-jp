@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Loader2, X } from "lucide-react";
 import type { LapCenterRunnerDetail } from "@/lib/scraper/lapcenter-detail";
 import { lapStrToSeconds } from "@/lib/scraper/lapcenter-detail";
@@ -141,11 +142,17 @@ export function LegAnalysisClient({
       {/* 文脈ヘッダー: どのレースを見ているか（レビュー I） */}
       <div className="mb-4">
         <h1 className="text-lg font-bold leading-tight">
-          {eventName ?? "レース分析"}
+          <Link href={`/results/${eventId}`} className="transition-colors hover:text-primary hover:underline" title="他のクラスを選ぶ">
+            {eventName ?? "レース分析"}
+          </Link>
           {className && <span className="ml-1.5 text-sm font-semibold text-muted">{className}</span>}
         </h1>
         <p className="mt-0.5 text-[11px] text-muted">
           {[eventDate, nFin ? `${nFin}名完走` : null, "LapCenter レッグ分析"].filter(Boolean).join(" ・ ")}
+          {" ・ "}
+          <Link href={`/results/${eventId}`} className="text-primary hover:underline">
+            他のクラス →
+          </Link>
         </p>
       </div>
       {athlete && athleteName === null && (
@@ -182,7 +189,8 @@ function Glossary() {
     ["巡航速度", "ミスを除いた走りの速さの指標。小さいほど速い（100=基準ペース）。"],
     ["ミス率", "記録に占めるロス時間の割合。小さいほど良い。"],
     ["ロス（区間ロス）", "そのレッグで基準より余計にかかった秒数。負＝基準より速い。"],
-    ["理想／ノーミス推定", "自分の巡航ペースでミスなく走ったときの想定タイムと、その場合の推定順位。"],
+    ["理想（ノーミスタイム）", "自分の巡航ペースでミスなく走ったときの想定タイム（= 記録 − 総ロス）。"],
+    ["ノーミス推定順位", "全員がノーミスで走った場合の想定順位（理想タイム同士で比較＝走力ベースの順位）。"],
     ["ロスの積み上がり", "レース開始からの累積ロス。段差が大きいほどそこで失った（ミス/ルート選択/ナビ）。"],
     ["区間順位", "そのレッグ単独での順位（完走者中）。"],
     ["平均比", "自分の同種目(Forest/Sprint別)平均との差。負＝平均より良い。"],
@@ -311,7 +319,7 @@ function SingleView({
           ノーミスなら <span className="text-green-400">{s.idealTime}</span>（総ロス {s.totalLossTime}）
           {view.idealRank != null && (
             <>
-              {" "}＝推定 <span className="text-primary">{view.idealRank}位</span>相当
+              。全員ノーミスなら <span className="text-primary">{view.idealRank}位</span>相当
             </>
           )}
           。
@@ -481,14 +489,14 @@ function CompareGrid({
   const lossesByCol = subjects.map((r) => r.legLossTime.map((t) => lapStrToSeconds(t) ?? 0));
   const maxAbs = Math.max(...lossesByCol.flat().map((v) => Math.abs(v)), 1);
 
-  // ノーミス推定順位: 各選手の idealTime を完走者の実記録と比較
-  const finResults = runners
+  // ノーミス推定順位 =「全員がノーミスで走った場合」の順位（理想タイム同士で比較）。
+  const finIdeals = runners
     .filter((r) => r.rank != null)
-    .map((r) => lapStrToSeconds(r.result))
+    .map((r) => lapStrToSeconds(r.idealTime))
     .filter((v): v is number => v != null);
   const idealRankOf = (r: LapCenterRunnerDetail): number | null => {
     const ideal = lapStrToSeconds(r.idealTime);
-    return ideal == null || finResults.length === 0 ? null : 1 + finResults.filter((x) => x < ideal).length;
+    return ideal == null || finIdeals.length === 0 ? null : 1 + finIdeals.filter((x) => x < ideal).length;
   };
 
   return (
