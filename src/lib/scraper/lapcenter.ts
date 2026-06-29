@@ -246,6 +246,8 @@ export interface MatchResult {
 const MANUAL_LC_OVERRIDES: Record<number, number> = {
   2448: 9845, // 第48回東大OLK大会前日大会 (2026-06-13)
   2197: 9714, // ジュニアチャンピオン大会（43JC） (2026-04-19)
+  2286: 9644, // インカレミドル2025 (2026-03-14)
+  2282: 9647, // インカレリレー2025 (2026-03-15)
 };
 
 export async function matchLapCenterEvents<
