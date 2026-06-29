@@ -48,6 +48,20 @@ export default async function Home() {
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
+                  href="/events"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border-strong px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  イベント
+                </Link>
+                <Link
+                  href="/rankings"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border-strong px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
+                >
+                  <Trophy className="h-4 w-4" />
+                  ランキング
+                </Link>
+                <Link
                   href="/analysis"
                   className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-bold text-background transition-colors hover:bg-primary-dark"
                 >
@@ -60,20 +74,6 @@ export default async function Home() {
                 >
                   <Route className="h-4 w-4" />
                   結果分析
-                </Link>
-                <Link
-                  href="/rankings"
-                  className="inline-flex items-center gap-2 rounded-lg border border-border-strong px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
-                >
-                  <Trophy className="h-4 w-4" />
-                  ランキング
-                </Link>
-                <Link
-                  href="/events"
-                  className="inline-flex items-center gap-2 rounded-lg border border-border-strong px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
-                >
-                  <CalendarDays className="h-4 w-4" />
-                  イベント
                 </Link>
               </div>
               {/* 直近の大会ハイライトへのジャンプ */}

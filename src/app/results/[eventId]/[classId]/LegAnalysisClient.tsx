@@ -418,7 +418,7 @@ function Chip({
   accent?: boolean;
 }) {
   return (
-    <span className="rounded-lg border border-border bg-white/5 px-2.5 py-1.5 text-xs text-muted">
+    <span className="rounded-lg border border-border bg-border px-2.5 py-1.5 text-xs text-muted">
       {label}{" "}
       <b className={accent ? "text-base font-bold text-primary" : "text-[15px] font-bold text-foreground"}>{value}</b>
       {sub && <span className="ml-1 text-[10px]">({sub})</span>}
@@ -440,9 +440,9 @@ function LegRow({ leg, n, maxAbs }: { leg: LegCell; n: number; maxAbs: number })
       className={`flex items-center gap-2.5 rounded-xl border bg-card px-3 py-2.5 ${
         leg.isTopMiss ? "border-red-400/45" : "border-border"
       }`}
-      style={leg.isTopMiss ? { background: "linear-gradient(0deg,rgba(248,113,113,.07),rgba(248,113,113,.07)),#1a2332" } : undefined}
+      style={leg.isTopMiss ? { background: "linear-gradient(0deg,rgba(248,113,113,.07),rgba(248,113,113,.07)),var(--card)" } : undefined}
     >
-      <div className="w-[46px] flex-shrink-0 rounded-md bg-white/[0.04] py-2 text-center font-mono text-xs font-bold text-muted">
+      <div className="w-[46px] flex-shrink-0 rounded-md bg-border py-2 text-center font-mono text-xs font-bold text-muted">
         {leg.label}
       </div>
       <div className="min-w-0 flex-1">
@@ -501,17 +501,20 @@ function CompareGrid({
 
   return (
     <>
+    <p className="mb-2 text-center text-[10px] text-muted/80">
+      単一選手のみにすると、ロスの積み上がりカーブ・自己平均比つきの「深掘りカード」になります。
+    </p>
     <div className="overflow-x-auto rounded-xl border border-border bg-card">
       <table className="w-max min-w-full border-separate border-spacing-0 text-xs">
         <thead>
           <tr>
-            <th className="sticky left-0 z-20 min-w-[70px] border-b border-r border-border bg-[#16202e] px-2 py-1.5 text-left">
+            <th className="sticky left-0 z-20 min-w-[70px] border-b border-r border-border bg-surface px-2 py-1.5 text-left">
               レッグ
             </th>
             {subjects.map((r) => (
               <th
                 key={`${r.name}-${r.index}`}
-                className={`sticky top-0 z-10 min-w-[86px] border-b border-border bg-[#16202e] px-2 py-1.5 ${
+                className={`sticky top-0 z-10 min-w-[86px] border-b border-border bg-surface px-2 py-1.5 ${
                   r.name === athleteName ? "border-b-2 !border-b-primary" : ""
                 }`}
               >
@@ -524,7 +527,7 @@ function CompareGrid({
                     onClick={() => onRemove(r.name)}
                     title="この列を消す"
                     aria-label={`${r.name} を比較から外す`}
-                    className="mt-0.5 rounded bg-white/10 px-2 py-1 text-muted transition-colors hover:bg-red-400 hover:text-white"
+                    className="mt-0.5 rounded bg-border-strong px-2 py-1 text-muted transition-colors hover:bg-red-400 hover:text-white"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -536,7 +539,7 @@ function CompareGrid({
         <tbody>
           {Array.from({ length: legCount }, (_, i) => (
             <tr key={i}>
-              <th className="sticky left-0 z-10 border-b border-r border-border bg-[#16202e] px-2 py-1 text-left">
+              <th className="sticky left-0 z-10 border-b border-r border-border bg-surface px-2 py-1 text-left">
                 <div className="font-mono text-xs font-bold text-muted">{legLabel(i, legCount)}</div>
                 <div className="text-[9px] text-muted/80">基準 {ave3[i] != null ? fmtSignedSeconds(ave3[i]!).replace(/^\+/, "") : "—"}</div>
               </th>
@@ -567,13 +570,13 @@ function CompareGrid({
           <FootRow label="巡航速度" subjects={subjects} render={(r) => (r.speed ?? "—").toString()} />
           <FootRow label="ミス率" subjects={subjects} render={(r) => `${r.lossRate ?? "—"}%`} />
           <tr>
-            <th className="sticky left-0 z-10 border-r border-t border-border bg-[#16202e] px-2 py-1.5 text-left text-[11px] font-semibold text-muted">
+            <th className="sticky left-0 z-10 border-r border-t border-border bg-surface px-2 py-1.5 text-left text-[11px] font-semibold text-muted">
               ノーミス推定
             </th>
             {subjects.map((r) => {
               const ir = idealRankOf(r);
               return (
-                <td key={`ideal-${r.name}`} className="border-t border-border bg-[#16202e] px-2 py-1.5 text-center">
+                <td key={`ideal-${r.name}`} className="border-t border-border bg-surface px-2 py-1.5 text-center">
                   <div className="font-mono font-bold text-green-400">{r.idealTime || "—"}</div>
                   <div className="text-[10px] text-primary">{ir != null ? `推定${ir}位` : "—"}</div>
                 </td>
@@ -588,9 +591,6 @@ function CompareGrid({
       <Legend color="#4ade80" label="セル緑=基準より速い（良）" />
       <span>巡航速度・ミス率は小さいほど良い</span>
     </div>
-    <p className="mt-1.5 text-center text-[10px] text-muted/80">
-      ✕ で自分以外を全て外すと、ロスの積み上がりカーブ・自己平均比つきの「深掘りカード」になります。
-    </p>
     </>
   );
 }
@@ -606,11 +606,11 @@ function FootRow({
 }) {
   return (
     <tr>
-      <th className="sticky left-0 z-10 border-r border-t border-border bg-[#16202e] px-2 py-1.5 text-left text-[11px] font-semibold text-muted">
+      <th className="sticky left-0 z-10 border-r border-t border-border bg-surface px-2 py-1.5 text-left text-[11px] font-semibold text-muted">
         {label}
       </th>
       {subjects.map((r) => (
-        <td key={`${label}-${r.name}`} className="border-t border-border bg-[#16202e] px-2 py-1.5 text-center font-bold">
+        <td key={`${label}-${r.name}`} className="border-t border-border bg-surface px-2 py-1.5 text-center font-bold">
           {render(r)}
         </td>
       ))}
@@ -622,8 +622,8 @@ function FootRow({
 
 function LossBar({ lossSec, widthPct, thin }: { lossSec: number; widthPct: number; thin?: boolean }) {
   return (
-    <div className={`relative ${thin ? "mt-1 h-1" : "mt-[7px] h-1.5"} rounded-full bg-white/5`}>
-      <div className="absolute -top-0.5 bottom-[-2px] left-1/2 w-px bg-white/20" />
+    <div className={`relative ${thin ? "mt-1 h-1" : "mt-[7px] h-1.5"} rounded-full bg-border`}>
+      <div className="absolute -top-0.5 bottom-[-2px] left-1/2 w-px bg-border-strong" />
       <div
         className="absolute bottom-0 top-0 rounded-full"
         style={
@@ -667,7 +667,7 @@ function CumulativeLossChart({
   const xLab = (i: number) => (i === 0 ? "S" : i === L - 1 ? "F" : String(i));
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="mt-1 h-auto w-full" preserveAspectRatio="xMidYMid meet" role="img" aria-label="累積ロス">
-      <line x1={padL} y1={baseY} x2={W - padR} y2={baseY} stroke="rgba(255,255,255,.15)" strokeWidth={1} />
+      <line x1={padL} y1={baseY} x2={W - padR} y2={baseY} stroke="var(--border-strong)" strokeWidth={1} />
       <path d={area} fill="rgba(248,113,113,.18)" />
       {overlay && (
         <path
@@ -692,7 +692,7 @@ function CumulativeLossChart({
       )}
       {cumulative.map((v, i) =>
         i % 2 === 0 || i === L - 1 ? (
-          <text key={`x${i}`} x={xs(i)} y={H - 5} fill="#8b9bb4" fontSize={8} textAnchor="middle">
+          <text key={`x${i}`} x={xs(i)} y={H - 5} fill="var(--muted)" fontSize={8} textAnchor="middle">
             {xLab(i)}
           </text>
         ) : null,
@@ -708,7 +708,7 @@ function CompositionBar({ legs, maxLegIndex }: { legs: LegCell[]; maxLegIndex: n
   const maxLoss = Math.max(...legs.map((l) => l.lossSec), 1);
   let left = 0;
   return (
-    <div className="relative mt-1 h-6 overflow-hidden rounded-md bg-white/5">
+    <div className="relative mt-1 h-6 overflow-hidden rounded-md bg-border">
       {pos.map(({ i, v, label, lossStr }) => {
         const w = (v / totalPos) * 100;
         const l = left;
@@ -718,7 +718,7 @@ function CompositionBar({ legs, maxLegIndex }: { legs: LegCell[]; maxLegIndex: n
           <div
             key={i}
             title={`${label}: ${lossStr}`}
-            className="absolute bottom-0 top-0 border-r border-[#0f1620]"
+            className="absolute bottom-0 top-0 border-r border-background"
             style={{ left: `${l}%`, width: `${w}%`, background: big ? "#f97316" : `rgba(248,113,113,${(0.35 + (v / maxLoss) * 0.5).toFixed(3)})` }}
           />
         );
@@ -737,14 +737,14 @@ function Legend({ color, label }: { color: string; label: string }) {
 }
 
 function lossColor(sec: number): string {
-  return sec > 0 ? "#f87171" : sec < 0 ? "#4ade80" : "#8b9bb4";
+  return sec > 0 ? "#f87171" : sec < 0 ? "#4ade80" : "var(--muted)";
 }
 function deltaColor(delta: number): string {
-  return delta < 0 ? "#4ade80" : delta > 0 ? "#f87171" : "#8b9bb4";
+  return delta < 0 ? "#4ade80" : delta > 0 ? "#f87171" : "var(--muted)";
 }
 function rankToColor(rank: number | null, n: number): string {
   const pct = rank != null ? rank / n : 1;
-  return pct <= 0.15 ? "#4ade80" : pct <= 0.5 ? "#e6ebf2" : "#f0a0b0";
+  return pct <= 0.15 ? "#4ade80" : pct <= 0.5 ? "var(--foreground)" : "var(--negative)";
 }
 function cellBg(loss: number, maxAbs: number): string {
   const t = Math.min(1, Math.abs(loss) / maxAbs);

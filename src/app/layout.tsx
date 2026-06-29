@@ -63,10 +63,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja">
+    <html lang="ja" suppressHydrationWarning>
       <body
         className={`${plexJp.variable} ${plexMono.variable} flex min-h-screen flex-col font-sans antialiased`}
       >
+        {/* テーマ初期化（描画前に data-theme を設定しフラッシュを防止）。既定=ダーク、保存値が light の時のみ反転。 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();",
+          }}
+        />
         <ServiceWorkerRegistration />
         <Header />
         <main className="flex-1">{children}</main>
