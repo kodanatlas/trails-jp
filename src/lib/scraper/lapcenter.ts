@@ -284,18 +284,21 @@ export async function matchLapCenterEvents<
 
   let matched = 0;
   for (const joe of joeEvents) {
-    // Only match events without existing Lap Center link
-    if (joe.lapcenter_event_id) {
+    // 手動オーバーライドを最優先で適用（未マッチも誤マッチも正しい id へ強制設定）
+    const override = MANUAL_LC_OVERRIDES[joe.joe_event_id];
+    if (override) {
+      if (joe.lapcenter_event_id !== override) {
+        if (joe.lapcenter_event_id) usedLcIds.delete(joe.lapcenter_event_id);
+        joe.lapcenter_event_id = override;
+        joe.lapcenter_url = `https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=${override}&file=1`;
+        usedLcIds.add(override);
+      }
       matched++;
       continue;
     }
 
-    // 手動オーバーライド（自動マッチ漏れの既知イベント）を最優先で適用
-    const override = MANUAL_LC_OVERRIDES[joe.joe_event_id];
-    if (override && !usedLcIds.has(override)) {
-      joe.lapcenter_event_id = override;
-      joe.lapcenter_url = `https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=${override}&file=1`;
-      usedLcIds.add(override);
+    // 既にマッチ済みはスキップ
+    if (joe.lapcenter_event_id) {
       matched++;
       continue;
     }
