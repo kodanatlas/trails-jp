@@ -1,6 +1,15 @@
 import { redirect } from "next/navigation";
+import { unstable_cache } from "next/cache";
 import { readEvents } from "@/lib/events-store";
 import { fetchEventClasses } from "@/lib/scraper/lapcenter";
+
+// 遷移高速化: 解決に使う2つの取得をデータキャッシュに載せる。
+// events ストア(マッチ済 lapcenter_event_id 含む)は日次cronでしか変わらない → 5分キャッシュ。
+const getEventsCached = unstable_cache(() => readEvents(), ["results-go-events"], { revalidate: 300 });
+// イベント内クラス一覧は不変 → 1日キャッシュ（解決の最遅部＝mulka2取得を温め、再クリックを即時化）。
+const getEventClassesCached = unstable_cache((eventId: number) => fetchEventClasses(eventId), ["results-go-classes"], {
+  revalidate: 86400,
+});
 
 /**
  * 入口①の解決ルート。選手ページのリンクから渡された
@@ -25,12 +34,12 @@ export default async function ResultsGo({ searchParams }: Props) {
 
   let target: string | null = null;
   try {
-    const events = await readEvents();
+    const events = await getEventsCached();
     const ev = events.find((x) => x.name === e && x.date === d && x.lapcenter_event_id);
     if (!ev?.lapcenter_event_id) {
       console.warn(`[results/go] no LapCenter-matched event for name="${e}" date="${d}"`);
     } else {
-      const classes = await fetchEventClasses(ev.lapcenter_event_id);
+      const classes = await getEventClassesCached(ev.lapcenter_event_id);
       const cls = classes.find((k) => k.className === c);
       if (!cls) {
         console.warn(
