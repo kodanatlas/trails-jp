@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { parseSplitListDetailed } from "../../scraper/lapcenter-detail";
+import { parseSplitListDetailed, lapStrToSeconds } from "../../scraper/lapcenter-detail";
 import type { LapCenterPerformance } from "../../analysis/types";
-import { buildLegView, legLabel, fmtSignedSeconds } from "../leg-analysis";
+import { buildLegView, buildLegPrizes, legLabel, fmtSignedSeconds } from "../leg-analysis";
 
 const html = readFileSync(
   fileURLToPath(
@@ -121,5 +121,48 @@ describe("buildLegView: relay-first 健全性ガード", () => {
       legSpeed: [100, 100, 100],
     };
     expect(buildLegView([bad as never])).toBeNull();
+  });
+});
+
+describe("buildLegView: 罠レッグ判定（フィールドのロス中央値）", () => {
+  const v = buildLegView(runners, "白知穎")!;
+  const finishers = runners.filter((r) => r.rank != null);
+  const med = (xs: number[]) => {
+    const s = [...xs].sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+  it("各レッグに fieldMedianLossSec = 全完走者 legLossTime の中央値", () => {
+    v.legs.forEach((leg, l) => {
+      const vals = finishers
+        .map((r) => lapStrToSeconds(r.legLossTime[l]))
+        .filter((x): x is number => x != null);
+      const expected = vals.length ? med(vals) : null;
+      if (expected == null) expect(leg.fieldMedianLossSec).toBeNull();
+      else expect(leg.fieldMedianLossSec!).toBeCloseTo(expected, 5);
+    });
+  });
+});
+
+describe("buildLegPrizes: 区間賞ボード", () => {
+  const board = buildLegPrizes(runners)!;
+  const finishers = runners.filter((r) => r.rank != null);
+  it("レッグ数が一致", () => {
+    expect(board).not.toBeNull();
+    expect(board.legCount).toBe(16);
+    expect(board.legs.length).toBe(16);
+  });
+  it("各レッグの区間賞は lapRank==1 の選手", () => {
+    board.legs.forEach((p, l) => {
+      const winner = finishers.find((r) => r.lapRank[l] === 1);
+      expect(p.winner).toBe(winner ? winner.name : null);
+    });
+  });
+  it("獲得数ランキングは降順・合計は区間賞ありレッグ数以上（同着で増）", () => {
+    for (let i = 1; i < board.tally.length; i++) {
+      expect(board.tally[i - 1].count).toBeGreaterThanOrEqual(board.tally[i].count);
+    }
+    const total = board.tally.reduce((s, t) => s + t.count, 0);
+    expect(total).toBeGreaterThanOrEqual(board.legs.filter((p) => p.winner).length);
   });
 });
