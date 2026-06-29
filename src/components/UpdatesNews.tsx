@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Newspaper } from "lucide-react";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import rankingsMeta from "@/data/rankings-meta.json";
@@ -17,6 +18,8 @@ import rankingsMeta from "@/data/rankings-meta.json";
 interface NewsEntry {
   date: Date;
   label: string;
+  href?: string; // 機能アナウンス等のリンク（任意）
+  isNew?: boolean;
 }
 
 interface CronLogRow {
@@ -101,6 +104,14 @@ export async function UpdatesNews() {
     entries.push({ date: syncEvents, label: "イベント情報を更新" });
   }
 
+  // 新機能アナウンス（静的）。データ更新フィードに新機能のお知らせを1件加える。
+  entries.push({
+    date: new Date("2026-06-29T00:00:00+09:00"),
+    label: "新機能『結果分析』を追加 — LapCenter のスプリットからレッグ別タイム分析",
+    href: "/results",
+    isNew: true,
+  });
+
   // エントリ0件ならセクションごと非表示
   if (entries.length === 0) return null;
 
@@ -122,7 +133,20 @@ export async function UpdatesNews() {
               <span className="w-20 flex-shrink-0 font-mono text-xs text-muted sm:w-24">
                 {formatJstDate(e.date)}
               </span>
-              <span className="min-w-0 flex-1 truncate text-sm text-foreground">{e.label}</span>
+              {e.href ? (
+                <span className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+                  <Link href={e.href} className="truncate text-primary hover:underline">
+                    {e.label}
+                  </Link>
+                  {e.isNew && (
+                    <span className="flex-shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+                      NEW
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <span className="min-w-0 flex-1 truncate text-sm text-foreground">{e.label}</span>
+              )}
             </li>
           ))}
         </ul>

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./ThemeToggle";
 
 const navItems = [
   { href: "/", label: "ホーム" },
@@ -22,41 +23,45 @@ export function Header() {
   if (pathname?.startsWith("/docs/")) return null;
 
   return (
-    <header className="sticky top-0 z-50 h-14 border-b border-white/10 bg-[#1a2332]">
+    <header className="sticky top-0 z-50 h-14 border-b border-border bg-card">
       <div className="mx-auto flex h-full max-w-[1920px] items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 text-lg font-bold text-white">
-          <Compass className="h-5 w-5 text-[#f97316]" />
-          <span>trails<span className="text-[#f97316]">.jp</span></span>
+        <Link href="/" className="flex items-center gap-2 text-lg font-bold text-foreground">
+          <Compass className="h-5 w-5 text-primary" />
+          <span>trails<span className="text-primary">.jp</span></span>
         </Link>
 
-        <nav className="hidden gap-1 md:flex">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                pathname === item.href
-                  ? "bg-white/15 text-white"
-                  : "text-white/60 hover:bg-white/10 hover:text-white"
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <div className="flex items-center gap-1">
+          <nav className="hidden gap-1 md:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                  pathname === item.href
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted hover:bg-card-hover hover:text-foreground"
+                )}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
 
-        <button
-          className="text-white/60 hover:text-white md:hidden"
-          onClick={() => setIsOpen(!isOpen)}
-          aria-label="メニュー"
-        >
-          {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+          <ThemeToggle />
+
+          <button
+            className="text-muted transition-colors hover:text-foreground md:hidden"
+            onClick={() => setIsOpen(!isOpen)}
+            aria-label="メニュー"
+          >
+            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {isOpen && (
-        <nav className="border-t border-white/10 bg-[#1a2332] px-4 py-2 md:hidden">
+        <nav className="border-t border-border bg-card px-4 py-2 md:hidden">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -64,8 +69,8 @@ export function Header() {
               className={cn(
                 "block rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 pathname === item.href
-                  ? "bg-white/15 text-white"
-                  : "text-white/60 hover:text-white"
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted hover:text-foreground"
               )}
               onClick={() => setIsOpen(false)}
             >
