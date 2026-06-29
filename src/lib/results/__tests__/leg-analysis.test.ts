@@ -146,15 +146,14 @@ describe("buildLegView: 罠レッグ判定（フィールドのロス中央値�
 
 describe("buildLegPrizes: 区間賞ボード", () => {
   const board = buildLegPrizes(runners)!;
-  const finishers = runners.filter((r) => r.rank != null);
   it("レッグ数が一致", () => {
     expect(board).not.toBeNull();
     expect(board.legCount).toBe(16);
     expect(board.legs.length).toBe(16);
   });
-  it("各レッグの区間賞は lapRank==1 の選手", () => {
+  it("各レッグの区間賞は lapRank==1 の選手（全走者=DNF/MP含む）", () => {
     board.legs.forEach((p, l) => {
-      const winner = finishers.find((r) => r.lapRank[l] === 1);
+      const winner = runners.find((r) => r.lapRank[l] === 1); // 完走者に限らない
       expect(p.winner).toBe(winner ? winner.name : null);
     });
   });
