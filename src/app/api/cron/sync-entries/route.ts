@@ -169,6 +169,8 @@ export async function GET(request: Request) {
       minRatio: 0.6,
       floor: 100,
       minCommonEvents: 8,
+      minCoverageRatio: 0.7,
+      minTargetsForCoverage: 10,
     });
     if (reg.regression) {
       const prevAthletes = prevIndex ? Object.keys(prevIndex.athletes).length : 0;
@@ -196,8 +198,9 @@ export async function GET(request: Request) {
           warning: "index_regression_blocked",
           ...detail,
           hint:
-            "同一大会(共通 scraped 大会)でエントリーが既存比 60% 未満に減少。JOY/どこオリの一時遮断やパース不全の可能性。既存 index を保持。" +
-            "（mode=fallback-count の場合は旧 index か共通大会が薄く、総数比較にフォールバックした判定）",
+            "index 上書きを劣化として拒否。mode=coverage-collapse=対象大会の多くを取り切れず(予算切れ/遮断), " +
+            "mode=per-event=同一大会でエントリーが既存比60%未満に減少(JOY/どこオリ遮断やパース不全), " +
+            "mode=fallback-count=旧index/共通大会が薄く総数比較にフォールバック。既存 index を保持。",
         },
         Date.now() - start,
       );

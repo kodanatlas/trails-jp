@@ -35,25 +35,29 @@ jobs:
           url="https://trailsjp.vercel.app/api/cron/sync-entries"
           for i in 1 2 3; do
             code=$(curl -sS -o resp.json -w '%{http_code}' --max-time 90 \
-              -H "authorization: Bearer $CRON_SECRET" "$url" || echo 000)
-            echo "attempt $i -> HTTP $code"
+              -H "authorization: Bearer $CRON_SECRET" "$url")
+            rc=$?
+            if [ "$rc" -ne 0 ]; then code="000"; fi
+            echo "attempt $i -> HTTP $code (curl rc=$rc)"
             cat resp.json 2>/dev/null || true
             echo
             # HTTP 200 だけでは不十分: 品質ガードのブロックも 200 + {"success":false,"blocked":...} を返すため、
             # それを成功と誤認すると「索引未刷新なのに緑」になる。本文の success を必ず確認する。
-            #   success=true        → 索引を実際に再生成・書き込み（本当の成功）→ 終了
-            #   success=false(block)→ ガードが上書き拒否（索引未刷新）→ リトライ（一時的ソフトブロックなら回復しうる）
-            #   非200 (500等)       → 全滅 / events 読込失敗（fail-closed）→ リトライ
             if [ "$code" = "200" ]; then
               success=$(jq -r 'try .success catch "parse_error"' resp.json 2>/dev/null || echo "parse_error")
               if [ "$success" = "true" ]; then
                 echo "done (索引を再生成しました)"
                 exit 0
               fi
+              # success=false = 品質ガードによる決定的ブロック。リトライしても結果は変わらず JOY 連打を招くだけ。
+              # サーバ側で既存 index を保持し error/warning も通知済み → 即 error 終了で可視化する（リトライしない）。
               blocked=$(jq -r 'try .blocked catch ""' resp.json 2>/dev/null || echo "")
-              echo "attempt $i: HTTP 200 だが success=$success (blocked=$blocked) — 索引未刷新。リトライします。"
+              echo "::error::sync-entries が索引刷新を拒否しました（success=$success, blocked=$blocked）。劣化ガード作動。JOY/どこオリの遮断・パース不全・部分スクレイプを確認してください。"
+              exit 1
             fi
+            # 非200（500=全滅 / events 読込失敗 fail-closed 等）は一時障害の可能性 → リトライ。
+            echo "attempt $i: HTTP $code（非200）。リトライします。"
             sleep 20
           done
-          echo "::error::sync-entries が3回とも索引を刷新できませんでした（ガードによるブロック or 非200）。JOY/どこオリの遮断・パース不全・Vercel を確認してください。"
+          echo "::error::sync-entries が3回とも非200。Vercel/JOY/どこオリ側を確認してください。"
           exit 1

@@ -60,6 +60,34 @@ function commonEvents(count: number, perEach: number): Record<number, number> {
   return o;
 }
 
+function range(a: number, b: number): number[] {
+  const out: number[] = [];
+  for (let i = a; i <= b; i++) out.push(i);
+  return out;
+}
+
+/** target/scraped を明示できる index ビルダ（カバレッジ判定・移行ケース用）。scrapedEventIds は省略可（旧 index）。 */
+function idxWith(o: {
+  perEvent?: Record<number, number>;
+  scrapedEventIds?: number[];
+  targetEventCount: number;
+  scrapedEventCount: number;
+}): EntryIndex {
+  const athletes: Record<string, AthleteEntryRef[]> = {};
+  let k = 0;
+  for (const [evStr, n] of Object.entries(o.perEvent ?? {})) {
+    const ev = Number(evStr);
+    for (let i = 0; i < n; i++) athletes["a" + k++] = [ref(ev)];
+  }
+  return {
+    generatedAt: "2026-06-28T00:00:00.000Z",
+    targetEventCount: o.targetEventCount,
+    scrapedEventCount: o.scrapedEventCount,
+    scrapedEventIds: o.scrapedEventIds,
+    athletes,
+  };
+}
+
 const opts = { minRatio: 0.6, floor: 100 };
 
 describe("isIndexRegression（総数フォールバック経路）", () => {
@@ -159,5 +187,87 @@ describe("assessRegression（per-event 経路）", () => {
     const a = assessRegression(prev, next, opts);
     expect(a.mode).toBe("skip-floor");
     expect(a.regression).toBe(false);
+  });
+});
+
+describe("assessRegression（カバレッジ崩壊・移行）", () => {
+  it("対象90中9件しか取れない部分スクレイプは、取れた9件が健全でも劣化（per-event を上書き）", () => {
+    // prev: 90大会を健全取得(各10人)。next: 同じ9大会だけ取得(各10人)、残り81はfetch失敗で未計上。
+    const prev = idxWith({
+      perEvent: commonEvents(90, 10),
+      scrapedEventIds: range(1, 90),
+      targetEventCount: 90,
+      scrapedEventCount: 90,
+    });
+    const next = idxWith({
+      perEvent: commonEvents(9, 10),
+      scrapedEventIds: range(1, 9),
+      targetEventCount: 90, // 90 を狙ったが
+      scrapedEventCount: 9, // 9 しか取れていない（9/90=0.1 < 0.7）
+    });
+    const a = assessRegression(prev, next, opts);
+    expect(a.mode).toBe("coverage-collapse");
+    expect(a.regression).toBe(true);
+  });
+
+  it("通常カバレッジ(77/78)は coverage-collapse にならない", () => {
+    const prev = idxWith({
+      perEvent: commonEvents(40, 20),
+      scrapedEventIds: range(1, 78),
+      targetEventCount: 78,
+      scrapedEventCount: 77,
+    });
+    const next = idxWith({
+      perEvent: commonEvents(40, 20),
+      scrapedEventIds: range(1, 78),
+      targetEventCount: 78,
+      scrapedEventCount: 77,
+    });
+    const a = assessRegression(prev, next, opts);
+    expect(a.mode).toBe("per-event");
+    expect(a.regression).toBe(false);
+  });
+
+  it("移行直後(prev に scrapedEventIds 無し)＋カバレッジ健全＋総数安定なら書く（誤ブロックしない）", () => {
+    const prev = idx(863); // 旧 index: scrapedEventIds 無し
+    const next = idxWith({
+      perEvent: commonEvents(40, 20), // 800 athletes
+      scrapedEventIds: range(1, 78),
+      targetEventCount: 78,
+      scrapedEventCount: 77,
+    });
+    const a = assessRegression(prev, next, opts);
+    expect(a.mode).toBe("fallback-count"); // prev に ID 無く per-event 不可
+    expect(a.regression).toBe(false); // 800/863=0.93 → 書く
+  });
+
+  it("移行直後でも総数が壊滅的に減れば総数フォールバックで弾く", () => {
+    const prev = idx(1000); // 旧 index
+    const next = idxWith({
+      perEvent: commonEvents(15, 20), // 300 athletes
+      scrapedEventIds: range(1, 78),
+      targetEventCount: 78,
+      scrapedEventCount: 77, // カバレッジは健全（coverage-collapse ではない）
+    });
+    const a = assessRegression(prev, next, opts);
+    expect(a.mode).toBe("fallback-count");
+    expect(a.regression).toBe(true); // 300 < 1000*0.6 → 弾く
+  });
+
+  it("閑散期(target が minTargetsForCoverage 未満)はカバレッジ判定をスキップ", () => {
+    const prev = idxWith({
+      perEvent: commonEvents(5, 30),
+      scrapedEventIds: range(1, 5),
+      targetEventCount: 5,
+      scrapedEventCount: 5,
+    });
+    const next = idxWith({
+      perEvent: { 1: 30, 2: 30 },
+      scrapedEventIds: [1, 2],
+      targetEventCount: 5, // 5 < 10 → coverage 判定しない
+      scrapedEventCount: 2,
+    });
+    const a = assessRegression(prev, next, opts);
+    expect(a.mode).not.toBe("coverage-collapse");
   });
 });
