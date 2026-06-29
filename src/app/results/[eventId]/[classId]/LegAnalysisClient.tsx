@@ -190,7 +190,7 @@ function Glossary() {
     ["ミス率", "記録に占めるロス時間の割合。小さいほど良い。"],
     ["ロス（区間ロス）", "そのレッグで基準より余計にかかった秒数。負＝基準より速い。"],
     ["理想（ノーミスタイム）", "自分の巡航ペースでミスなく走ったときの想定タイム（= 記録 − 総ロス）。"],
-    ["ノーミス推定順位", "全員がノーミスで走った場合の想定順位（理想タイム同士で比較＝走力ベースの順位）。"],
+    ["ノーミス推定順位（深掘り）", "この選手がノーミスで走った場合、実際の結果に対して何位だったか（理想タイム vs 他者の実記録）。"],
     ["比較相手とのタイム差", "各CPでの自分と比較相手の実経過タイム差。上=遅れ・下=リード。段差が大きいレッグで差がついた。"],
     ["区間順位", "そのレッグ単独での順位（完走者中）。"],
     ["平均比", "自分の同種目(Forest/Sprint別)平均との差。負＝平均より良い。"],
@@ -342,7 +342,7 @@ function SingleView({
           ノーミスなら <span className="text-green-400">{s.idealTime}</span>（総ロス {s.totalLossTime}）
           {view.idealRank != null && (
             <>
-              。全員ノーミスなら <span className="text-primary">{view.idealRank}位</span>相当
+              。あなたがノーミスなら <span className="text-primary">{view.idealRank}位</span>相当
             </>
           )}
           。
@@ -511,15 +511,8 @@ function CompareGrid({
   const lossesByCol = subjects.map((r) => r.legLossTime.map((t) => lapStrToSeconds(t) ?? 0));
   const maxAbs = Math.max(...lossesByCol.flat().map((v) => Math.abs(v)), 1);
 
-  // ノーミス推定順位 =「全員がノーミスで走った場合」の順位（理想タイム同士で比較）。
-  const finIdeals = runners
-    .filter((r) => r.rank != null)
-    .map((r) => lapStrToSeconds(r.idealTime))
-    .filter((v): v is number => v != null);
-  const idealRankOf = (r: LapCenterRunnerDetail): number | null => {
-    const ideal = lapStrToSeconds(r.idealTime);
-    return ideal == null || finIdeals.length === 0 ? null : 1 + finIdeals.filter((x) => x < ideal).length;
-  };
+  // グリッドでは「ノーミス順位」は出さない（各列の理想 vs 実フィールドは全員1位判定になり混乱、
+  // 理想同士の順位は本人の「自分がノーミスなら何位」の問いに答えない）。理想タイムのみ並べて比較。
 
   return (
     <>
@@ -593,17 +586,13 @@ function CompareGrid({
           <FootRow label="ミス率" subjects={subjects} render={(r) => `${r.lossRate ?? "—"}%`} />
           <tr>
             <th className="sticky left-0 z-10 border-r border-t border-border bg-surface px-2 py-1.5 text-left text-[11px] font-semibold text-muted">
-              ノーミス推定
+              ノーミスタイム
             </th>
-            {subjects.map((r) => {
-              const ir = idealRankOf(r);
-              return (
-                <td key={`ideal-${r.name}`} className="border-t border-border bg-surface px-2 py-1.5 text-center">
-                  <div className="font-mono font-bold text-green-400">{r.idealTime || "—"}</div>
-                  <div className="text-[10px] text-primary">{ir != null ? `推定${ir}位` : "—"}</div>
-                </td>
-              );
-            })}
+            {subjects.map((r) => (
+              <td key={`ideal-${r.name}`} className="border-t border-border bg-surface px-2 py-1.5 text-center">
+                <div className="font-mono font-bold text-green-400">{r.idealTime || "—"}</div>
+              </td>
+            ))}
           </tr>
         </tbody>
       </table>
