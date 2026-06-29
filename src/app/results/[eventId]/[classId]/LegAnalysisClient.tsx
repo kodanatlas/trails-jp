@@ -230,7 +230,7 @@ function AddPicker({
   if (eligible.length === 0) return null;
   return (
     <div className="mb-3 flex items-center gap-2">
-      <label className="text-[11px] text-muted">選手を追加</label>
+      <label className="text-[11px] text-muted">選手追加</label>
       <select
         value=""
         onChange={(e) => e.target.value && onAdd(e.target.value)}
@@ -523,7 +523,7 @@ function CompareGrid({
 
   return (
     <>
-    <p className="mb-2 text-center text-[10px] text-muted/80">
+    <p className="mb-2 text-left text-[10px] text-muted/80">
       単一選手のみにすると、比較相手とのタイム差・自己平均比つきの「深掘りカード」になります。
     </p>
     <div className="overflow-x-auto rounded-xl border border-border bg-card">
