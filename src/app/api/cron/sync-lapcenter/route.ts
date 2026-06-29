@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { matchLapCenterEvents, fetchEventClasses, fetchSplitList } from "@/lib/scraper/lapcenter";
+import { matchLapCenterEvents, fetchEventClasses, fetchSplitList, MANUAL_LC_OVERRIDE_EVENT_IDS } from "@/lib/scraper/lapcenter";
 import { readEvents, writeEvents } from "@/lib/events-store";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { readFileSync } from "fs";
@@ -177,10 +177,19 @@ async function scrapeRunners(
     }
   }
 
-  // 未処理のLC付きイベント（新しい順）
+  // 未処理のLC付きイベント。手動マッチ表のイベントを最優先（古くてもキュー先頭へ）→ それ以外は新しい順。
+  // スクレイパは壁時計予算で1回数件しか進まず、古い手動マッチ大会(ジュニア/インカレ等)が
+  // 新しい順だと永遠にキュー後方で届かないため、明示的に優先して必ず取得させる。
+  const isPriority = (e: { lapcenter_event_id?: number }) =>
+    e.lapcenter_event_id != null && MANUAL_LC_OVERRIDE_EVENT_IDS.has(e.lapcenter_event_id);
   const lcEvents = events
     .filter((e) => e.lapcenter_event_id && !processedKeys.has(`${e.date}:${e.name}`))
-    .sort((a, b) => b.date.localeCompare(a.date))
+    .sort((a, b) => {
+      const pa = isPriority(a) ? 1 : 0;
+      const pb = isPriority(b) ? 1 : 0;
+      if (pa !== pb) return pb - pa;
+      return b.date.localeCompare(a.date);
+    })
     .slice(0, MAX_RUNNER_EVENTS);
 
   let totalRunners = 0;
