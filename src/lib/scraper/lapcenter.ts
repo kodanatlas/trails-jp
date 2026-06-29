@@ -243,12 +243,15 @@ export interface MatchResult {
  * 漏れの主因＝LapCenter 側の開催日が JOY と異なる / 名前の差が大きい / mulka2 のイベント一覧に未掲載。
  * 新たに漏れが判明したらここに (joe_event_id: lapcenter_event_id) を追記する。
  */
-const MANUAL_LC_OVERRIDES: Record<number, number> = {
+export const MANUAL_LC_OVERRIDES: Record<number, number> = {
   2448: 9845, // 第48回東大OLK大会前日大会 (2026-06-13)
   2197: 9714, // ジュニアチャンピオン大会（43JC） (2026-04-19)
   2286: 9644, // インカレミドル2025 (2026-03-14)
   2282: 9647, // インカレリレー2025 (2026-03-15)
 };
+
+/** 手動マッチ表でマッチした LapCenter event id の集合（スクレイプ優先用）。 */
+export const MANUAL_LC_OVERRIDE_EVENT_IDS = new Set<number>(Object.values(MANUAL_LC_OVERRIDES));
 
 export async function matchLapCenterEvents<
   T extends { joe_event_id: number; name: string; date: string; lapcenter_event_id?: number; lapcenter_url?: string }
