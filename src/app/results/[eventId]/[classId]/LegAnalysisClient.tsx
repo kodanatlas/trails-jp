@@ -191,7 +191,7 @@ function Glossary() {
     ["ロス（区間ロス）", "そのレッグで基準より余計にかかった秒数。負＝基準より速い。"],
     ["理想（ノーミスタイム）", "自分の巡航ペースでミスなく走ったときの想定タイム（= 記録 − 総ロス）。"],
     ["ノーミス推定順位", "全員がノーミスで走った場合の想定順位（理想タイム同士で比較＝走力ベースの順位）。"],
-    ["ロスの積み上がり", "レース開始からの累積ロス。段差が大きいほどそこで失った（ミス/ルート選択/ナビ）。"],
+    ["比較相手とのタイム差", "各CPでの自分と比較相手の実経過タイム差。上=遅れ・下=リード。段差が大きいレッグで差がついた。"],
     ["区間順位", "そのレッグ単独での順位（完走者中）。"],
     ["平均比", "自分の同種目(Forest/Sprint別)平均との差。負＝平均より良い。"],
   ];
@@ -284,18 +284,41 @@ function SingleView({
   const maxAbs = Math.max(...view.legs.map((l) => Math.abs(l.lossSec)), 1);
   const maxMissIndex = view.topMistakes[0]?.index ?? -1;
 
-  // 累積カーブに重ねる比較対象＝トップ選手（自分がトップなら2位）
+  // 比較相手（既定=1位、自分が1位なら2位）。ユーザーが切替可能。
   const byRank = runners.filter((r) => r.rank != null).sort((a, b) => a.rank! - b.rank!);
   const subjIsTop = byRank[0] && norm(byRank[0].name) === norm(view.subject.name);
-  const defaultOverlay = (subjIsTop ? byRank[1] : byRank[0]) ?? null; // 既定=1位（自分が1位なら2位）
+  const defaultOverlay = (subjIsTop ? byRank[1] : byRank[0]) ?? null;
   const picked = overlayName ? runners.find((r) => r.name === overlayName) ?? null : null;
   const overlayRunner = picked && picked.name !== view.subject.name ? picked : defaultOverlay;
-  const overlayCum = (() => {
-    if (!overlayRunner || overlayRunner.legLossTime.length !== view.cumulativeLoss.length) return null;
-    const secs = overlayRunner.legLossTime.map((t) => lapStrToSeconds(t));
-    if (secs.some((v) => v == null)) return null; // 未パース値があれば overlay 非表示（レビュー Q）
-    let a = 0;
-    return (secs as number[]).map((v) => (a += v));
+  // 累積タイム差: 各CPでの「自分 − 比較相手」の実経過タイム差（秒）。＋=比較相手より後ろ（遅い）。
+  // legLossTime（各自の巡航ペース基準）を重ねると基準が別々で比較にならないため、共通の実経過タイムで差を取る。
+  const subjRunner = runners.find((r) => norm(r.name) === norm(view.subject.name)) ?? null;
+  const gapSeries = (() => {
+    if (!overlayRunner || !subjRunner) return null;
+    const n = Math.min(subjRunner.elapsedTime.length, overlayRunner.elapsedTime.length);
+    if (n < 2) return null;
+    const out: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const a = lapStrToSeconds(subjRunner.elapsedTime[i]);
+      const b = lapStrToSeconds(overlayRunner.elapsedTime[i]);
+      if (a == null || b == null) return null;
+      out.push(a - b);
+    }
+    return out;
+  })();
+  // 差が最も開いたレッグ（gap の単区間増分が最大）
+  const gapJumpIndex = (() => {
+    if (!gapSeries) return -1;
+    let idx = 0;
+    let mx = gapSeries[0];
+    for (let i = 1; i < gapSeries.length; i++) {
+      const d = gapSeries[i] - gapSeries[i - 1];
+      if (d > mx) {
+        mx = d;
+        idx = i;
+      }
+    }
+    return idx;
   })();
 
   return (
@@ -342,45 +365,44 @@ function SingleView({
 
       {view.cumulativeLoss.length >= 2 && (
         <div className="mt-5 rounded-2xl border border-border bg-card p-4">
-          <p className="text-[11px] tracking-wider text-muted">ロスの積み上がり（どこで差がついたか）</p>
-          <p className="mb-1 text-[10px] text-muted/80">縦＝開始からの累積ロス。段差が大きい所で大きく失った。橙＝最大ミス。</p>
-          <CumulativeLossChart
-            legs={view.legs}
-            cumulative={view.cumulativeLoss}
-            maxLegIndex={maxMissIndex}
-            overlay={overlayRunner && overlayCum ? { label: `${overlayRunner.rank}位 ${overlayRunner.name}`, cumulative: overlayCum } : null}
-          />
-          {overlayRunner && overlayCum && (
-            <div className="mt-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px] text-muted">
-              <span className="flex items-center gap-1">
-                <i className="inline-block h-0.5 w-3 align-middle" style={{ background: "#f87171" }} /> 自分（{view.subject.name}）
-              </span>
-              <span className="flex items-center gap-1">
-                <i className="inline-block h-0.5 w-3 align-middle" style={{ background: "#fbbf24" }} />
-                比較相手:
-                <select
-                  value={overlayRunner.name}
-                  onChange={(e) => setOverlayName(e.target.value)}
-                  className="rounded border border-border bg-surface px-1 py-0.5 text-[10px] outline-none focus:border-primary"
-                >
-                  {byRank
-                    .filter((r) => r.name !== view.subject.name)
-                    .map((r) => (
-                      <option key={`${r.name}-${r.index}`} value={r.name}>
-                        {r.rank}位 {r.name}
-                      </option>
-                    ))}
-                </select>
-              </span>
-            </div>
-          )}
+          {gapSeries && overlayRunner ? (
+            <>
+              <p className="text-[11px] tracking-wider text-muted">比較相手とのタイム差（どこで差がついたか）</p>
+              <p className="mb-1 text-[10px] text-muted/80">
+                縦＝比較相手より何秒 遅い(上)／速い(下)。段差の大きいレッグでタイム差がついた。橙＝最も開いたレッグ。
+              </p>
+              <GapChart legs={view.legs} gap={gapSeries} jumpIndex={gapJumpIndex} />
+              <div className="mt-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px] text-muted">
+                <span className="flex items-center gap-1">
+                  <i className="inline-block h-0.5 w-3 align-middle" style={{ background: "#f87171" }} /> 自分（{view.subject.name}）
+                </span>
+                <span className="flex items-center gap-1">
+                  <i className="inline-block h-0.5 w-3 align-middle" style={{ background: "#fbbf24" }} />
+                  基準＝比較相手:
+                  <select
+                    value={overlayRunner.name}
+                    onChange={(e) => setOverlayName(e.target.value)}
+                    className="rounded border border-border bg-surface px-1 py-0.5 text-[10px] outline-none focus:border-primary"
+                  >
+                    {byRank
+                      .filter((r) => r.name !== view.subject.name)
+                      .map((r) => (
+                        <option key={`${r.name}-${r.index}`} value={r.name}>
+                          {r.rank}位 {r.name}
+                        </option>
+                      ))}
+                  </select>
+                </span>
+              </div>
+            </>
+          ) : null}
           <p className="mb-1 mt-3 text-[11px] tracking-wider text-muted">
-            総ロスの内訳（<span className="font-mono text-red-400">{s.totalLossTime}</span>）
+            総ロスの内訳（<span className="font-mono text-red-400">{s.totalLossTime}</span>）— あなたのミスの累積（自分の巡航ペース基準）
           </p>
           <CompositionBar legs={view.legs} maxLegIndex={maxMissIndex} />
           <div className="mt-1 flex justify-between text-[10px] text-muted">
             <span>S</span>
-            <span>各レッグの幅＝総ロストに占める割合</span>
+            <span>各レッグの幅＝総ロスに占める割合</span>
             <span>F</span>
           </div>
         </div>
@@ -502,7 +524,7 @@ function CompareGrid({
   return (
     <>
     <p className="mb-2 text-center text-[10px] text-muted/80">
-      単一選手のみにすると、ロスの積み上がりカーブ・自己平均比つきの「深掘りカード」になります。
+      単一選手のみにすると、比較相手とのタイム差・自己平均比つきの「深掘りカード」になります。
     </p>
     <div className="overflow-x-auto rounded-xl border border-border bg-card">
       <table className="w-max min-w-full border-separate border-spacing-0 text-xs">
@@ -636,61 +658,49 @@ function LossBar({ lossSec, widthPct, thin }: { lossSec: number; widthPct: numbe
   );
 }
 
-/** ① 累積ロスカーブ（pure SVG・recharts不使用）。縦=開始からの累積ロス秒。 */
-function CumulativeLossChart({
-  legs,
-  cumulative,
-  maxLegIndex,
-  overlay,
-}: {
-  legs: LegCell[];
-  cumulative: number[];
-  maxLegIndex: number;
-  overlay?: { label: string; cumulative: number[] } | null;
-}) {
-  const L = cumulative.length;
+/** 比較相手とのタイム差カーブ（pure SVG）。縦=各CPでの「自分−比較相手」の実経過タイム差秒。
+ *  0=比較相手の基準線（金）。＋(上)=遅れ、−(下)=リード。橙=差が最も開いたレッグ。 */
+function GapChart({ legs, gap, jumpIndex }: { legs: LegCell[]; gap: number[]; jumpIndex: number }) {
+  const L = gap.length;
   if (L < 2) return null;
   const W = 420;
   const H = 150;
   const padL = 8;
-  const padR = 8;
-  const padT = 16;
+  const padR = 18;
+  const padT = 18;
   const padB = 18;
-  const allVals = overlay ? [...cumulative, ...overlay.cumulative] : cumulative;
-  const lo = Math.min(0, ...allVals);
-  const hi = Math.max(0, ...allVals);
+  const lo = Math.min(0, ...gap);
+  const hi = Math.max(0, ...gap);
   const xs = (i: number) => padL + (i / (L - 1)) * (W - padL - padR);
   const ys = (v: number) => padT + (1 - (v - lo) / (hi - lo || 1)) * (H - padT - padB);
   const baseY = ys(0);
-  const area = `M ${xs(0)} ${baseY} ` + cumulative.map((v, i) => `L ${xs(i)} ${ys(v)}`).join(" ") + ` L ${xs(L - 1)} ${baseY} Z`;
-  const line = cumulative.map((v, i) => `${i === 0 ? "M" : "L"} ${xs(i)} ${ys(v)}`).join(" ");
+  const area = `M ${xs(0)} ${baseY} ` + gap.map((v, i) => `L ${xs(i)} ${ys(v)}`).join(" ") + ` L ${xs(L - 1)} ${baseY} Z`;
+  const line = gap.map((v, i) => `${i === 0 ? "M" : "L"} ${xs(i)} ${ys(v)}`).join(" ");
   const xLab = (i: number) => (i === 0 ? "S" : i === L - 1 ? "F" : String(i));
+  const finalGap = gap[L - 1];
+  const jumpDelta = jumpIndex > 0 ? gap[jumpIndex] - gap[jumpIndex - 1] : 0;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="mt-1 h-auto w-full" preserveAspectRatio="xMidYMid meet" role="img" aria-label="累積ロス">
-      <line x1={padL} y1={baseY} x2={W - padR} y2={baseY} stroke="var(--border-strong)" strokeWidth={1} />
-      <path d={area} fill="rgba(248,113,113,.18)" />
-      {overlay && (
-        <path
-          d={overlay.cumulative.map((v, i) => `${i === 0 ? "M" : "L"} ${xs(i)} ${ys(v)}`).join(" ")}
-          fill="none"
-          stroke="#fbbf24"
-          strokeWidth={1.5}
-          strokeDasharray="3 2"
-        />
-      )}
+    <svg viewBox={`0 0 ${W} ${H}`} className="mt-1 h-auto w-full" preserveAspectRatio="xMidYMid meet" role="img" aria-label="比較相手とのタイム差">
+      <path d={area} fill="rgba(248,113,113,.16)" />
+      {/* 比較相手=基準線(0)・金 */}
+      <line x1={padL} y1={baseY} x2={W - padR} y2={baseY} stroke="#fbbf24" strokeWidth={1.2} strokeDasharray="3 2" />
       <path d={line} fill="none" stroke="#f87171" strokeWidth={2} />
-      {cumulative.map((v, i) => (
-        <circle key={i} cx={xs(i)} cy={ys(v)} r={i === maxLegIndex ? 3.4 : 2} fill={i === maxLegIndex ? "#f97316" : "#f87171"} />
+      {gap.map((v, i) => (
+        <circle key={i} cx={xs(i)} cy={ys(v)} r={i === jumpIndex ? 3.4 : 2} fill={i === jumpIndex ? "#f97316" : "#f87171"} />
       ))}
-      {maxLegIndex >= 0 && (
+      {jumpIndex > 0 && (
         <>
-          <line x1={xs(maxLegIndex)} y1={ys(cumulative[maxLegIndex])} x2={xs(maxLegIndex)} y2={padT} stroke="#f97316" strokeDasharray="2 2" strokeWidth={1} />
-          <text x={xs(maxLegIndex)} y={padT - 4} fill="#f97316" fontSize={9} textAnchor="middle">
-            {legs[maxLegIndex]?.label} {legs[maxLegIndex]?.lossStr}
+          <line x1={xs(jumpIndex)} y1={ys(gap[jumpIndex])} x2={xs(jumpIndex)} y2={padT} stroke="#f97316" strokeDasharray="2 2" strokeWidth={1} />
+          <text x={xs(jumpIndex)} y={padT - 4} fill="#f97316" fontSize={9} textAnchor="middle">
+            {legs[jumpIndex]?.label} {fmtSignedSeconds(jumpDelta)}
           </text>
         </>
       )}
-      {cumulative.map((v, i) =>
+      {/* 終点＝最終タイム差 */}
+      <text x={xs(L - 1)} y={ys(finalGap) + (finalGap >= 0 ? -5 : 11)} fill="#f87171" fontSize={9} fontWeight="bold" textAnchor="end">
+        {fmtSignedSeconds(finalGap)}
+      </text>
+      {gap.map((v, i) =>
         i % 2 === 0 || i === L - 1 ? (
           <text key={`x${i}`} x={xs(i)} y={H - 5} fill="var(--muted)" fontSize={8} textAnchor="middle">
             {xLab(i)}
