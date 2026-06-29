@@ -393,7 +393,15 @@ function SingleView({
   return (
     <div>
       <div className="rounded-2xl border border-border bg-card p-4">
-        <h2 className="text-xl font-extrabold">{s.name}</h2>
+        <h2 className="text-xl font-extrabold">
+          <Link
+            href={`/analysis?athlete=${encodeURIComponent(norm(s.name))}`}
+            className="transition-colors hover:text-primary hover:underline"
+            title="この選手のページへ"
+          >
+            {s.name}
+          </Link>
+        </h2>
         <p className="mt-0.5 text-xs text-muted">{s.club || "—"}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Chip label="記録" value={s.result} sub={s.rank != null ? `${s.rank}位/${view.n}` : `—/${view.n}`} accent />
@@ -663,9 +671,13 @@ function CompareGrid({
               >
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="text-[10px] font-bold text-primary">{r.rank ?? "—"}位</span>
-                  <span className="max-w-[78px] truncate text-[11px] font-bold" title={r.name}>
+                  <Link
+                    href={`/analysis?athlete=${encodeURIComponent(norm(r.name))}`}
+                    className="max-w-[78px] truncate text-[11px] font-bold transition-colors hover:text-primary hover:underline"
+                    title={`${r.name}（選手ページへ）`}
+                  >
                     {r.name}
-                  </span>
+                  </Link>
                   <button
                     onClick={() => onRemove(r.name)}
                     title="この列を消す"
