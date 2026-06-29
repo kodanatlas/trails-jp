@@ -79,15 +79,17 @@ export interface LegPrizeBoard {
 
 /** ③ 区間賞ボード: 各レッグの最速（lapRank==1）と、選手別の区間賞獲得数ランキング。 */
 export function buildLegPrizes(runners: LapCenterRunnerDetail[]): LegPrizeBoard | null {
+  if (runners.length === 0) return null;
   const finishers = runners.filter((r) => r.rank != null);
-  if (finishers.length === 0) return null;
-  const legCount = Math.max(...finishers.map((r) => r.lapRank.length), 0);
+  // 区間賞(レッグ最速)は overall DNF/MP でも leg を最速で走れば獲得しうるため全走者から拾う。
+  // コース長(legCount)はフルコース＝完走者基準で決める（完走者が居なければ全走者の最大）。
+  const legCount = Math.max(...(finishers.length ? finishers : runners).map((r) => r.lapRank.length), 0);
   if (legCount === 0) return null;
 
   const legs: LegPrize[] = [];
   const tally = new Map<string, { name: string; club: string; count: number }>();
   for (let l = 0; l < legCount; l++) {
-    const winners = finishers.filter((r) => r.lapRank[l] === 1);
+    const winners = runners.filter((r) => r.lapRank[l] === 1);
     const w = winners[0] ?? null;
     legs.push({
       legIndex: l,
