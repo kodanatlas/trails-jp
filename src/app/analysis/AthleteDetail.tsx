@@ -1232,12 +1232,15 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
   // 統計(平均/標準偏差/月別)はランキング行のみで計算し、ここでは表示リストだけを union する。
   const matchLc = (date: string, eventName: string, discipline: string): LapCenterPerformance | null => {
     const cands = lcData?.filter((p) => p.d === date && p.t === discipline) ?? [];
-    if (cands.length === 1) return cands[0];
-    if (cands.length > 1) {
-      const byName = cands.filter((p) => p.e === eventName);
-      return byName.length === 1 ? byName[0] : null;
-    }
-    return null;
+    if (cands.length === 0) return null;
+    // 同一(日付×種目)の LC レースが1種類だけなら同一レース(複数クラス出走含む)とみなす。
+    // ランキング名と LC名の表記差(例「東大大会前日」vs「第48回東大OLK大会前日大会」)でも紐づけ、
+    // ランキング行にリンクを付与＋補完行(lcOnly)の重複を防ぐ。
+    const distinctNames = new Set(cands.map((p) => p.e));
+    if (distinctNames.size === 1) return cands[0];
+    // 同日同種目に複数の別レース → 大会名で一意化、できなければ誤遷移防止のため抑止。
+    const byName = cands.filter((p) => p.e === eventName);
+    return byName.length === 1 ? byName[0] : null;
   };
   const usedLcRaces = new Set<string>();
   const rankedRows = recent.map((e) => {
