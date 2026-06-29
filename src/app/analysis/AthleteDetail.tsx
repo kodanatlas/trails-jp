@@ -1227,6 +1227,30 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
   }
   const maxMonthCount = Math.max(...months.map((m) => m.count), 1);
 
+  // LapCenter 取込済みだが JOY ランキング非対象(前日大会等)や古いバンドル欠落で
+  // allEvents(=ランキング由来)に行が無いレースを、選手スコープの lcData から「LCのみ行」として補完。
+  // 統計(平均/標準偏差/月別)はランキング行のみで計算し、ここでは表示リストだけを union する。
+  const matchLc = (date: string, eventName: string, discipline: string): LapCenterPerformance | null => {
+    const cands = lcData?.filter((p) => p.d === date && p.t === discipline) ?? [];
+    if (cands.length === 1) return cands[0];
+    if (cands.length > 1) {
+      const byName = cands.filter((p) => p.e === eventName);
+      return byName.length === 1 ? byName[0] : null;
+    }
+    return null;
+  };
+  const usedLcRaces = new Set<string>();
+  const rankedRows = recent.map((e) => {
+    const lcMatch = matchLc(e.date, e.eventName, e.discipline);
+    if (lcMatch) usedLcRaces.add(`${lcMatch.d}|${lcMatch.t}|${lcMatch.e}`);
+    return { ...e, lcMatch, lcOnly: false };
+  });
+  const lcOnlyRows = (lcData ?? [])
+    .filter((p) => !usedLcRaces.has(`${p.d}|${p.t}|${p.e}`))
+    .filter((p, i, arr) => arr.findIndex((q) => q.d === p.d && q.t === p.t && q.e === p.e) === i)
+    .map((p) => ({ date: p.d, eventName: p.e, discipline: p.t, points: 0, lcMatch: p, lcOnly: true }));
+  const displayRows = [...rankedRows, ...lcOnlyRows].sort((a, b) => b.date.localeCompare(a.date));
+
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between">
@@ -1286,48 +1310,42 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
 
       {/* 大会リスト */}
       <div className="space-y-1">
-        {recent.slice(0, 10).map((e, i) => {
-          const barWidth = maxPoints > 0 ? (e.points / maxPoints) * 100 : 0;
-          const level = performanceLevel(e.points);
-          const colors = levelColors[level];
+        {displayRows.slice(0, 10).map((e, i) => {
           const dt = new Date(e.date + "T00:00:00");
           const dateStr = `${dt.getFullYear()}/${dt.getMonth() + 1}/${dt.getDate()}`;
-          // LapCenter 取込済みレースなら「レッグ分析」リンク。
-          // 同日・同種目で照合し、候補が複数（同日に2レース等）なら大会名で曖昧解消、
-          // それでも一意でなければリンクを抑止して誤レースへ飛ばさない（レビュー D）。
-          const lcCands = lcData?.filter((p) => p.d === e.date && p.t === e.discipline) ?? [];
-          let lcMatch: LapCenterPerformance | null = null;
-          if (lcCands.length === 1) {
-            lcMatch = lcCands[0];
-          } else if (lcCands.length > 1) {
-            const byName = lcCands.filter((p) => p.e === e.eventName);
-            lcMatch = byName.length === 1 ? byName[0] : null;
-          }
+          const lcMatch = e.lcMatch;
+          const isSprint = e.discipline === "sprint";
+          // LCのみ行(JOYポイント対象外/バンドル欠落)はポイント無し→中立表示。ランキング行は従来通り色分け。
+          const level = e.lcOnly ? null : performanceLevel(e.points);
+          const colors = level ? levelColors[level] : null;
+          const barWidth = !e.lcOnly && maxPoints > 0 ? (e.points / maxPoints) * 100 : 0;
           return (
             <div
               key={`${e.date}-${e.eventName}-${i}`}
-              className={`flex items-center gap-2 rounded p-2 ${colors.bg || "bg-surface"}`}
+              className={`flex items-center gap-2 rounded p-2 ${colors?.bg || "bg-surface"}`}
             >
-              <span className={`h-2 w-2 flex-shrink-0 rounded-full ${colors.dot}`} />
+              <span className={`h-2 w-2 flex-shrink-0 rounded-full ${colors?.dot ?? "bg-muted/40"}`} />
               <span className="w-20 flex-shrink-0 text-xs font-medium text-muted">
                 {dateStr}
               </span>
               <span className={`flex-shrink-0 rounded px-1 py-0.5 text-[9px] font-bold leading-none ${
-                e.discipline === "sprint"
+                isSprint
                   ? "bg-blue-500/15 text-blue-400"
                   : "bg-green-500/15 text-green-400"
               }`}>
-                {e.discipline === "sprint" ? "S" : "F"}
+                {isSprint ? "S" : "F"}
               </span>
               <span className="min-w-0 flex-1 truncate text-xs">{e.eventName}</span>
               <div className="hidden h-1.5 w-20 overflow-hidden rounded-full bg-white/5 sm:block">
-                <div
-                  className={`h-full rounded-full ${colors.bar}`}
-                  style={{ width: `${barWidth}%` }}
-                />
+                {!e.lcOnly && colors && (
+                  <div
+                    className={`h-full rounded-full ${colors.bar}`}
+                    style={{ width: `${barWidth}%` }}
+                  />
+                )}
               </div>
-              <span className={`w-12 flex-shrink-0 text-right font-mono text-xs font-bold ${colors.text}`}>
-                {e.points.toLocaleString()}
+              <span className={`w-12 flex-shrink-0 text-right font-mono text-xs font-bold ${colors?.text ?? "text-muted"}`}>
+                {e.lcOnly ? "—" : e.points.toLocaleString()}
               </span>
               {lcMatch && (
                 <Link
@@ -1343,9 +1361,9 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
         })}
       </div>
 
-      {recent.length > 10 && (
+      {displayRows.length > 10 && (
         <p className="mt-2 text-center text-[10px] text-muted">
-          直近10大会を表示（全{recent.length}大会）
+          直近10大会を表示（全{displayRows.length}大会・レッグ分析あり {displayRows.filter((r) => r.lcMatch).length}）
         </p>
       )}
     </div>
