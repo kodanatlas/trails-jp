@@ -212,16 +212,14 @@ function AddPicker({
   selected: string[];
   onAdd: (name: string) => void;
 }) {
-  const MAX_OPTIONS = 40;
   if (selected.length >= 8) {
     return <div className="mb-3 text-center text-[10px] text-muted">比較は最大8名です（✕で外すと追加できます）</div>;
   }
-  // 完走者(rank付き)のみ比較に追加可能（DNF/MP は per-leg 配列が短く列が壊れるため除外・レビュー A）。
+  // 完走者(rank付き)のみ比較に追加可能（DNF/MP は per-leg 配列が短く列が壊れるため除外・レビュー A）。全完走者を選択可。
   const eligible = [...runners]
     .filter((r) => r.rank != null && !selected.includes(r.name))
     .sort((a, b) => a.rank! - b.rank!);
   if (eligible.length === 0) return null;
-  const remaining = eligible.slice(0, MAX_OPTIONS); // 大クラスで <option> 過多→iOS jank を防ぐ（レビュー G）
   return (
     <div className="mb-3 flex items-center gap-2">
       <label className="text-[11px] text-muted">選手を追加</label>
@@ -230,8 +228,8 @@ function AddPicker({
         onChange={(e) => e.target.value && onAdd(e.target.value)}
         className="flex-1 rounded-lg border border-border bg-surface px-2 py-2.5 text-sm outline-none focus:border-primary"
       >
-        <option value="">＋ 比較に追加…{eligible.length > MAX_OPTIONS ? `（上位${MAX_OPTIONS}名）` : ""}</option>
-        {remaining.map((r) => (
+        <option value="">＋ 比較に追加…</option>
+        {eligible.map((r) => (
           <option key={`${r.name}-${r.index}`} value={r.name}>
             {r.rank != null ? `${r.rank}位 ` : "—位 "}
             {r.name}
@@ -269,6 +267,9 @@ function SingleView({
     );
   }, [runners, name, isAthlete, discipline, history, excludeDate]);
 
+  // 累積カーブの比較相手（既定=1位、自分が1位なら2位）。ユーザーが切替可能。
+  const [overlayName, setOverlayName] = useState<string | null>(null);
+
   if (!view) return null;
   const s = view.subject;
   const self = view.self;
@@ -278,7 +279,9 @@ function SingleView({
   // 累積カーブに重ねる比較対象＝トップ選手（自分がトップなら2位）
   const byRank = runners.filter((r) => r.rank != null).sort((a, b) => a.rank! - b.rank!);
   const subjIsTop = byRank[0] && norm(byRank[0].name) === norm(view.subject.name);
-  const overlayRunner = (subjIsTop ? byRank[1] : byRank[0]) ?? null;
+  const defaultOverlay = (subjIsTop ? byRank[1] : byRank[0]) ?? null; // 既定=1位（自分が1位なら2位）
+  const picked = overlayName ? runners.find((r) => r.name === overlayName) ?? null : null;
+  const overlayRunner = picked && picked.name !== view.subject.name ? picked : defaultOverlay;
   const overlayCum = (() => {
     if (!overlayRunner || overlayRunner.legLossTime.length !== view.cumulativeLoss.length) return null;
     const secs = overlayRunner.legLossTime.map((t) => lapStrToSeconds(t));
@@ -340,12 +343,26 @@ function SingleView({
             overlay={overlayRunner && overlayCum ? { label: `${overlayRunner.rank}位 ${overlayRunner.name}`, cumulative: overlayCum } : null}
           />
           {overlayRunner && overlayCum && (
-            <div className="mt-1 flex justify-center gap-4 text-[10px] text-muted">
+            <div className="mt-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px] text-muted">
               <span className="flex items-center gap-1">
                 <i className="inline-block h-0.5 w-3 align-middle" style={{ background: "#f87171" }} /> 自分（{view.subject.name}）
               </span>
               <span className="flex items-center gap-1">
-                <i className="inline-block h-0.5 w-3 align-middle" style={{ background: "#fbbf24" }} /> {overlayRunner.rank}位 {overlayRunner.name}
+                <i className="inline-block h-0.5 w-3 align-middle" style={{ background: "#fbbf24" }} />
+                比較相手:
+                <select
+                  value={overlayRunner.name}
+                  onChange={(e) => setOverlayName(e.target.value)}
+                  className="rounded border border-border bg-surface px-1 py-0.5 text-[10px] outline-none focus:border-primary"
+                >
+                  {byRank
+                    .filter((r) => r.name !== view.subject.name)
+                    .map((r) => (
+                      <option key={`${r.name}-${r.index}`} value={r.name}>
+                        {r.rank}位 {r.name}
+                      </option>
+                    ))}
+                </select>
               </span>
             </div>
           )}
@@ -563,6 +580,9 @@ function CompareGrid({
       <Legend color="#4ade80" label="セル緑=基準より速い（良）" />
       <span>巡航速度・ミス率は小さいほど良い</span>
     </div>
+    <p className="mt-1.5 text-center text-[10px] text-muted/80">
+      ✕ で自分以外を全て外すと、ロスの積み上がりカーブ・自己平均比つきの「深掘りカード」になります。
+    </p>
     </>
   );
 }
