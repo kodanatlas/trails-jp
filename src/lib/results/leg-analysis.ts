@@ -209,16 +209,18 @@ export function buildLegView(
     }
   }
 
-  // ノーミス推定順位 = 「全員がノーミスで走った場合」の順位（理想タイム同士で比較）。
-  // 旧実装は自分の理想を他者の"実記録"と比べていたため複数人が1位になり意味不明だった。
+  // ノーミス推定順位 =「この選手がノーミスで走った場合、実際の結果に対して何位だったか」。
+  // 自分の理想タイムを他者の"実記録"と比較（単一選手の深掘り専用の自己仮定。グリッドでは各列が
+  // 全員"実フィールドに勝てる"判定になり複数1位になるため、グリッド側は順位を出さない）。
   const idealSec = lapStrToSeconds(subject.idealTime);
   const idealRank =
     idealSec == null
       ? null
       : 1 +
         finishers.filter((r) => {
-          const ri = lapStrToSeconds(r.idealTime);
-          return ri != null && ri < idealSec;
+          if (normalizeName(r.name) === normalizeName(subject.name)) return false; // 自分は除外
+          const ra = lapStrToSeconds(r.result);
+          return ra != null && ra < idealSec;
         }).length;
 
   return {

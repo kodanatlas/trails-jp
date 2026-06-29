@@ -237,6 +237,17 @@ export interface MatchResult {
  * JOE イベントに Lap Center リンクを付与する
  * events 配列を直接変更する (in-place)
  */
+/**
+ * 手動マッチ表: joe_event_id → LapCenter event ID。
+ * 自動マッチ（同一日付グルーピング＋fuzzyMatch 名前照合）が漏らす既知イベントを明示マッピング。
+ * 漏れの主因＝LapCenter 側の開催日が JOY と異なる / 名前の差が大きい / mulka2 のイベント一覧に未掲載。
+ * 新たに漏れが判明したらここに (joe_event_id: lapcenter_event_id) を追記する。
+ */
+const MANUAL_LC_OVERRIDES: Record<number, number> = {
+  2448: 9845, // 第48回東大OLK大会前日大会 (2026-06-13)
+  2197: 9714, // ジュニアチャンピオン大会（43JC） (2026-04-19)
+};
+
 export async function matchLapCenterEvents<
   T extends { joe_event_id: number; name: string; date: string; lapcenter_event_id?: number; lapcenter_url?: string }
 >(joeEvents: T[]): Promise<MatchResult> {
@@ -275,6 +286,16 @@ export async function matchLapCenterEvents<
   for (const joe of joeEvents) {
     // Only match events without existing Lap Center link
     if (joe.lapcenter_event_id) {
+      matched++;
+      continue;
+    }
+
+    // 手動オーバーライド（自動マッチ漏れの既知イベント）を最優先で適用
+    const override = MANUAL_LC_OVERRIDES[joe.joe_event_id];
+    if (override && !usedLcIds.has(override)) {
+      joe.lapcenter_event_id = override;
+      joe.lapcenter_url = `https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=${override}&file=1`;
+      usedLcIds.add(override);
       matched++;
       continue;
     }
