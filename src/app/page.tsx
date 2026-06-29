@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Trophy, ExternalLink, BarChart3, TrendingUp, ChevronDown } from "lucide-react";
+import { CalendarDays, Trophy, ExternalLink, BarChart3, TrendingUp, ChevronDown, Route } from "lucide-react";
 import type { JOEEvent } from "@/lib/scraper/events";
 import eventsJson from "@/data/events.json";
 import weekendPointsJson from "@/data/weekend-points.json";
@@ -53,6 +53,13 @@ export default async function Home() {
                 >
                   <BarChart3 className="h-4 w-4" />
                   選手分析
+                </Link>
+                <Link
+                  href="/results"
+                  className="inline-flex items-center gap-2 rounded-lg border border-primary/50 bg-primary/10 px-6 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/20"
+                >
+                  <Route className="h-4 w-4" />
+                  結果分析
                 </Link>
                 <Link
                   href="/rankings"
