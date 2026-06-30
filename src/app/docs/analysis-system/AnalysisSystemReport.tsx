@@ -86,7 +86,7 @@ const LAYERS: {
     title: "FRONTEND ｜ Next.js App Router + Recharts",
     chips: [
       { x: 48, w: 260, t: "イベント・ランキング" },
-      { x: 360, w: 260, t: "選手・クラブ分析・比較" },
+      { x: 360, w: 260, t: "選手・結果分析・クラブ" },
       { x: 672, w: 260, t: "応援・シェアカード" },
     ],
   },
@@ -301,7 +301,7 @@ export function AnalysisSystemReport({
             <h2>
               提供<span className="grad">機能</span>
             </h2>
-            <span className="sec-sub">分析機能だけでなく、収集〜可視化までを6つの軸で提供する。</span>
+            <span className="sec-sub">分析機能だけでなく、収集〜可視化までを7つの軸で提供する。</span>
           </div>
           <div className="docs">
             <div className="doc a">
@@ -338,6 +338,17 @@ export function AnalysisSystemReport({
               <span className="file mono">/analysis</span>
             </div>
             <div className="doc a">
+              <div className="ghost">L</div>
+              <span className="tag">RESULTS</span>
+              <h3>結果分析（レッグ）</h3>
+              <p>LapCenter のスプリットから、レッグ単位でタイムを分解。</p>
+              <ul>
+                <li>ロスを<b>コース起因／自分のミス</b>に分解（罠レッグ判定）</li>
+                <li><b>区間賞</b>・ノーミス推定順位・タイム差グラフ</li>
+              </ul>
+              <span className="file mono">/results</span>
+            </div>
+            <div className="doc b">
               <div className="ghost">C</div>
               <span className="tag">CLUB</span>
               <h3>クラブ分析</h3>
@@ -348,7 +359,7 @@ export function AnalysisSystemReport({
               </ul>
               <span className="file mono">/analysis（クラブ）</span>
             </div>
-            <div className="doc b">
+            <div className="doc c">
               <div className="ghost">V</div>
               <span className="tag">COMPARE</span>
               <h3>選手比較</h3>
@@ -359,7 +370,7 @@ export function AnalysisSystemReport({
               </ul>
               <span className="file mono">/analysis（比較）</span>
             </div>
-            <div className="doc c">
+            <div className="doc a">
               <div className="ghost">♥</div>
               <span className="tag">SUPPORT</span>
               <h3>応援（いいね）</h3>
@@ -424,7 +435,8 @@ export function AnalysisSystemReport({
             </div>
             <div className="note">
               名寄せ：全角→半角、大学/クラブ略称の展開、回次・期数の除去。Forest／Sprint
-              区分は LapCenter 側に無いため、JOY ランキングの日付で判定する。
+              区分は LapCenter 側では大会名から推定するため JOY と割れることがあり（例：前日大会）、
+              レース突合は日付を主キーに、同日に1レースだけ・または名称一致で名寄せして重複表示を防ぐ。
               どこオリ大会は合成 ID（90,000,000〜）で JOY と衝突を回避し、手動取込分が無い回でも JOY 同期と既存保存分を維持するグレースフル劣化設計。
             </div>
           </div>
@@ -556,6 +568,16 @@ export function AnalysisSystemReport({
                 最小二乗の <span className="hl">y = ax + b</span>
               </div>
               <div className="why">巡航速度・ミス率に Forest／Sprint 独立で回帰直線を描画。</div>
+            </div>
+            <div className="dec">
+              <div className="k">LEG ｜ レッグ分解（結果分析）</div>
+              <div className="v">
+                ロスを <span className="hl">コース起因＋自分の超過</span> に分解
+              </div>
+              <div className="why">
+                LapCenter のスプリットから各レッグのロスをフィールド中央値と比較し、罠レッグ／自分のミスを判定。
+                ノーミス推定タイム（記録 − 総ロス）で実フィールドに対する想定順位も算出する。
+              </div>
             </div>
           </div>
         </section>

@@ -16,7 +16,7 @@ import {
   typeLabel,
   getBestRanks,
 } from "@/lib/analysis/utils";
-import { eventFuzzyMatch } from "@/lib/analysis/event-match";
+import { eventFuzzyMatch, matchLcRace } from "@/lib/analysis/event-match";
 import { SITE_URL } from "@/lib/site";
 import { UpcomingEntries } from "./UpcomingEntries";
 import { HeadToHead } from "./HeadToHead";
@@ -1230,21 +1230,14 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
   // LapCenter 取込済みだが JOY ランキング非対象(前日大会等)や古いバンドル欠落で
   // allEvents(=ランキング由来)に行が無いレースを、選手スコープの lcData から「LCのみ行」として補完。
   // 統計(平均/標準偏差/月別)はランキング行のみで計算し、ここでは表示リストだけを union する。
-  const matchLc = (date: string, eventName: string, discipline: string): LapCenterPerformance | null => {
-    const cands = lcData?.filter((p) => p.d === date && p.t === discipline) ?? [];
-    if (cands.length === 0) return null;
-    // 同一(日付×種目)の LC レースが1種類だけなら同一レース(複数クラス出走含む)とみなす。
-    // ランキング名と LC名の表記差(例「東大大会前日」vs「第48回東大OLK大会前日大会」)でも紐づけ、
-    // ランキング行にリンクを付与＋補完行(lcOnly)の重複を防ぐ。
-    const distinctNames = new Set(cands.map((p) => p.e));
-    if (distinctNames.size === 1) return cands[0];
-    // 同日同種目に複数の別レース → 大会名で一意化、できなければ誤遷移防止のため抑止。
-    const byName = cands.filter((p) => p.e === eventName);
-    return byName.length === 1 ? byName[0] : null;
-  };
+  // 突合は matchLcRace に集約: 同日×同種目を最優先しつつ、LCの種目推定(大会名キーワード)が
+  // 「前日大会」等のスプリントを forest と誤判定した場合でも、その日1大会なら出典差を吸収して
+  // ランキング行へ紐づける(=「東大大会前日」が2行に重複する不具合の解消)。
+  const rankedCountByDate = new Map<string, number>();
+  for (const e of recent) rankedCountByDate.set(e.date, (rankedCountByDate.get(e.date) ?? 0) + 1);
   const usedLcRaces = new Set<string>();
   const rankedRows = recent.map((e) => {
-    const lcMatch = matchLc(e.date, e.eventName, e.discipline);
+    const lcMatch = matchLcRace(lcData, e.date, e.eventName, e.discipline, rankedCountByDate.get(e.date) ?? 1);
     if (lcMatch) usedLcRaces.add(`${lcMatch.d}|${lcMatch.t}|${lcMatch.e}`);
     return { ...e, lcMatch, lcOnly: false };
   });
