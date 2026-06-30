@@ -1318,10 +1318,10 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
           return (
             <div
               key={`${e.date}-${e.eventName}-${i}`}
-              className={`flex items-center gap-2 rounded p-2 ${colors?.bg || "bg-surface"}`}
+              className={`flex items-center gap-1.5 rounded p-2 ${colors?.bg || "bg-surface"}`}
             >
               <span className={`h-2 w-2 flex-shrink-0 rounded-full ${colors?.dot ?? "bg-muted/40"}`} />
-              <span className="w-20 flex-shrink-0 text-xs font-medium text-muted">
+              <span className="w-[3.75rem] flex-shrink-0 text-[11px] font-medium tabular-nums tracking-tight text-muted">
                 {dateStr}
               </span>
               <span className={`flex-shrink-0 rounded px-1 py-0.5 text-[9px] font-bold leading-none ${
