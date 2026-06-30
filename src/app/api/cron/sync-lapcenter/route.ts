@@ -52,7 +52,9 @@ function isSprint(eventName: string): boolean {
 
 // 1回のCronで処理候補とするイベント数の上限（実処理数は下記の壁時計予算で決まる）
 const MAX_RUNNER_EVENTS = 40;
-const DELAY_MS = 800;
+// クラス間スリープ。多クラス大会(インカレ=18クラス等)では 800ms だと睡眠だけで ~14s 消費し
+// 1イベントで予算を食い潰して取りこぼす。mulka2 への礼儀を保ちつつ取込スループットを上げるため短縮。
+const DELAY_MS = 300;
 // 新しいイベントへの着手を打ち切る経過時間（リクエスト開始からの ms）。
 // maxDuration=60s に対し、着手後に多クラスイベントが完走できる余裕(~30s)を残す。
 const START_EVENT_BEFORE_MS = 30_000;
@@ -188,6 +190,10 @@ async function scrapeRunners(
       const pa = isPriority(a) ? 1 : 0;
       const pb = isPriority(b) ? 1 : 0;
       if (pa !== pb) return pb - pa;
+      // 優先(手動マッチ)同士は古い順=長く取りこぼし続けた古い大会を先に回収する。
+      // (新しい順だと最古のインカレミドル等が毎回キュー後方で予算切れに遭い永遠に未取込になる)
+      // 非優先は従来どおり新しい順で、直近大会の鮮度を保つ。
+      if (pa === 1) return a.date.localeCompare(b.date);
       return b.date.localeCompare(a.date);
     })
     .slice(0, MAX_RUNNER_EVENTS);
