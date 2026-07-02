@@ -48,9 +48,8 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "trails.jp",
   },
-  icons: {
-    apple: "/icons/apple-touch-icon.svg",
-  },
+  // favicon / apple-touch-icon はファイル規約（src/app/icon.png, apple-icon.png）で自動生成。
+  // iOS は SVG の apple-touch-icon を解釈できないため必ず PNG を維持すること。
 };
 
 export const viewport: Viewport = {
