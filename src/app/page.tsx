@@ -45,7 +45,8 @@ export default async function Home() {
                 データで読む。
               </h1>
               <p className="mt-5 max-w-xl text-base leading-relaxed text-foreground/75 sm:text-lg">
-                巡航速度・ミス率・調子まで、選手をまるごと分析。
+                <span className="inline-block">巡航速度・ミス率・調子まで、</span>
+                <span className="inline-block">選手をまるごと分析。</span>
               </p>
               <HeroAthleteSearch />
               <div className="mt-5 flex flex-wrap items-center gap-3">
