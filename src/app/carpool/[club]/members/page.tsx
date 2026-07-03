@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import MembersClient from "../../_components/MembersClient";
 
 export const metadata: Metadata = {
-  title: "メンバー管理 | trails.jp",
+  title: "メンバー管理",
   robots: { index: false, follow: false },
 };
 

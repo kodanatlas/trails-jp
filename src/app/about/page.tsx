@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, CalendarDays, BarChart3 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "このサイトについて | trails.jp",
+  title: "このサイトについて",
   description: "trails.jp は日本のオリエンテーリング情報を集約するプラットフォームです。",
 };
 

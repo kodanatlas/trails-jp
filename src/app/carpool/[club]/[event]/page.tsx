@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import ParticipationClient from "../../_components/ParticipationClient";
 
 export const metadata: Metadata = {
-  title: "配車イベント | trails.jp",
+  title: "配車イベント",
   robots: { index: false, follow: false },
 };
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import CarpoolHomeClient from "../_components/CarpoolHomeClient";
 
 export const metadata: Metadata = {
-  title: "配車ホーム | trails.jp",
+  title: "配車ホーム",
   robots: { index: false, follow: false },
 };
 

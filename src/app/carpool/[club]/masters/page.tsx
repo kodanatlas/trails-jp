@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import MastersClient from "../../_components/MastersClient";
 
 export const metadata: Metadata = {
-  title: "マスタ設定 | trails.jp",
+  title: "マスタ設定",
   robots: { index: false, follow: false },
 };
 
