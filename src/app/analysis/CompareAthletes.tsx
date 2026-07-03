@@ -492,9 +492,10 @@ function getChartCutoff(range: ChartRange): string {
   return now.toISOString().slice(0, 10);
 }
 
+// 4点未満は直線を描かない（小標本のトレンドは誤導）
 function linReg(arr: (number | undefined)[]): (number | undefined)[] {
   const pts = arr.map((v, i) => (v != null ? { x: i, y: v } : null)).filter((p): p is { x: number; y: number } => p != null);
-  if (pts.length < 2) return new Array(arr.length).fill(undefined);
+  if (pts.length < 4) return new Array(arr.length).fill(undefined);
   const n = pts.length;
   const sx = pts.reduce((s, p) => s + p.x, 0);
   const sy = pts.reduce((s, p) => s + p.y, 0);

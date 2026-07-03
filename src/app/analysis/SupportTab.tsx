@@ -10,10 +10,16 @@ interface SupportTabProps {
   onSelectAthlete?: (athlete: AthleteSummary) => void;
 }
 
+// 低戦数の派手な%で順位づけしないための最小戦数（raceCount 未生成の旧インデックスは素通し）
+const MIN_RACES_FOR_RANKING = 5;
+
 export function SupportTab({ athleteIndex, onSelectAthlete }: SupportTabProps) {
   const { rising, falling } = useMemo(() => {
     const all = Object.values(athleteIndex.athletes).filter(
-      (a) => a.recentForm !== 0 && a.bestRank <= 500
+      (a) =>
+        a.recentForm !== 0 &&
+        a.bestRank <= 500 &&
+        (a.raceCount == null || a.raceCount >= MIN_RACES_FOR_RANKING)
     );
     const sorted = [...all].sort((a, b) => b.recentForm - a.recentForm);
     return {
@@ -188,6 +194,7 @@ function AthleteCheerCard({
             maximumFractionDigits: 1,
           })}
           pt
+          {athlete.raceCount != null && ` / ${athlete.raceCount}戦`}
         </p>
       </div>
     </div>
