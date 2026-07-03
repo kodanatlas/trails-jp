@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { CalendarDays, MapPin, ChevronLeft, ChevronRight, ChevronDown, ExternalLink, Search, Bell, BarChart3, ListChecks, Users, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { CalendarDays, MapPin, ChevronLeft, ChevronRight, ChevronDown, ExternalLink, Search, Bell, BarChart3, ListChecks, Users, Loader2, Route } from "lucide-react";
 import type { JOEEvent } from "@/lib/scraper/events";
 import type { EntryListResult } from "@/lib/scraper/entries";
 
@@ -293,6 +294,15 @@ export function EventList({ events }: EventListProps) {
                       <BarChart3 className="h-3 w-3" />
                       <span className="hidden sm:inline">Lap Center</span>
                     </a>
+                  )}
+                  {event.lapcenter_event_id != null && (
+                    <Link
+                      href={`/results/${event.lapcenter_event_id}`}
+                      className="flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                    >
+                      <Route className="h-3 w-3" />
+                      <span className="hidden sm:inline">結果分析</span>
+                    </Link>
                   )}
                 </div>
                 </div>

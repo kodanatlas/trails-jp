@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { ContactForm } from "./ContactForm";
 
 export const metadata: Metadata = {
-  title: "お問い合わせ | trails.jp",
+  title: "お問い合わせ",
   description: "trails.jp へのお問い合わせ・ご要望はこちらから。",
 };
 

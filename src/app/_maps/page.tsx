@@ -2,7 +2,7 @@ import { sampleMaps } from "@/lib/sample-data";
 import { MapBrowser } from "./MapBrowser";
 
 export const metadata = {
-  title: "地図ライブラリ | trails.jp",
+  title: "地図ライブラリ",
   description: "全国のオリエンテーリング地図を地図上で検索・閲覧。",
 };
 

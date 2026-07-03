@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import PlanClient from "../../../_components/PlanClient";
 
 export const metadata: Metadata = {
-  title: "配車プラン | trails.jp",
+  title: "配車プラン",
   robots: { index: false, follow: false },
 };
 

@@ -79,6 +79,18 @@ export function AnalysisHub() {
             athleteOpened = true;
           }
         }
+        // ?q= 検索プリフィル（トップ hero の選手検索から）。?athlete= が優先。
+        // 完全一致（キー=空白除去名）ならワンクリック省略して選手を直接開く
+        const qParam = params.get("q");
+        if (!athleteOpened && qParam) {
+          const exact = ai?.athletes?.[qParam.replace(/\s+/g, "")];
+          if (exact) {
+            setSelectedAthlete(exact);
+            athleteOpened = true;
+          }
+          setSearchQuery(qParam);
+          setActiveTab("athlete");
+        }
         // ?tab= 深リンク（トップ「今週の応援」→応援タブ等）。?athlete= が優先
         const tabParam = params.get("tab");
         if (!athleteOpened && tabParam && tabs.some((t) => t.id === tabParam)) {
