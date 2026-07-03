@@ -178,7 +178,7 @@ export function LegAnalysisClient({
       <Glossary />
 
       <p className="mt-4 text-center text-[10px] leading-relaxed text-muted">
-        データ: LapCenter (mulka2.com) を trails.jp が再構成。基準=上位3平均(Ave3)。
+        データ: LapCenter (mulka2.com) を trails.jp が再構成（表示時点の掲載内容・最大1時間程度のキャッシュ）。基準=上位3平均(Ave3)。
       </p>
     </div>
   );

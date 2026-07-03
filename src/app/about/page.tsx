@@ -31,12 +31,12 @@ export default function AboutPage() {
               {
                 icon: CalendarDays,
                 title: "イベント",
-                desc: "JOY（日本オリエンテーリング協会）から大会情報を日次で自動取得。エントリー状況や開催地を一覧・カレンダーで確認できます。",
+                desc: "JOY（Japan-O-entrY）から大会情報を日次で自動取得。エントリー状況や開催地を一覧・カレンダーで確認できます。",
               },
               {
                 icon: BarChart3,
                 title: "ランキング",
-                desc: "Lap Center と連携し、クラス別のランキングを表示。選手の成績を横断的に確認できます。",
+                desc: "JOY のランキングデータを週次で自動取得。クラス別ランキングと選手の成績を横断的に確認できます。",
               },
             ].map((item) => (
               <div key={item.title} className="rounded-lg border border-border bg-card p-4">
@@ -53,7 +53,7 @@ export default function AboutPage() {
         <div className="space-y-2">
           <h2 className="text-lg font-semibold text-foreground">データソース</h2>
           <ul className="list-inside list-disc space-y-1 text-xs">
-            <li>大会情報: <a href="https://orienteering.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">JOY (Japan O-entry)</a></li>
+            <li>大会情報・ランキング: <a href="https://japan-o-entry.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">JOY (Japan-O-entrY)</a></li>
             <li>成績データ: <a href="https://mulka2.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Lap Center</a></li>
           </ul>
         </div>
