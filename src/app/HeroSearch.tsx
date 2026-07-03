@@ -23,7 +23,7 @@ export function HeroAthleteSearch() {
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="選手名で自分のページを探す..."
+        placeholder="選手名で探す..."
         aria-label="選手を検索"
         enterKeyHint="search"
         className="w-full rounded-lg border border-border-strong bg-card py-2.5 pl-9 pr-20 text-sm outline-none transition-colors placeholder:text-muted focus:border-primary"
