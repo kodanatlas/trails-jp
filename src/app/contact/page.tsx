@@ -28,7 +28,7 @@ export default function ContactPage() {
       <div className="mt-8 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
         <p className="text-xs text-amber-400">
           大会に関する個別のお問い合わせは、各大会の主催者または
-          <a href="https://orienteering.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">JOY</a>
+          <a href="https://japan-o-entry.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">JOY</a>
           へ直接ご連絡ください。
         </p>
       </div>

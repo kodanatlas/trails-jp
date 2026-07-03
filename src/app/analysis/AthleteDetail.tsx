@@ -946,7 +946,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
       </div>
 
       {/* 巡航速度チャート */}
-      <p className="mb-1 text-[10px] text-muted">巡航速度</p>
+      <p className="mb-1 text-[10px] text-muted">巡航速度（小さいほど速い）</p>
       <div className="h-44 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>

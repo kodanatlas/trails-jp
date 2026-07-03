@@ -54,7 +54,11 @@ export function ResultsBrowse({ events }: { events: EventItem[] }) {
           </Link>
         ))}
         {filtered.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted">該当する大会がありません</p>
+          <p className="py-8 text-center text-sm text-muted">
+            該当する大会がありません
+            <br />
+            <span className="text-xs">大会結果は LapCenter 掲載後、毎日の自動同期（12:00 JST ごろ）で追加されます</span>
+          </p>
         )}
       </div>
       {!q && events.length > 80 && (

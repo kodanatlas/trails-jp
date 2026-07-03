@@ -31,6 +31,7 @@ export default async function ResultsLanding() {
       </div>
       <p className="mb-5 text-xs text-muted">
         スプリットを元にしたレッグ別のレース分析。大会を選ぶ → クラス → レース。選手ページの参加大会からも開けます。
+        大会一覧は LapCenter 掲載後、毎日の自動同期（12:00 JST ごろ）で追加されます。
       </p>
       <ResultsBrowse events={events} />
     </div>

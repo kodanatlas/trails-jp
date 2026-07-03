@@ -775,7 +775,7 @@ function CompareCharts({
       {speedData.length >= 2 && (
         <>
           <p className="mb-1 mt-4 text-[10px] text-muted">
-            巡航速度
+            巡航速度（小さいほど速い）
             {lcForestCount > 0 && <span className="ml-2 text-green-400">Forest ({lcForestCount})</span>}
             {lcSprintCount > 0 && <span className="ml-2 text-blue-400">Sprint ({lcSprintCount})</span>}
           </p>
