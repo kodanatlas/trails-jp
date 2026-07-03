@@ -38,6 +38,7 @@ interface AthleteSummary {
   sprintCount: number;
   type: "sprinter" | "forester" | "allrounder" | "unknown";
   recentForm: number;
+  raceCount: number; // 重複排除済みの出場大会数（種目合算）
 }
 
 interface ClubMember {
@@ -550,6 +551,7 @@ for (const [name, data] of athleteMap) {
     sprintCount,
     type: classifyType(data.appearances, popStats),
     recentForm: 0,
+    raceCount: 0,
   };
   athleteCount++;
 }
@@ -572,10 +574,11 @@ for (const [name, data] of athleteMap) {
   });
 }
 
-// recentForm を athletes に後付け
+// recentForm / raceCount を athletes に後付け
 for (const [name, stats] of athleteStats) {
   if (athletes[name]) {
     athletes[name].recentForm = stats.recentForm;
+    athletes[name].raceCount = stats.events.length;
   }
 }
 

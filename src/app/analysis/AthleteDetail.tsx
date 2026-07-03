@@ -479,7 +479,9 @@ function StatsCards({ profile }: { profile: AthleteProfile }) {
           {allEvents.length >= 2 && <span className="text-sm text-muted">/100</span>}
         </p>
         <p className="text-[10px] text-muted">
-          {consistency >= 70 ? "非常に安定" : consistency >= 40 ? "やや安定" : allEvents.length >= 2 ? "ばらつきあり" : "データ不足"}
+          {allEvents.length >= 2
+            ? `${consistency >= 70 ? "非常に安定" : consistency >= 40 ? "やや安定" : "ばらつきあり"}（${allEvents.length}戦${allEvents.length < 4 ? "・参考値" : ""}）`
+            : "データ不足"}
         </p>
       </div>
 
@@ -498,7 +500,10 @@ function StatsCards({ profile }: { profile: AthleteProfile }) {
         <p className={`mt-1 text-2xl font-bold ${recentForm > 0 ? "text-green-400" : recentForm < 0 ? "text-red-400" : ""}`}>
           {allEvents.length >= 2 ? `${recentForm > 0 ? "+" : ""}${recentForm}%` : "—"}
         </p>
-        <p className="text-[10px] text-muted">直近3大会 vs 全体平均</p>
+        <p className="text-[10px] text-muted">
+          直近3大会 vs 全体平均
+          {allEvents.length >= 2 && `（${allEvents.length}戦${allEvents.length < 5 ? "・参考値" : ""}）`}
+        </p>
       </div>
 
       {/* ベストスコア */}
@@ -577,10 +582,10 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
       .filter((d) => !cutoff || d.date >= cutoff)
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    // 線形回帰（最小二乗法）
+    // 線形回帰（最小二乗法）。4点未満は直線を描かない（小標本のトレンドは誤導）
     const linReg = (arr: (number | undefined)[]): (number | undefined)[] => {
       const pts = arr.map((v, i) => (v != null ? { x: i, y: v } : null)).filter((p): p is { x: number; y: number } => p != null);
-      if (pts.length < 2) return new Array(arr.length).fill(undefined);
+      if (pts.length < 4) return new Array(arr.length).fill(undefined);
       const n = pts.length;
       const sx = pts.reduce((s, p) => s + p.x, 0);
       const sy = pts.reduce((s, p) => s + p.y, 0);
@@ -835,10 +840,10 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
     const speeds = sorted.flatMap((d) => [d.fSpeed, d.sSpeed].filter((v): v is number => v != null));
     const misses = sorted.flatMap((d) => [d.fMiss, d.sMiss].filter((v): v is number => v != null));
 
-    // 線形回帰（最小二乗法）: 値のあるポイントだけで y = a*i + b を算出
+    // 線形回帰（最小二乗法）: 値のあるポイントだけで y = a*i + b を算出。4点未満は直線を描かない
     const linReg = (arr: (number | undefined)[]): (number | undefined)[] => {
       const pts = arr.map((v, i) => v != null ? { x: i, y: v } : null).filter((p): p is { x: number; y: number } => p != null);
-      if (pts.length < 2) return new Array(arr.length).fill(undefined);
+      if (pts.length < 4) return new Array(arr.length).fill(undefined);
       const n = pts.length;
       const sx = pts.reduce((s, p) => s + p.x, 0);
       const sy = pts.reduce((s, p) => s + p.y, 0);
