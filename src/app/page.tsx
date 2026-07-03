@@ -4,6 +4,7 @@ import type { JOEEvent } from "@/lib/scraper/events";
 import eventsJson from "@/data/events.json";
 import weekendPointsJson from "@/data/weekend-points.json";
 import { WeekendHighlights } from "@/components/WeekendHighlights";
+import { HeroAthleteSearch } from "./HeroSearch";
 import { WeeklyCheerPodium } from "@/components/WeeklyCheerPodium";
 import { UpdatesNews } from "@/components/UpdatesNews";
 import { getSiteStats } from "@/lib/site-stats";
@@ -46,7 +47,8 @@ export default async function Home() {
               <p className="mt-5 max-w-xl text-base leading-relaxed text-foreground/75 sm:text-lg">
                 巡航速度・ミス率・調子まで、選手をまるごと分析。
               </p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <HeroAthleteSearch />
+              <div className="mt-5 flex flex-wrap items-center gap-3">
                 <Link
                   href="/events"
                   className="inline-flex items-center gap-2 rounded-lg border border-border-strong px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
