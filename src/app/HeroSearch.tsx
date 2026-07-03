@@ -11,7 +11,7 @@ export function HeroAthleteSearch() {
 
   return (
     <form
-      className="relative mt-8 max-w-md"
+      className="relative mt-8 max-w-xs"
       onSubmit={(e) => {
         e.preventDefault();
         const v = q.trim();
