@@ -565,9 +565,24 @@ export function AnalysisSystemReport({
             <div className="dec">
               <div className="k">TREND ｜ トレンドライン</div>
               <div className="v">
-                最小二乗の <span className="hl">y = ax + b</span>
+                <span className="hl">Theil–Sen</span> 頑健回帰
               </div>
-              <div className="why">巡航速度・ミス率に Forest／Sprint 独立で回帰直線を描画。</div>
+              <div className="why">
+                スコア・巡航速度・ミス率のトレンド線を Forest／Sprint 独立で描画（レース順ベース・5レース未満は非表示）。
+                pairwise slope の中央値を使うため、単発の大崩れレースで向きが反転しない。
+              </div>
+            </div>
+            <div className="dec">
+              <div className="k">CROSS-RACE ｜ ミス率の相対評価</div>
+              <div className="v">
+                同水準帯の期待値との <span className="hl">Theil–Sen 残差</span>
+              </div>
+              <div className="why">
+                種目内の n≥5 選手について（巡航速度中央値, ミス率中央値）に頑健回帰を当て、
+                「同水準の巡航速度指標の選手群と比べてミスが多いか少ないか」を百分位帯で提示。
+                巡航速度は出走クラス上位3基準の相対値であり、クラスをまたぐ絶対走力比較ではない。
+                高ミス率レース（種目内上位四分位）の本数も併記する。
+              </div>
             </div>
             <div className="dec">
               <div className="k">LEG ｜ レッグ分解（結果分析）</div>

@@ -15,6 +15,7 @@ import {
   getBestRanks,
 } from "@/lib/analysis/utils";
 import { eventFuzzyMatch } from "@/lib/analysis/event-match";
+import { theilSenTrend } from "@/lib/analysis/cross-race";
 import { AthleteDistribution } from "./DistributionCharts";
 
 export const COMPARE_COLORS = [
@@ -492,22 +493,8 @@ function getChartCutoff(range: ChartRange): string {
   return now.toISOString().slice(0, 10);
 }
 
-// 4点未満は直線を描かない（小標本のトレンドは誤導）
-function linReg(arr: (number | undefined)[]): (number | undefined)[] {
-  const pts = arr.map((v, i) => (v != null ? { x: i, y: v } : null)).filter((p): p is { x: number; y: number } => p != null);
-  if (pts.length < 4) return new Array(arr.length).fill(undefined);
-  const n = pts.length;
-  const sx = pts.reduce((s, p) => s + p.x, 0);
-  const sy = pts.reduce((s, p) => s + p.y, 0);
-  const sxy = pts.reduce((s, p) => s + p.x * p.y, 0);
-  const sxx = pts.reduce((s, p) => s + p.x * p.x, 0);
-  const a = (n * sxy - sx * sy) / (n * sxx - sx * sx);
-  const b = (sy - a * sx) / n;
-  const result: (number | undefined)[] = new Array(arr.length).fill(undefined);
-  result[pts[0].x] = Math.round((a * pts[0].x + b) * 10) / 10;
-  result[pts[n - 1].x] = Math.round((a * pts[n - 1].x + b) * 10) / 10;
-  return result;
-}
+// トレンド線: Theil–Sen（頑健回帰・レース順ベース・5点未満は非表示）。選手ページと同一推定器
+const linReg = theilSenTrend;
 
 function CompareCharts({
   entries,
