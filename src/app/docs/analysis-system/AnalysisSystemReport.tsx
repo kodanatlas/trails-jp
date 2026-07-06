@@ -594,6 +594,17 @@ export function AnalysisSystemReport({
                 ノーミス推定タイム（記録 − 総ロス）で実フィールドに対する想定順位も算出する。
               </div>
             </div>
+            <div className="dec">
+              <div className="k">LEG-IMPACT ｜ 順位が動いたレッグ</div>
+              <div className="v">
+                通過順位の <span className="hl">平均変動</span>＋ミス残差連動（副）
+              </div>
+              <div className="why">
+                主指標は各レッグでの通過順位（elapsedRank）の1人あたり平均変動＝仮定ゼロの記述統計。
+                副指標は上位完走者（優勝+25%以内）のレッグ別ミス残差が「自レッグを除いた合計」と連動した度合いの相対値。
+                百分率では表現しない（「このレッグでX%決まった」とは言えない設計）。完走者8名未満・リレー系クラスは非表示。
+              </div>
+            </div>
           </div>
         </section>
 

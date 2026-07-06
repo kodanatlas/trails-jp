@@ -165,3 +165,162 @@ describe("buildLegPrizes: 区間賞ボード", () => {
     expect(total).toBeGreaterThanOrEqual(board.legs.filter((p) => p.winner).length);
   });
 });
+
+// ---- ⑤ 順位が動いたレッグ ----
+
+import { buildLegImpact, spearman, TOP_CONTENDER_FACTOR } from "../leg-analysis";
+import type { LapCenterRunnerDetail } from "../../scraper/lapcenter-detail";
+
+/** 秒 → "m:ss"（負値対応） */
+function sec(s: number): string {
+  const neg = s < 0;
+  const a = Math.abs(s);
+  return `${neg ? "-" : ""}${Math.floor(a / 60)}:${String(a % 60).padStart(2, "0")}`;
+}
+
+/**
+ * 合成フィールド生成: lossMatrix[i][l] = 走者 i のレッグ l のロス秒（基準レッグ 100 秒に加算）。
+ * elapsedTime / elapsedRank / lapRank / rank / result はロスから機械的に導出する（フィクスチャ生成）。
+ */
+function buildField(lossMatrix: number[][]): LapCenterRunnerDetail[] {
+  const n = lossMatrix.length;
+  const legCount = lossMatrix[0].length;
+  const laps = lossMatrix.map((row) => row.map((loss) => 100 + loss));
+  const cums = laps.map((row) => {
+    const out: number[] = [];
+    let acc = 0;
+    for (const v of row) { acc += v; out.push(acc); }
+    return out;
+  });
+  const rankAt = (l: number): number[] => {
+    const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => cums[a][l] - cums[b][l]);
+    const ranks = new Array(n).fill(0);
+    order.forEach((runner, pos) => { ranks[runner] = pos + 1; });
+    return ranks;
+  };
+  const ranksByCp = Array.from({ length: legCount }, (_, l) => rankAt(l));
+  const finalRanks = ranksByCp[legCount - 1];
+  const legRankAt = (l: number): number[] => {
+    const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => laps[a][l] - laps[b][l]);
+    const ranks = new Array(n).fill(0);
+    order.forEach((runner, pos) => { ranks[runner] = pos + 1; });
+    return ranks;
+  };
+  const legRanks = Array.from({ length: legCount }, (_, l) => legRankAt(l));
+
+  return lossMatrix.map((row, i) => ({
+    index: i,
+    name: `選手${i}`,
+    club: `クラブ${i % 3}`,
+    runnerId: String(i),
+    rank: finalRanks[i],
+    result: sec(cums[i][legCount - 1]),
+    start: "10:00:00",
+    speed: 100,
+    lossRate: 5,
+    totalRelative: 100,
+    totalLossTime: sec(row.reduce((a, b) => a + Math.max(0, b), 0)),
+    idealTime: sec(cums[i][legCount - 1] - row.reduce((a, b) => a + Math.max(0, b), 0)),
+    lapTime: laps[i].map(sec),
+    lapRank: Array.from({ length: legCount }, (_, l) => legRanks[l][i]),
+    elapsedTime: cums[i].map(sec),
+    elapsedRank: Array.from({ length: legCount }, (_, l) => ranksByCp[l][i]),
+    legLossTime: row.map(sec),
+    legSpeed: laps[i].map(() => 100),
+  }));
+}
+
+describe("spearman", () => {
+  it("完全一致で 1・逆順で -1", () => {
+    expect(spearman([1, 2, 3, 4], [10, 20, 30, 40])).toBeCloseTo(1);
+    expect(spearman([1, 2, 3, 4], [40, 30, 20, 10])).toBeCloseTo(-1);
+  });
+  it("同順位は平均順位で処理", () => {
+    const r = spearman([1, 2, 2, 4], [1, 2, 3, 4]);
+    expect(r).not.toBeNull();
+    expect(r!).toBeGreaterThan(0.8);
+  });
+  it("分散ゼロは null", () => {
+    expect(spearman([5, 5, 5, 5], [1, 2, 3, 4])).toBeNull();
+  });
+});
+
+describe("buildLegImpact", () => {
+  // 走者12名×6レッグ。レッグ2 = 実力差でソートされるレッグ（loss=i*10）、
+  // レッグ4 = 同傾向の弱いソート（loss=i*5）。他は 0。
+  const sortingMatrix = Array.from({ length: 12 }, (_, i) => [0, 0, i * 10, 0, i * 5, 0]);
+
+  it("ソートレッグが C(l) の最大・rho も正", () => {
+    const v = buildLegImpact(buildField(sortingMatrix))!;
+    expect(v).not.toBeNull();
+    const byC = [...v.legs].filter((l) => l.c != null).sort((a, b) => b.c! - a.c!);
+    expect(byC[0].legIndex).toBe(2);
+    expect(v.legs[2].rho).toBeGreaterThan(0.5);
+  });
+
+  it("単独クラッシュは shuffle で捕捉され・C(l) の1位にはならない", () => {
+    // 中位走者(6)がレッグ5で +120 単独クラッシュ（優勝+25%以内に収まる規模）
+    const m = sortingMatrix.map((row) => [...row]);
+    m[6] = [...m[6]];
+    m[6][5] = m[6][5] + 120;
+    const v = buildLegImpact(buildField(m))!;
+    expect(v).not.toBeNull();
+    // shuffle: クラッシュで順位が動くためレッグ5(最終)が上位に入る
+    const topShuffleIdx = v.topShuffle.map((l) => l.legIndex);
+    expect(topShuffleIdx).toContain(5);
+    // C(l): 合計から自レッグを除く構成のため、単独クラッシュのレッグ5は1位にならない
+    const byC = [...v.legs].filter((l) => l.c != null).sort((a, b) => b.c! - a.c!);
+    expect(byC[0].legIndex).toBe(2);
+  });
+
+  it("レッグ1(S→1) の shuffle は null（前CP順位が存在しない）", () => {
+    const v = buildLegImpact(buildField(sortingMatrix))!;
+    expect(v.legs[0].shuffle).toBeNull();
+  });
+
+  it("ゲート: 完走者7名 → null・8名 → 参考(provisional)", () => {
+    expect(buildLegImpact(buildField(sortingMatrix.slice(0, 7)))).toBeNull();
+    const v8 = buildLegImpact(buildField(sortingMatrix.slice(0, 8)))!;
+    expect(v8).not.toBeNull();
+    expect(v8.provisional).toBe(true); // K=8 < 15
+  });
+
+  it("コホート: 優勝+25% 超は C の母数から除外（shuffle には残る）", () => {
+    const m = sortingMatrix.map((row) => [...row]);
+    // 走者11 を大幅に遅くする（result > 優勝+25%）
+    m[11] = [0, 200, 200, 200, 200, 200];
+    const v = buildLegImpact(buildField(m))!;
+    expect(v.finisherCount).toBe(12);
+    expect(v.cohortSize).toBeLessThan(12);
+  });
+
+  it("欠測レッグの走者は excludedIncomplete に計上", () => {
+    const field = buildField(sortingMatrix);
+    field[3] = { ...field[3], legLossTime: field[3].legLossTime.map((s, l) => (l === 1 ? "" : s)) };
+    const v = buildLegImpact(field)!;
+    expect(v.excludedIncomplete).toBe(1);
+  });
+
+  it("リレー系クラス名は非表示", () => {
+    expect(buildLegImpact(buildField(sortingMatrix), { className: "7人リレー" })).toBeNull();
+    expect(buildLegImpact(buildField(sortingMatrix), { eventName: "クラブ対抗Relay" })).toBeNull();
+  });
+
+  it("縮退: 全員同タイム（Var(T)=0）→ C は null・view 自体は shuffle があれば返る", () => {
+    const flat = Array.from({ length: 10 }, () => [0, 0, 0, 0, 0, 0]);
+    const v = buildLegImpact(buildField(flat));
+    // 全員同タイム → 順位変動もゼロだが shuffle 値(0)自体は算出される
+    if (v) {
+      expect(v.legs.every((l) => l.c == null)).toBe(true);
+    }
+  });
+
+  it("実フィクスチャ(9534 c0)ではコホート不足で null か、返る場合もゲート整合", () => {
+    const v = buildLegImpact(runners);
+    if (v) {
+      expect(v.finisherCount).toBeGreaterThanOrEqual(8);
+    } else {
+      expect(runners.filter((r) => r.rank != null).length).toBeLessThan(8 / TOP_CONTENDER_FACTOR + 8); // 小フィールド
+    }
+  });
+});

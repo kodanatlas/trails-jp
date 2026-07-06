@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { matchLapCenterEvents, fetchEventClasses, fetchSplitList, MANUAL_LC_OVERRIDE_EVENT_IDS } from "@/lib/scraper/lapcenter";
+import { matchLapCenterEvents, fetchEventClasses, fetchSplitListDetailed, MANUAL_LC_OVERRIDE_EVENT_IDS } from "@/lib/scraper/lapcenter";
+import { buildClassIngest, isSprint, type AthleteLookupEntry, type LegSplitRow, type ScalarRecord } from "@/lib/analysis/leg-ingest";
 import { readEvents, writeEvents } from "@/lib/events-store";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { readFileSync } from "fs";
@@ -20,35 +21,7 @@ export const maxDuration = 60;
 // 巡航速度・ミス率スクレイプも毎日実行（壁時計予算内で新しい順に処理）
 // vercel.json: { "path": "/api/cron/sync-lapcenter", "schedule": "0 3 * * *" }
 
-const SPRINT_KEYWORDS = ["スプリント", "Sprint", "sprint", "パークO", "パーク・オリエンテーリング"];
-
-const CLUB_ALIASES: Record<string, string> = {
-  "北大": "北海道大学", "東北大": "東北大学", "東大": "東京大学",
-  "名大": "名古屋大学", "京大": "京都大学", "阪大": "大阪大学",
-  "九大": "九州大学", "筑波大": "筑波大学", "千葉大": "千葉大学",
-  "横国大": "横浜国立大学", "金大": "金沢大学", "新大": "新潟大学",
-  "岡大": "岡山大学", "広大": "広島大学", "熊大": "熊本大学",
-  "信大": "信州大学", "静大": "静岡大学",
-  "大阪": "大阪OLC", "練馬": "練馬OLC", "レオ": "OLCレオ",
-  "東京科学大OLT": "東京科学大学",
-};
-
-function normalizeClub(club: string): string {
-  let s = club;
-  s = s.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) =>
-    String.fromCharCode(c.charCodeAt(0) - 0xfee0)
-  );
-  s = s.replace(/olc/gi, "OLC").replace(/olk/gi, "OLK");
-  s = s.replace(/OLクラブ/g, "OLC");
-  s = s.replace(/OLC$/, "").replace(/OLK$/, "");
-  s = s.trim();
-  if (CLUB_ALIASES[s]) s = CLUB_ALIASES[s];
-  return s;
-}
-
-function isSprint(eventName: string): boolean {
-  return SPRINT_KEYWORDS.some((kw) => eventName.includes(kw));
-}
+// クラブ正規化・sprint 判定は leg-ingest.ts に移設（backfill スクリプトと共用）
 
 // 1回のCronで処理候補とするイベント数の上限（実処理数は下記の壁時計予算で決まる）
 const MAX_RUNNER_EVENTS = 40;
@@ -159,24 +132,27 @@ async function scrapeRunners(
   const athleteIndex = JSON.parse(
     readFileSync(join(process.cwd(), "public/data/athlete-index.json"), "utf-8")
   );
-  const athleteLookup = new Map<string, { joyName: string; clubs: string[] }>();
+  const athleteLookup = new Map<string, AthleteLookupEntry>();
   for (const [name, summary] of Object.entries(athleteIndex.athletes) as [string, any][]) {
     athleteLookup.set(name.replace(/\s+/g, ""), { joyName: name, clubs: summary.clubs || [] });
   }
 
-  // 処理済みイベントキーをDBから取得（distinct (event_date, event_name) を JS 側で一意化）。
-  // 注: 旧実装は limit(10000) で、2万行超のテーブルではキーを取りこぼし→取得済みイベントを
-  //     再スクレイプして枠を浪費していた。十分大きな limit で全行取得して一意化する。
-  const { data: existingKeys } = await supabaseAdmin
-    .from("lc_performances")
-    .select("event_date, event_name")
-    .limit(100000);
-
-  const processedKeys = new Set<string>();
-  if (existingKeys) {
-    for (const row of existingKeys) {
-      processedKeys.add(`${row.event_date}:${row.event_name}`);
-    }
+  // 処理済みイベントを取込台帳 lc_leg_events から取得（lc_event_id 基準・~900行）。
+  // 旧実装の lc_performances 由来キーは (a) PostgREST max-rows で切り詰められるリスク
+  // （reference: Supabase PostgREST max-rows の罠）と (b) 追跡選手ゼロのイベントが
+  // 永久に再スクレイプされるバグがあった。台帳は classes>0 のときのみ記帳するので、
+  // 結果未掲載イベントの再試行は維持される。ページングは #33 イディオム
+  // （空頁のみ終了・実返却行数で前進＝サーバ側キャップに依存しない）。
+  const processedLcIds = new Set<number>();
+  for (let from = 0; ; ) {
+    const { data } = await supabaseAdmin
+      .from("lc_leg_events")
+      .select("lc_event_id")
+      .order("lc_event_id", { ascending: true })
+      .range(from, from + 999);
+    if (!data || data.length === 0) break;
+    for (const row of data) processedLcIds.add(row.lc_event_id);
+    from += data.length;
   }
 
   // 未処理のLC付きイベント。手動マッチ表のイベントを最優先（古くてもキュー先頭へ）→ それ以外は新しい順。
@@ -185,7 +161,7 @@ async function scrapeRunners(
   const isPriority = (e: { lapcenter_event_id?: number }) =>
     e.lapcenter_event_id != null && MANUAL_LC_OVERRIDE_EVENT_IDS.has(e.lapcenter_event_id);
   const lcEvents = events
-    .filter((e) => e.lapcenter_event_id && !processedKeys.has(`${e.date}:${e.name}`))
+    .filter((e) => e.lapcenter_event_id && !processedLcIds.has(e.lapcenter_event_id))
     .sort((a, b) => {
       const pa = isPriority(a) ? 1 : 0;
       const pb = isPriority(b) ? 1 : 0;
@@ -202,6 +178,8 @@ async function scrapeRunners(
   let totalClasses = 0;
   let eventsProcessed = 0;
   let dbInserted = 0;
+  let legRowsUpserted = 0;
+  let legEventsMarked = 0;
   let stoppedForBudget = false;
 
   for (const event of lcEvents) {
@@ -212,57 +190,40 @@ async function scrapeRunners(
     }
 
     const eventId = event.lapcenter_event_id!;
-    const eventType = isSprint(event.name) ? "sprint" : "forest";
+    const eventType: "sprint" | "forest" = isSprint(event.name) ? "sprint" : "forest";
 
     const classes = await fetchEventClasses(eventId);
     if (classes.length === 0) {
+      // 結果未掲載 → 台帳に記帳しない＝次回リトライされる
       eventsProcessed++;
       continue;
     }
 
     // このイベント分のレコードを集め、イベント単位で即upsert。
     // 途中で関数がタイムアウトしても、完了済みイベントの行は保全される（全損防止）。
-    const eventRecords: Array<{
-      athlete_name: string;
-      event_date: string;
-      event_name: string;
-      class_name: string;
-      cruising_speed: number;
-      miss_rate: number;
-      race_type: string;
-    }> = [];
+    // scalar 版と detailed 版は同一 URL のため、detailed 1回のフェッチから
+    // lc_performances 行（従来と同一選別）と lc_leg_splits 行（全走者 per-leg）の両方を得る。
+    const eventRecords: ScalarRecord[] = [];
+    const eventLegRows: LegSplitRow[] = [];
+    let keptClasses = 0;
 
     for (const cls of classes) {
       await new Promise((r) => setTimeout(r, DELAY_MS));
-      const runners = await fetchSplitList(eventId, cls.classId);
-
-      for (const r of runners) {
-        const normalized = r.name.replace(/\s+/g, "");
-        const entry = athleteLookup.get(normalized);
-        if (!entry) continue;
-
-        const lcClubs = r.club ? r.club.split("/").map((c) => normalizeClub(c)) : [];
-        const joyClubs = entry.clubs.map((c) => normalizeClub(c));
-        const clubMatch =
-          lcClubs.length === 0 ||
-          joyClubs.length === 0 ||
-          lcClubs.some((lc) =>
-            joyClubs.some((joy) => lc === joy || lc.includes(joy) || joy.includes(lc))
-          );
-        if (!clubMatch) continue;
-
-        // speed=100 & miss=0 は基準ランナー（1人クラス等）で無意味なデータ
-        if (r.speed === 100 && r.missRate === 0) continue;
-
-        eventRecords.push({
-          athlete_name: entry.joyName,
-          event_date: event.date,
-          event_name: event.name,
-          class_name: cls.className,
-          cruising_speed: r.speed,
-          miss_rate: r.missRate,
-          race_type: eventType,
-        });
+      const detailed = await fetchSplitListDetailed(eventId, cls.classId);
+      const { scalarRecords, legRows } = buildClassIngest({
+        detailed,
+        athleteLookup,
+        lcEventId: eventId,
+        lcClassId: cls.classId,
+        eventDate: event.date,
+        eventName: event.name,
+        className: cls.className,
+        raceType: eventType,
+      });
+      eventRecords.push(...scalarRecords);
+      if (legRows.length > 0) {
+        eventLegRows.push(...legRows);
+        keptClasses++;
       }
       totalClasses++;
     }
@@ -280,6 +241,42 @@ async function scrapeRunners(
       }
     }
 
+    // per-leg 行の upsert（配列カラムで行が太いためバッチは 100 行）
+    let legUpsertFailed = false;
+    for (let i = 0; i < eventLegRows.length; i += 100) {
+      const batch = eventLegRows.slice(i, i + 100);
+      const { error } = await supabaseAdmin
+        .from("lc_leg_splits")
+        .upsert(batch, { onConflict: "lc_event_id,lc_class_id,runner_index" });
+      if (error) {
+        console.error("LC leg upsert failed:", error.message);
+        legUpsertFailed = true;
+      } else {
+        legRowsUpserted += batch.length;
+      }
+    }
+
+    // 取込台帳への記帳は leg upsert が全て成功したときのみ（失敗イベントは翌日自動リトライ）
+    if (!legUpsertFailed) {
+      const { error: ledgerError } = await supabaseAdmin.from("lc_leg_events").upsert(
+        {
+          lc_event_id: eventId,
+          event_date: event.date,
+          event_name: event.name,
+          class_count: classes.length,
+          kept_class_count: keptClasses,
+          runner_row_count: eventLegRows.length,
+          source: "cron",
+        },
+        { onConflict: "lc_event_id" }
+      );
+      if (ledgerError) {
+        console.error("LC leg ledger upsert failed:", ledgerError.message);
+      } else {
+        legEventsMarked++;
+      }
+    }
+
     totalRunners += eventRecords.length;
     eventsProcessed++;
   }
@@ -290,6 +287,8 @@ async function scrapeRunners(
     classes_processed: totalClasses,
     tracked_runners: totalRunners,
     db_inserted: dbInserted,
+    leg_rows_upserted: legRowsUpserted,
+    leg_events_marked: legEventsMarked,
     stopped_for_budget: stoppedForBudget,
   };
 }

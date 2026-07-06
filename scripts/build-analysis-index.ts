@@ -962,7 +962,8 @@ async function backfillRaceTypeFromJoy(): Promise<void> {
     return;
   }
 
-  // 5) 適用（大会単位で PATCH）
+  // 5) 適用（大会単位で PATCH）。lc_leg_splits にも同じ訂正を反映する
+  //    （per-leg 行の race_type も isSprint キーワード由来のため同じ誤分類を持つ）。
   let applied = 0;
   for (const c of changes) {
     const url =
@@ -978,6 +979,18 @@ async function backfillRaceTypeFromJoy(): Promise<void> {
       console.log(`✓ race_type: ${c.date} ${c.name} ${c.from}→${c.to}`);
     } else {
       console.warn(`⚠ race_type PATCH 失敗 HTTP ${res.status}: ${c.date} ${c.name}`);
+    }
+
+    const legUrl =
+      `${supabaseUrl}/rest/v1/lc_leg_splits` +
+      `?event_date=eq.${c.date}&event_name=eq.${encodeURIComponent(c.name)}`;
+    const legRes = await fetch(legUrl, {
+      method: "PATCH",
+      headers: { ...sbHeaders, Prefer: "return=minimal" },
+      body: JSON.stringify({ race_type: c.to }),
+    });
+    if (!legRes.ok) {
+      console.warn(`⚠ race_type PATCH(lc_leg_splits) 失敗 HTTP ${legRes.status}: ${c.date} ${c.name}`);
     }
   }
   console.log(`✓ race_type backfill: ${applied}/${changes.length} 件適用`);
