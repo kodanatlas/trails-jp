@@ -1,11 +1,10 @@
-import eventsJson from "@/data/events.json";
 import rankingsJson from "@/data/rankings.json";
 import clubStatsJson from "../../public/data/club-stats.json";
-import type { JOEEvent } from "@/lib/scraper/events";
+import { readEvents } from "@/lib/events-store";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export interface SiteStats {
-  /** 収集イベント数（events.json） */
+  /** 収集イベント数（events ストア・ライブ） */
   events: number;
   /** ランキング掲載選手数（rankings.json のユニーク名） */
   athletes: number;
@@ -20,12 +19,14 @@ const LC_RECORDS_FALLBACK = 18848;
 
 /**
  * トップページ・技術ドキュメントで共有するサイト全体の規模数値。
- * events / athletes / clubs はビルド成果物（毎ビルド更新）、
- * lcRecords は DB 件数（ISR `revalidate` で日次更新）。
+ * events はライブ（Supabase Storage・日次 cron 更新。バンドル JSON はコミット時点で凍結するため使わない）、
+ * athletes / clubs はビルド成果物（毎ビルド更新）、
+ * lcRecords は DB 件数（ISR `revalidate` で更新）。
  * 両ページがこの関数を使うことで数値が常に一致する。
+ * @param eventsCount 呼び出し側で readEvents() 済みの場合はその件数を渡す（二重取得回避）
  */
-export async function getSiteStats(): Promise<SiteStats> {
-  const events = (eventsJson as JOEEvent[]).length;
+export async function getSiteStats(eventsCount?: number): Promise<SiteStats> {
+  const events = eventsCount ?? (await readEvents()).length;
 
   const athletes = new Set(
     Object.values(rankingsJson as Record<string, { athlete_name: string }[]>)
