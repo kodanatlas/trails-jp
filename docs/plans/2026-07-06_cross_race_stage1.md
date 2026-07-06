@@ -1,7 +1,7 @@
 # クロスレース縦断分析 Stage 1（同水準巡航速度帯のミス残差＋頑健トレンド）
 
 - 作成: 2026-07-06 JST
-- ステータス: 実装完了（本番確認は PR マージ後に追記）
+- ステータス: **完了**（PR #31＋修正 #33 マージ・本番確認済み）
 - 前段: `2026-06-29_results-analysis-methodology.md` 層A ／ `2026-07-03_critique_loop_site_review.md` 中期戦略（堀）
 
 ## Context
@@ -41,11 +41,15 @@
 - tsc clean・vitest **567件 green**（+15）・build 成功（縮退パス「既存ファイル保持」動作確認）
 - ローカル実描画: カード2種目表示・方向安全文言・帯バー・脚注・スコア推移の Theil–Sen 破線 確認済み
 
-## 本番確認（マージ後に追記）
+## 本番確認
 
-- [ ] Vercel build ログに `✓ cross-race.json: F=… S=…`
-- [ ] /data/cross-race.json の generatedAt が新しい
-- [ ] 選手ページでカード描画・/docs/analysis-system の CROSS-RACE 記載
+- [x] /docs/analysis-system に CROSS-RACE 記載・/data/cross-race.json 配信（PR #31 デプロイ 2026-07-06 17:41 JST）
+- [x] **本番障害と修正（PR #33）**: 初回本番ビルドで artifact が 50選手/5.5KB に縮退。原因＝PostgREST は `Range` を `max-rows`（既定1000）で切り詰めるため「返却<要求」の終了判定が1頁目で打ち切り。ローカル検証は Management API（キャップなし）のため発見不能だった。→ 終了判定を空頁のみ・前進幅を実返却行数に修正＋**取得5,000行未満は既存 artifact を上書きしないガード**を追加
+- [x] #33 デプロイ後の最終確認（18:24 JST）: artifact 148KB・**F=1,323 / races=19,567 / slope=0.13 / scale=5.54 ＝ローカル検証と完全一致**・選手ページでカード描画（中立表示「ほぼ期待どおり」含め文言・帯バー・脚注すべて意図通り）
+
+## 関連の潜在問題（別対応・記録のみ）
+
+`sync-lapcenter` cron の既処理イベント読み（supabase-js `.limit(100000)`）も同じ max-rows キャップで先頭1,000行しか読めていない可能性が高い。upsert は冪等なので実害は「既処理イベントの再スクレイプ＝処理予算の浪費と優先度制御のずれ」に留まるが、次回 cron 改修時に要確認。
 
 ## Stage 2（持ち越し）
 
