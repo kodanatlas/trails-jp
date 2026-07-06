@@ -9,6 +9,7 @@ import type { LapCenterPerformance } from "@/lib/analysis/types";
 import {
   buildLegView,
   buildLegPrizes,
+  buildLegImpact,
   deriveAve3PerLeg,
   legLabel,
   fmtSignedSeconds,
@@ -182,6 +183,7 @@ export function LegAnalysisClient({
         <CompareGrid runners={runners} names={ordered} athleteName={athleteName} onRemove={remove} />
       )}
       <LegPrizeBoardView runners={runners} athleteName={athleteName} />
+      <LegImpactSection runners={runners} eventName={eventName} className={className} />
       <Glossary />
 
       <p className="mt-4 text-center text-[10px] leading-relaxed text-muted">
@@ -256,6 +258,98 @@ function LegPrizeBoardView({ runners, athleteName }: { runners: LapCenterRunnerD
   );
 }
 
+/**
+ * ⑤ 順位が動いたレッグ（レース展開）。主指標=elapsedRank の平均変動（記述統計・relay）、
+ * 副指標=ミス残差連動度 C(l)（相対バーのみ・百分率表現は方法論 must-fix 1 で禁止）。
+ * recharts なし（純 CSS バー）。リレー系クラスは buildLegImpact 側で非表示。
+ */
+function LegImpactSection({
+  runners,
+  eventName,
+  className,
+}: {
+  runners: LapCenterRunnerDetail[];
+  eventName: string | null;
+  className: string | null;
+}) {
+  const view = useMemo(
+    () => buildLegImpact(runners, { eventName, className }),
+    [runners, eventName, className]
+  );
+  const [open, setOpen] = useState(false);
+  if (!view) return null;
+  const maxShuffle = Math.max(...view.topShuffle.map((l) => l.shuffle ?? 0), 0.01);
+  return (
+    <div className="mt-5 rounded-2xl border border-border bg-card p-4">
+      <p className="text-[11px] tracking-wider text-muted">
+        順位が動いたレッグ（完走者 {view.finisherCount} 名の通過順位の変動）
+      </p>
+      <div className="mt-2 space-y-1">
+        {view.topShuffle.map((l) => (
+          <div key={l.legIndex} className="flex items-center gap-2 text-xs">
+            <span className="w-12 flex-shrink-0 font-mono text-muted">{l.label}</span>
+            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-border">
+              <div
+                className="h-full rounded-full bg-primary/60"
+                style={{ width: `${((l.shuffle ?? 0) / maxShuffle) * 100}%` }}
+              />
+            </div>
+            <span className="w-24 flex-shrink-0 text-right font-mono tabular-nums">
+              {l.shuffle?.toFixed(1)}
+              <span className="ml-0.5 text-[9px] font-normal text-muted">順位/人</span>
+            </span>
+          </div>
+        ))}
+      </div>
+      {view.cohortSize >= 8 && (
+        <>
+          <button
+            onClick={() => setOpen((o) => !o)}
+            className="mt-3 text-[11px] font-medium text-primary transition-colors hover:underline"
+          >
+            {open
+              ? "ミス残差の連動を閉じる ▲"
+              : `ミス残差の連動を見る${view.provisional ? "（参考）" : ""} ▼`}
+          </button>
+          {open && (
+            <div className="mt-2 overflow-hidden rounded-lg border border-border">
+              {view.legs.map((l, i) => (
+                <div
+                  key={l.legIndex}
+                  className={`flex items-center gap-3 px-2.5 py-1.5 text-xs ${i % 2 ? "bg-surface/50" : ""}`}
+                >
+                  <span className="w-12 flex-shrink-0 font-mono text-muted">{l.label}</span>
+                  <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-border">
+                    {l.c != null && (
+                      <div
+                        className={`absolute top-0 h-full ${l.cBar >= 0 ? "left-1/2 bg-primary/60" : "right-1/2 bg-blue-400/50"}`}
+                        style={{ width: `${Math.abs(l.cBar) * 50}%` }}
+                      />
+                    )}
+                    <div className="absolute left-1/2 top-0 h-full w-px bg-muted/40" />
+                  </div>
+                  <span className="w-16 flex-shrink-0 text-right font-mono text-[10px] text-muted tabular-nums">
+                    {l.rho != null ? `ρ=${l.rho.toFixed(2)}` : "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      <p className="mt-2 text-[9px] leading-relaxed text-muted/70">
+        通過順位の変動＝LapCenter の各CP通過順位（elapsedRank）の1人あたり平均変動（コース順位表がどれだけ入れ替わったか）。
+        ミス残差の連動＝上位完走者（優勝+25%以内・n={view.cohortSize}
+        {view.excludedIncomplete > 0 ? `・欠測${view.excludedIncomplete}名除外` : ""}
+        ）のレッグ別ミス秒（各自の巡航ペース基準の残差）が「自レッグを除いた合計」とどれだけ連動したかの相対指標
+        （右=残差と同方向・左=相殺傾向。百分率ではなく「このレッグで決まった」を意味しない）。
+        巡航ペース推定を介した自己相関が残るため厳密な独立分解ではない。長いレッグほど残差分散が大きくなりやすい。
+        ρ＝区間タイムと最終タイムの順位相関（参考値）。リレー/フォーク構造の自動検出は未実装のため、リレー系クラスでは表示しない。
+      </p>
+    </div>
+  );
+}
+
 /** 用語グロッサリ（折りたたみ・レビュー N）。初心者向けに指標の意味を説明。 */
 function Glossary() {
   const terms: [string, string][] = [
@@ -270,6 +364,7 @@ function Glossary() {
     ["平均比", "自分の同種目(Forest/Sprint別)平均との差。負＝平均より良い。"],
     ["罠レッグ vs 自分のミス", "自分のロスをフィールド全体と比較。フィールド中央値も大きい＝罠レッグ(コースが難しく皆ロス)、フィールドは速いのに自分だけ＝自分のミス。コース起因(フィールド中央値)と自分の超過に分解。"],
     ["区間賞", "そのレッグの最速タイム（区間1位）。獲得数が多いほど多くの区間でトップ。"],
+    ["順位が動いたレッグ", "各レッグで通過順位（elapsedRank）が1人あたり平均何順位入れ替わったか。大きい＝順位表がよく動いたレッグ。"],
   ];
   return (
     <details className="mt-4 rounded-lg border border-border bg-card/50 p-3 text-[11px] text-muted">

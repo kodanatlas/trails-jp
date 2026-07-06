@@ -436,6 +436,21 @@ intercept = median( y_i - slope·x_i )
 
 生成: `scripts/build-analysis-index.ts` がビルド時に `lc_performances` 全行（Range ページング）から `public/data/cross-race.json`（~130KB）を生成。失敗時は既存ファイル保持（無ければ空スケルトン）でビルド継続。表示: `CrossRaceCard`（選手ページ・LapCenterChart の下）。
 
+### 6.6 per-leg 取込（lc_leg_splits）と「順位が動いたレッグ」— Stage 2a
+
+**per-leg 取込**: `sync-lapcenter` cron は split-list を詳細パース（`parseSplitListDetailed`・scalar 版と同一 URL＝追加リクエストなし）し、1回のフェッチから
+- `lc_performances`（従来と同一選別のスカラー行）
+- `lc_leg_splits`（**全走者**の per-leg 配列行。MP/DISQ/DNS も rank=null で保持＝DNF クリーンプレフィックス確保）
+
+の両方を書き込む。クラス保持ルール＝追跡選手が1人以上いるクラスのみ・そのクラスは全走者保存（フィールド中央値・コホート基盤に必要）。イベント選択は取込台帳 `lc_leg_events`（lc_event_id 基準・classes>0 のときのみ記帳）で管理し、歴史イベントは `scripts/backfill-lc-legs.ts`（Management API 書込・resume 可能）で一括投入する。race_type は週次の JOY バックフィルが両テーブルを PATCH する。
+
+**順位が動いたレッグ（⑤・単一レースページ）**:
+- 主指標 = **通過順位の平均変動**: 各レッグでの LapCenter elapsedRank（relay）の 1人あたり |Δ順位| 平均。仮定ゼロの記述統計で、単独クラッシュも順位変動として自然に現れる
+- 副指標 = **ミス残差連動度 C(l)** = Σ(R_l−mean)((T−R_l)−mean) / Σ(T−mean)²。R = legLossTime（符号付き残差・relay）、**T = R の行和**（最終タイムは走力・レッグ長に支配され、totalLossTime=Σmax(0,·) は非線形で「合計から自レッグを除く」構成と相性が悪い）。分子分母同一除数＝ddof 非依存。コホート＝優勝+25%以内の完走者・全レッグ parseable
+- ゲート: 完走者<8 非表示／コホート<15 は「参考」／**百分率表現は全面禁止**（ΣC(l)=1 は成立しない・相対バーのみ）
+- 明記する限界: 巡航ペース推定を介した自己相関の残存（厳密な独立分解ではない）／長いレッグほど残差分散が構造的に大きい／コホートは結果による選択（上位完走者内の傾向に限定）／リレー・フォーク構造の自動検出は未実装（クラス名ベースの表示抑制のみ）
+- 参考値: Spearman ρ(区間タイム, 最終タイム)（同順位平均・分散0は null）
+
 ---
 
 ## 7. フロントエンド構成

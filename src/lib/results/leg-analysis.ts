@@ -310,3 +310,196 @@ export function buildLegView(
     cumulativeLoss,
   };
 }
+
+// ---- ⑤ 順位が動いたレッグ（レース展開・relay-first） ----
+//
+// 主指標 shuffle = 各レッグでの elapsedRank（LapCenter の CP 通過順位・relay）の
+// 1人あたり平均変動量。仮定ゼロの記述統計で、「このレッグで順位表がどれだけ動いたか」を測る。
+// 単独クラッシュも順位変動として自然に現れる。
+//
+// 副指標 C(l) = Σ(R_l−mean)((T−R_l)−mean) / Σ(T−mean)²。
+//   R = LapCenter legLossTime（符号付き残差・relay）、T = R の行和（signed residual 合計。
+//   最終タイムは走力・レッグ長に支配され、totalLossTime=Σmax(0,·) は非線形で
+//   leave-self-out と相性が悪い）。分子分母を同一除数の中心化積和で書き ddof 依存を排除。
+//   「合計から自レッグを除く」構成のため単独クラッシュレッグが1位になりにくい一方、
+//   本当に1本で差がついたレッグも拾わない（→だから主指標にしない）。
+//   speed が同一レースのレッグ群から推定されるため自己影響の完全除去ではない（脚注要）。
+//   長いレッグほど残差分散が構造的に大きい（レッグ長との交絡・脚注要）。
+// コホートは「優勝タイム+25%以内の完走者・全レッグ parseable」（結果による選択＝
+//   表示は常に『上位完走者 n=K での傾向』と限定し、クラス全体の断定をしない）。
+// 百分率表現は全面禁止（方法論 must-fix 1: ΣC(l)=1 撤回済み・相対バーのみ）。
+
+export const TOP_CONTENDER_FACTOR = 1.25;
+
+export interface LegImpact {
+  legIndex: number;
+  label: string;
+  /** 1人あたり平均順位変動（完走者・elapsedRank の |Δ|）。レッグ1(S→1)と算出不能は null */
+  shuffle: number | null;
+  /** shuffle の相対バー 0..1（最大値正規化） */
+  shuffleBar: number;
+  /** ミス残差連動度（相対比較専用の指標値）。コホート不足・縮退は null */
+  c: number | null;
+  /** c の相対バー -1..1（max|c| 正規化） */
+  cBar: number;
+  /** 参考: 区間生タイムと最終タイムの順位相関（Spearman・同順位平均） */
+  rho: number | null;
+}
+
+export interface LegImpactView {
+  finisherCount: number;    // shuffle の母数（完走者）
+  cohortSize: number;       // C(l)/ρ の母数（優勝+25%以内・全レッグ parseable）
+  excludedIncomplete: number; // コホート条件は満たすが欠測レッグで除外された人数
+  provisional: boolean;     // cohortSize < 15 → C/ρ は参考扱い
+  legs: LegImpact[];        // 全レッグ（コース順）
+  topShuffle: LegImpact[];  // shuffle 上位5
+}
+
+function mode(xs: number[]): number {
+  const freq = new Map<number, number>();
+  for (const x of xs) freq.set(x, (freq.get(x) ?? 0) + 1);
+  let best = xs[0] ?? 0;
+  let bestCount = 0;
+  for (const [v, c] of freq) {
+    if (c > bestCount) { best = v; bestCount = c; }
+  }
+  return best;
+}
+
+function centeredMean(xs: number[]): number {
+  return xs.reduce((a, b) => a + b, 0) / xs.length;
+}
+
+/** Spearman 順位相関（同順位は平均順位）。どちらかの分散が 0 なら null */
+export function spearman(xs: number[], ys: number[]): number | null {
+  if (xs.length !== ys.length || xs.length < 2) return null;
+  const rank = (arr: number[]): number[] => {
+    const idx = arr.map((v, i) => ({ v, i })).sort((a, b) => a.v - b.v);
+    const ranks = new Array(arr.length).fill(0);
+    let i = 0;
+    while (i < idx.length) {
+      let j = i;
+      while (j + 1 < idx.length && idx[j + 1].v === idx[i].v) j++;
+      const avg = (i + j) / 2 + 1;
+      for (let k = i; k <= j; k++) ranks[idx[k].i] = avg;
+      i = j + 1;
+    }
+    return ranks;
+  };
+  const rx = rank(xs);
+  const ry = rank(ys);
+  const mx = centeredMean(rx);
+  const my = centeredMean(ry);
+  let num = 0, dx = 0, dy = 0;
+  for (let i = 0; i < rx.length; i++) {
+    num += (rx[i] - mx) * (ry[i] - my);
+    dx += (rx[i] - mx) ** 2;
+    dy += (ry[i] - my) ** 2;
+  }
+  if (dx < 1e-9 || dy < 1e-9) return null;
+  return num / Math.sqrt(dx * dy);
+}
+
+/**
+ * ⑤ 順位が動いたレッグ。完走者 8 名未満・リレー系クラス名は null（非表示）。
+ * shuffle はレッグ1（スタート直後・前 CP 順位が存在しない）は null。
+ */
+export function buildLegImpact(
+  runners: LapCenterRunnerDetail[],
+  ctx?: { eventName?: string | null; className?: string | null }
+): LegImpactView | null {
+  // リレー/ペア系はレッグ index が物理的に共通コースでない（フォーク）ため対象外。
+  // 構造検出（スプリット構造がコース共通と矛盾するクラスの検出）は未実装＝名前ベースの抑制のみ。
+  if (/リレー|relay|ペア|チーム/i.test(`${ctx?.eventName ?? ""} ${ctx?.className ?? ""}`)) return null;
+
+  const finishers = runners.filter((r) => r.rank != null && r.lapTime.length > 0);
+  if (finishers.length < 8) return null;
+  const legCount = mode(finishers.map((r) => r.lapTime.length));
+  const field = finishers.filter((r) => r.lapTime.length === legCount);
+  if (field.length < 8 || legCount < 2) return null;
+
+  // --- 主指標: shuffle（elapsedRank の平均変動・レッグ2以降） ---
+  const shuffleRaw: (number | null)[] = new Array(legCount).fill(null);
+  for (let l = 1; l < legCount; l++) {
+    let sum = 0;
+    let valid = 0;
+    for (const r of field) {
+      const prev = r.elapsedRank[l - 1];
+      const cur = r.elapsedRank[l];
+      if (prev == null || cur == null) continue;
+      sum += Math.abs(cur - prev);
+      valid++;
+    }
+    shuffleRaw[l] = valid >= 8 ? sum / valid : null;
+  }
+
+  // --- 副指標: C(l)・ρ（優勝+25% コホート・全レッグ parseable） ---
+  const withResult = field
+    .map((r) => ({ r, res: lapStrToSeconds(r.result) }))
+    .filter((x): x is { r: LapCenterRunnerDetail; res: number } => x.res != null);
+  const winnerSec = withResult.length ? Math.min(...withResult.map((x) => x.res)) : null;
+  let excludedIncomplete = 0;
+  const cohort: { loss: number[]; laps: number[]; res: number }[] = [];
+  if (winnerSec != null) {
+    for (const x of withResult) {
+      if (x.res > TOP_CONTENDER_FACTOR * winnerSec) continue;
+      const loss = x.r.legLossTime.map(lapStrToSeconds);
+      const laps = x.r.lapTime.map(lapStrToSeconds);
+      if (loss.some((v) => v == null) || laps.some((v) => v == null)) {
+        excludedIncomplete++;
+        continue;
+      }
+      cohort.push({ loss: loss as number[], laps: laps as number[], res: x.res });
+    }
+  }
+  const K = cohort.length;
+
+  let cValues: (number | null)[] = new Array(legCount).fill(null);
+  let rhoValues: (number | null)[] = new Array(legCount).fill(null);
+  if (K >= 8) {
+    const T = cohort.map((c) => c.loss.reduce((a, b) => a + b, 0));
+    const mT = centeredMean(T);
+    const denom = T.reduce((a, t) => a + (t - mT) ** 2, 0);
+    if (denom > 1e-9) {
+      cValues = Array.from({ length: legCount }, (_, l) => {
+        const x = cohort.map((c) => c.loss[l]);
+        const y = cohort.map((c, i) => T[i] - c.loss[l]); // 合計から自レッグを除く
+        const mx = centeredMean(x);
+        const my = centeredMean(y);
+        let num = 0;
+        for (let i = 0; i < x.length; i++) num += (x[i] - mx) * (y[i] - my);
+        return num / denom;
+      });
+    }
+    rhoValues = Array.from({ length: legCount }, (_, l) =>
+      spearman(cohort.map((c) => c.laps[l]), cohort.map((c) => c.res))
+    );
+  }
+
+  const maxShuffle = Math.max(...shuffleRaw.map((v) => v ?? 0), 1e-9);
+  const maxAbsC = Math.max(...cValues.map((v) => Math.abs(v ?? 0)), 1e-9);
+  const legs: LegImpact[] = Array.from({ length: legCount }, (_, l) => ({
+    legIndex: l,
+    label: legLabel(l, legCount),
+    shuffle: shuffleRaw[l] == null ? null : Math.round(shuffleRaw[l]! * 100) / 100,
+    shuffleBar: shuffleRaw[l] == null ? 0 : shuffleRaw[l]! / maxShuffle,
+    c: cValues[l] == null ? null : Math.round(cValues[l]! * 1000) / 1000,
+    cBar: cValues[l] == null ? 0 : cValues[l]! / maxAbsC,
+    rho: rhoValues[l] == null ? null : Math.round(rhoValues[l]! * 100) / 100,
+  }));
+
+  const topShuffle = legs
+    .filter((l) => l.shuffle != null)
+    .sort((a, b) => b.shuffle! - a.shuffle!)
+    .slice(0, 5);
+  if (topShuffle.length === 0) return null;
+
+  return {
+    finisherCount: field.length,
+    cohortSize: K,
+    excludedIncomplete,
+    provisional: K < 15,
+    legs,
+    topShuffle,
+  };
+}
