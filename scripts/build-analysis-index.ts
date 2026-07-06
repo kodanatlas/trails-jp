@@ -9,6 +9,7 @@ import { splitAffiliations } from "../src/lib/club-normalize";
 import { computeWeekendPoints } from "../src/lib/weekend-points";
 import { jstNowLabel, jstToday } from "../src/lib/weekend-window";
 import { eventFuzzyMatch } from "../src/lib/analysis/event-match";
+import { buildCrossRaceIndex, type LcRaceRow } from "../src/lib/analysis/cross-race";
 
 // --- Types ---
 interface RawEntry {
@@ -986,6 +987,80 @@ try {
   await backfillRaceTypeFromJoy();
 } catch (e) {
   console.warn("⚠ race_type backfill 例外（ビルドは継続）:", (e as Error).message);
+}
+
+// ---- クロスレース縦断 Stage 1（同水準巡航速度帯のミス残差） ----
+// backfillRaceTypeFromJoy の後に実行（補正済み race_type で集計するため）。
+// 失敗/env 欠如時は既存の cross-race.json を保持（無ければ空スケルトン）してビルド継続。
+async function buildCrossRaceStep(): Promise<void> {
+  const outPath = path.join(OUTPUT_DIR, "cross-race.json");
+  const keepOrSkeleton = (why: string) => {
+    console.warn(`⚠ cross-race: ${why}（${fs.existsSync(outPath) ? "既存ファイル保持" : "空スケルトン生成"}）`);
+    if (!fs.existsSync(outPath)) {
+      fs.writeFileSync(outPath, JSON.stringify(buildCrossRaceIndex([])));
+    }
+  };
+  if (!supabaseUrl || !supabaseKey) {
+    keepOrSkeleton("Supabase 未設定のためスキップ");
+    return;
+  }
+
+  const rows: LcRaceRow[] = [];
+  const PAGE = 10000;
+  for (let from = 0; ; from += PAGE) {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/lc_performances` +
+        `?select=athlete_name,event_date,event_name,cruising_speed,miss_rate,race_type` +
+        `&order=athlete_name.asc,event_date.asc,event_name.asc`,
+      {
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+          Range: `${from}-${from + PAGE - 1}`,
+        },
+      },
+    );
+    if (!res.ok) {
+      keepOrSkeleton(`lc_performances 取得失敗 HTTP ${res.status}`);
+      return;
+    }
+    const page = (await res.json()) as {
+      athlete_name: string;
+      event_date: string;
+      event_name: string;
+      cruising_speed: number | string | null;
+      miss_rate: number | string | null;
+      race_type: string | null;
+    }[];
+    for (const r of page) {
+      if (r.race_type !== "forest" && r.race_type !== "sprint") continue;
+      const speed = Number(r.cruising_speed);
+      const miss = Number(r.miss_rate);
+      if (!Number.isFinite(speed) || !Number.isFinite(miss)) continue;
+      rows.push({
+        name: r.athlete_name,
+        date: r.event_date,
+        event: r.event_name,
+        speed,
+        miss,
+        type: r.race_type,
+      });
+    }
+    if (page.length < PAGE) break;
+  }
+
+  const index = { ...buildCrossRaceIndex(rows), generatedAt: new Date().toISOString() };
+  const json = JSON.stringify(index);
+  fs.writeFileSync(outPath, json);
+  console.log(
+    `✓ cross-race.json: F=${index.disciplines.forest?.athletes ?? 0} / S=${index.disciplines.sprint?.athletes ?? 0} 選手・` +
+      `入力 ${rows.length} 行 (${(json.length / 1024).toFixed(0)} KB)`,
+  );
+}
+try {
+  await buildCrossRaceStep();
+} catch (e) {
+  console.warn("⚠ cross-race 生成例外（ビルドは継続）:", (e as Error).message);
 }
 
 } // end main()

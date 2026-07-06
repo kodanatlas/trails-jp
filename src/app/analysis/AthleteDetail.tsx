@@ -17,9 +17,11 @@ import {
   getBestRanks,
 } from "@/lib/analysis/utils";
 import { eventFuzzyMatch, matchLcRace } from "@/lib/analysis/event-match";
+import { theilSenTrend } from "@/lib/analysis/cross-race";
 import { SITE_URL } from "@/lib/site";
 import { UpcomingEntries } from "./UpcomingEntries";
 import { HeadToHead } from "./HeadToHead";
+import { CrossRaceCard } from "./CrossRaceCard";
 
 interface Props {
   summary: AthleteSummary;
@@ -135,6 +137,7 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
           <LapCenterChart data={lcData} profile={profile} />
         </DeferUntilVisible>
       )}
+      <CrossRaceCard name={profile.name} />
       <RecentEvents profile={profile} lcData={lcData} />
       {/* key で選手切替時に相手選択をリセット */}
       <HeadToHead
@@ -582,25 +585,9 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
       .filter((d) => !cutoff || d.date >= cutoff)
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    // 線形回帰（最小二乗法）。4点未満は直線を描かない（小標本のトレンドは誤導）
-    const linReg = (arr: (number | undefined)[]): (number | undefined)[] => {
-      const pts = arr.map((v, i) => (v != null ? { x: i, y: v } : null)).filter((p): p is { x: number; y: number } => p != null);
-      if (pts.length < 4) return new Array(arr.length).fill(undefined);
-      const n = pts.length;
-      const sx = pts.reduce((s, p) => s + p.x, 0);
-      const sy = pts.reduce((s, p) => s + p.y, 0);
-      const sxy = pts.reduce((s, p) => s + p.x * p.y, 0);
-      const sxx = pts.reduce((s, p) => s + p.x * p.x, 0);
-      const a = (n * sxy - sx * sy) / (n * sxx - sx * sx);
-      const b = (sy - a * sx) / n;
-      const result: (number | undefined)[] = new Array(arr.length).fill(undefined);
-      result[pts[0].x] = Math.round((a * pts[0].x + b) * 10) / 10;
-      result[pts[n - 1].x] = Math.round((a * pts[n - 1].x + b) * 10) / 10;
-      return result;
-    };
-
-    const fTrend = linReg(sorted.map((d) => d.forest));
-    const sTrend = linReg(sorted.map((d) => d.sprint));
+    // トレンド線: Theil–Sen（頑健回帰・レース順ベース）。5点未満は直線を描かない（小標本のトレンドは誤導）
+    const fTrend = theilSenTrend(sorted.map((d) => d.forest));
+    const sTrend = theilSenTrend(sorted.map((d) => d.sprint));
     const data = sorted.map((d, i) => ({
       ...d,
       forestMa: fTrend[i],
@@ -840,32 +827,15 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
     const speeds = sorted.flatMap((d) => [d.fSpeed, d.sSpeed].filter((v): v is number => v != null));
     const misses = sorted.flatMap((d) => [d.fMiss, d.sMiss].filter((v): v is number => v != null));
 
-    // 線形回帰（最小二乗法）: 値のあるポイントだけで y = a*i + b を算出。4点未満は直線を描かない
-    const linReg = (arr: (number | undefined)[]): (number | undefined)[] => {
-      const pts = arr.map((v, i) => v != null ? { x: i, y: v } : null).filter((p): p is { x: number; y: number } => p != null);
-      if (pts.length < 4) return new Array(arr.length).fill(undefined);
-      const n = pts.length;
-      const sx = pts.reduce((s, p) => s + p.x, 0);
-      const sy = pts.reduce((s, p) => s + p.y, 0);
-      const sxy = pts.reduce((s, p) => s + p.x * p.y, 0);
-      const sxx = pts.reduce((s, p) => s + p.x * p.x, 0);
-      const a = (n * sxy - sx * sy) / (n * sxx - sx * sx);
-      const b = (sy - a * sx) / n;
-      const result: (number | undefined)[] = new Array(arr.length).fill(undefined);
-      // 最初と最後のデータ点にのみ値を設定（直線の両端）
-      result[pts[0].x] = Math.round((a * pts[0].x + b) * 10) / 10;
-      result[pts[n - 1].x] = Math.round((a * pts[n - 1].x + b) * 10) / 10;
-      return result;
-    };
-
+    // トレンド線: Theil–Sen（頑健回帰・レース順ベース）。5点未満は直線を描かない
     const fSpeedArr = sorted.map((d) => d.fSpeed);
     const sSpeedArr = sorted.map((d) => d.sSpeed);
     const fMissArr = sorted.map((d) => d.fMiss);
     const sMissArr = sorted.map((d) => d.sMiss);
-    const fSpeedMa = linReg(fSpeedArr);
-    const sSpeedMa = linReg(sSpeedArr);
-    const fMissMa = linReg(fMissArr);
-    const sMissMa = linReg(sMissArr);
+    const fSpeedMa = theilSenTrend(fSpeedArr);
+    const sSpeedMa = theilSenTrend(sSpeedArr);
+    const fMissMa = theilSenTrend(fMissArr);
+    const sMissMa = theilSenTrend(sMissArr);
 
     const withMa = sorted.map((d, i) => ({
       ...d,
@@ -1163,6 +1133,9 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <p className="mt-2 text-[9px] text-muted">
+        破線＝トレンド（Theil–Sen 頑健回帰・レース順ベース・5レース以上で表示）
+      </p>
     </div>
   );
 }
