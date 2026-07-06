@@ -344,6 +344,10 @@ export interface LegImpact {
   cBar: number;
   /** 参考: 区間生タイムと最終タイムの順位相関（Spearman・同順位平均） */
   rho: number | null;
+  /** このレッグで首位（elapsedRank=1）の走者が入れ替わったか（両CPで首位が特定できた場合のみ true になりうる） */
+  leaderChanged: boolean;
+  /** このレッグで最も順位を動かした走者（relay の elapsedRank 値そのまま）。該当なしは null */
+  biggestMove: { name: string; from: number; to: number } | null;
 }
 
 export interface LegImpactView {
@@ -419,18 +423,34 @@ export function buildLegImpact(
   if (field.length < 8 || legCount < 2) return null;
 
   // --- 主指標: shuffle（elapsedRank の平均変動・レッグ2以降） ---
+  // あわせて初見向けの具体文脈を抽出: 首位交代の有無・そのレッグで最も順位を動かした走者。
+  // いずれも relay の elapsedRank 値そのまま（順位は LapCenter が全走者に対して算出したもの）。
   const shuffleRaw: (number | null)[] = new Array(legCount).fill(null);
+  const leaderChangedRaw: boolean[] = new Array(legCount).fill(false);
+  const biggestMoveRaw: ({ name: string; from: number; to: number } | null)[] = new Array(legCount).fill(null);
   for (let l = 1; l < legCount; l++) {
     let sum = 0;
     let valid = 0;
+    let best: { name: string; from: number; to: number } | null = null;
+    let prevLeader: string | null = null;
+    let curLeader: string | null = null;
     for (const r of field) {
       const prev = r.elapsedRank[l - 1];
       const cur = r.elapsedRank[l];
       if (prev == null || cur == null) continue;
       sum += Math.abs(cur - prev);
       valid++;
+      if (best == null || Math.abs(cur - prev) > Math.abs(best.to - best.from)) {
+        best = { name: r.name, from: prev, to: cur };
+      }
+      if (prev === 1) prevLeader = r.name;
+      if (cur === 1) curLeader = r.name;
     }
     shuffleRaw[l] = valid >= 8 ? sum / valid : null;
+    // 首位交代: 両CPの首位が field 内で特定でき、かつ別人のときのみ true
+    // （真の首位が field 外＝後の DNF 等なら特定不能として false のまま）
+    leaderChangedRaw[l] = prevLeader != null && curLeader != null && prevLeader !== curLeader;
+    biggestMoveRaw[l] = best != null && best.from !== best.to ? best : null;
   }
 
   // --- 副指標: C(l)・ρ（優勝+25% コホート・全レッグ parseable） ---
@@ -486,6 +506,8 @@ export function buildLegImpact(
     c: cValues[l] == null ? null : Math.round(cValues[l]! * 1000) / 1000,
     cBar: cValues[l] == null ? 0 : cValues[l]! / maxAbsC,
     rho: rhoValues[l] == null ? null : Math.round(rhoValues[l]! * 100) / 100,
+    leaderChanged: leaderChangedRaw[l],
+    biggestMove: biggestMoveRaw[l],
   }));
 
   const topShuffle = legs
