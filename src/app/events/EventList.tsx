@@ -6,10 +6,27 @@ import { CalendarDays, MapPin, ChevronLeft, ChevronRight, ChevronDown, ExternalL
 import type { JOEEvent } from "@/lib/scraper/events";
 import type { EntryListResult } from "@/lib/scraper/entries";
 
+/** ページから渡すイベントのスリム型。RSC ペイロード削減のため UI が参照するフィールドに限定する。 */
+export type EventListItem = Pick<
+  JOEEvent,
+  | "joe_event_id"
+  | "name"
+  | "date"
+  | "end_date"
+  | "prefecture"
+  | "entry_status"
+  | "tags"
+  | "joe_url"
+  | "recently_updated"
+  | "update_label"
+  | "lapcenter_event_id"
+  | "lapcenter_url"
+>;
+
 /** エントリーリストを表示する対象かどうかの判定（受付中 or 直近 N 日以内の大会） */
 const ENTRY_LIST_RECENT_DAYS = 30;
 
-function canShowEntries(e: JOEEvent): boolean {
+function canShowEntries(e: EventListItem): boolean {
   if (e.entry_status === "open") return true;
   if (!e.date) return false;
   const cutoff = new Date();
@@ -20,7 +37,7 @@ function canShowEntries(e: JOEEvent): boolean {
 type EntryState = EntryListResult | "loading" | "error" | undefined;
 
 interface EventListProps {
-  events: JOEEvent[];
+  events: EventListItem[];
 }
 
 const ENTRY_STYLES = {
