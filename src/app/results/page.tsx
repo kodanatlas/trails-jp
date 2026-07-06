@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   description: "LapCenter のスプリットを元にしたレッグ別レース分析（trails.jp 結果分析）。",
 };
 
-// events ストアの最新を反映
-export const dynamic = "force-dynamic";
+// events ストアは日次 cron（03:00 / 12:00 JST）でしか変わらない → 10分 ISR で十分
+export const revalidate = 600;
 
 export default async function ResultsLanding() {
   let events: { eventId: number; name: string; date: string }[] = [];
