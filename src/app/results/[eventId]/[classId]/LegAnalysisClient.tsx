@@ -281,23 +281,41 @@ function LegImpactSection({
   const maxShuffle = Math.max(...view.topShuffle.map((l) => l.shuffle ?? 0), 0.01);
   return (
     <div className="mt-5 rounded-2xl border border-border bg-card p-4">
-      <p className="text-[11px] tracking-wider text-muted">
-        順位が動いたレッグ（完走者 {view.finisherCount} 名の通過順位の変動）
+      <p className="text-[11px] tracking-wider text-muted">順位が動いたレッグ</p>
+      <p className="mt-1 text-xs text-foreground/80">
+        通過順位の入れ替わりが大きかったレッグ＝レース展開が動いた場所（完走者 {view.finisherCount} 名）。
       </p>
-      <div className="mt-2 space-y-1">
+      <div className="mt-3 space-y-2.5">
         {view.topShuffle.map((l) => (
-          <div key={l.legIndex} className="flex items-center gap-2 text-xs">
-            <span className="w-12 flex-shrink-0 font-mono text-muted">{l.label}</span>
-            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-border">
-              <div
-                className="h-full rounded-full bg-primary/60"
-                style={{ width: `${((l.shuffle ?? 0) / maxShuffle) * 100}%` }}
-              />
+          <div key={l.legIndex}>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="w-14 flex-shrink-0 font-mono text-muted">{l.label}</span>
+              <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-border">
+                <div
+                  className="h-full rounded-full bg-primary/60"
+                  style={{ width: `${((l.shuffle ?? 0) / maxShuffle) * 100}%` }}
+                />
+              </div>
+              <span className="w-28 flex-shrink-0 text-right font-mono tabular-nums">
+                平均 {l.shuffle?.toFixed(1)}
+                <span className="ml-0.5 text-[9px] font-normal text-muted">順位動く</span>
+              </span>
             </div>
-            <span className="w-24 flex-shrink-0 text-right font-mono tabular-nums">
-              {l.shuffle?.toFixed(1)}
-              <span className="ml-0.5 text-[9px] font-normal text-muted">順位/人</span>
-            </span>
+            {(l.leaderChanged || l.biggestMove) && (
+              <p className="ml-16 mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-muted">
+                {l.leaderChanged && (
+                  <span className="rounded bg-primary/15 px-1.5 py-px font-medium text-primary">首位交代</span>
+                )}
+                {l.biggestMove && (
+                  <span>
+                    最大の動き: {l.biggestMove.name}{" "}
+                    <span className="font-mono">
+                      {l.biggestMove.from}位→{l.biggestMove.to}位
+                    </span>
+                  </span>
+                )}
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -337,14 +355,20 @@ function LegImpactSection({
           )}
         </>
       )}
+      {open && (
+        <p className="mt-2 text-[9px] leading-relaxed text-muted/70">
+          ミス残差の連動＝上位完走者（優勝+25%以内・n={view.cohortSize}
+          {view.excludedIncomplete > 0 ? `・欠測${view.excludedIncomplete}名除外` : ""}
+          ）のレッグ別ミス秒（各自の巡航ペース基準の残差）が「自レッグを除いた合計」とどれだけ連動したかの相対指標
+          （右=残差と同方向・左=相殺傾向。百分率ではなく「このレッグで決まった」を意味しない）。
+          巡航ペース推定を介した自己相関が残るため厳密な独立分解ではない。長いレッグほど残差分散が大きくなりやすい。
+          ρ＝区間タイムと最終タイムの順位相関（参考値）。
+        </p>
+      )}
       <p className="mt-2 text-[9px] leading-relaxed text-muted/70">
-        通過順位の変動＝LapCenter の各CP通過順位（elapsedRank）の1人あたり平均変動（コース順位表がどれだけ入れ替わったか）。
-        ミス残差の連動＝上位完走者（優勝+25%以内・n={view.cohortSize}
-        {view.excludedIncomplete > 0 ? `・欠測${view.excludedIncomplete}名除外` : ""}
-        ）のレッグ別ミス秒（各自の巡航ペース基準の残差）が「自レッグを除いた合計」とどれだけ連動したかの相対指標
-        （右=残差と同方向・左=相殺傾向。百分率ではなく「このレッグで決まった」を意味しない）。
-        巡航ペース推定を介した自己相関が残るため厳密な独立分解ではない。長いレッグほど残差分散が大きくなりやすい。
-        ρ＝区間タイムと最終タイムの順位相関（参考値）。リレー/フォーク構造の自動検出は未実装のため、リレー系クラスでは表示しない。
+        順位の変動＝LapCenter の各CP通過順位（elapsedRank）から算出（レッグごとの1人あたり平均入れ替わり数）。
+        「首位交代」「最大の動き」も同じ通過順位の中継値。S→1 は前CPが無いため対象外。
+        リレー/フォーク構造の自動検出は未実装のため、リレー系クラスでは表示しない。
       </p>
     </div>
   );

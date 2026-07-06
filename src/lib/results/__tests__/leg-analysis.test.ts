@@ -301,6 +301,22 @@ describe("buildLegImpact", () => {
     expect(v.excludedIncomplete).toBe(1);
   });
 
+  it("首位交代と最大の動きを検出する", () => {
+    // 12人。レッグ3で走者0（それまで首位）が大きく崩れ、走者1が首位を奪う
+    const m = Array.from({ length: 12 }, (_, i) => [0, 0, 0, i * 5, 0, 0]);
+    m[0] = [0, 0, 0, 0, 200, 0]; // 走者0: レッグ4まで首位 → レッグ5(index 4)で+200秒崩れ
+    const v = buildLegImpact(buildField(m))!;
+    const crash = v.legs[4];
+    expect(crash.leaderChanged).toBe(true); // 首位が走者0→別人へ
+    expect(crash.biggestMove).not.toBeNull();
+    expect(crash.biggestMove!.name).toBe("選手0");
+    expect(crash.biggestMove!.from).toBe(1); // 首位から
+    expect(crash.biggestMove!.to).toBeGreaterThan(5); // 大きく後退
+    // 順位が動いていないレッグ（全員 loss 0 の leg 1→2 = index 1）は文脈なし
+    expect(v.legs[1].leaderChanged).toBe(false);
+    expect(v.legs[1].biggestMove).toBeNull();
+  });
+
   it("リレー系クラス名は非表示", () => {
     expect(buildLegImpact(buildField(sortingMatrix), { className: "7人リレー" })).toBeNull();
     expect(buildLegImpact(buildField(sortingMatrix), { eventName: "クラブ対抗Relay" })).toBeNull();
