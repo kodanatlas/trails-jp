@@ -1006,8 +1006,14 @@ async function buildCrossRaceStep(): Promise<void> {
   }
 
   const rows: LcRaceRow[] = [];
+  // PostgREST は max-rows（既定 1000）で 1 リクエストの返却行数をキャップし、Range をそれ以上に
+  // 広げても黙って切り詰める。「返却 < 要求」での終了判定はキャップ到達を末尾と誤認する
+  // （2026-07-06 本番で 25k 行中 1,000 行しか読めず artifact が 50 選手に縮んだ実障害）
+  // → 終了判定は「空ページ」のみとし、前進幅は実返却行数にする（キャップ値に依存しない）。
   const PAGE = 10000;
-  for (let from = 0; ; from += PAGE) {
+  const MAX_REQUESTS = 200; // 異常時の無限ループ防止（200万行相当・十分な上限）
+  let from = 0;
+  for (let i = 0; i < MAX_REQUESTS; i++) {
     const res = await fetch(
       `${supabaseUrl}/rest/v1/lc_performances` +
         `?select=athlete_name,event_date,event_name,cruising_speed,miss_rate,race_type` +
@@ -1032,6 +1038,7 @@ async function buildCrossRaceStep(): Promise<void> {
       miss_rate: number | string | null;
       race_type: string | null;
     }[];
+    if (page.length === 0) break;
     for (const r of page) {
       if (r.race_type !== "forest" && r.race_type !== "sprint") continue;
       const speed = Number(r.cruising_speed);
@@ -1046,7 +1053,13 @@ async function buildCrossRaceStep(): Promise<void> {
         type: r.race_type,
       });
     }
-    if (page.length < PAGE) break;
+    from += page.length;
+  }
+
+  // 全件取得の健全性ガード: キャップ1枚分などの明らかな不足時は不完全な artifact で上書きしない
+  if (rows.length < 5000) {
+    keepOrSkeleton(`取得行数が異常に少ない (${rows.length} 行) — 不完全データでの上書きを回避`);
+    return;
   }
 
   const index = { ...buildCrossRaceIndex(rows), generatedAt: new Date().toISOString() };
