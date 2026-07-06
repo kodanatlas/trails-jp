@@ -13,16 +13,23 @@ import { SupportTab } from "./SupportTab";
 type Tab = "athlete" | "clubs" | "compare" | "support";
 
 /**
- * URL の ?athlete= を選手選択と同期する（key = 空白除去名）。
+ * 選手選択と URL を同期する（key = 空白除去名）。
+ * 選択中はシェア可能な正規 URL /a/<key>（SSR 選手ページ）をアドレスバーに表示し、
+ * 解除時は /analysis に戻す。/a/<key> のままリロードするとサーバーレンダリングの
+ * 選手ページへ着地する（意図した挙動）。
  * 第1引数に history.state を渡して既存の popstate 状態機械（pushState/replaceState の
  * state オブジェクト）を壊さないこと。
  * ?tab= は初期表示専用の深リンク（トップ「今週の応援」等）なので、ユーザーが
  * タブ切替や選手選択で操作を始めたら常に除去する（リロード時の意図しないタブ復元を防ぐ）。
  */
 function syncAthleteUrl(key: string | null) {
+  if (key) {
+    history.replaceState(history.state, "", `/a/${encodeURIComponent(key)}`);
+    return;
+  }
   const url = new URL(window.location.href);
-  if (key) url.searchParams.set("athlete", key);
-  else url.searchParams.delete("athlete");
+  url.pathname = "/analysis";
+  url.searchParams.delete("athlete");
   url.searchParams.delete("tab");
   history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
 }
@@ -55,6 +62,8 @@ export function AnalysisHub() {
   ]);
 
   const initialAthleteHandled = useRef(false);
+  // popstate（進む/戻る）で選手を復元するために index を ref でも保持する
+  const athleteIndexRef = useRef<AthleteIndex | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -62,6 +71,7 @@ export function AnalysisHub() {
       fetch("/data/club-stats.json").then((r) => r.json()),
     ]).then(([ai, ci]) => {
       setAthleteIndex(ai);
+      athleteIndexRef.current = ai;
       setClubIndex(ci);
       setLoading(false);
 
@@ -77,6 +87,7 @@ export function AnalysisHub() {
             setSearchQuery(athleteParam);
             setActiveTab("athlete");
             athleteOpened = true;
+            syncAthleteUrl(athleteParam); // 旧形式リンクのアドレスバーも正規 URL /a/<key> に正規化
           }
         }
         // ?q= 検索プリフィル（トップ hero の選手検索から）。?athlete= が優先。
@@ -87,6 +98,7 @@ export function AnalysisHub() {
           if (exact) {
             setSelectedAthlete(exact);
             athleteOpened = true;
+            syncAthleteUrl(qParam.replace(/\s+/g, ""));
           }
           setSearchQuery(qParam);
           setActiveTab("athlete");
@@ -116,6 +128,17 @@ export function AnalysisHub() {
       setFromClub(null);
       setSelectedAthlete(null);
       setSearchQuery("");
+    } else if (
+      state?.tab === "athlete" &&
+      state?.athlete &&
+      athleteIndexRef.current?.athletes[state.athlete]
+    ) {
+      // 進むボタンで選手エントリに戻ったとき、選手表示を復元する（URL は /a/<key> のため空ハブだと不整合）
+      setActiveTab("athlete");
+      setSelectedAthlete(athleteIndexRef.current.athletes[state.athlete]);
+      setSearchQuery(state.athlete);
+      setFromClub(state.fromClub ?? null);
+      setFromSupport(!!state.fromSupport);
     } else if (state?.tab) {
       setActiveTab(state.tab);
       setSelectedAthlete(null);

@@ -123,7 +123,7 @@ export function WeeklyCheerPodium() {
                   {tier.shown.map((name) => (
                     <Link
                       key={name}
-                      href={`/analysis?athlete=${encodeURIComponent(name)}`}
+                      href={`/a/${encodeURIComponent(name)}`}
                       className="max-w-full truncate text-center text-sm font-semibold transition-colors hover:text-primary hover:underline"
                     >
                       {name}

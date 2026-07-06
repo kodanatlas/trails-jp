@@ -83,7 +83,7 @@ function RankBadge({ n }: { n: number }) {
 function PointRow({ item, rank }: { item: WeekendPointItem; rank: number }) {
   return (
     <Link
-      href={`/analysis?athlete=${encodeURIComponent(item.key)}`}
+      href={`/a/${encodeURIComponent(item.key)}`}
       className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover"
     >
       <RankBadge n={rank} />
@@ -118,7 +118,7 @@ function StandoutRowItem({ row, rank }: { row: StandoutRow; rank: number }) {
   const miss = missDisplay(row.miss_drop_pp);
   return (
     <Link
-      href={`/analysis?athlete=${encodeURIComponent(key)}`}
+      href={`/a/${encodeURIComponent(key)}`}
       className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover"
     >
       <RankBadge n={rank} />

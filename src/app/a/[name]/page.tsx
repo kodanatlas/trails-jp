@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import athleteIndexJson from "../../../../public/data/athlete-index.json";
 import type { AthleteIndex, AthleteSummary } from "@/lib/analysis/types";
 import { typeLabel } from "@/lib/analysis/utils";
 import { SITE_URL } from "@/lib/site";
+import { AthleteStandalone } from "./AthleteStandalone";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -30,13 +30,6 @@ function lookupAthlete(name: string): { key: string; summary: AthleteSummary } |
   return { key, summary };
 }
 
-/** 最近の調子の符号付き表示 (+12% / -5% / ±0%) */
-function formatForm(form: number): string {
-  if (form > 0) return `+${form}%`;
-  if (form < 0) return `${form}%`;
-  return "±0%";
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { name } = await params;
   const found = lookupAthlete(name);
@@ -44,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const { key, summary } = found;
   const club = summary.clubs.length > 0 ? `所属: ${summary.clubs.join("・")}。` : "";
-  const description = `${summary.name}のオリエンタイプは「${typeLabel(summary.type)}」。ベスト順位 ${summary.bestRank}位。${club}trails.jp の選手分析シェアカード。`;
+  const description = `${summary.name}のオリエンタイプは「${typeLabel(summary.type)}」。ベスト順位 ${summary.bestRank}位。${club}trails.jp の選手分析ページ。`;
   const url = `${SITE_URL}/a/${encodeURIComponent(key)}`;
   const title = `${summary.name}のオリエンタイプ`;
 
@@ -65,102 +58,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 /**
- * オリエンタイプ・シェアカードページ
- * OG カードと同等情報のライト版を表示し、/analysis への CTA を置く（自動リダイレクトはしない）
+ * 全1,781選手をビルド時に生成しない（opengraph-image も 1 件ずつビルドされてしまう）。
+ * 空配列 + dynamicParams（既定 true）で「初回アクセス時に静的生成 → 次のデプロイまでキャッシュ」にする。
+ * athlete-index はデプロイ毎に凍結（毎週水曜の再デプロイで更新）なので revalidate は不要。
  */
-export default async function AthleteSharePage({ params }: Props) {
+export function generateStaticParams(): Array<{ name: string }> {
+  return [];
+}
+
+/**
+ * 選手ページ（SSR）。サマリ＋OGP を初期 HTML で返し、フル分析はクライアントで読み込む。
+ * 選手ページの正 URL。ハブ（/analysis）内の選手表示もアドレスバーをこの URL に正規化する。
+ */
+export default async function AthletePage({ params }: Props) {
   const { name } = await params;
-  const found = lookupAthlete(name);
-  if (!found) notFound();
-
-  const { key, summary } = found;
-  const totalRuns = summary.forestCount + summary.sprintCount;
-  const forestPct = totalRuns > 0 ? Math.round((summary.forestCount / totalRuns) * 100) : 0;
-
-  return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
-        {/* ブランド */}
-        <div className="mb-6 flex items-center justify-between">
-          <span className="text-sm font-bold text-primary">trails.jp</span>
-          <span className="rounded bg-accent/20 px-2 py-0.5 text-[10px] font-medium text-[#00e5ff]">
-            オリエンタイプ
-          </span>
-        </div>
-
-        {/* 選手名・クラブ */}
-        <h1 className="text-3xl font-bold sm:text-4xl">{summary.name}</h1>
-        {summary.clubs.length > 0 && (
-          <p className="mt-1 text-sm text-muted">{summary.clubs.join("・")}</p>
-        )}
-
-        {/* タイプ */}
-        <p className="mt-5 text-2xl font-bold text-[#00e5ff] sm:text-3xl">
-          {typeLabel(summary.type)}
-        </p>
-
-        {/* スタッツ */}
-        <div className="mt-6 grid grid-cols-3 gap-3">
-          <div className="rounded-lg bg-surface p-3 text-center">
-            <p className="text-[10px] text-muted">ベスト順位</p>
-            <p className="mt-1 text-xl font-bold">{summary.bestRank}位</p>
-          </div>
-          <div className="rounded-lg bg-surface p-3 text-center">
-            <p className="text-[10px] text-muted">最近の調子</p>
-            <p
-              className={`mt-1 text-xl font-bold ${
-                summary.recentForm > 0
-                  ? "text-green-400"
-                  : summary.recentForm < 0
-                    ? "text-red-400"
-                    : ""
-              }`}
-            >
-              {formatForm(summary.recentForm)}
-            </p>
-          </div>
-          <div className="rounded-lg bg-surface p-3 text-center">
-            <p className="text-[10px] text-muted">出走数</p>
-            <p className="mt-1 text-xl font-bold">{totalRuns}</p>
-          </div>
-        </div>
-
-        {/* Forest / Sprint 出走数バー */}
-        {totalRuns > 0 && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between text-[10px] text-muted">
-              <span>フォレスト {summary.forestCount}</span>
-              <span>スプリント {summary.sprintCount}</span>
-            </div>
-            <div className="mt-1 flex h-2 overflow-hidden rounded-full bg-surface">
-              <div
-                className="bg-primary"
-                style={{ width: `${forestPct}%` }}
-              />
-              <div
-                className="bg-[#00e5ff]"
-                style={{ width: `${100 - forestPct}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* CTA */}
-        <div className="mt-8 flex flex-col gap-3">
-          <Link
-            href={`/analysis?athlete=${encodeURIComponent(key)}`}
-            className="block rounded-lg bg-primary px-6 py-3 text-center text-base font-bold text-white transition-colors hover:bg-primary-dark"
-          >
-            分析ページで詳しく見る
-          </Link>
-          <Link
-            href="/"
-            className="block text-center text-xs text-muted transition-colors hover:text-foreground"
-          >
-            trails.jp トップへ
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
+  const key = resolveKey(name);
+  if (!key) notFound();
+  const summary = athleteIndex.athletes[key];
+  // ランキング未収録の名前（レッグ分析・週末ハイライト等からのリンク）は検索プリフィルへ誘導
+  if (!summary) redirect(`/analysis?q=${encodeURIComponent(key)}`);
+  return <AthleteStandalone summary={summary} />;
 }
