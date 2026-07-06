@@ -31,8 +31,12 @@ C(l) 単独主指標案を棄却（①1レッグ決着を見逃す ②レッグ�
 - [x] フル backfill 起動（**Windows デタッチプロセス**・wsl 一発セッションでは子が死ぬため Start-Process 経由・log=/tmp/backfill-legs.log・resume可）— 2026-07-06 夜間実行中（855件・~3件/分）
 - [x] PR #34 マージ・20:19 JST 本番デプロイ
 - [x] ⑤本番確認: 西日本ロングセレ関西ME（24完走・K=6→C ボタン非表示=ゲート動作）／OME1（18完走・K=5）／**東大OLK 大クラス（67完走・K≥15）で順位変動バー＋C(l) 展開テーブル（バイポーラバー・ρ併記）完全表示**
-- [ ] 翌日 12:00 JST 定時 cron の検証: `lc_leg_events` の source='cron' 前進・cron_log の leg_rows_upserted（CRON_SECRET がローカルに無く手動 smoke は省略。コアロジックは backfill が同一ビルダーで実証中・supabaseAdmin=service_role で RLS 非該当）
-- [ ] backfill 完了後: 健全性クエリ再実行＋ pg_total_relation_size 実測（250MB 警戒線・dry-run 実測から ~200MB 見込み）
+- [ ] 翌日 12:00 JST 定時 cron の検証: `lc_leg_events` の source='cron' 前進・cron_log の leg_rows_upserted（CRON_SECRET がローカルに無く手動 smoke は省略。コアロジックは backfill が同一ビルダーで実証済・supabaseAdmin=service_role で RLS 非該当）
+- [x] **backfill 完了（2026-07-07 未明）**: 800イベント・**116,710行**・台帳完全一致・loss恒等式 0違反・配列長 0違反・MP 17,925行保持・tracked 57,501行・**サイズ 83MB**（警戒線250MBに余裕）
+- [x] **障害と対処**: `leg_speed smallint[]` が破損レッグの巨大値で 32イベント分 out of range → **integer[] に ALTER**（migration ファイルも訂正）し resume 再実行で全回収（+16イベント・3,526行。差分はクラス0イベント）
+- 既知の relay 特性: `ideal_sec ≠ result−total_loss` が 815行（0.7%・中央値50s）— LapCenter 自身の公開値が恒等式を満たさないケース（ペナルティ加算系イベント等）。分析が使う leg 配列は loss 恒等式 0違反で健全
+- 残イベント 58件（858−800）はクラス0（結果未掲載・多くは恒久欠落の古い大会）＝台帳外なので cron が毎日軽量リトライする（fetchEventClasses 1回/件・許容）
+- **追補（2026-07-07・PR #35）**: ユーザーFB「初見でわかりづらい」→ リード文・「平均N順位動く」表記・**首位交代バッジ＋最大の動き（○○ 12位→5位）**を elapsedRank relay 値から追加。C(l) 技術脚注は展開時のみ表示
 
 ## Stage 2b（持ち越し）
 

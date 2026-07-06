@@ -58,7 +58,7 @@ const arr = (xs: (number | null)[], cast: string): string =>
   xs.length ? `ARRAY[${xs.map(num).join(",")}]::${cast}` : `'{}'::${cast}`;
 
 function legRowValues(r: LegSplitRow): string {
-  return `(${num(r.lc_event_id)},${num(r.lc_class_id)},${lit(r.event_date)},${lit(r.event_name)},${lit(r.class_name)},${lit(r.race_type)},${num(r.runner_index)},${lit(r.runner_name)},${lit(r.runner_key)},${lit(r.club)},${num(r.rank)},${num(r.result_sec)},${lit(r.start_time)},${num(r.speed)},${num(r.loss_rate)},${num(r.ideal_sec)},${num(r.total_loss_sec)},${arr(r.lap_sec, "integer[]")},${arr(r.lap_rank, "smallint[]")},${arr(r.elapsed_sec, "integer[]")},${arr(r.elapsed_rank, "smallint[]")},${arr(r.leg_loss_sec, "integer[]")},${arr(r.leg_speed, "smallint[]")},${r.tracked ? "true" : "false"})`;
+  return `(${num(r.lc_event_id)},${num(r.lc_class_id)},${lit(r.event_date)},${lit(r.event_name)},${lit(r.class_name)},${lit(r.race_type)},${num(r.runner_index)},${lit(r.runner_name)},${lit(r.runner_key)},${lit(r.club)},${num(r.rank)},${num(r.result_sec)},${lit(r.start_time)},${num(r.speed)},${num(r.loss_rate)},${num(r.ideal_sec)},${num(r.total_loss_sec)},${arr(r.lap_sec, "integer[]")},${arr(r.lap_rank, "smallint[]")},${arr(r.elapsed_sec, "integer[]")},${arr(r.elapsed_rank, "smallint[]")},${arr(r.leg_loss_sec, "integer[]")},${arr(r.leg_speed, "integer[]")},${r.tracked ? "true" : "false"})`;
 }
 
 async function insertLegRows(rows: LegSplitRow[]): Promise<void> {

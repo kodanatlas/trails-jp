@@ -32,7 +32,7 @@ create table if not exists public.lc_leg_splits (
   elapsed_sec     integer[]  not null,
   elapsed_rank    smallint[] not null,
   leg_loss_sec    integer[]  not null,        -- 符号付き（負 = 自分の巡航ペース基準より速い）
-  leg_speed       smallint[] not null,        -- round(100·lap/Ave3)（LapCenter relay）
+  leg_speed       integer[]  not null,        -- round(100·lap/Ave3)（LapCenter relay。破損レッグで巨大値が出るため smallint 不可＝2026-07-07 実データで判明し ALTER 済み）
   tracked         boolean  not null default false,  -- athlete-index 突合（名前+クラブ照合のみ・MP でも true）
   created_at      timestamptz not null default now(),
   unique (lc_event_id, lc_class_id, runner_index)   -- (lc_event_id, lc_class_id) の前方一致 index を兼ねる
