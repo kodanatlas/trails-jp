@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { CalendarDays, MapPin, ChevronLeft, ChevronRight, ChevronDown, ExternalLink, Search, Bell, BarChart3, ListChecks, Users, Loader2, Route } from "lucide-react";
 import type { JOEEvent } from "@/lib/scraper/events";
@@ -22,6 +22,14 @@ export type EventListItem = Pick<
   | "lapcenter_event_id"
   | "lapcenter_url"
 >;
+
+/**
+ * 増分レンダリング: 一度にマウントするカード数。全件（2,000件超）を一括マウントすると
+ * React コミット＋レイアウトでタブが数十秒フリーズするため、先頭 N 件＋スクロールで追加ロードする。
+ * INITIAL_VISIBLE はデフォルトフィルタ（昨日以降・百数十件）が一度に収まる余裕値。
+ */
+const INITIAL_VISIBLE = 150;
+const LOAD_MORE = 150;
 
 /** エントリーリストを表示する対象かどうかの判定（受付中 or 直近 N 日以内の大会） */
 const ENTRY_LIST_RECENT_DAYS = 30;
@@ -144,6 +152,29 @@ export function EventList({ events }: EventListProps) {
       .sort((a, b) => a.date.localeCompare(b.date) || a.joe_event_id - b.joe_event_id);
   }, [events, query, tagFilter, entryFilter, dateRange]);
 
+  // 増分レンダリング: フィルタ変更（= filtered の identity 変化）とビュー切替で表示数をリセット。
+  // リセットしないと、全件までロード後にカレンダー→リストで全件を再マウントしてフリーズする
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE);
+  }, [filtered, viewMode]);
+
+  // 「さらに表示」ボタンが視界に近づいたら自動で追加ロード
+  const loadMoreRef = useRef<HTMLButtonElement | null>(null);
+  const hasMore = viewMode === "list" && filtered.length > visibleCount;
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!hasMore || !el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) setVisibleCount((c) => c + LOAD_MORE);
+      },
+      { rootMargin: "600px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, visibleCount]);
+
   const calendarDays = useMemo(() => {
     const { year, month } = currentMonth;
     const firstDay = new Date(year, month, 1).getDay();
@@ -238,7 +269,7 @@ export function EventList({ events }: EventListProps) {
 
       {viewMode === "list" ? (
         <div className="space-y-2">
-          {filtered.map((event) => {
+          {filtered.slice(0, visibleCount).map((event) => {
             const entry = ENTRY_STYLES[event.entry_status];
             return (
               <div
@@ -336,6 +367,15 @@ export function EventList({ events }: EventListProps) {
               </div>
             );
           })}
+          {hasMore && (
+            <button
+              ref={loadMoreRef}
+              onClick={() => setVisibleCount((c) => c + LOAD_MORE)}
+              className="w-full rounded-lg border border-border bg-card py-3 text-sm text-muted transition-colors hover:border-primary/30 hover:text-foreground"
+            >
+              さらに表示（残り {filtered.length - visibleCount} 件）
+            </button>
+          )}
           {filtered.length === 0 && (
             <div className="rounded-lg border border-border bg-card py-16 text-center text-sm text-muted">
               条件に合うイベントがありません
