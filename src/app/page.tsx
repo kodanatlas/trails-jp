@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { CalendarDays, Trophy, ExternalLink, BarChart3, TrendingUp, ChevronDown, Route } from "lucide-react";
-import type { JOEEvent } from "@/lib/scraper/events";
-import eventsJson from "@/data/events.json";
+import { readEvents } from "@/lib/events-store";
 import weekendPointsJson from "@/data/weekend-points.json";
 import { WeekendHighlights } from "@/components/WeekendHighlights";
 import { HeroAthleteSearch } from "./HeroSearch";
@@ -9,19 +8,20 @@ import { WeeklyCheerPodium } from "@/components/WeeklyCheerPodium";
 import { UpdatesNews } from "@/components/UpdatesNews";
 import { getSiteStats } from "@/lib/site-stats";
 
-// DB 由来の数値（成績レコード）を 1 日ごとに更新（頻度は低めで十分）
-export const revalidate = 86400;
+// イベント（日次 cron 03:00 JST 更新）と DB 由来の数値をライブ反映する。1時間毎で十分
+export const revalidate = 3600;
 
 export default async function Home() {
-  const allEvents = eventsJson as JOEEvent[];
-  const now = new Date().toISOString().slice(0, 10);
+  // バンドル JSON はコミット時点で凍結し「近日開催」から直近大会が欠けるため、Storage のライブデータを読む
+  const allEvents = await readEvents();
+  const now = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
   const upcomingEvents = allEvents
     .filter((e) => e.date >= now)
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 4);
 
   // 規模数値は docs ページと共有のヘルパーから取得（両ページで常に一致）
-  const stats = await getSiteStats();
+  const stats = await getSiteStats(allEvents.length);
 
   // ハイライトの上部リンク表示判定（ポイントリストが3件以上＝必ずセクションが出る時のみ）
   const hasHighlights =
