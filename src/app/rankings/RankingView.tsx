@@ -218,7 +218,7 @@ export function RankingView({ rankingConfigs }: RankingViewProps) {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <Link
-                        href={`/analysis?athlete=${encodeURIComponent(entry.athlete_name.replace(/\s+/g, ""))}`}
+                        href={`/a/${encodeURIComponent(entry.athlete_name.replace(/\s+/g, ""))}`}
                         onClick={(e) => e.stopPropagation()}
                         className="truncate text-sm font-semibold hover:text-primary hover:underline"
                       >

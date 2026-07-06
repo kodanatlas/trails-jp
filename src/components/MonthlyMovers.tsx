@@ -5,7 +5,7 @@ import moversJson from "@/data/movers.json";
 /** movers.json のスキーマ（docs/plans/brushup_batch1_20260610.md §2-S2-2 で固定） */
 interface MoverItem {
   name: string; // 表示用生名（スペース保持）
-  key: string; // 空白除去名（/analysis?athlete= リンク用）
+  key: string; // 空白除去名（/a/<key> リンク用）
   club: string;
   type: string;
   className: string;
@@ -49,7 +49,7 @@ export function MonthlyMovers() {
           {items.map((item, i) => (
             <Link
               key={item.key}
-              href={`/analysis?athlete=${encodeURIComponent(item.key)}`}
+              href={`/a/${encodeURIComponent(item.key)}`}
               className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover sm:gap-4"
             >
               {/* 順位バッジ */}

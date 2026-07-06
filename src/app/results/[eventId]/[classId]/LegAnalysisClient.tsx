@@ -404,7 +404,7 @@ function SingleView({
       <div className="rounded-2xl border border-border bg-card p-4">
         <h2 className="text-xl font-extrabold">
           <Link
-            href={`/analysis?athlete=${encodeURIComponent(norm(s.name))}`}
+            href={`/a/${encodeURIComponent(norm(s.name))}`}
             className="transition-colors hover:text-primary hover:underline"
             title="この選手のページへ"
           >
@@ -697,7 +697,7 @@ function CompareGrid({
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="text-[10px] font-bold text-primary">{r.rank ?? "—"}位</span>
                   <Link
-                    href={`/analysis?athlete=${encodeURIComponent(norm(r.name))}`}
+                    href={`/a/${encodeURIComponent(norm(r.name))}`}
                     className="max-w-[78px] truncate text-[11px] font-bold transition-colors hover:text-primary hover:underline"
                     title={`${r.name}（選手ページへ）`}
                   >
