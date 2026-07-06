@@ -1,7 +1,7 @@
 # Stage 2a: per-leg ingestion 基盤 ＋ ⑤順位が動いたレッグ
 
 - 作成: 2026-07-06 JST
-- ステータス: 実装完了（backfill 実行・本番確認は追記）
+- ステータス: **実装完了・PR #34 本番反映済み**（backfill 進行中・定時 cron 検証は翌日）
 - 前段: `2026-06-29_results-analysis-methodology.md` §6.1（per-leg ingestion）・プリミティブ4（⑤）・`2026-07-06_cross_race_stage1.md`（Stage 2b の前提基盤）
 
 ## Context
@@ -26,11 +26,13 @@ C(l) 単独主指標案を棄却（①1レッグ決着を見逃す ②レッグ�
 
 ## 検証
 
-- tsc clean・vitest **587件 green**（パリティ・leave-self-out 対照・ゲート・リレー抑制 等 +20）
-- [ ] backfill dry-run → --limit 3 → /api/lc-split と突合 → フル実行（夜間バックグラウンド）
-- [ ] 健全性クエリ: 台帳と行数一致・恒等式 relay 検算（|total_loss − Σmax(0,leg_loss)| ≤2s）・配列長整合・tracked 件数・pg_total_relation_size（250MB 警戒線）
-- [ ] PR → マージ → 手動 cron smoke（Bearer $CRON_SECRET・leg_rows_upserted 確認）→ 翌日の定時 cron で台帳前進
-- [ ] ⑤本番確認（n≥15 で表示・8-14 参考・リレー非表示）
+- tsc clean・vitest **587件 green**（パリティ・leave-self-out 対照・ゲート・リレー抑制 等 +20）・build 成功
+- [x] backfill dry-run（2件・クラス保持ルール動作）→ --limit 3 実書込 → 健全性クエリ**全 pass**（台帳793行一致・恒等式 relay 検算 0違反・ideal 恒等式 0違反・配列長 0違反・MP 159行保持）
+- [x] フル backfill 起動（**Windows デタッチプロセス**・wsl 一発セッションでは子が死ぬため Start-Process 経由・log=/tmp/backfill-legs.log・resume可）— 2026-07-06 夜間実行中（855件・~3件/分）
+- [x] PR #34 マージ・20:19 JST 本番デプロイ
+- [x] ⑤本番確認: 西日本ロングセレ関西ME（24完走・K=6→C ボタン非表示=ゲート動作）／OME1（18完走・K=5）／**東大OLK 大クラス（67完走・K≥15）で順位変動バー＋C(l) 展開テーブル（バイポーラバー・ρ併記）完全表示**
+- [ ] 翌日 12:00 JST 定時 cron の検証: `lc_leg_events` の source='cron' 前進・cron_log の leg_rows_upserted（CRON_SECRET がローカルに無く手動 smoke は省略。コアロジックは backfill が同一ビルダーで実証中・supabaseAdmin=service_role で RLS 非該当）
+- [ ] backfill 完了後: 健全性クエリ再実行＋ pg_total_relation_size 実測（250MB 警戒線・dry-run 実測から ~200MB 見込み）
 
 ## Stage 2b（持ち越し）
 
