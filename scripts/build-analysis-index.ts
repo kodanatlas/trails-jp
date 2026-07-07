@@ -10,7 +10,7 @@ import { computeWeekendPoints } from "../src/lib/weekend-points";
 import { jstNowLabel, jstToday } from "../src/lib/weekend-window";
 import { eventFuzzyMatch } from "../src/lib/analysis/event-match";
 import { buildCrossRaceIndex, type LcRaceRow } from "../src/lib/analysis/cross-race";
-import { buildLegFingerprintIndex, type TrackedLegRow, type CompanionRow } from "../src/lib/analysis/leg-fingerprint";
+import { buildLegFingerprintIndex, detectHomonymKeys, type TrackedLegRow, type CompanionRow } from "../src/lib/analysis/leg-fingerprint";
 
 // --- Types ---
 interface RawEntry {
@@ -1006,7 +1006,7 @@ try {
 // ---- クロスレース縦断 Stage 1（同水準巡航速度帯のミス残差） ----
 // backfillRaceTypeFromJoy の後に実行（補正済み race_type で集計するため）。
 // 失敗/env 欠如時は既存の cross-race.json を保持（無ければ空スケルトン）してビルド継続。
-async function buildCrossRaceStep(): Promise<void> {
+async function buildCrossRaceStep(homonymKeys: Set<string> | null): Promise<void> {
   const outPath = path.join(OUTPUT_DIR, "cross-race.json");
   const keepOrSkeleton = (why: string) => {
     console.warn(`⚠ cross-race: ${why}（${fs.existsSync(outPath) ? "既存ファイル保持" : "空スケルトン生成"}）`);
@@ -1076,7 +1076,13 @@ async function buildCrossRaceStep(): Promise<void> {
     return;
   }
 
-  const index = { ...buildCrossRaceIndex(rows), generatedAt: new Date().toISOString() };
+  // 同姓同名（物理的重複を検出した名前）は leg-fingerprint ステップと同一基準で集計から除外
+  const filtered = homonymKeys ? rows.filter((r) => !homonymKeys.has(r.name.replace(/\s+/g, ""))) : rows;
+  if (homonymKeys && filtered.length < rows.length) {
+    console.log(`  cross-race: 同姓同名 ${rows.length - filtered.length} 行を除外`);
+  }
+
+  const index = { ...buildCrossRaceIndex(filtered), generatedAt: new Date().toISOString() };
   const json = JSON.stringify(index);
   fs.writeFileSync(outPath, json);
   console.log(
@@ -1084,16 +1090,10 @@ async function buildCrossRaceStep(): Promise<void> {
       `入力 ${rows.length} 行 (${(json.length / 1024).toFixed(0)} KB)`,
   );
 }
-try {
-  await buildCrossRaceStep();
-} catch (e) {
-  console.warn("⚠ cross-race 生成例外（ビルドは継続）:", (e as Error).message);
-}
-
 // ---- Stage 2b: ミスの傾向（クロスレース指紋）＋トレンド重み ----
 // lc_leg_splits（per-leg relay 値）から選手ごとの指紋 artifact を生成する。
 // 転送削減のため2本の pruned select（tracked 行=統計用 / untracked 行=パック companion 用）。
-async function buildLegFingerprintStep(): Promise<void> {
+async function buildLegFingerprintStep(): Promise<Set<string> | null> {
   const outPath = path.join(OUTPUT_DIR, "leg-fingerprint.json");
   const keepOrSkeleton = (why: string) => {
     console.warn(`⚠ leg-fingerprint: ${why}（${fs.existsSync(outPath) ? "既存ファイル保持" : "空スケルトン生成"}）`);
@@ -1103,7 +1103,7 @@ async function buildLegFingerprintStep(): Promise<void> {
   };
   if (!supabaseUrl || !supabaseKey) {
     keepOrSkeleton("Supabase 未設定のためスキップ");
-    return;
+    return null;
   }
 
   // #33 イディオム: 空ページのみ終了・前進幅=実返却行数（PostgREST max-rows キャップ耐性）
@@ -1131,23 +1131,23 @@ async function buildLegFingerprintStep(): Promise<void> {
 
   const order = "&order=lc_event_id.asc,lc_class_id.asc,runner_index.asc";
   const tracked = await pageAll<TrackedLegRow>(
-    "lc_leg_splits?tracked=is.true&select=runner_key,event_date,event_name,class_name,race_type,rank,speed,start_time,lap_sec,leg_loss_sec,leg_speed,elapsed_sec,lc_event_id,lc_class_id" + order
+    "lc_leg_splits?tracked=is.true&select=runner_key,event_date,event_name,class_name,club,race_type,rank,speed,start_time,lap_sec,leg_loss_sec,leg_speed,elapsed_sec,lc_event_id,lc_class_id" + order
   );
   if (!tracked) {
     keepOrSkeleton("tracked 行の取得失敗");
-    return;
+    return null;
   }
   const companions = await pageAll<CompanionRow>(
     "lc_leg_splits?tracked=is.false&select=lc_event_id,lc_class_id,runner_index,start_time,elapsed_sec" + order
   );
   if (!companions) {
     keepOrSkeleton("companion 行の取得失敗");
-    return;
+    return null;
   }
   // 健全性ガード: 明らかな不足（キャップ1枚分等）で良品を上書きしない
   if (tracked.length < 40000) {
     keepOrSkeleton(`tracked 行数が異常に少ない (${tracked.length}) — 不完全データでの上書きを回避`);
-    return;
+    return null;
   }
 
   const index = {
@@ -1158,13 +1158,22 @@ async function buildLegFingerprintStep(): Promise<void> {
   fs.writeFileSync(outPath, json);
   const nAth = Object.keys(index.athletes).length;
   console.log(
-    `✓ leg-fingerprint.json: 選手 ${nAth}・入力 tracked=${tracked.length}/companion=${companions.length} 行 (${(json.length / 1024).toFixed(0)} KB)`
+    `✓ leg-fingerprint.json: 選手 ${nAth}・同姓同名除外 ${index.homonymExcluded ?? 0} 名・` +
+      `入力 tracked=${tracked.length}/companion=${companions.length} 行 (${(json.length / 1024).toFixed(0)} KB)`
   );
+  // cross-race 側でも同一基準で除外できるよう検出名を返す
+  return detectHomonymKeys(tracked);
 }
+let homonymKeys: Set<string> | null = null;
 try {
-  await buildLegFingerprintStep();
+  homonymKeys = await buildLegFingerprintStep();
 } catch (e) {
   console.warn("⚠ leg-fingerprint 生成例外（ビルドは継続）:", (e as Error).message);
+}
+try {
+  await buildCrossRaceStep(homonymKeys);
+} catch (e) {
+  console.warn("⚠ cross-race 生成例外（ビルドは継続）:", (e as Error).message);
 }
 
 } // end main()

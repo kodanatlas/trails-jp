@@ -33,6 +33,10 @@ export interface FingerprintParams {
   lag1MinN1: number;
   lag1MinN0: number;
   sevBins: { forest: [number, number]; sprint: [number, number] };
+  /** コホート帯数（選手の中央値巡航速度分位。sprint は掲載数が少なく帯セル n を確保するため粗く） */
+  cohortBands: { forest: number; sprint: number };
+  /** 同姓同名判定: 同日の走行時間帯がこれ以上重複した別レースの存在で別人混在とみなす */
+  homonymOverlapSec: number;
 }
 
 export const DEFAULT_PARAMS: FingerprintParams = {
@@ -53,9 +57,16 @@ export const DEFAULT_PARAMS: FingerprintParams = {
   lag1MinN1: 15,
   lag1MinN0: 30,
   sevBins: { forest: [30, 90], sprint: [15, 45] },
+  cohortBands: { forest: 5, sprint: 3 },
+  homonymOverlapSec: 300,
 };
 
-const RELAY_RE = /リレー|relay|ペア|チーム/i;
+/**
+ * リレー・フォーク形式（farsta/motala/バタフライ等）は per-leg 列が単一コースに対応しないため除外。
+ * 構造的なフォーク検出は 2026-07-07 に評価の上棄却（陽性対照=実リレー132クラスで信号ゼロ＝
+ * Ave3(上位3平均)が短フォーク側に錨を下ろし速い尾には現れない）→ 名前ベースで運用。
+ */
+const RELAY_RE = /リレー|relay|ペア|チーム|farsta|motala|one.?man|ワンマン|モタラ|ファルスタ|バタフライ|フォーク/i;
 
 /** fetch①（tracked 行）の形 */
 export interface TrackedLegRow {
@@ -63,6 +74,7 @@ export interface TrackedLegRow {
   event_date: string;
   event_name: string;
   class_name: string | null;
+  club: string | null;
   race_type: "forest" | "sprint";
   rank: number | null;
   speed: number | null;
@@ -110,6 +122,8 @@ export interface DisciplineFingerprint {
   sevMedRho: number | null;      // ミスの ρ=loss/(lap−loss) 中央値
   /** 標本ゲート＋permutation p≤q 通過時のみ（RR = Mantel–Haenszel・層=レース）。未達は null */
   lag1: { n1: number; n0: number; rr: number } | null;
+  /** 所属コホート帯 index（cohorts[disc].bands の添字）。Stage 2c 追加のためオプショナル */
+  band?: number;
 }
 
 export interface AthleteFingerprint {
@@ -119,11 +133,28 @@ export interface AthleteFingerprint {
   sr?: RaceWeight[];
 }
 
+/** コホート帯（同水準巡航速度の掲載選手プール）。cells は [n, m] の9組 */
+export interface CohortBand {
+  athletes: number;
+  legs: number;
+  cells: [number, number][];
+}
+
+export interface CohortNorms {
+  /** 帯境界（中央値巡航速度の分位点。速度は小さいほど速い） */
+  cuts: number[];
+  bands: CohortBand[];
+}
+
 export interface LegFingerprintIndex {
   v: 1;
   generatedAt: string | null;
   params: FingerprintParams;
   athletes: Record<string, AthleteFingerprint>;
+  /** Stage 2c: 種目別コホート帯基準（記述比較用・検定なし） */
+  cohorts?: { f?: CohortNorms; s?: CohortNorms };
+  /** Stage 2c: 同姓同名（物理的重複）検出で集計除外した名前の数 */
+  homonymExcluded?: number;
 }
 
 /** "HH:MM:SS" / "HH:MM" → 秒。不正・空は null */
@@ -132,6 +163,102 @@ export function parseStartSec(s: string | null | undefined): number | null {
   const m = s.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
   if (!m) return null;
   return Number(m[1]) * 3600 + Number(m[2]) * 60 + (m[3] ? Number(m[3]) : 0);
+}
+
+/**
+ * クラブ表記の照合（matchTracked と同じ包含許容）。どちらかが空なら「相違」とは判定しない。
+ * 別人判定はクラブ相違が確認できる場合のみに限定する（実データ検証 2026-07-07:
+ * クラブ条件なしの物理矛盾検出は 732 名を誤検出＝ほぼ全てが練習会の再走・重複掲載だった）。
+ */
+function clubsDisjoint(a: string | null, b: string | null): boolean {
+  if (!a || !b) return false;
+  const norm = (s: string) => s.replace(/\s+/g, "").toLowerCase();
+  const as = a.split("/").map(norm).filter(Boolean);
+  const bs = b.split("/").map(norm).filter(Boolean);
+  if (as.length === 0 || bs.length === 0) return false;
+  return !as.some((x) => bs.some((y) => x === y || x.includes(y) || y.includes(x)));
+}
+
+/**
+ * 同姓同名（別人混在）の検出。氏名キーは維持しつつ、「物理的に1人ではありえない ＋
+ * クラブ表記が相違する」記録を持つ名前を集計から除外するための純関数。検出条件:
+ * (i) 同一大会・同一クラスに rank 付き・クラブ相違の行ペア（練習会の同クラス再走は同クラブ＝非該当）
+ * (ii) 同日の別レースで走行時間帯 [start, start+finish] が overlapSec 以上重複し、かつクラブ相違。
+ *      開始・終了がほぼ同時刻（±60s）のペアは同一走の重複掲載とみなし除外しない
+ * リレー系クラスは判定から除外。クラブ欠落データの同姓同名は検出できない（docs に明記）。
+ */
+export function detectHomonymKeys(rows: TrackedLegRow[], overlapSec = DEFAULT_PARAMS.homonymOverlapSec): Set<string> {
+  const DUP_PUBLISH_TOL = 60; // 同一走の重複掲載とみなす開始/終了時刻差
+  const out = new Set<string>();
+  const byKey = new Map<string, TrackedLegRow[]>();
+  for (const r of rows) {
+    if (RELAY_RE.test(`${r.event_name} ${r.class_name ?? ""}`)) continue;
+    const list = byKey.get(r.runner_key) ?? [];
+    list.push(r);
+    byKey.set(r.runner_key, list);
+  }
+  for (const [key, list] of byKey) {
+    let hit = false;
+    // (i) 同一クラス内のクラブ相違ペア
+    const byClass = new Map<string, TrackedLegRow[]>();
+    for (const r of list) {
+      if (r.rank == null) continue;
+      const k = `${r.lc_event_id}:${r.lc_class_id}`;
+      const arr = byClass.get(k) ?? [];
+      arr.push(r);
+      byClass.set(k, arr);
+    }
+    outer1: for (const arr of byClass.values()) {
+      for (let i = 0; i < arr.length; i++) {
+        for (let j = i + 1; j < arr.length; j++) {
+          if (clubsDisjoint(arr[i].club, arr[j].club)) {
+            hit = true;
+            break outer1;
+          }
+        }
+      }
+    }
+    // (ii) 同日の時間重複＋クラブ相違（重複掲載は除く）
+    if (!hit) {
+      const byDate = new Map<string, { start: number; end: number; race: string; club: string | null }[]>();
+      for (const r of list) {
+        const start = parseStartSec(r.start_time);
+        if (start == null) continue;
+        let finish: number | null = null;
+        for (let i = r.elapsed_sec.length - 1; i >= 0; i--) {
+          if (r.elapsed_sec[i] != null) {
+            finish = r.elapsed_sec[i];
+            break;
+          }
+        }
+        if (finish == null || finish <= 0) continue;
+        const arr = byDate.get(r.event_date) ?? [];
+        arr.push({ start, end: start + finish, race: `${r.lc_event_id}:${r.lc_class_id}`, club: r.club });
+        byDate.set(r.event_date, arr);
+      }
+      outer2: for (const arr of byDate.values()) {
+        for (let i = 0; i < arr.length; i++) {
+          for (let j = i + 1; j < arr.length; j++) {
+            if (arr[i].race === arr[j].race) continue;
+            if (!clubsDisjoint(arr[i].club, arr[j].club)) continue;
+            if (
+              Math.abs(arr[i].start - arr[j].start) <= DUP_PUBLISH_TOL &&
+              Math.abs(arr[i].end - arr[j].end) <= DUP_PUBLISH_TOL
+            ) {
+              continue; // 同一走の重複掲載
+            }
+            const ov = Math.min(arr[i].end, arr[j].end) - Math.max(arr[i].start, arr[j].start);
+            if (ov >= overlapSec) {
+              hit = true;
+              break outer2;
+            }
+          }
+        }
+      }
+    }
+    if (hit) out.add(key);
+  }
+  return out;
 }
 
 /** ミス判定: loss ≥ max(floor, ratio×(lap−loss))。lap−loss = 自分の巡航ペース想定タイム */
@@ -299,24 +426,32 @@ export function buildLegFingerprintIndex(
   for (const r of tracked) addClock(`${r.lc_event_id}:${r.lc_class_id}`, r, r.start_time, r.elapsed_sec);
   for (const c of companions) addClock(`${c.lc_event_id}:${c.lc_class_id}`, c, c.start_time, c.elapsed_sec);
 
+  // 同姓同名（物理的重複）の検出 → 該当名は重み・指紋とも集計から除外
+  const homonyms = detectHomonymKeys(tracked, P.homonymOverlapSec);
+
   // 選手×種目 → レースプール
-  const pools = new Map<string, RacePool[]>(); // key = runner_key + " " + f|s
+  const pools = new Map<string, RacePool[]>(); // key = runner_key + "|" + f|s
   const weights = new Map<string, RaceWeight[]>();
   const meta = new Map<string, { races: number; legsPack: number; packUnchecked: number }>();
+  const speedsByKey = new Map<string, number[]>(); // コホート帯用（レース巡航速度）
 
   for (const r of tracked) {
     if (r.rank == null || r.speed == null) continue;
+    if (homonyms.has(r.runner_key)) continue;
     if (RELAY_RE.test(`${r.event_name} ${r.class_name ?? ""}`)) continue;
     const L = r.lap_sec.length;
     if (L < 3) continue;
     const disc = r.race_type === "sprint" ? "s" : "f";
-    const key = `${r.runner_key} ${disc}`;
+    const key = `${r.runner_key}|${disc}`;
     const floor = P.floors[r.race_type];
     const eps = P.packEps[r.race_type];
     const classKey = `${r.lc_event_id}:${r.lc_class_id}`;
 
     const m = meta.get(key) ?? { races: 0, legsPack: 0, packUnchecked: 0 };
     m.races++;
+    const spd = speedsByKey.get(key) ?? [];
+    spd.push(r.speed);
+    speedsByKey.set(key, spd);
 
     // 有効レッグ
     const valid = new Array<boolean>(L).fill(false);
@@ -411,14 +546,16 @@ export function buildLegFingerprintIndex(
   const ensure = (name: string): AthleteFingerprint => (athletes[name] ??= {});
 
   for (const [key, wl] of weights) {
-    const [name, disc] = key.split(" ");
+    const [name, disc] = key.split("|");
     const sorted = [...wl].sort((a, b) => a.d.localeCompare(b.d));
     if (disc === "f") ensure(name).fr = sorted;
     else ensure(name).sr = sorted;
   }
 
+  const gatedList: { disc: string; fp: DisciplineFingerprint; med: number }[] = [];
+
   for (const [key, races] of pools) {
-    const [name, disc] = key.split(" ");
+    const [name, disc] = key.split("|");
     const m = meta.get(key)!;
     const legsValid = races.reduce((s, r) => s + r.miss.length, 0);
     if (races.length < P.minRaces || legsValid < P.minLegs) continue;
@@ -522,7 +659,43 @@ export function buildLegFingerprintIndex(
     };
     if (disc === "f") ensure(name).f = fp;
     else ensure(name).s = fp;
+    const spds = speedsByKey.get(key);
+    if (spds && spds.length > 0) {
+      const s = [...spds].sort((a, b) => a - b);
+      gatedList.push({ disc, fp, med: s[Math.floor(s.length / 2)] });
+    }
   }
 
-  return { v: 1, generatedAt: null, params: P, athletes };
+  // コホート帯（Stage 2c・記述比較用）: ゲート通過選手を中央値巡航速度の分位で帯分け。
+  // 巡航速度は出走クラスのトップ(Ave3)基準の相対値であり絶対走力ではない（表示側で明記）。
+  // 循環性は実測で否定済み（レース内 speed×ミス率の相関 ≈ 0）。
+  const cohorts: { f?: CohortNorms; s?: CohortNorms } = {};
+  for (const disc of ["f", "s"] as const) {
+    const list = gatedList.filter((g) => g.disc === disc);
+    const k = disc === "f" ? P.cohortBands.forest : P.cohortBands.sprint;
+    if (k < 2 || list.length < k * 10) continue; // 帯あたり最低10人を確保できなければ出さない
+    const meds = list.map((g) => g.med).sort((a, b) => a - b);
+    const cuts: number[] = [];
+    for (let i = 1; i < k; i++) cuts.push(meds[Math.floor((i * meds.length) / k)]);
+    const bands: CohortBand[] = Array.from({ length: k }, () => ({
+      athletes: 0,
+      legs: 0,
+      cells: Array.from({ length: 9 }, () => [0, 0] as [number, number]),
+    }));
+    for (const g of list) {
+      let b = 0;
+      for (const c of cuts) if (g.med >= c) b++;
+      const band = bands[Math.min(b, k - 1)];
+      g.fp.band = Math.min(b, k - 1);
+      band.athletes++;
+      band.legs += g.fp.legsValid;
+      g.fp.cells.forEach((c, i) => {
+        band.cells[i][0] += c.n;
+        band.cells[i][1] += c.m;
+      });
+    }
+    cohorts[disc] = { cuts, bands };
+  }
+
+  return { v: 1, generatedAt: null, params: P, athletes, cohorts, homonymExcluded: homonyms.size };
 }
