@@ -10,6 +10,7 @@ import { computeWeekendPoints } from "../src/lib/weekend-points";
 import { jstNowLabel, jstToday } from "../src/lib/weekend-window";
 import { eventFuzzyMatch } from "../src/lib/analysis/event-match";
 import { buildCrossRaceIndex, type LcRaceRow } from "../src/lib/analysis/cross-race";
+import { buildLegFingerprintIndex, type TrackedLegRow, type CompanionRow } from "../src/lib/analysis/leg-fingerprint";
 
 // --- Types ---
 interface RawEntry {
@@ -1087,6 +1088,83 @@ try {
   await buildCrossRaceStep();
 } catch (e) {
   console.warn("⚠ cross-race 生成例外（ビルドは継続）:", (e as Error).message);
+}
+
+// ---- Stage 2b: ミスの傾向（クロスレース指紋）＋トレンド重み ----
+// lc_leg_splits（per-leg relay 値）から選手ごとの指紋 artifact を生成する。
+// 転送削減のため2本の pruned select（tracked 行=統計用 / untracked 行=パック companion 用）。
+async function buildLegFingerprintStep(): Promise<void> {
+  const outPath = path.join(OUTPUT_DIR, "leg-fingerprint.json");
+  const keepOrSkeleton = (why: string) => {
+    console.warn(`⚠ leg-fingerprint: ${why}（${fs.existsSync(outPath) ? "既存ファイル保持" : "空スケルトン生成"}）`);
+    if (!fs.existsSync(outPath)) {
+      fs.writeFileSync(outPath, JSON.stringify(buildLegFingerprintIndex([], [])));
+    }
+  };
+  if (!supabaseUrl || !supabaseKey) {
+    keepOrSkeleton("Supabase 未設定のためスキップ");
+    return;
+  }
+
+  // #33 イディオム: 空ページのみ終了・前進幅=実返却行数（PostgREST max-rows キャップ耐性）
+  const pageAll = async <T>(pathAndQuery: string): Promise<T[] | null> => {
+    const rows: T[] = [];
+    const PAGE = 10000;
+    const MAX_REQUESTS = 300;
+    let from = 0;
+    for (let i = 0; i < MAX_REQUESTS; i++) {
+      const res = await fetch(`${supabaseUrl}/rest/v1/${pathAndQuery}`, {
+        headers: {
+          apikey: supabaseKey!,
+          Authorization: `Bearer ${supabaseKey}`,
+          Range: `${from}-${from + PAGE - 1}`,
+        },
+      });
+      if (!res.ok) return null;
+      const page = (await res.json()) as T[];
+      if (page.length === 0) break;
+      rows.push(...page);
+      from += page.length;
+    }
+    return rows;
+  };
+
+  const order = "&order=lc_event_id.asc,lc_class_id.asc,runner_index.asc";
+  const tracked = await pageAll<TrackedLegRow>(
+    "lc_leg_splits?tracked=is.true&select=runner_key,event_date,event_name,class_name,race_type,rank,speed,start_time,lap_sec,leg_loss_sec,leg_speed,elapsed_sec,lc_event_id,lc_class_id" + order
+  );
+  if (!tracked) {
+    keepOrSkeleton("tracked 行の取得失敗");
+    return;
+  }
+  const companions = await pageAll<CompanionRow>(
+    "lc_leg_splits?tracked=is.false&select=lc_event_id,lc_class_id,runner_index,start_time,elapsed_sec" + order
+  );
+  if (!companions) {
+    keepOrSkeleton("companion 行の取得失敗");
+    return;
+  }
+  // 健全性ガード: 明らかな不足（キャップ1枚分等）で良品を上書きしない
+  if (tracked.length < 40000) {
+    keepOrSkeleton(`tracked 行数が異常に少ない (${tracked.length}) — 不完全データでの上書きを回避`);
+    return;
+  }
+
+  const index = {
+    ...buildLegFingerprintIndex(tracked, companions),
+    generatedAt: new Date().toISOString(),
+  };
+  const json = JSON.stringify(index);
+  fs.writeFileSync(outPath, json);
+  const nAth = Object.keys(index.athletes).length;
+  console.log(
+    `✓ leg-fingerprint.json: 選手 ${nAth}・入力 tracked=${tracked.length}/companion=${companions.length} 行 (${(json.length / 1024).toFixed(0)} KB)`
+  );
+}
+try {
+  await buildLegFingerprintStep();
+} catch (e) {
+  console.warn("⚠ leg-fingerprint 生成例外（ビルドは継続）:", (e as Error).message);
 }
 
 } // end main()
