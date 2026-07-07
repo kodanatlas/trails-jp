@@ -22,6 +22,7 @@ import { SITE_URL } from "@/lib/site";
 import { UpcomingEntries } from "./UpcomingEntries";
 import { HeadToHead } from "./HeadToHead";
 import { CrossRaceCard } from "./CrossRaceCard";
+import { LegFingerprintCard, loadLegFingerprint } from "./LegFingerprintCard";
 
 interface Props {
   summary: AthleteSummary;
@@ -138,6 +139,9 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
         </DeferUntilVisible>
       )}
       <CrossRaceCard name={profile.name} />
+      <DeferUntilVisible minHeight={280}>
+        <LegFingerprintCard name={profile.name} />
+      </DeferUntilVisible>
       <RecentEvents profile={profile} lcData={lcData} />
       {/* key で選手切替時に相手選択をリセット */}
       <HeadToHead
@@ -762,6 +766,33 @@ function valOpacity(value: number, min: number, max: number): number {
 function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profile: AthleteProfile }) {
   const [chartRange, setChartRange] = useState<ChartRange>("2y");
 
+  // 信頼度加重トレンド用のレース重み（leg-fingerprint artifact・(種目, 日付) で照合。
+  // 同日複数レースは max(w)・artifact に無いレースは theilSenTrend 側で中央値補完＝reliable 扱い）
+  const [fpWeights, setFpWeights] = useState<{
+    f: Map<string, { w: number; r: 0 | 1 }>;
+    s: Map<string, { w: number; r: 0 | 1 }>;
+  } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    loadLegFingerprint().then((idx) => {
+      if (cancelled || !idx) return;
+      const a = idx.athletes[profile.name];
+      if (!a) return;
+      const toMap = (list?: { d: string; w: number; r: 0 | 1 }[]) => {
+        const m = new Map<string, { w: number; r: 0 | 1 }>();
+        for (const e of list ?? []) {
+          const cur = m.get(e.d);
+          if (!cur || e.w > cur.w) m.set(e.d, { w: e.w, r: e.r });
+        }
+        return m;
+      };
+      setFpWeights({ f: toMap(a.fr), s: toMap(a.sr) });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.name]);
+
   const { chartData, hasForest, hasSprint, forestCount, sprintCount, speedMin, speedMax, missMin, missMax } = useMemo(() => {
     // JOYランキングからイベント情報を収集: date → [{type, name}]
     const joyByDate = new Map<string, Array<{ type: "forest" | "sprint"; name: string }>>();
@@ -827,15 +858,35 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
     const speeds = sorted.flatMap((d) => [d.fSpeed, d.sSpeed].filter((v): v is number => v != null));
     const misses = sorted.flatMap((d) => [d.fMiss, d.sMiss].filter((v): v is number => v != null));
 
-    // トレンド線: Theil–Sen（頑健回帰・レース順ベース）。5点未満は直線を描かない
+    // トレンド線: Theil–Sen（頑健回帰・レース順ベース）。5点未満は直線を描かない。
+    // 重み artifact があれば信頼度加重（方法論 §154: w=クリーンレッグ数×min(出走規模,20)）。
+    // reliable（クリーンレッグ≥6かつ規模≥5）と判定できたレースが5本未満なら線を抑制する
+    // （artifact に無いレースは reliable 扱い＝メタデータ欠測で既存表示を退行させない）。
     const fSpeedArr = sorted.map((d) => d.fSpeed);
     const sSpeedArr = sorted.map((d) => d.sSpeed);
     const fMissArr = sorted.map((d) => d.fMiss);
     const sMissArr = sorted.map((d) => d.sMiss);
-    const fSpeedMa = theilSenTrend(fSpeedArr);
-    const sSpeedMa = theilSenTrend(sSpeedArr);
-    const fMissMa = theilSenTrend(fMissArr);
-    const sMissMa = theilSenTrend(sMissArr);
+    const mkWeights = (
+      values: (number | undefined)[],
+      map: Map<string, { w: number; r: 0 | 1 }> | undefined
+    ): { arr: (number | undefined)[] | undefined; minPoints: number } => {
+      if (!map || map.size === 0) return { arr: undefined, minPoints: 5 };
+      const arr = sorted.map((d, i) => (values[i] != null ? map.get(d.date)?.w : undefined));
+      let unreliable = 0;
+      let shown = 0;
+      sorted.forEach((d, i) => {
+        if (values[i] == null) return;
+        shown++;
+        if (map.get(d.date)?.r === 0) unreliable++;
+      });
+      return { arr, minPoints: shown - unreliable >= 5 ? 5 : Infinity };
+    };
+    const fW = mkWeights(fSpeedArr, fpWeights?.f);
+    const sW = mkWeights(sSpeedArr, fpWeights?.s);
+    const fSpeedMa = theilSenTrend(fSpeedArr, fW.minPoints, fW.arr);
+    const sSpeedMa = theilSenTrend(sSpeedArr, sW.minPoints, sW.arr);
+    const fMissMa = theilSenTrend(fMissArr, fW.minPoints, fW.arr);
+    const sMissMa = theilSenTrend(sMissArr, sW.minPoints, sW.arr);
 
     const withMa = sorted.map((d, i) => ({
       ...d,
@@ -856,7 +907,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
       missMin: misses.length > 0 ? Math.min(...misses) : 0,
       missMax: misses.length > 0 ? Math.max(...misses) : 100,
     };
-  }, [data, chartRange]);
+  }, [data, chartRange, fpWeights, profile.rankings]);
 
   if (chartData.length < 2) return null;
 
@@ -1134,7 +1185,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
         </ResponsiveContainer>
       </div>
       <p className="mt-2 text-[9px] text-muted">
-        破線＝トレンド（Theil–Sen 頑健回帰・レース順ベース・5レース以上で表示）
+        破線＝トレンド（Theil–Sen 頑健回帰・レース順ベース・信頼度加重〔クリーンレッグ数×出走規模・データある場合〕・信頼できるレース5本以上で表示）
       </p>
     </div>
   );

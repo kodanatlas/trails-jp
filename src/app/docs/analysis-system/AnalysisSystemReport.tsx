@@ -595,6 +595,17 @@ export function AnalysisSystemReport({
               </div>
             </div>
             <div className="dec">
+              <div className="k">MISS-TREND ｜ ミスの傾向（クロスレース）</div>
+              <div className="v">
+                局面×レッグ長の <span className="hl">並べ替え検定</span>＋FDR
+              </div>
+              <div className="why">
+                全レースのレッグ別ミス（想定タイム30%超の規約判定・集団走疑いは除外）を局面3×レッグ長3のセルに集計し、
+                レース内のミス総数を固定した並べ替え帰無分布（日次調子・レース内相関を保存）に対する検定＋BH-FDR（q=0.10）で
+                「偏って多い場所」だけをフラグ。トレンド線はクリーンレッグ数×出走規模の信頼度加重 Theil–Sen。
+              </div>
+            </div>
+            <div className="dec">
               <div className="k">LEG-IMPACT ｜ 順位が動いたレッグ</div>
               <div className="v">
                 通過順位の <span className="hl">平均変動</span>＋ミス残差連動（副）
