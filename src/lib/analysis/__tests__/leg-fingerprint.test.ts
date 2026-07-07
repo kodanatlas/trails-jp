@@ -3,6 +3,7 @@ import {
   parseStartSec,
   classifyMiss,
   detectPackLegs,
+  detectHomonymKeys,
   bhFdr,
   mhLag1,
   mulberry32,
@@ -137,7 +138,7 @@ function mkRace(
   date: string,
   type: "forest" | "sprint",
   legs: { lap: number; loss: number }[],
-  opts: { eventName?: string; start?: string | null } = {}
+  opts: { eventName?: string; start?: string | null; speed?: number; club?: string | null } = {}
 ): TrackedLegRow {
   const eid = eidSeq++;
   const laps = legs.map((l) => l.lap);
@@ -153,8 +154,9 @@ function mkRace(
     event_name: opts.eventName ?? `大会${eid}`,
     class_name: "M21",
     race_type: type,
+    club: opts.club === undefined ? "テストクラブ" : opts.club,
     rank: 3,
-    speed: 100,
+    speed: opts.speed ?? 100,
     start_time: opts.start === undefined ? "10:00:00" : opts.start,
     lap_sec: laps,
     leg_loss_sec: legs.map((l) => l.loss),
@@ -264,5 +266,105 @@ describe("buildLegFingerprintIndex", () => {
     const r1 = mulberry32(42);
     const r2 = mulberry32(42);
     expect([r1(), r1(), r1()]).toEqual([r2(), r2(), r2()]);
+  });
+});
+
+// ---- Stage 2c ----
+
+describe("detectHomonymKeys / 同姓同名除外（物理矛盾＋クラブ相違）", () => {
+  it("(i) 同一クラスにクラブ相違の ranked 2行で検出・同クラブ（練習会の再走）は非検出", () => {
+    const a = mkRace("重複太郎", "2026-01-01", "forest", legsWithMisses([3]), { club: "クラブA" });
+    const b = mkRace("重複太郎", "2026-01-01", "forest", legsWithMisses([5]), { club: "クラブB" });
+    b.lc_event_id = a.lc_event_id; // 同一大会・同一クラスに揃える
+    expect(detectHomonymKeys([a, b]).has("重複太郎")).toBe(true);
+    // 同クラブ（再走）・クラブ包含（松塾/松塾2回目）・クラブ欠落は非検出
+    const c = mkRace("再走次郎", "2026-01-02", "forest", legsWithMisses([3]), { club: "松塾" });
+    const d = mkRace("再走次郎", "2026-01-02", "forest", legsWithMisses([5]), { club: "松塾2回目" });
+    d.lc_event_id = c.lc_event_id;
+    expect(detectHomonymKeys([c, d]).has("再走次郎")).toBe(false);
+    const e = mkRace("無所属三郎", "2026-01-03", "forest", legsWithMisses([3]), { club: null });
+    const f = mkRace("無所属三郎", "2026-01-03", "forest", legsWithMisses([5]), { club: null });
+    f.lc_event_id = e.lc_event_id;
+    expect(detectHomonymKeys([e, f]).has("無所属三郎")).toBe(false);
+  });
+  it("(ii) 同日別大会の時間重複＋クラブ相違で検出・順次出走や重複掲載は非検出", () => {
+    // 各レース ~18レッグ×100s+ ≈ 30分強
+    const r1 = mkRace("同時二郎", "2026-02-01", "forest", legsWithMisses([3]), { start: "10:00:00", club: "クラブA" });
+    const r2 = mkRace("同時二郎", "2026-02-01", "forest", legsWithMisses([4]), { start: "10:10:00", club: "クラブB" });
+    expect(detectHomonymKeys([r1, r2]).has("同時二郎")).toBe(true);
+    // 順次出走（重複なし）
+    const s1 = mkRace("順次三郎", "2026-02-02", "forest", legsWithMisses([3]), { start: "10:00:00", club: "クラブA" });
+    const s2 = mkRace("順次三郎", "2026-02-02", "forest", legsWithMisses([4]), { start: "13:00:00", club: "クラブB" });
+    expect(detectHomonymKeys([s1, s2]).has("順次三郎")).toBe(false);
+    // 重複掲載（開始・終了ほぼ同時刻）はクラブ相違でも非検出
+    const p1 = mkRace("掲載四郎", "2026-02-03", "forest", legsWithMisses([3]), { start: "10:00:00", club: "クラブA" });
+    const p2 = mkRace("掲載四郎", "2026-02-03", "forest", legsWithMisses([3]), { start: "10:00:30", club: "クラブB" });
+    expect(detectHomonymKeys([p1, p2]).has("掲載四郎")).toBe(false);
+  });
+  it("検出された名前は index から丸ごと消え homonymExcluded に計上される", () => {
+    const dup1 = mkRace("重複太郎", "2026-01-01", "forest", legsWithMisses([3]), { club: "クラブA" });
+    const dup2 = mkRace("重複太郎", "2026-01-01", "forest", legsWithMisses([5]), { club: "クラブB" });
+    dup2.lc_event_id = dup1.lc_event_id;
+    const clean = Array.from({ length: 5 }, (_, r) =>
+      mkRace("健全四郎", `2026-03-0${r + 1}`, "forest", legsWithMisses([3, 13]))
+    );
+    const idx = buildLegFingerprintIndex([dup1, dup2, ...clean], []);
+    expect(idx.athletes["重複太郎"]).toBeUndefined();
+    expect(idx.homonymExcluded).toBe(1);
+    expect(idx.athletes["健全四郎"]?.fr?.length).toBe(5);
+  });
+});
+
+describe("フォーク形式クラスの名前除外（構造検出は評価の上棄却）", () => {
+  it("バタフライ/farsta 系イベントは対象外", () => {
+    for (const name of ["バタフライ練習会", "Farsta形式スプリント"]) {
+      const tracked = Array.from({ length: 6 }, (_, r) =>
+        mkRace("フォーク五郎", `2026-01-0${r + 1}`, "forest", legsWithMisses([3]), { eventName: name })
+      );
+      expect(buildLegFingerprintIndex(tracked, []).athletes["フォーク五郎"]).toBeUndefined();
+    }
+  });
+});
+
+describe("コホート帯基準（記述比較）", () => {
+  it("速い帯ほどミス率が低い norms が出て band が割り当たる", () => {
+    const tracked: TrackedLegRow[] = [];
+    // 速い10人（speed 100・1ミス/レース）と遅い10人（speed 150・5ミス/レース）× 各6レース
+    for (let a = 0; a < 10; a++) {
+      for (let r = 0; r < 6; r++) {
+        tracked.push(
+          mkRace(`速手${a}`, `2026-0${(r % 6) + 1}-10`, "forest", legsWithMisses([(a + r) % 18]), { speed: 100 })
+        );
+        tracked.push(
+          mkRace(
+            `遅手${a}`,
+            `2026-0${(r % 6) + 1}-11`,
+            "forest",
+            legsWithMisses([0, 4, 8, 12, 16].map((p) => (p + a + r) % 18)),
+            { speed: 150 }
+          )
+        );
+      }
+    }
+    const idx = buildLegFingerprintIndex(tracked, [], { cohortBands: { forest: 2, sprint: 2 } });
+    const norms = idx.cohorts?.f;
+    expect(norms).toBeDefined();
+    expect(norms!.bands.length).toBe(2);
+    expect(norms!.bands[0].athletes).toBe(10);
+    const rate = (b: number) => {
+      const [n, m] = norms!.bands[b].cells.reduce((acc, c) => [acc[0] + c[0], acc[1] + c[1]], [0, 0]);
+      return m / n;
+    };
+    expect(rate(0)).toBeLessThan(rate(1)); // 速い帯（band 0）の方が低ミス率
+    expect(idx.athletes["速手0"]?.f?.band).toBe(0);
+    expect(idx.athletes["遅手0"]?.f?.band).toBe(1);
+  });
+  it("掲載選手が帯あたり10人未満なら cohorts を出さない", () => {
+    const tracked = Array.from({ length: 6 }, (_, r) =>
+      mkRace("単独六郎", `2026-01-0${r + 1}`, "forest", legsWithMisses([3, 13]))
+    );
+    const idx = buildLegFingerprintIndex(tracked, []);
+    expect(idx.cohorts?.f).toBeUndefined();
+    expect(idx.athletes["単独六郎"]?.f?.band).toBeUndefined();
   });
 });

@@ -12,6 +12,7 @@ import * as fs from "fs";
 import * as path from "path";
 import {
   buildLegFingerprintIndex,
+  detectHomonymKeys,
   type TrackedLegRow,
   type CompanionRow,
   type LegFingerprintIndex,
@@ -95,7 +96,7 @@ async function main() {
     console.log("tracked 行を取得中...");
     tracked = await fetchAll<TrackedLegRow>(
       token,
-      "runner_key,event_date,event_name,class_name,race_type,rank,speed,start_time,lap_sec,leg_loss_sec,leg_speed,elapsed_sec,lc_event_id,lc_class_id",
+      "runner_key,event_date,event_name,class_name,club,race_type,rank,speed,start_time,lap_sec,leg_loss_sec,leg_speed,elapsed_sec,lc_event_id,lc_class_id",
       "tracked = true"
     );
     console.log("companion 行を取得中...");
@@ -132,9 +133,47 @@ async function main() {
   }
   console.log(`除染 ON/OFF フラグ一致率: ${((agree / total) * 100).toFixed(1)}% (${total} セル)`);
 
+  // Stage 2c: 同姓同名検出の内訳（signal 別・名前の目視・集中度）
+  const homonyms = detectHomonymKeys(tracked);
+  const classCounts = new Map<string, Map<string, number>>();
+  for (const r of tracked) {
+    if (r.rank == null) continue;
+    const byClass = classCounts.get(r.runner_key) ?? new Map<string, number>();
+    const ck = `${r.lc_event_id}:${r.lc_class_id}`;
+    byClass.set(ck, (byClass.get(ck) ?? 0) + 1);
+    classCounts.set(r.runner_key, byClass);
+  }
+  const sig1 = [...homonyms].filter((k) =>
+    [...(classCounts.get(k)?.values() ?? [])].some((c) => c >= 2)
+  );
+  console.log(`\n同姓同名検出: 計 ${homonyms.size} 名（signal(i)同クラス重複 ${sig1.length} / signal(ii)同日時間重複 ${homonyms.size - sig1.length}）`);
+  const raceCount = new Map<string, number>();
+  for (const r of tracked) {
+    if (homonyms.has(r.runner_key)) raceCount.set(r.runner_key, (raceCount.get(r.runner_key) ?? 0) + 1);
+  }
+  console.log(
+    "検出名（目視用・レース行数付き）:",
+    [...raceCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 30).map(([k, c]) => `${k}(${c})`).join(" ")
+  );
+
+  // Stage 2c: コホート帯 norms の単調性
+  for (const disc of ["f", "s"] as const) {
+    const n = idx.cohorts?.[disc];
+    if (!n) continue;
+    const line = n.bands
+      .map((b, i) => {
+        const [nn, mm] = b.cells.reduce((acc, c) => [acc[0] + c[0], acc[1] + c[1]], [0, 0]);
+        const minCell = Math.min(...b.cells.map((c) => c[0]));
+        return `帯${i + 1}: ${b.athletes}人/${nn}レッグ/ミス率${((mm / nn) * 100).toFixed(1)}%/最小セルn=${minCell}`;
+      })
+      .join("  ");
+    console.log(`[cohort ${disc}] cuts=${n.cuts.join(",")}  ${line}`);
+  }
+
   // face validity
   for (const name of ["児玉健", "平岡丈"]) {
-    console.log(`\n${name}:`, JSON.stringify(idx.athletes[name] ?? "（未掲載）").slice(0, 600));
+    const a = idx.athletes[name];
+    console.log(`\n${name}: band(f)=${a?.f?.band ?? "-"} band(s)=${a?.s?.band ?? "-"}`, JSON.stringify(a?.f?.cells ?? "（未掲載）").slice(0, 300));
   }
 
   // artifact
