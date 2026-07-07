@@ -1,7 +1,8 @@
 # Stage 2c: コホート帯基準＋フォーク検出評価＋同姓同名除外
 
 - 作成: 2026-07-07 JST
-- ステータス: 実装完了（本番確認は PR マージ後に追記）
+- ステータス: **完了**（PR #37 squash マージ・2026-07-08 00:15 JST 本番反映＝artifact に cohorts/homonymExcluded=1 出現を確認）
+- 未処理の残骸: `scripts/tmp-nulfix.sh`・`scripts/tmp-homonym-probe.sh`（untracked の一時検証スクリプト・削除可）
 - 前段: `2026-07-07_stage2b_miss_fingerprint.md`／ユーザー要望「同姓同名の合算防止＋UI 断り書き削除」を包含
 
 ## 実データ圧力テストが設計を2度書き換えた（要点）
