@@ -167,6 +167,189 @@ function SystemMap() {
   );
 }
 
+/* ---- 分析ロジックの図解（inline SVG・テーマ変数で配色） ---- */
+
+/** 集団走の除染: 2走者の通過時刻タイムライン。連続で近接した区間を除外として赤で示す。 */
+function PackDiagram() {
+  const selfX = [72, 138, 206, 268, 330, 396, 462, 556];
+  const otherX = [98, 164, 228, 274, 336, 402, 468, 508];
+  const packFrom = 3;
+  const packTo = 6; // 通過時刻が近接する連続コントロール
+  const yS = 74;
+  const yO = 142;
+  const shadeX0 = Math.min(selfX[packFrom], otherX[packFrom]) - 14;
+  const shadeX1 = Math.max(selfX[packTo], otherX[packTo]) + 14;
+  return (
+    <svg viewBox="0 0 620 214" role="img" aria-label="集団走の除染の図解">
+      <rect
+        x={shadeX0}
+        y={44}
+        width={shadeX1 - shadeX0}
+        height={128}
+        rx={10}
+        fill="var(--pink)"
+        fillOpacity={0.1}
+        stroke="var(--pink)"
+        strokeOpacity={0.6}
+        strokeDasharray="5 4"
+      />
+      <text x={(shadeX0 + shadeX1) / 2} y={36} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--pink)">
+        通過時刻が連続で近い → 集団走の疑い（このレッグ群を除外）
+      </text>
+      <line x1={58} y1={yS} x2={582} y2={yS} stroke="var(--line)" />
+      <line x1={58} y1={yO} x2={582} y2={yO} stroke="var(--line)" />
+      <text x={50} y={yS + 4} textAnchor="end" fontSize="12" fontWeight="700" fill="var(--green)">
+        自分
+      </text>
+      <text x={50} y={yO + 4} textAnchor="end" fontSize="12" fontWeight="700" fill="var(--cyan)">
+        相手
+      </text>
+      {selfX.map((sx, i) => {
+        const inPack = i >= packFrom && i <= packTo;
+        return (
+          <g key={i}>
+            <line
+              x1={sx}
+              y1={yS}
+              x2={otherX[i]}
+              y2={yO}
+              stroke={inPack ? "var(--pink)" : "var(--line)"}
+              strokeWidth={inPack ? 2 : 1}
+            />
+            <circle cx={sx} cy={yS} r={5} fill="var(--green)" />
+            <circle cx={otherX[i]} cy={yO} r={5} fill="var(--cyan)" />
+          </g>
+        );
+      })}
+      <text x={64} y={yO + 24} fontSize="10.5" fill="var(--muted)">
+        スタート
+      </text>
+      <text x={576} y={yO + 24} textAnchor="end" fontSize="10.5" fill="var(--muted)">
+        フィニッシュ
+      </text>
+      <text x={320} y={206} textAnchor="middle" fontSize="10.5" fill="var(--dim)">
+        縦に揃う＝同じ時刻に通過＝一緒に走っている
+      </text>
+    </svg>
+  );
+}
+
+/** 局面×レッグ長: 3×3 のミス率ヒートマップ。偏って多いセルを赤フラグ。 */
+function CellGrid() {
+  const vals = [
+    [8, 11, 15],
+    [9, 13, 19],
+    [7, 12, 27],
+  ];
+  const phases = ["序盤", "中盤", "終盤"];
+  const lengths = ["短", "中", "長"];
+  const x0 = 104;
+  const y0 = 30;
+  const c = 74;
+  const flagR = 2;
+  const flagC = 2;
+  return (
+    <svg viewBox="0 0 400 300" role="img" aria-label="局面とレッグ長の3×3セルの図解">
+      <text x={18} y={y0 + 6} fontSize="11.5" fontWeight="700" fill="var(--muted)">
+        局面
+      </text>
+      <text x={26} y={y0 + 22} fontSize="12" fill="var(--dim)">
+        ↓
+      </text>
+      {vals.map((row, r) =>
+        row.map((v, col) => {
+          const t = (v - 7) / 22;
+          const isFlag = r === flagR && col === flagC;
+          const x = x0 + col * c;
+          const y = y0 + r * c;
+          const s = c - 6;
+          return (
+            <g key={`${r}-${col}`}>
+              <rect
+                x={x}
+                y={y}
+                width={s}
+                height={s}
+                rx={8}
+                fill="var(--pink)"
+                fillOpacity={0.05 + t * 0.34}
+                stroke={isFlag ? "var(--pink)" : "var(--line)"}
+                strokeWidth={isFlag ? 2.5 : 1}
+              />
+              <text x={x + s / 2} y={y + s / 2 + 5} textAnchor="middle" fontSize="15" fontWeight="700" fill="var(--ink)">
+                {v}%
+              </text>
+              {isFlag && (
+                <text x={x + s / 2} y={y + 17} textAnchor="middle" fontSize="9.5" fontWeight="700" fill="var(--pink)">
+                  ▲ 偏り
+                </text>
+              )}
+            </g>
+          );
+        }),
+      )}
+      {phases.map((p, r) => (
+        <text key={p} x={x0 - 10} y={y0 + r * c + (c - 6) / 2 + 4} textAnchor="end" fontSize="11.5" fill="var(--muted)">
+          {p}
+        </text>
+      ))}
+      {lengths.map((l, col) => (
+        <text key={l} x={x0 + col * c + (c - 6) / 2} y={y0 + 3 * c + 6} textAnchor="middle" fontSize="11.5" fill="var(--muted)">
+          {l}
+        </text>
+      ))}
+      <text x={x0 + 1.5 * c - 3} y={y0 + 3 * c + 28} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--dim)">
+        レッグ長（＝所要時間・距離ではない）→
+      </text>
+    </svg>
+  );
+}
+
+/** z-score 補正: 生ポイント差(右=Sprint偏り) → 補正後(中央に均衡) の before/after 分布。 */
+function LeanShift() {
+  const cx = 320;
+  const x0 = 140;
+  const x1 = 500;
+  const topOff = [-42, -24, -10, 3, 8, 12, 16, 20, 24, 28, 33, 38, 44, 51, 59, 68, 79, 92, 106, 118, -54, -16];
+  const botOff = [-60, -48, -37, -28, -20, -13, -7, -2, 3, 9, 15, 22, 30, 39, 49, 60, -10, 6, -24, 20, -36, 42];
+  const dot = (off: number, y: number, i: number) => (
+    <circle key={`${y}-${i}`} cx={cx + off * 1.5} cy={y} r={3.6} fill={off < 0 ? "var(--green)" : "var(--cyan)"} fillOpacity={0.85} />
+  );
+  return (
+    <svg viewBox="0 0 620 214" role="img" aria-label="z-score補正の前後の図解">
+      <line x1={cx} y1={30} x2={cx} y2={182} stroke="var(--line)" strokeDasharray="4 4" />
+      <text x={cx} y={22} textAnchor="middle" fontSize="10" fill="var(--dim)">
+        同等
+      </text>
+      <line x1={x0} y1={70} x2={x1} y2={70} stroke="var(--line)" />
+      <line x1={x0} y1={150} x2={x1} y2={150} stroke="var(--line)" />
+      <text x={x0} y={52} fontSize="11.5" fontWeight="700" fill="var(--muted)">
+        ① 生ポイント差
+      </text>
+      <text x={x0} y={132} fontSize="11.5" fontWeight="700" fill="var(--muted)">
+        ② z-score 補正後
+      </text>
+      {topOff.map((o, i) => dot(o, 70, i))}
+      {botOff.map((o, i) => dot(o, 150, i))}
+      <text x={x1 + 6} y={73} fontSize="10.5" fontWeight="700" fill="var(--pink)">
+        77% がSprint側
+      </text>
+      <text x={x1 + 6} y={153} fontSize="10.5" fontWeight="700" fill="var(--green)">
+        53 / 47 均衡
+      </text>
+      <text x={x0 - 6} y={196} fontSize="10.5" fill="var(--green)">
+        ◀ Forest寄り
+      </text>
+      <text x={x1} y={196} textAnchor="end" fontSize="10.5" fill="var(--cyan)">
+        Sprint寄り ▶
+      </text>
+      <text x={cx} y={208} textAnchor="middle" fontSize="10.5" fill="var(--dim)">
+        スプリントは母集団平均が約0.4σ高い → 母集団で正規化して補正
+      </text>
+    </svg>
+  );
+}
+
 export function AnalysisSystemReport({
   buildDate,
   stats,
@@ -554,7 +737,15 @@ export function AnalysisSystemReport({
               </div>
               <div className="why">
                 スコア体系の違いを母集団で正規化し差で判定（閾値 0.3＝±0.3σ・規約値）→ forester / sprinter /
-                allrounder。
+                allrounder。選手ページの Forest／Sprint 寄りバーも同じ z-score 差で位置を決める。
+              </div>
+            </div>
+            <div className="dec fig" id="lean" style={{ scrollMarginTop: "80px" }}>
+              <div className="k">LEAN ｜ Forest／Sprint 寄りの補正</div>
+              <LeanShift />
+              <div className="cap">
+                スプリントはランキング点の母集団平均が <b>約 0.4σ 高い</b>ため、生の得点差だと <b>8 割近くが Sprint 寄り</b>に偏ってしまう。
+                各種目を母集団で <b>z-score 正規化</b>してから差を取ると偏りが消え、選手ページの寄りバー位置もこの補正値を使う。
               </div>
             </div>
             <div className="dec" id="trend" style={{ scrollMarginTop: "80px" }}>
@@ -599,6 +790,35 @@ export function AnalysisSystemReport({
                 レース内のミス総数を固定した並べ替え帰無分布（日次調子・レース内相関を保存）に対する検定＋BH-FDR（q=0.10）で
                 「偏って多い場所」だけをフラグ。巡航速度が近い帯（forest 5分位/sprint 3分位）の平均との記述比較も併記。
                 トレンド線はクリーンレッグ数×出走規模の信頼度加重 Theil–Sen。
+              </div>
+            </div>
+            <div className="dec" id="miss-def" style={{ scrollMarginTop: "80px" }}>
+              <div className="k">MISS ｜ ミス判定</div>
+              <div className="v">
+                ロスが想定タイムの <span className="hl">30%超</span>（絶対下限つき）
+              </div>
+              <div className="why">
+                各レッグの超過ロスが「想定タイム（ラップ − ロス）× 0.30」と「絶対下限 forest 10秒／sprint 5秒」の大きい方以上で 1 ミス。
+                0.30 は日常ばらつき（中央値 6–8%）の 4–5 倍の規約値。地形・安全ルート・集団走のロスも含みうるためナビミスとは断定しない。
+              </div>
+            </div>
+            <div className="dec fig grid" id="cell-def" style={{ scrollMarginTop: "80px" }}>
+              <div className="k">CELL ｜ 局面 × レッグ長（ミス率ヒートマップ）</div>
+              <CellGrid />
+              <div className="cap">
+                レース内のレッグを <b>局面（序盤／中盤／終盤）</b> × <b>レッグ長</b> の 9 セルに層別してミス率を集計。
+                レッグ長は <b>所要時間（上位3名平均スプリット Ave3）のレース内3分位</b>＝距離ではなく同一大会内の相対区分。
+                並べ替え検定＋FDR で「偏って多いセル」だけを赤フラグにする。
+              </div>
+            </div>
+            <div className="dec fig" id="pack" style={{ scrollMarginTop: "80px" }}>
+              <div className="k">PACK ｜ 集団走の除染</div>
+              <PackDiagram />
+              <div className="cap">
+                同一コース（同大会×同クラス）の他走者と各コントロールの <b>通過時計時刻（スタート＋累積タイム）</b> を突合。
+                差が <b>forest 15秒／sprint 10秒以内で 3 レッグ以上連続</b> した区間を集団走とみなし、その内側のレッグをミス集計から除外する
+                （フォロワーの区間タイムは自分のナビ力を反映しないため）。リーダー／フォロワーは識別せず両者除外＝標本が減るだけで偏りは作らない。
+                除外がレースの 50% 超ならレース自体を不採用、スタート時刻不明は「未チェック」。時刻近接に基づく推定のため「疑い」表記。
               </div>
             </div>
             <div className="dec">
