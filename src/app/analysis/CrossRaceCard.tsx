@@ -44,7 +44,7 @@ function DisciplineRow({
         </p>
       </div>
       <p className="mt-2 text-sm">
-        ミス率（中央値）<span className="font-mono font-bold">{entry.miss}%</span>
+        レース毎ミス率の中央値 <span className="font-mono font-bold">{entry.miss}%</span>
         <span className="text-muted"> ／ 同水準の巡航速度指標帯の期待値 {entry.exp}%</span>
       </p>
       <p className={`mt-0.5 text-sm font-bold ${better ? "text-green-400" : worse ? "text-red-400" : ""}`}>
@@ -125,11 +125,9 @@ export function CrossRaceCard({ name }: { name: string }) {
         )}
       </div>
       <p className="mt-3 text-[10px] leading-relaxed text-muted">
-        対象は JOY ランキング掲載選手のうち LapCenter 取込レースが5レース以上ある選手のみ（全選手・全大会を網羅しません）。
-        「巡航速度指標」は出走クラス上位3基準の相対値の中央値で、クラスをまたぐ絶対走力の比較ではありません。
-        期待値は種目内の選手横断 Theil–Sen 回帰（一次近似・分布の端では適合が粗くなります）。
-        数値は LapCenter 算出値の集計で、当サイトでの再計算はしていません。
-        スプリントは1レースあたりのミス率のばらつきが大きめです。
+        期待値＝同じ巡航速度指標の選手が平均的に出すミス率（LapCenter 取込5レース以上の選手が対象・数値は
+        LapCenter 算出値の集計）。「巡航速度指標」は出走クラス相対の値で、絶対走力の比較ではありません。
+        <a href="/docs/analysis-system" className="underline hover:text-foreground">算出方法の詳細</a>
       </p>
     </div>
   );
