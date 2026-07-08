@@ -37,6 +37,9 @@ export interface FingerprintParams {
   cohortBands: { forest: number; sprint: number };
   /** 同姓同名判定: 同日の走行時間帯がこれ以上重複した別レースの存在で別人混在とみなす */
   homonymOverlapSec: number;
+  /** 期間比較（Stage 2d）を表示する各期間の最小レース数・最小レッグ数 */
+  periodMinRaces: number;
+  periodMinLegs: number;
 }
 
 export const DEFAULT_PARAMS: FingerprintParams = {
@@ -59,6 +62,8 @@ export const DEFAULT_PARAMS: FingerprintParams = {
   sevBins: { forest: [30, 90], sprint: [15, 45] },
   cohortBands: { forest: 5, sprint: 3 },
   homonymOverlapSec: 300,
+  periodMinRaces: 3,
+  periodMinLegs: 30,
 };
 
 /**
@@ -124,6 +129,19 @@ export interface DisciplineFingerprint {
   lag1: { n1: number; n0: number; rr: number } | null;
   /** 所属コホート帯 index（cohorts[disc].bands の添字）。Stage 2c 追加のためオプショナル */
   band?: number;
+  /**
+   * 直近期間 vs それ以前の**未調整の観測ミス率**（記述のみ・検定なし・Stage 2d）。
+   * 両期間が表示ゲート（periodMinRaces/periodMinLegs）を満たすときだけ set される。
+   * コース難度・季節・クラスを分離していないため上達/悪化の判定には使えない（表示側で明記）。
+   */
+  periods?: { recent: PeriodStat; older: PeriodStat };
+}
+
+/** 期間別の未調整観測値。races=採用レース数, n=有効レッグ数, m=ミスレッグ数 */
+export interface PeriodStat {
+  races: number;
+  n: number;
+  m: number;
 }
 
 export interface AthleteFingerprint {
@@ -155,6 +173,8 @@ export interface LegFingerprintIndex {
   cohorts?: { f?: CohortNorms; s?: CohortNorms };
   /** Stage 2c: 同姓同名（物理的重複）検出で集計除外した名前の数 */
   homonymExcluded?: number;
+  /** Stage 2d: 期間比較の境界日（ISO・"recent" は event_date ≥ この日）。未指定なら期間比較なし */
+  periodCutoff?: string;
 }
 
 /** "HH:MM:SS" / "HH:MM" → 秒。不正・空は null */
@@ -404,9 +424,10 @@ function lagStratum(miss: boolean[], adjNext: boolean[]): { a: number; n1: numbe
 export function buildLegFingerprintIndex(
   tracked: TrackedLegRow[],
   companions: CompanionRow[],
-  opts: Partial<FingerprintParams> = {}
+  opts: Partial<FingerprintParams> & { periodCutoff?: string } = {}
 ): LegFingerprintIndex {
-  const P: FingerprintParams = { ...DEFAULT_PARAMS, ...opts };
+  const { periodCutoff, ...paramOverrides } = opts;
+  const P: FingerprintParams = { ...DEFAULT_PARAMS, ...paramOverrides };
 
   // クラス → 境界時計列（tracked 行も companion を兼ねる）。identity は参照で除外する
   const classClocks = new Map<string, { ref: unknown; clock: (number | null)[] }[]>();
@@ -645,6 +666,29 @@ export function buildLegFingerprintIndex(
         ? { n1, n0, rr: round3(rrObs) }
         : null;
 
+    // 期間比較（Stage 2d・未調整の観測値・検定なし）: 採用レースを cutoff で二分し、
+    // 両期間が表示ゲート（periodMinRaces/periodMinLegs）を満たすときだけ全体ミス率を出す。
+    // セル別には割らない（薄い n で「どのセルが直った」と誤読させないため・Codex レビュー反映）。
+    let periods: { recent: PeriodStat; older: PeriodStat } | undefined;
+    if (periodCutoff) {
+      const stat = (pred: (d: string) => boolean): PeriodStat => {
+        let races2 = 0;
+        let n = 0;
+        let mm = 0;
+        for (const race of races) {
+          if (!pred(race.date)) continue;
+          races2++;
+          n += race.miss.length;
+          mm += race.miss.filter(Boolean).length;
+        }
+        return { races: races2, n, m: mm };
+      };
+      const recent = stat((d) => d >= periodCutoff);
+      const older = stat((d) => d < periodCutoff);
+      const ok = (s: PeriodStat) => s.races >= P.periodMinRaces && s.n >= P.periodMinLegs;
+      if (ok(recent) && ok(older)) periods = { recent, older };
+    }
+
     const fp: DisciplineFingerprint = {
       races: m.races,
       racesUsed: races.length,
@@ -656,6 +700,7 @@ export function buildLegFingerprintIndex(
       sev,
       sevMedRho,
       lag1,
+      ...(periods ? { periods } : {}),
     };
     if (disc === "f") ensure(name).f = fp;
     else ensure(name).s = fp;
@@ -697,5 +742,13 @@ export function buildLegFingerprintIndex(
     cohorts[disc] = { cuts, bands };
   }
 
-  return { v: 1, generatedAt: null, params: P, athletes, cohorts, homonymExcluded: homonyms.size };
+  return {
+    v: 1,
+    generatedAt: null,
+    params: P,
+    athletes,
+    cohorts,
+    homonymExcluded: homonyms.size,
+    ...(periodCutoff ? { periodCutoff } : {}),
+  };
 }
