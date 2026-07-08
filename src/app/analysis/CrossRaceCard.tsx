@@ -72,11 +72,12 @@ function DisciplineRow({
       </p>
       {(() => {
         // 1行解釈（参考・断定しない）: 中央値の帯位置 × 大崩れ頻度（構成上の期待=25%）の組合せ。
-        // n が小さいと頻度の解釈自体が不安定なので n>=8 のときだけ出す
+        // 高頻度側の閾値 0.35（期待の1.4倍）は規約値。n が小さいと頻度の解釈自体が不安定なので
+        // 高頻度側は n>=12・安定側は n>=8 のときだけ出す
         if (entry.n < 8) return null;
         const blowRate = entry.blow / entry.n;
         let text: string | null = null;
-        if (blowRate >= 0.4) {
+        if (blowRate >= 0.35 && entry.n >= 12) {
           text = neutral
             ? "読み方: ミスの中央値は同水準帯なみですが、大きく崩れるレースの割合が高め＝平均型というより「ムラ型」の出方です（参考）"
             : better
