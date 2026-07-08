@@ -2,16 +2,15 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Swords, Search, X, Loader2, ExternalLink, ChevronDown } from "lucide-react";
-import type {
-  AthleteIndex,
-  AthleteSummary,
-  AthleteProfile,
-  EventScore,
-  RankingAppearance,
-} from "@/lib/analysis/types";
+import type { AthleteIndex, AthleteSummary, AthleteProfile } from "@/lib/analysis/types";
 import type { AthleteEntryRef } from "@/lib/entries/index-types";
 import { loadAthleteDetail } from "@/lib/analysis/utils";
-import { stripEventNoise, eventFuzzyMatch } from "@/lib/analysis/event-match";
+import {
+  scoreCandidates,
+  tallyH2H,
+  hasMergedNamesakes,
+  type Tally,
+} from "@/lib/analysis/head-to-head";
 
 interface Props {
   /** 自分（AthleteDetail がロード済みのプロフィール） */
@@ -19,22 +18,6 @@ interface Props {
   athleteIndex: AthleteIndex;
   /** 自分の出場予定エントリー（AthleteDetail がロード済み。null = 取得失敗） */
   myEntries: AthleteEntryRef[] | null;
-}
-
-/** 1対戦レコード（大会単位に重複排除済み） */
-interface H2HRecord {
-  date: string;
-  eventName: string;
-  myPoints: number;
-  oppPoints: number;
-  discipline: "forest" | "sprint";
-  result: "win" | "loss" | "draw";
-}
-
-interface Tally {
-  win: number;
-  loss: number;
-  draw: number;
 }
 
 /** 再戦予定（joe_event_id で交差した今後の大会） */
@@ -50,21 +33,6 @@ interface Rematch {
 /** JST (UTC+9) の今日 YYYY-MM-DD（UpcomingEntries と同一ロジック） */
 function todayJst(): string {
   return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
-}
-
-/**
- * 同姓同名の合成エントリ判定: athlete-index は空白除去名キーのため、同姓同名の別人が
- * 1エントリに合成され同一 (type, className) の appearance が複数並ぶ。
- * loadAthleteDetail が先勝ちで拾うと別人の成績が混ざった対戦成績になるため候補チップから除外する。
- */
-function hasMergedNamesakes(a: AthleteSummary): boolean {
-  const seen = new Set<string>();
-  for (const r of a.appearances) {
-    const k = `${r.type}__${r.className}`;
-    if (seen.has(k)) return true;
-    seen.add(k);
-  }
-  return false;
 }
 
 /** 選手詳細の Head-to-Head 対戦成績セクション */
@@ -139,124 +107,17 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
       .slice(0, 8);
   }, [athleteIndex, query, profile.name]);
 
-  // デフォルト候補チップ: 「成績が近い選手」を同クラブ・他クラブ両方から提示する。
-  // 近さ = 自分と共通の (type, className) ランキングでの順位差（最小）。bestRank（カテゴリ横断の
-  // 最小順位＝クラブの強者に寄る）ではなく、共通クラスでの近順位で“同レベルのライバル”を選ぶ。
-  // 同クラブはプロフィールの全クラブを対象（複数兼部も全部）。
-  const candidates = useMemo(() => {
-    const myClubs = new Set(profile.clubs);
-    const myRankByPair = new Map<string, number>();
-    for (const r of profile.appearances) myRankByPair.set(`${r.type}__${r.className}`, r.rank);
+  // デフォルト候補チップ: 「成績が近い選手」を同クラブ・他クラブ両方から提示（純ロジックは lib）。
+  const candidates = useMemo(() => scoreCandidates(profile, athleteIndex), [profile, athleteIndex]);
 
-    type Scored = {
-      athlete: AthleteSummary;
-      className: string;
-      rank: number;
-      diff: number;
-      sameClub: boolean;
-    };
-    const scored: Scored[] = [];
-    for (const a of Object.values(athleteIndex.athletes)) {
-      if (a.name === profile.name || hasMergedNamesakes(a)) continue;
-      // 共通クラスのうち最も順位が近いものを採用（無ければ候補外）
-      let best: { className: string; rank: number; diff: number } | null = null;
-      for (const app of a.appearances) {
-        if (!app.isActive) continue; // 現役（out_ranker でない）順位のみで近さを測る
-        const myRank = myRankByPair.get(`${app.type}__${app.className}`);
-        if (myRank == null) continue;
-        const diff = Math.abs(app.rank - myRank);
-        if (!best || diff < best.diff) best = { className: app.className, rank: app.rank, diff };
-      }
-      if (!best) continue;
-      scored.push({ athlete: a, ...best, sameClub: a.clubs.some((c) => myClubs.has(c)) });
-    }
-    // 近い順（同差なら順位昇順→名前で決定的に）
-    scored.sort(
-      (x, y) => x.diff - y.diff || x.rank - y.rank || x.athlete.name.localeCompare(y.athlete.name)
-    );
+  // 対戦成績の集計（純ロジックは lib）: 共通クラスの得点を大会単位で突合し勝敗＋平均得点差を出す。
+  const h2h = useMemo(
+    () => (oppProfile ? tallyH2H(profile.rankings, oppProfile.rankings) : null),
+    [profile, oppProfile],
+  );
 
-    // 同クラブの近成績を先に最大4、残りを他クラブの近成績で埋めて最大8（片方が少なければ補充）
-    const MAX = 8;
-    const SAME_CLUB_QUOTA = 4;
-    const sameClubList = scored.filter((s) => s.sameClub);
-    const otherClubList = scored.filter((s) => !s.sameClub);
-    const picked: Scored[] = [];
-    const seen = new Set<string>([profile.name]);
-    const take = (arr: Scored[], n: number) => {
-      for (const s of arr) {
-        if (picked.length >= MAX || n <= 0) break;
-        if (seen.has(s.athlete.name)) continue;
-        seen.add(s.athlete.name);
-        picked.push(s);
-        n--;
-      }
-    };
-    take(sameClubList, SAME_CLUB_QUOTA);
-    take(otherClubList, MAX - picked.length);
-    take(sameClubList, MAX - picked.length); // 他クラブが少なければ同クラブで補充
-
-    return picked.map((s) => ({
-      athlete: s.athlete,
-      label: `${s.sameClub ? "同クラブ・" : ""}${s.className} ${s.rank}位`,
-    }));
-  }, [profile, athleteIndex]);
-
-  // 突合: 共通 (type, className) ペアの event_scores を date＋イベント名で突合 →
-  // date＋正規化イベント名で大会単位に重複排除（無差別系と個別クラスで同一レースが重複するため。
-  // points はクラス間で同値なので勝敗は不変）
-  const h2h = useMemo(() => {
-    if (!oppProfile) return null;
-    const oppByPair = new Map<string, RankingAppearance>();
-    for (const r of oppProfile.rankings) oppByPair.set(`${r.type}__${r.className}`, r);
-
-    const records = new Map<string, H2HRecord>();
-    for (const myR of profile.rankings) {
-      const oppR = oppByPair.get(`${myR.type}__${myR.className}`);
-      if (!oppR) continue;
-      const discipline: "forest" | "sprint" = myR.type.includes("sprint") ? "sprint" : "forest";
-
-      const oppByDate = new Map<string, EventScore[]>();
-      for (const e of oppR.events) {
-        if (!e.date) continue;
-        const arr = oppByDate.get(e.date);
-        if (arr) arr.push(e);
-        else oppByDate.set(e.date, [e]);
-      }
-
-      for (const myE of myR.events) {
-        if (!myE.date) continue;
-        const myNorm = stripEventNoise(myE.eventName);
-        const key = `${myE.date}:${myNorm}`;
-        if (records.has(key)) continue;
-        const sameDay = oppByDate.get(myE.date);
-        if (!sameDay) continue;
-        const oppE =
-          sameDay.find((c) => stripEventNoise(c.eventName) === myNorm) ??
-          sameDay.find((c) => eventFuzzyMatch(c.eventName, myE.eventName));
-        if (!oppE) continue;
-        const result: H2HRecord["result"] =
-          myE.points > oppE.points ? "win" : myE.points < oppE.points ? "loss" : "draw";
-        records.set(key, {
-          date: myE.date,
-          eventName: myE.eventName,
-          myPoints: myE.points,
-          oppPoints: oppE.points,
-          discipline,
-          result,
-        });
-      }
-    }
-
-    const list = [...records.values()].sort((a, b) => b.date.localeCompare(a.date));
-    const total: Tally = { win: 0, loss: 0, draw: 0 };
-    const forest: Tally = { win: 0, loss: 0, draw: 0 };
-    const sprint: Tally = { win: 0, loss: 0, draw: 0 };
-    for (const r of list) {
-      total[r.result]++;
-      (r.discipline === "sprint" ? sprint : forest)[r.result]++;
-    }
-    return { records: list, total, forest, sprint };
-  }, [profile, oppProfile]);
+  // 相手が同姓同名の別人合成の疑い（検索経由で選ばれた場合。候補チップは除外済み）
+  const oppHasNamesakes = opponent != null && hasMergedNamesakes(opponent);
 
   // 再戦予定: 両者のエントリーを JST 今日以降にフィルタ → joe_event_id で交差
   // （同一 id 複数行ありうるので Map<joe_event_id, rows[]> で集約してから判定）
@@ -400,16 +261,39 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
               </div>
             </div>
             {h2h.records.length > 0 && (
-              <div className="mt-2 flex justify-center gap-4 text-[10px]">
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px]">
                 {h2h.forest.win + h2h.forest.loss + h2h.forest.draw > 0 && (
                   <span className="text-green-400">Forest {tallyText(h2h.forest)}</span>
                 )}
                 {h2h.sprint.win + h2h.sprint.loss + h2h.sprint.draw > 0 && (
                   <span className="text-blue-400">Sprint {tallyText(h2h.sprint)}</span>
                 )}
+                {h2h.avgPointDiff != null && (
+                  <span className="text-muted">
+                    平均得点差{" "}
+                    <span
+                      className={`font-bold ${
+                        h2h.avgPointDiff > 0
+                          ? "text-primary"
+                          : h2h.avgPointDiff < 0
+                            ? "text-accent"
+                            : "text-foreground"
+                      }`}
+                    >
+                      {h2h.avgPointDiff > 0 ? "+" : ""}
+                      {h2h.avgPointDiff.toLocaleString()}点
+                    </span>
+                  </span>
+                )}
               </div>
             )}
           </div>
+
+          {oppHasNamesakes && (
+            <p className="mt-2 rounded bg-amber-500/10 px-2 py-1 text-[9px] text-amber-300/90">
+              ※ この選手は同姓同名の別人が混ざっている可能性があります（成績が過大に見えることがあります）
+            </p>
+          )}
 
           <p className="mt-2 text-[9px] text-muted/70">
             ※ JOY ランキング換算点での比較です（同一大会でも別クラス出走の場合があります）
