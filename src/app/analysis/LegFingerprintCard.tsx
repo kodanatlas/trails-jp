@@ -202,7 +202,7 @@ export function LegFingerprintCard({ name }: { name: string }) {
         <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[9px] font-medium text-[#00e5ff]">β</span>
       </div>
       <p className="mt-1 text-xs text-foreground/80">
-        どの局面・どの長さのレッグでミスが出やすいか。赤いセルは自分の平均より統計的に偏って多い場所。
+        どの局面・どの所要時間のレッグでミスが出やすいか。赤いセルは自分の平均より統計的に偏って多い場所。
       </p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         {athlete.f && (
