@@ -85,30 +85,52 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
     // 選手切替時の stale レスポンス混入を防ぐガード（前選手の応答が後勝ちで上書きするのを防止）
     let cancelled = false;
     setLoading(true);
+    setLcData(null);
     setEntryData(null);
-    const loadProfile = loadAthleteDetail(summary).then((p) => {
-      if (!cancelled) setProfile(p);
-    });
-    const loadLc = fetch(`/api/lc/${encodeURIComponent(summary.name)}`)
-      .then((r) => (r.ok ? (r.json() as Promise<LapCenterPerformance[]>) : null))
-      .then((records) => {
-        if (!cancelled) setLcData(records);
+
+    // DB 由来 API（/api/lc・/api/athletes）は Supabase 障害時にハングしうる。
+    // アボート付き fetch でページ全体を固めない（12秒で諦めて null 扱い）。
+    const fetchJson = async (url: string): Promise<Record<string, unknown> | unknown[] | null> => {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      try {
+        const r = await fetch(url, { signal: ctrl.signal });
+        return r.ok ? await r.json() : null;
+      } catch {
+        return null;
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+
+    // 必須データ＝プロフィール（静的ランキング JSON 由来）。これが決まった時点でページを描画する。
+    // 取得不能でも summary から最小プロフィールにフォールバックし、ヘッダ/特性/安定性は出す。
+    const fallbackProfile: AthleteProfile = { ...summary, rankings: [] };
+    Promise.race([
+      loadAthleteDetail(summary),
+      new Promise<AthleteProfile>((res) => setTimeout(() => res(fallbackProfile), 12000)),
+    ])
+      .then((p) => {
+        if (!cancelled) setProfile(p);
       })
       .catch(() => {
-        if (!cancelled) setLcData(null);
-      });
-    const loadEntries = fetch(`/api/athletes/${encodeURIComponent(summary.name)}/entries`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!cancelled)
-          setEntryData({ entries: d?.entries ?? [], generatedAt: d?.generatedAt ?? null });
+        if (!cancelled) setProfile(fallbackProfile);
       })
-      .catch(() => {
-        if (!cancelled) setEntryData({ entries: [], generatedAt: null });
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
-    Promise.all([loadProfile, loadLc, loadEntries]).then(() => {
-      if (!cancelled) setLoading(false);
+
+    // 非必須（LapCenter 履歴・エントリー）は独立ロード。ハング/失敗してもページは出る。
+    fetchJson(`/api/lc/${encodeURIComponent(summary.name)}`).then((records) => {
+      if (!cancelled) setLcData(Array.isArray(records) ? (records as LapCenterPerformance[]) : null);
     });
+    fetchJson(`/api/athletes/${encodeURIComponent(summary.name)}/entries`).then((d) => {
+      if (!cancelled) {
+        const obj = (d ?? {}) as { entries?: AthleteEntryRef[]; generatedAt?: string | null };
+        setEntryData({ entries: obj.entries ?? [], generatedAt: obj.generatedAt ?? null });
+      }
+    });
+
     return () => {
       cancelled = true;
     };
@@ -123,7 +145,13 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
     );
   }
 
-  if (!profile) return null;
+  if (!profile) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted">
+        この選手の詳細を読み込めませんでした。時間をおいて再度お試しください。
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -1430,6 +1458,14 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
                 {isSprint ? "S" : "F"}
               </span>
               <span className="min-w-0 flex-1 truncate text-xs">{e.eventName}</span>
+              {lcMatch?.c && (
+                <span className="hidden flex-shrink-0 items-center gap-1 text-[10px] text-muted sm:flex">
+                  <span className="rounded bg-white/5 px-1 py-0.5">{lcMatch.c}</span>
+                  {lcMatch.r != null && (
+                    <span className="font-mono font-medium text-foreground/80">{lcMatch.r}位</span>
+                  )}
+                </span>
+              )}
               <div className="hidden h-1.5 w-20 overflow-hidden rounded-full bg-white/5 sm:block">
                 {!e.lcOnly && colors && (
                   <div
