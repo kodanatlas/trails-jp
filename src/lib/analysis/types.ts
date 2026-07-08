@@ -14,10 +14,11 @@ export interface RankingRef {
   isActive: boolean;
 }
 
-/** 順位・得点の変動（前月比 mom / 前年比 yoy）。前月/前年スナップショットがある選手のみ付く */
+/** 順位・得点の変動（先週比 wow / 前月比 mom / 前年比 yoy）。対応スナップショットがある選手のみ付く */
 export interface RankDelta {
   mom: number | null;
   yoy: number | null;
+  wow?: number | null;
 }
 
 /** 完全なランキング出現情報 (詳細ロード時) */

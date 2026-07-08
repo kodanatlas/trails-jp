@@ -738,6 +738,15 @@ if (supabaseUrl && supabaseKey) {
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     })();
     const prevYear = `${now.getFullYear() - 1}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    // 週キー = その週の月曜日（YYYY-MM-DD・曖昧さなく整列可能）。先週比(wow)用。
+    const mondayOf = (d: Date): string => {
+      const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      const dow = (x.getUTCDay() + 6) % 7; // 月曜=0
+      x.setUTCDate(x.getUTCDate() - dow);
+      return x.toISOString().slice(0, 10);
+    };
+    const currentWeek = mondayOf(now);
+    const prevWeek = mondayOf(new Date(now.getTime() - 7 * 86400000));
     const sbHeaders = {
       apikey: supabaseKey,
       Authorization: `Bearer ${supabaseKey}`,
@@ -762,15 +771,33 @@ if (supabaseUrl && supabaseKey) {
       console.log(`✓ ranking_snapshot ${month}: ${rows.length} rows`);
       return new Map(rows.map((r) => [r.file_key, r.stats]));
     };
-    const [pmMonthMap, pyMonthMap] = await Promise.all([
+    // 先週の週次スナップショット（無ければ wow 無し＝mom にフォールバック。蓄積は約1〜2週）
+    const fetchWeekSnapshots = async (
+      week: string,
+    ): Promise<Map<string, Record<string, { r: number; p: number }>> | null> => {
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/ranking_snapshot_weekly?week=eq.${week}&select=file_key,stats`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+      );
+      if (!res.ok) {
+        console.warn(`⚠ ranking_snapshot_weekly fetch failed: week=${week} HTTP ${res.status}`);
+        return null;
+      }
+      const rows = await res.json() as { file_key: string; stats: Record<string, { r: number; p: number }> }[];
+      console.log(`✓ ranking_snapshot_weekly ${week}: ${rows.length} rows`);
+      return new Map(rows.map((r) => [r.file_key, r.stats]));
+    };
+    const [pmMonthMap, pyMonthMap, pwWeekMap] = await Promise.all([
       fetchMonthSnapshots(prevMonth),
       fetchMonthSnapshots(prevYear),
+      fetchWeekSnapshots(prevWeek),
     ]);
 
-    // 存在する全ランキングファイルを対象に (a) スナップショット行構築 (b) delta 付与
+    // 存在する全ランキングファイルを対象に (a) 月次/週次スナップショット行構築 (b) delta 付与
     const snapshotRows: { month: string; file_key: string; stats: Record<string, { r: number; p: number }> }[] = [];
-    // トップ「今月の急上昇」用の候補（前月比で順位が上がった現役選手）
-    type MoverCand = { name: string; key: string; club: string; type: string; className: string; rank: number; mom: number; pointsMom: number };
+    const weeklyRows: { week: string; file_key: string; stats: Record<string, { r: number; p: number }> }[] = [];
+    // トップ「急上昇」用の候補。先週比(wow)を優先し、蓄積前は前月比(mom)にフォールバック。
+    type MoverCand = { name: string; key: string; club: string; type: string; className: string; rank: number; mom: number | null; wow: number | null; pointsMom: number; pointsWow: number };
     const moverCandidates: MoverCand[] = [];
     for (const fileName of files) {
       const parsed = parseFilename(fileName);
@@ -794,10 +821,12 @@ if (supabaseUrl && supabaseKey) {
         snap[e.athlete_name] = { r: e.rank, p: e.total_points };
       }
       snapshotRows.push({ month: currentMonth, file_key: fileKey, stats: snap });
+      weeklyRows.push({ week: currentWeek, file_key: fileKey, stats: snap });
 
-      // delta 付与（前月・前年はメモリ上の月別マップから file_key 引き）
+      // delta 付与（前月・前年・先週はメモリ上のマップから file_key 引き）
       const pmSnap = pmMonthMap?.get(fileKey) ?? null;
       const pySnap = pyMonthMap?.get(fileKey) ?? null;
+      const pwSnap = pwWeekMap?.get(fileKey) ?? null;
       let deltaCount = 0;
       for (const e of entries) {
         // 過去ビルドが書き込んだ stale な delta（同姓同名の捏造値を含む）を一旦除去してから再計算
@@ -806,22 +835,26 @@ if (supabaseUrl && supabaseKey) {
         if (dupNames.has(e.athlete_name)) continue;
         const pm = pmSnap?.[e.athlete_name];
         const py = pySnap?.[e.athlete_name];
-        if (pm || py) {
+        const pw = pwSnap?.[e.athlete_name];
+        if (pm || py || pw) {
+          const momR = pm ? pm.r - e.rank : null; // 前月より順位が上がった→正の値
+          const wowR = pw ? pw.r - e.rank : null; // 先週より上がった→正の値
           (e as any).rank_delta = {
-            mom: pm ? pm.r - e.rank : null,  // 前月より順位が上がった→正の値
+            mom: momR,
             yoy: py ? py.r - e.rank : null,
+            wow: wowR,
           };
           const momP = pm ? Math.round((e.total_points - pm.p) * 10) / 10 : null;
+          const wowP = pw ? Math.round((e.total_points - pw.p) * 10) / 10 : null;
           (e as any).points_delta = {
             mom: momP,
             yoy: py ? Math.round((e.total_points - py.p) * 10) / 10 : null,
+            wow: wowP,
           };
           deltaCount++;
-          // 前月比で順位が上がった現役選手を movers 候補へ。
-          // 無差別/Open の包括カテゴリは母集団が巨大で順位ジャンプが大きく意味が薄いため除外
-          // （専門クラスの上昇の方が「急上昇」として妥当）。
-          const momR = pm ? pm.r - e.rank : null;
-          if (momR != null && momR > 0 && e.is_active && !/無差別|open/i.test(parsed.className)) {
+          // 順位が上がった現役選手を movers 候補へ。無差別/Open の包括カテゴリは母集団が巨大で
+          // 順位ジャンプが大きく意味が薄いため除外（専門クラスの上昇が「急上昇」として妥当）。
+          if (e.is_active && !/無差別|open/i.test(parsed.className) && ((wowR != null && wowR > 0) || (momR != null && momR > 0))) {
             moverCandidates.push({
               name: e.athlete_name,
               key: e.athlete_name.replace(/\s+/g, ""),
@@ -830,7 +863,9 @@ if (supabaseUrl && supabaseKey) {
               className: parsed.className,
               rank: e.rank,
               mom: momR,
+              wow: wowR,
               pointsMom: momP ?? 0,
+              pointsWow: wowP ?? 0,
             });
           }
         }
@@ -858,24 +893,58 @@ if (supabaseUrl && supabaseKey) {
       console.log(`✓ ranking_snapshot: ${snapshotRows.length} files upserted for ${currentMonth}`);
     }
 
-    // movers.json（トップ「今月の急上昇」）: 選手ごとに最大の順位上昇を1件に集約 → 上位を書き出す。
-    // イベント非依存（ランキングは週次更新）なのでオフシーズンでも出る恒常セクション。
+    // 週次スナップショット upsert（先週比の材料。蓄積は約1〜2週）
+    let weeklyFailures = 0;
+    for (let i = 0; i < weeklyRows.length; i += SNAPSHOT_BATCH_SIZE) {
+      const batch = weeklyRows.slice(i, i + SNAPSHOT_BATCH_SIZE);
+      const res = await fetch(`${supabaseUrl}/rest/v1/ranking_snapshot_weekly?on_conflict=week,file_key`, {
+        method: "POST",
+        headers: sbHeaders,
+        body: JSON.stringify(batch),
+      });
+      if (!res.ok) {
+        weeklyFailures++;
+        console.warn(`⚠ ranking_snapshot_weekly upsert failed: HTTP ${res.status} (${batch.length} rows, offset ${i})`);
+      }
+    }
+    if (weeklyFailures === 0) {
+      console.log(`✓ ranking_snapshot_weekly: ${weeklyRows.length} files upserted for ${currentWeek}`);
+    }
+
+    // movers.json（トップ「急上昇」）: 先週比(wow)が蓄積済みなら wow、無ければ前月比(mom)。
+    // 選手ごとに1件へ集約 → 上位を書き出す。イベント非依存でオフシーズンも出る恒常セクション。
+    const useWow = (pwWeekMap?.size ?? 0) > 0;
+    const basis: "wow" | "mom" = useWow ? "wow" : "mom";
+    const val = (c: MoverCand) => (useWow ? c.wow : c.mom);
+    const pval = (c: MoverCand) => (useWow ? c.pointsWow : c.pointsMom);
     const byKey = new Map<string, MoverCand>();
     for (const c of moverCandidates) {
+      const v = val(c);
+      if (v == null || v <= 0) continue;
       const cur = byKey.get(c.key);
-      if (!cur || c.mom > cur.mom || (c.mom === cur.mom && c.pointsMom > cur.pointsMom)) byKey.set(c.key, c);
+      if (!cur || v > (val(cur) ?? 0) || (v === val(cur) && pval(c) > pval(cur))) byKey.set(c.key, c);
     }
     const moverItems = [...byKey.values()]
-      .sort((a, b) => b.mom - a.mom || b.pointsMom - a.pointsMom || a.rank - b.rank)
-      .slice(0, 8);
+      .sort((a, b) => (val(b) ?? 0) - (val(a) ?? 0) || pval(b) - pval(a) || a.rank - b.rank)
+      .slice(0, 8)
+      .map((c) => ({
+        name: c.name,
+        key: c.key,
+        club: c.club,
+        type: c.type,
+        className: c.className,
+        rank: c.rank,
+        delta: val(c) ?? 0,
+        pointsDelta: pval(c),
+      }));
     if (moverItems.length > 0) {
       fs.writeFileSync(
         path.resolve(__dirname, "../src/data/movers.json"),
-        JSON.stringify({ generatedAtJst: jstNowLabel() + " JST", items: moverItems }, null, 2) + "\n",
+        JSON.stringify({ generatedAtJst: jstNowLabel() + " JST", basis, items: moverItems }, null, 2) + "\n",
       );
-      console.log(`✓ movers.json: ${moverItems.length} items`);
+      console.log(`✓ movers.json: ${moverItems.length} items (basis=${basis})`);
     } else {
-      console.warn("⚠ movers.json: 0 items（前月スナップショット不在? 既存 seed を保持）");
+      console.warn("⚠ movers.json: 0 items（前週/前月スナップショット不在? 既存 seed を保持）");
     }
   } catch (e) {
     console.warn("Ranking snapshot/delta failed:", e);

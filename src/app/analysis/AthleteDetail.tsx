@@ -162,15 +162,19 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
  * 前月スナップショットが無い選手（新規・久々の復帰）は非表示。
  */
 function RecentMovement({ profile }: { profile: AthleteProfile }) {
-  const withDelta = profile.rankings.filter((r) => r.rankDelta?.mom != null);
+  // 先週比(wow)が有れば優先、無ければ前月比(mom)
+  const rankVal = (r: AthleteProfile["rankings"][number]) => r.rankDelta?.wow ?? r.rankDelta?.mom ?? null;
+  const withDelta = profile.rankings.filter((r) => rankVal(r) != null);
   if (withDelta.length === 0) return null;
-  // 主戦＝rankDelta を持つ中で最上位（rank 最小）
+  // 主戦＝デルタを持つ中で最上位（rank 最小）
   const primary = withDelta.reduce((best, r) => (r.rank < best.rank ? r : best));
-  const momRank = primary.rankDelta!.mom!;
-  const momPts = primary.pointsDelta?.mom ?? null;
+  const isWow = primary.rankDelta?.wow != null;
+  const label = isWow ? "先週比" : "前月比";
+  const rankDelta = rankVal(primary)!;
+  const ptsDelta = isWow ? primary.pointsDelta?.wow ?? null : primary.pointsDelta?.mom ?? null;
   const isSprint = primary.type.includes("sprint");
-  const up = momRank > 0;
-  const flat = momRank === 0;
+  const up = rankDelta > 0;
+  const flat = rankDelta === 0;
   return (
     <div className="rounded-lg border border-border bg-card p-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -181,16 +185,16 @@ function RecentMovement({ profile }: { profile: AthleteProfile }) {
         <span className="text-sm">
           <span className="font-bold">{primary.rank.toLocaleString()}位</span>
           <span className={`ml-1.5 font-mono text-xs font-bold ${flat ? "text-muted" : up ? "text-green-400" : "text-accent"}`}>
-            {flat ? "±0" : `${up ? "↑" : "↓"}${Math.abs(momRank).toLocaleString()}`}
+            {flat ? "±0" : `${up ? "↑" : "↓"}${Math.abs(rankDelta).toLocaleString()}`}
           </span>
-          <span className="ml-0.5 text-[10px] text-muted">前月比</span>
+          <span className="ml-0.5 text-[10px] text-muted">{label}</span>
         </span>
-        {momPts != null && momPts !== 0 && (
+        {ptsDelta != null && ptsDelta !== 0 && (
           <span className="text-xs text-muted">
             得点{" "}
-            <span className={`font-mono font-bold ${momPts > 0 ? "text-green-400" : "text-accent"}`}>
-              {momPts > 0 ? "+" : ""}
-              {momPts.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+            <span className={`font-mono font-bold ${ptsDelta > 0 ? "text-green-400" : "text-accent"}`}>
+              {ptsDelta > 0 ? "+" : ""}
+              {ptsDelta.toLocaleString(undefined, { maximumFractionDigits: 1 })}
             </span>
           </span>
         )}

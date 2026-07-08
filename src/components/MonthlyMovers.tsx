@@ -2,7 +2,7 @@ import Link from "next/link";
 import { TrendingUp, ArrowRight } from "lucide-react";
 import moversJson from "@/data/movers.json";
 
-/** movers.json のスキーマ（docs/plans/brushup_batch1_20260610.md §2-S2-2 で固定） */
+/** movers.json のスキーマ（basis=wow なら先週比・mom なら前月比の順位上昇 top） */
 interface MoverItem {
   name: string; // 表示用生名（スペース保持）
   key: string; // 空白除去名（/a/<key> リンク用）
@@ -10,24 +10,29 @@ interface MoverItem {
   type: string;
   className: string;
   rank: number;
-  mom: number;
-  pointsMom: number;
+  delta: number; // 順位上昇（basis に応じ先週比 or 前月比）
+  pointsDelta: number; // 得点変動
 }
 
 interface MoversData {
   generatedAtJst: string;
+  basis?: "wow" | "mom";
   items: MoverItem[];
 }
 
-// Agent A 再生成前の旧スキーマでも型エラーにならないようキャスト（スキーマは契約で固定済み）
+// 旧スキーマ（mom/pointsMom）が残っていても型エラーにならないようキャスト
 const movers = moversJson as unknown as MoversData;
 
-/** トップページ「今月の急上昇」セクション（ビルド時静的データ） */
+/** トップページ「急上昇」セクション（ビルド時静的データ・先週比 or 前月比） */
 export function MonthlyMovers() {
   const items = (movers.items ?? []).slice(0, 5);
 
-  // データが薄い月（月初など）はセクションごと出さない
+  // データが薄い週/月（月初など）はセクションごと出さない
   if (items.length < 3) return null;
+
+  const isWow = movers.basis === "wow";
+  const title = isWow ? "今週の急上昇" : "今月の急上昇";
+  const badge = isWow ? "先週比" : "前月比";
 
   return (
     <section className="border-b border-border py-12 sm:py-16">
@@ -35,9 +40,9 @@ export function MonthlyMovers() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-green-400" />
-            <h2 className="text-lg font-bold">今月の急上昇</h2>
+            <h2 className="text-lg font-bold">{title}</h2>
             <span className="rounded bg-green-500/15 px-1.5 py-0.5 text-[9px] font-medium text-green-400">
-              前月比
+              {badge}
             </span>
           </div>
           <Link href="/analysis" className="text-xs font-medium text-primary hover:underline">
@@ -71,7 +76,7 @@ export function MonthlyMovers() {
               {/* 順位上昇 */}
               <div className="flex-shrink-0 text-right">
                 <p className="font-mono text-sm font-bold text-green-400">
-                  ↑{item.mom.toLocaleString()}
+                  ↑{item.delta.toLocaleString()}
                 </p>
                 <p className="text-[10px] text-muted">現在 {item.rank.toLocaleString()}位</p>
               </div>
@@ -79,9 +84,10 @@ export function MonthlyMovers() {
               {/* ポイント上昇 */}
               <div className="hidden w-24 flex-shrink-0 text-right sm:block">
                 <p className="font-mono text-xs font-medium text-green-400">
-                  +{item.pointsMom.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                  {item.pointsDelta >= 0 ? "+" : ""}
+                  {item.pointsDelta.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                 </p>
-                <p className="text-[10px] text-muted">pt 前月比</p>
+                <p className="text-[10px] text-muted">pt {badge}</p>
               </div>
 
               <ArrowRight className="hidden h-4 w-4 flex-shrink-0 text-muted sm:block" />
@@ -90,7 +96,7 @@ export function MonthlyMovers() {
         </div>
 
         <p className="mt-3 text-right text-[10px] text-muted">
-          {movers.generatedAtJst} 時点・JOYランキング前月比
+          {movers.generatedAtJst} 時点・JOYランキング{badge}
         </p>
       </div>
     </section>
