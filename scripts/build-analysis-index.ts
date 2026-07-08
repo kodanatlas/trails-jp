@@ -1150,8 +1150,12 @@ async function buildLegFingerprintStep(): Promise<Set<string> | null> {
     return null;
   }
 
+  // 期間比較の境界＝ビルド時点の12ヶ月前（"recent" = event_date ≥ これ）
+  const cut = new Date();
+  cut.setFullYear(cut.getFullYear() - 1);
+  const periodCutoff = cut.toISOString().slice(0, 10);
   const index = {
-    ...buildLegFingerprintIndex(tracked, companions),
+    ...buildLegFingerprintIndex(tracked, companions, { periodCutoff }),
     generatedAt: new Date().toISOString(),
   };
   const json = JSON.stringify(index);

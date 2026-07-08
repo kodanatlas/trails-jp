@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { LegFingerprintIndex, DisciplineFingerprint, CohortBand } from "@/lib/analysis/leg-fingerprint";
+import type {
+  LegFingerprintIndex,
+  DisciplineFingerprint,
+  CohortBand,
+  PeriodStat,
+} from "@/lib/analysis/leg-fingerprint";
+
+/** 期間別ミス率を 5pt 刻みに丸める（小標本の見かけの精度を出さない） */
+function pct5(s: PeriodStat): number {
+  return Math.round((s.m / s.n) * 100 / 5) * 5;
+}
 
 // artifact は全選手共通なのでセッション中1回だけ fetch（LapCenterChart の重みとも共用）
 let fpPromise: Promise<LegFingerprintIndex | null> | null = null;
@@ -132,6 +142,26 @@ function DisciplineBlock({
             ? "統計的に偏って多いセルはありません（帯との差は偶然の範囲を出ない可能性があります）。"
             : "統計的に偏って多いセルはありません。"}
         </p>
+      )}
+
+      {/* 期間別の未調整観測ミス率（Stage 2d・検定なし・矢印/色で改善判定を示さない） */}
+      {fp.periods && (
+        <div className="mt-2 border-t border-border/50 pt-2">
+          <p className="text-[10px] text-muted">
+            未調整の観測ミス率（参考）:{" "}
+            <span className="text-foreground/85">
+              直近12ヶ月 約{pct5(fp.periods.recent)}%
+            </span>
+            <span className="text-muted/70">（{fp.periods.recent.races}レース）</span>
+            {" ／ "}
+            <span className="text-foreground/85">それ以前 約{pct5(fp.periods.older)}%</span>
+            <span className="text-muted/70">（{fp.periods.older.races}レース）</span>
+          </p>
+          <p className="mt-0.5 text-[9px] text-muted/60">
+            同種目の取込レースを日付で二分した未調整値（5%刻み）。クラス・季節・コース難度を分離しておらず、
+            レッグはレース内で相関するため小さな差は読めません。上達／悪化の判定には使えません（方向は上のトレンド線を参照）。
+          </p>
+        </div>
       )}
 
       {(fp.legsPack > 0 || fp.packUnchecked > 0) && (

@@ -368,3 +368,39 @@ describe("コホート帯基準（記述比較）", () => {
     expect(idx.athletes["単独六郎"]?.f?.band).toBeUndefined();
   });
 });
+
+describe("期間比較（Stage 2d・未調整の観測値）", () => {
+  const CUT = "2025-07-08";
+  it("両期間が3レース・30レッグ以上なら periods を出す（未調整の観測ミス率）", () => {
+    const tracked: TrackedLegRow[] = [];
+    for (let r = 0; r < 4; r++)
+      tracked.push(mkRace("期間選手", `2026-0${r + 1}-01`, "forest", legsWithMisses([2, 12]))); // recent 2ミス/レース
+    for (let r = 0; r < 4; r++)
+      tracked.push(mkRace("期間選手", `2024-0${r + 1}-01`, "forest", legsWithMisses([2, 12, 13]))); // older 3ミス/レース
+    const idx = buildLegFingerprintIndex(tracked, [], { periodCutoff: CUT });
+    const p = idx.athletes["期間選手"]?.f?.periods;
+    expect(p).toBeDefined();
+    expect(p!.recent.races).toBe(4);
+    expect(p!.older.races).toBe(4);
+    expect(p!.recent.m / p!.recent.n).toBeLessThan(p!.older.m / p!.older.n); // older の方がミス率高い
+    expect(idx.periodCutoff).toBe(CUT);
+  });
+  it("片方の期間が薄い（<3レース）と periods を出さない", () => {
+    const tracked: TrackedLegRow[] = [];
+    for (let r = 0; r < 6; r++)
+      tracked.push(mkRace("偏り選手", `2024-0${r + 1}-01`, "forest", legsWithMisses([2, 12])));
+    tracked.push(mkRace("偏り選手", "2026-01-01", "forest", legsWithMisses([2, 12]))); // recent 1レースのみ
+    const idx = buildLegFingerprintIndex(tracked, [], { periodCutoff: CUT });
+    const fp = idx.athletes["偏り選手"]?.f;
+    expect(fp).toBeDefined(); // 全体7レースで掲載はされる
+    expect(fp!.periods).toBeUndefined(); // recent 1 < 3 で期間比較は非表示
+  });
+  it("periodCutoff 未指定なら periods なし", () => {
+    const tracked = Array.from({ length: 6 }, (_, r) =>
+      mkRace("無指定選手", `2026-0${r + 1}-01`, "forest", legsWithMisses([2, 12]))
+    );
+    const idx = buildLegFingerprintIndex(tracked, []);
+    expect(idx.athletes["無指定選手"]?.f?.periods).toBeUndefined();
+    expect(idx.periodCutoff).toBeUndefined();
+  });
+});

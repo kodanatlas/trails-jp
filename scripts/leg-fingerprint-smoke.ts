@@ -111,7 +111,13 @@ async function main() {
   console.log(`入力: tracked=${tracked.length} companions=${companions.length}`);
 
   // 本番設定
-  const idx = { ...buildLegFingerprintIndex(tracked, companions), generatedAt: new Date().toISOString() };
+  const cut = new Date();
+  cut.setFullYear(cut.getFullYear() - 1);
+  const periodCutoff = cut.toISOString().slice(0, 10);
+  const idx = {
+    ...buildLegFingerprintIndex(tracked, companions, { periodCutoff }),
+    generatedAt: new Date().toISOString(),
+  };
   summarize(idx, "本番設定");
 
   // 感度分析: パック除染 OFF（ε=0 で無効化）
@@ -168,6 +174,17 @@ async function main() {
       })
       .join("  ");
     console.log(`[cohort ${disc}] cuts=${n.cuts.join(",")}  ${line}`);
+  }
+
+  // 期間比較の掲載率（両期間ゲート通過選手の割合）
+  for (const disc of ["f", "s"] as const) {
+    const fps = Object.values(idx.athletes)
+      .map((a) => a[disc])
+      .filter((x): x is NonNullable<typeof x> => x != null);
+    const withPeriods = fps.filter((f) => f.periods != null).length;
+    console.log(
+      `[period ${disc}] cutoff=${idx.periodCutoff}・掲載 ${fps.length} 中 期間比較あり ${withPeriods} (${fps.length ? Math.round((withPeriods / fps.length) * 100) : 0}%)`,
+    );
   }
 
   // face validity
