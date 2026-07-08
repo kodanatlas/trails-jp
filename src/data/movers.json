@@ -1,5 +1,6 @@
 {
-  "generatedAtJst": "2026-07-08 14:58 JST",
+  "generatedAtJst": "2026-07-08 15:20 JST",
+  "basis": "mom",
   "items": [
     {
       "name": "佐藤 健人",
@@ -8,8 +9,8 @@
       "type": "age_forest",
       "className": "M21",
       "rank": 791,
-      "mom": 493,
-      "pointsMom": 2030.4
+      "delta": 493,
+      "pointsDelta": 2030.4
     },
     {
       "name": "大久保 颯良",
@@ -18,8 +19,8 @@
       "type": "age_sprint",
       "className": "S_M21",
       "rank": 505,
-      "mom": 486,
-      "pointsMom": 2848.6
+      "delta": 486,
+      "pointsDelta": 2848.6
     },
     {
       "name": "石塚 陽広",
@@ -28,8 +29,8 @@
       "type": "age_forest",
       "className": "M21",
       "rank": 941,
-      "mom": 454,
-      "pointsMom": 2340.6
+      "delta": 454,
+      "pointsDelta": 2340.6
     },
     {
       "name": "橋本 裕志",
@@ -38,8 +39,8 @@
       "type": "elite_forest",
       "className": "M21E",
       "rank": 281,
-      "mom": 424,
-      "pointsMom": 1521.2
+      "delta": 424,
+      "pointsDelta": 1521.2
     },
     {
       "name": "石田 泰啓",
@@ -48,8 +49,8 @@
       "type": "age_sprint",
       "className": "S_M21",
       "rank": 543,
-      "mom": 416,
-      "pointsMom": 2663.8
+      "delta": 416,
+      "pointsDelta": 2663.8
     },
     {
       "name": "林 剛広",
@@ -58,8 +59,8 @@
       "type": "elite_forest",
       "className": "M21E",
       "rank": 382,
-      "mom": 369,
-      "pointsMom": 1484.4
+      "delta": 369,
+      "pointsDelta": 1484.4
     },
     {
       "name": "三嶋 凛太",
@@ -68,8 +69,8 @@
       "type": "age_forest",
       "className": "M21",
       "rank": 1056,
-      "mom": 354,
-      "pointsMom": 2104
+      "delta": 354,
+      "pointsDelta": 2104
     },
     {
       "name": "小笠原 啓一",
@@ -78,8 +79,8 @@
       "type": "elite_forest",
       "className": "M21E",
       "rank": 377,
-      "mom": 354,
-      "pointsMom": 1387.7
+      "delta": 354,
+      "pointsDelta": 1387.7
     }
   ]
 }
