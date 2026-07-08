@@ -3,6 +3,7 @@ import { CalendarDays, Trophy, ExternalLink, BarChart3, TrendingUp, ChevronDown,
 import { readEvents } from "@/lib/events-store";
 import weekendPointsJson from "@/data/weekend-points.json";
 import { WeekendHighlights } from "@/components/WeekendHighlights";
+import { MonthlyMovers } from "@/components/MonthlyMovers";
 import { HeroAthleteSearch } from "./HeroSearch";
 import { WeeklyCheerPodium } from "@/components/WeeklyCheerPodium";
 import { UpdatesNews } from "@/components/UpdatesNews";
@@ -115,6 +116,9 @@ export default async function Home() {
 
       {/* 直近の大会ハイライト（上=ビルド時静的・下=ランタイム RPC） */}
       <WeekendHighlights />
+
+      {/* 今月の急上昇（前月比・イベント非依存でオフシーズンも表示） */}
+      <MonthlyMovers />
 
       {/* Upcoming Events (JOY連携) */}
       <section className="border-b border-border bg-surface py-12 sm:py-16">
