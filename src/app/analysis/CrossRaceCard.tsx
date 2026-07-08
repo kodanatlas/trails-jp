@@ -127,7 +127,7 @@ export function CrossRaceCard({ name }: { name: string }) {
       <p className="mt-3 text-[10px] leading-relaxed text-muted">
         期待値＝同じ巡航速度指標の選手が平均的に出すミス率（LapCenter 取込5レース以上の選手が対象・数値は
         LapCenter 算出値の集計）。「巡航速度指標」は出走クラス相対の値で、絶対走力の比較ではありません。
-        <a href="/docs/analysis-system" className="underline hover:text-foreground">算出方法の詳細</a>
+        <a href="/docs/analysis-system#cross-race" className="underline hover:text-foreground">算出方法の詳細</a>
       </p>
     </div>
   );

@@ -1187,7 +1187,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
       </div>
       <p className="mt-2 text-[9px] text-muted">
         破線＝トレンド（外れ値に強い頑健回帰・レース順ベース・信頼できるレース5本以上で表示。
-        <a href="/docs/analysis-system" className="underline hover:text-foreground">算出方法</a>）
+        <a href="/docs/analysis-system#trend" className="underline hover:text-foreground">算出方法</a>）
       </p>
     </div>
   );

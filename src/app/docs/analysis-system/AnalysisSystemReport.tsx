@@ -256,25 +256,11 @@ export function AnalysisSystemReport({
             <b>どこオリ</b>{" "}
             などの大会情報を手動で一覧化して取り込み、イベント・ランキング・選手分析・クラブ統計・対戦履歴までを横断する、オリエンテーリング専用のデータプラットフォームです。本ページは、その{" "}
             <b>システム全体像と技術スタック</b> を1枚にまとめた技術ドキュメントです。
+            現在 <b>{stats.events.toLocaleString()}</b> 大会・ランキング掲載{" "}
+            <b>{stats.athletes.toLocaleString()}</b> 選手・
+            <b>{stats.lcRecords.toLocaleString()}</b> 走の成績レコード・
+            <b>{stats.clubs.toLocaleString()}</b> クラブを収録し、日次で更新しています。
           </p>
-          <div className="kpis">
-            <div className="kpi">
-              <div className="n">{stats.events.toLocaleString()}</div>
-              <div className="l">収集イベント</div>
-            </div>
-            <div className="kpi">
-              <div className="n">{stats.athletes.toLocaleString()}</div>
-              <div className="l">ランキング掲載選手</div>
-            </div>
-            <div className="kpi">
-              <div className="n">{stats.lcRecords.toLocaleString()}</div>
-              <div className="l">成績レコード（巡航速度・ミス率）</div>
-            </div>
-            <div className="kpi">
-              <div className="n">{stats.clubs.toLocaleString()}</div>
-              <div className="l">クラブ</div>
-            </div>
-          </div>
         </header>
 
         {/* ============ 01 システム全体マップ ============ */}
@@ -562,7 +548,7 @@ export function AnalysisSystemReport({
                 allrounder。
               </div>
             </div>
-            <div className="dec">
+            <div className="dec" id="trend" style={{ scrollMarginTop: "80px" }}>
               <div className="k">TREND ｜ トレンドライン</div>
               <div className="v">
                 <span className="hl">Theil–Sen</span> 頑健回帰
@@ -572,7 +558,7 @@ export function AnalysisSystemReport({
                 pairwise slope の中央値を使うため、単発の大崩れレースで向きが反転しない。
               </div>
             </div>
-            <div className="dec">
+            <div className="dec" id="cross-race" style={{ scrollMarginTop: "80px" }}>
               <div className="k">CROSS-RACE ｜ ミス率の相対評価</div>
               <div className="v">
                 同水準帯の期待値との <span className="hl">Theil–Sen 残差</span>
@@ -594,7 +580,7 @@ export function AnalysisSystemReport({
                 ノーミス推定タイム（記録 − 総ロス）で実フィールドに対する想定順位も算出する。
               </div>
             </div>
-            <div className="dec">
+            <div className="dec" id="miss-trend" style={{ scrollMarginTop: "80px" }}>
               <div className="k">MISS-TREND ｜ ミスの傾向（クロスレース）</div>
               <div className="v">
                 局面×レッグ長の <span className="hl">並べ替え検定</span>＋FDR
