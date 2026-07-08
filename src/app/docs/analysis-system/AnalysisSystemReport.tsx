@@ -537,6 +537,7 @@ export function AnalysisSystemReport({
               </div>
               <div className="why">
                 <code>score = (1 − CV/0.3) × 100</code>（CV = σ/μ）。ブレが小さいほど高得点。
+                0.3 は「CV 30% で 0 点」とする規約スケール（検定に基づく値ではない）。
               </div>
             </div>
             <div className="dec">
@@ -552,7 +553,7 @@ export function AnalysisSystemReport({
                 無差別F/S を <span className="hl">z-score</span> 正規化
               </div>
               <div className="why">
-                スコア体系の違いを母集団で正規化し差で判定（閾値 0.3）→ forester / sprinter /
+                スコア体系の違いを母集団で正規化し差で判定（閾値 0.3＝±0.3σ・規約値）→ forester / sprinter /
                 allrounder。
               </div>
             </div>

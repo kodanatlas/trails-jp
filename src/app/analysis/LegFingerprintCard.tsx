@@ -127,7 +127,11 @@ function DisciplineBlock({
 
       {bandLine && <p className="mt-1.5 text-[10px] text-muted">{bandLine}</p>}
       {fp.cells.every((c) => c.flag === 0) && (
-        <p className="mt-1.5 text-[10px] text-muted/80">統計的に偏って多いセルはありません。</p>
+        <p className="mt-1.5 text-[10px] text-muted/80">
+          {bandLine
+            ? "統計的に偏って多いセルはありません（帯との差は偶然の範囲を出ない可能性があります）。"
+            : "統計的に偏って多いセルはありません。"}
+        </p>
       )}
 
       {(fp.legsPack > 0 || fp.packUnchecked > 0) && (
