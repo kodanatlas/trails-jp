@@ -11,6 +11,7 @@ import {
   hasMergedNamesakes,
   type Tally,
 } from "@/lib/analysis/head-to-head";
+import type { LegH2HResult } from "@/lib/analysis/leg-h2h";
 
 interface Props {
   /** 自分（AthleteDetail がロード済みのプロフィール） */
@@ -44,6 +45,7 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [legH2H, setLegH2H] = useState<LegH2HResult | null>(null);
 
   // 相手データの結果キャッシュ（77シャードの遅延 fetch を選手切替のたびに繰り返さない）
   const profileCache = useRef(new Map<string, AthleteProfile>());
@@ -54,6 +56,7 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
     setOpponent(a);
     setOppProfile(null);
     setOppEntries(null);
+    setLegH2H(null);
     setShowAllHistory(false);
     setLoading(a !== null);
   };
@@ -86,10 +89,21 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
       setOppEntries(e);
       setLoading(false);
     });
+    // レッグ勝敗（同一クラスで対戦したレースのみ・非致命）
+    fetch(
+      `/api/h2h-legs?a=${encodeURIComponent(profile.name)}&b=${encodeURIComponent(opponent.name)}`,
+    )
+      .then((r) => (r.ok ? (r.json() as Promise<LegH2HResult>) : null))
+      .then((d) => {
+        if (!cancelled) setLegH2H(d && d.races.length > 0 ? d : null);
+      })
+      .catch(() => {
+        if (!cancelled) setLegH2H(null);
+      });
     return () => {
       cancelled = true;
     };
-  }, [opponent]);
+  }, [opponent, profile.name]);
 
   // 検索結果（部分一致 上位8件、自分自身は除外）
   const results = useMemo(() => {
@@ -298,6 +312,45 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
           <p className="mt-2 text-[9px] text-muted/70">
             ※ JOY ランキング換算点での比較です（同一大会でも別クラス出走の場合があります）
           </p>
+
+          {/* レッグ勝敗（同一クラス＝同一コースを走ったレースのみ・区間タイム比較） */}
+          {legH2H && (
+            <div className="mt-2 rounded bg-surface p-3">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+                  レッグ勝敗
+                </span>
+                <span className="text-[10px] text-muted">
+                  同一クラスで対戦 {legH2H.races.length} レース・{legH2H.legs} レッグ
+                </span>
+              </div>
+              <p className="mt-1 text-center text-lg font-bold">
+                <span className="text-primary">{legH2H.wonA}</span>
+                <span className="mx-1 text-xs text-muted">勝</span>
+                <span className="text-accent">{legH2H.wonB}</span>
+                <span className="mx-1 text-xs text-muted">敗</span>
+                {legH2H.tied > 0 && (
+                  <span className="text-xs text-muted">（{legH2H.tied}分）</span>
+                )}
+              </p>
+              <div className="mt-1.5 space-y-0.5">
+                {legH2H.races.slice(0, 5).map((r, i) => (
+                  <div key={`${r.date}-${i}`} className="flex items-center gap-2 text-[10px]">
+                    <span className="w-16 flex-shrink-0 font-mono text-muted">{formatDate(r.date)}</span>
+                    <span className="min-w-0 flex-1 truncate text-muted">{r.eventName}</span>
+                    <span className="flex-shrink-0 font-mono">
+                      <span className="font-bold text-primary">{r.wonA}</span>
+                      <span className="text-muted/60">-</span>
+                      <span className="font-bold text-accent">{r.wonB}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[9px] text-muted/70">
+                区間タイムが相手より速かったレッグの数（同一クラス＝同一コースのみ）。
+              </p>
+            </div>
+          )}
 
           {/* 対戦履歴 */}
           {h2h.records.length === 0 ? (
