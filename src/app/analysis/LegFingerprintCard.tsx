@@ -193,7 +193,7 @@ export function LegFingerprintCard({ name }: { name: string }) {
         （パック・地形・慎重な安全ルートのロスも含まれえます。「もっと攻めるべき」という意味ではありません）。
         赤フラグは統計的な偏りの判定で、1割程度は偶然でも生じえます。
         集団走の疑いレッグは除外済み・リレー系クラスは対象外。対象レース数は取込状況により他のカードと異なることがあります。
-        <a href="/docs/analysis-system" className="underline hover:text-foreground">判定方法の詳細</a>
+        <a href="/docs/analysis-system#miss-trend" className="underline hover:text-foreground">判定方法の詳細</a>
       </p>
     </div>
   );
