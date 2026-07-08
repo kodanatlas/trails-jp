@@ -14,9 +14,17 @@ export interface RankingRef {
   isActive: boolean;
 }
 
+/** 順位・得点の変動（前月比 mom / 前年比 yoy）。前月/前年スナップショットがある選手のみ付く */
+export interface RankDelta {
+  mom: number | null;
+  yoy: number | null;
+}
+
 /** 完全なランキング出現情報 (詳細ロード時) */
 export interface RankingAppearance extends RankingRef {
   events: EventScore[];
+  rankDelta?: RankDelta; // 順位変動（正=前月より上昇）
+  pointsDelta?: RankDelta; // 得点変動
 }
 
 /** 軽量インデックスの選手プロフィール (検索・一覧用) */

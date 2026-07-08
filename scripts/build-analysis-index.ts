@@ -769,6 +769,9 @@ if (supabaseUrl && supabaseKey) {
 
     // 存在する全ランキングファイルを対象に (a) スナップショット行構築 (b) delta 付与
     const snapshotRows: { month: string; file_key: string; stats: Record<string, { r: number; p: number }> }[] = [];
+    // トップ「今月の急上昇」用の候補（前月比で順位が上がった現役選手）
+    type MoverCand = { name: string; key: string; club: string; type: string; className: string; rank: number; mom: number; pointsMom: number };
+    const moverCandidates: MoverCand[] = [];
     for (const fileName of files) {
       const parsed = parseFilename(fileName);
       if (!parsed) continue;
@@ -808,11 +811,28 @@ if (supabaseUrl && supabaseKey) {
             mom: pm ? pm.r - e.rank : null,  // 前月より順位が上がった→正の値
             yoy: py ? py.r - e.rank : null,
           };
+          const momP = pm ? Math.round((e.total_points - pm.p) * 10) / 10 : null;
           (e as any).points_delta = {
-            mom: pm ? Math.round((e.total_points - pm.p) * 10) / 10 : null,
+            mom: momP,
             yoy: py ? Math.round((e.total_points - py.p) * 10) / 10 : null,
           };
           deltaCount++;
+          // 前月比で順位が上がった現役選手を movers 候補へ。
+          // 無差別/Open の包括カテゴリは母集団が巨大で順位ジャンプが大きく意味が薄いため除外
+          // （専門クラスの上昇の方が「急上昇」として妥当）。
+          const momR = pm ? pm.r - e.rank : null;
+          if (momR != null && momR > 0 && e.is_active && !/無差別|open/i.test(parsed.className)) {
+            moverCandidates.push({
+              name: e.athlete_name,
+              key: e.athlete_name.replace(/\s+/g, ""),
+              club: e.club,
+              type: parsed.type,
+              className: parsed.className,
+              rank: e.rank,
+              mom: momR,
+              pointsMom: momP ?? 0,
+            });
+          }
         }
       }
       fs.writeFileSync(filePath, JSON.stringify(entries, null, 2));
@@ -836,6 +856,26 @@ if (supabaseUrl && supabaseKey) {
     }
     if (upsertFailures === 0) {
       console.log(`✓ ranking_snapshot: ${snapshotRows.length} files upserted for ${currentMonth}`);
+    }
+
+    // movers.json（トップ「今月の急上昇」）: 選手ごとに最大の順位上昇を1件に集約 → 上位を書き出す。
+    // イベント非依存（ランキングは週次更新）なのでオフシーズンでも出る恒常セクション。
+    const byKey = new Map<string, MoverCand>();
+    for (const c of moverCandidates) {
+      const cur = byKey.get(c.key);
+      if (!cur || c.mom > cur.mom || (c.mom === cur.mom && c.pointsMom > cur.pointsMom)) byKey.set(c.key, c);
+    }
+    const moverItems = [...byKey.values()]
+      .sort((a, b) => b.mom - a.mom || b.pointsMom - a.pointsMom || a.rank - b.rank)
+      .slice(0, 8);
+    if (moverItems.length > 0) {
+      fs.writeFileSync(
+        path.resolve(__dirname, "../src/data/movers.json"),
+        JSON.stringify({ generatedAtJst: jstNowLabel() + " JST", items: moverItems }, null, 2) + "\n",
+      );
+      console.log(`✓ movers.json: ${moverItems.length} items`);
+    } else {
+      console.warn("⚠ movers.json: 0 items（前月スナップショット不在? 既存 seed を保持）");
     }
   } catch (e) {
     console.warn("Ranking snapshot/delta failed:", e);

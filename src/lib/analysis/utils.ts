@@ -60,6 +60,9 @@ export async function loadAthleteDetail(
           return { date: parsed.date, eventName: parsed.eventName, points: es.points };
         });
 
+        // delta はビルド時に付与される任意フィールド（前月/前年スナップショット存在時のみ）
+        const rankDelta = (entry as { rank_delta?: { mom: number | null; yoy: number | null } }).rank_delta;
+        const pointsDelta = (entry as { points_delta?: { mom: number | null; yoy: number | null } }).points_delta;
         rankings.push({
           type,
           className,
@@ -67,6 +70,8 @@ export async function loadAthleteDetail(
           totalPoints: entry.total_points,
           isActive: entry.is_active,
           events,
+          ...(rankDelta ? { rankDelta } : {}),
+          ...(pointsDelta ? { pointsDelta } : {}),
         });
       } catch {
         // skip failed fetches

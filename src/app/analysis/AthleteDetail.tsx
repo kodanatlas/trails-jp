@@ -129,6 +129,7 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
     <div className="space-y-5">
       <ProfileHeader profile={profile} />
       <TypeBadge profile={profile} />
+      <RecentMovement profile={profile} />
       <StatsCards profile={profile} />
       <DeferUntilVisible minHeight={320}>
         <ScoreChart profile={profile} />
@@ -151,6 +152,49 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
         myEntries={entryData?.entries ?? null}
       />
       <UpcomingEntries data={entryData} />
+    </div>
+  );
+}
+
+/**
+ * 最近の動き: この選手の主戦クラス（rankDelta を持つ appearance のうち最上位）の
+ * 前月比の順位・得点変動を1行で見せる（JOYランキングの月次スナップショット由来）。
+ * 前月スナップショットが無い選手（新規・久々の復帰）は非表示。
+ */
+function RecentMovement({ profile }: { profile: AthleteProfile }) {
+  const withDelta = profile.rankings.filter((r) => r.rankDelta?.mom != null);
+  if (withDelta.length === 0) return null;
+  // 主戦＝rankDelta を持つ中で最上位（rank 最小）
+  const primary = withDelta.reduce((best, r) => (r.rank < best.rank ? r : best));
+  const momRank = primary.rankDelta!.mom!;
+  const momPts = primary.pointsDelta?.mom ?? null;
+  const isSprint = primary.type.includes("sprint");
+  const up = momRank > 0;
+  const flat = momRank === 0;
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">最近の動き</span>
+        <span className="text-[10px] text-muted">
+          {isSprint ? "スプリント" : "フォレスト"} {primary.className}
+        </span>
+        <span className="text-sm">
+          <span className="font-bold">{primary.rank.toLocaleString()}位</span>
+          <span className={`ml-1.5 font-mono text-xs font-bold ${flat ? "text-muted" : up ? "text-green-400" : "text-accent"}`}>
+            {flat ? "±0" : `${up ? "↑" : "↓"}${Math.abs(momRank).toLocaleString()}`}
+          </span>
+          <span className="ml-0.5 text-[10px] text-muted">前月比</span>
+        </span>
+        {momPts != null && momPts !== 0 && (
+          <span className="text-xs text-muted">
+            得点{" "}
+            <span className={`font-mono font-bold ${momPts > 0 ? "text-green-400" : "text-accent"}`}>
+              {momPts > 0 ? "+" : ""}
+              {momPts.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+            </span>
+          </span>
+        )}
+      </div>
     </div>
   );
 }
