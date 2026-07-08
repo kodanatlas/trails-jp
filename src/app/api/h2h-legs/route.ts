@@ -30,6 +30,6 @@ export async function GET(req: NextRequest) {
 
   const result = buildLegH2H((data ?? []) as LegH2HRow[], keyA, keyB);
   return NextResponse.json(result, {
-    headers: { "Cache-Control": "public, max-age=3600, s-maxage=3600" },
+    headers: { "Cache-Control": "public, max-age=0, s-maxage=600, stale-while-revalidate=86400" },
   });
 }

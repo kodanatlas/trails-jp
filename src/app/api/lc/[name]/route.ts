@@ -53,6 +53,8 @@ export async function GET(
   }));
 
   return NextResponse.json(performances, {
-    headers: { "Cache-Control": "public, max-age=3600, s-maxage=3600" },
+    // ブラウザは毎回CDNに確認(max-age=0)し旧版を抱えない。CDNは10分fresh＋以降は
+    // stale配信しつつ裏で再検証。日次のper-leg取込・デプロイが最大10分で反映される。
+    headers: { "Cache-Control": "public, max-age=0, s-maxage=600, stale-while-revalidate=86400" },
   });
 }
