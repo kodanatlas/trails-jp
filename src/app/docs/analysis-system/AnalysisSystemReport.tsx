@@ -62,7 +62,7 @@ const LAYERS: {
     stroke: "rgba(148,163,184,.35)",
     title: "PERSISTENCE ｜ Supabase",
     chips: [
-      { x: 90, w: 380, t: "PostgreSQL ｜ athletes・lc_performances 他" },
+      { x: 90, w: 380, t: "PostgreSQL ｜ athletes・lc_performances・lc_leg_splits 他" },
       { x: 510, w: 380, t: "Storage ｜ events.json・entry-index.json" },
     ],
   },
@@ -320,8 +320,9 @@ export function AnalysisSystemReport({
               <ul>
                 <li><b>オリエンタイプ</b>分類（forester/sprinter/all）</li>
                 <li>安定性・最近の調子・<b>対戦履歴</b></li>
+                <li>クロスレースの<b>ミスの傾向</b>（局面×レッグ長）と相対評価</li>
               </ul>
-              <span className="file mono">/analysis</span>
+              <span className="file mono">/analysis・/a/選手名</span>
             </div>
             <div className="doc a">
               <div className="ghost">L</div>
@@ -330,7 +331,7 @@ export function AnalysisSystemReport({
               <p>LapCenter のスプリットから、レッグ単位でタイムを分解。</p>
               <ul>
                 <li>ロスを<b>コース起因／自分のミス</b>に分解（罠レッグ判定）</li>
-                <li><b>区間賞</b>・ノーミス推定順位・タイム差グラフ</li>
+                <li><b>区間賞</b>・<b>順位が動いたレッグ</b>・ノーミス推定順位</li>
               </ul>
               <span className="file mono">/results</span>
             </div>
@@ -410,6 +411,11 @@ export function AnalysisSystemReport({
               <span className="use">→ ナビゲーションロスの割合（%）</span>
             </div>
             <div className="row">
+              <span className="who cdk">LapCenter</span>
+              <span className="key">split-list</span>
+              <span className="use">→ レッグ別ラップ・ロス・通過順位（全走者・11万レッグ超）</span>
+            </div>
+            <div className="row">
               <span className="who dkr">どこオリ</span>
               <span className="key">大会一覧（手動取込）</span>
               <span className="use">→ 大会名・日程・座標・受付状態（ホワイトリスト制）</span>
@@ -451,12 +457,12 @@ export function AnalysisSystemReport({
             <div className="wave">
               <div className="w">12:00 JST</div>
               <div className="t">sync-lapcenter</div>
-              <div className="d">巡航速度・ミス率を収集して DB へ <code>upsert</code>。</div>
+              <div className="d">巡航速度・ミス率に加え<b>レッグ別スプリット</b>を収集して DB へ <code>upsert</code>（取込台帳で管理）。</div>
             </div>
             <div className="wave">
               <div className="w">水曜 ビルド時</div>
               <div className="t">build-analysis-index</div>
-              <div className="d">ランキング最新取得 → <b>athlete-index / club-stats</b> を再生成。</div>
+              <div className="d">ランキング最新取得 → <b>athlete-index / club-stats / クロスレース統計（cross-race・leg-fingerprint）</b> を再生成。</div>
             </div>
           </div>
           <div className="invariant">
@@ -486,6 +492,8 @@ export function AnalysisSystemReport({
                 <li><code>athletes</code>（選手マスタ）</li>
                 <li><code>athlete_appearances</code>（出場・順位）</li>
                 <li><code>lc_performances</code>（巡航速度・ミス率）</li>
+                <li><code>lc_leg_splits</code>（レッグ別スプリット・全走者）</li>
+                <li><code>lc_leg_events</code>（per-leg 取込台帳）</li>
               </ul>
             </div>
             <div className="topic b">
@@ -588,7 +596,8 @@ export function AnalysisSystemReport({
               <div className="why">
                 全レースのレッグ別ミス（想定タイム30%超の規約判定・集団走疑いは除外）を局面3×レッグ長3のセルに集計し、
                 レース内のミス総数を固定した並べ替え帰無分布（日次調子・レース内相関を保存）に対する検定＋BH-FDR（q=0.10）で
-                「偏って多い場所」だけをフラグ。トレンド線はクリーンレッグ数×出走規模の信頼度加重 Theil–Sen。
+                「偏って多い場所」だけをフラグ。巡航速度が近い帯（forest 5分位/sprint 3分位）の平均との記述比較も併記。
+                トレンド線はクリーンレッグ数×出走規模の信頼度加重 Theil–Sen。
               </div>
             </div>
             <div className="dec">
