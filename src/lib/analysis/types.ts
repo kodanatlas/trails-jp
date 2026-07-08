@@ -89,6 +89,7 @@ export interface LapCenterPerformance {
   s: number;         // cruising speed (%)
   m: number;         // miss rate (%)
   t: "forest" | "sprint";
+  r?: number | null; // 出走クラスでの順位（lc_leg_splits 由来・per-leg 取込のあるクラスのみ）
 }
 
 export interface LapCenterIndex {

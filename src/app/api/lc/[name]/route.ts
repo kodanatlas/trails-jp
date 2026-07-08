@@ -26,7 +26,22 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // クライアントが期待する形式に変換（既存の LapCenterPerformance 型）
+  // 出走クラスでの順位（相対評価用）を lc_leg_splits から補完。runner_key = 空白除去名。
+  // per-leg 取込のあるクラスのみ。非致命（失敗しても scalar 履歴は返す）。
+  const rankByDateClass = new Map<string, number>();
+  try {
+    const { data: legRows } = await supabaseAdmin
+      .from("lc_leg_splits")
+      .select("event_date, class_name, rank")
+      .eq("runner_key", decoded.replace(/\s+/g, ""));
+    for (const lr of legRows ?? []) {
+      if (lr.rank != null) rankByDateClass.set(`${lr.event_date}|${lr.class_name}`, lr.rank);
+    }
+  } catch {
+    /* rank 補完は任意。失敗は無視 */
+  }
+
+  // クライアントが期待する形式に変換（既存の LapCenterPerformance 型 + 任意の順位 r）
   const performances = data.map((r) => ({
     d: r.event_date,
     e: r.event_name,
@@ -34,6 +49,7 @@ export async function GET(
     s: Number(r.cruising_speed),
     m: Number(r.miss_rate),
     t: r.race_type as "forest" | "sprint",
+    r: rankByDateClass.get(`${r.event_date}|${r.class_name}`) ?? null,
   }));
 
   return NextResponse.json(performances, {
