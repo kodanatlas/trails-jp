@@ -495,16 +495,17 @@ function StatsCards({ profile }: { profile: AthleteProfile }) {
       {/* 最近の調子 */}
       <div className="rounded-lg border border-border bg-card p-3">
         <div className="flex items-center gap-1.5">
-          {recentForm > 0 ? (
+          {/* n=3 の差分は ±5% 程度がノイズ域 → 色・トレンド矢印は |5%| 以上のみ（過剰演出の回避） */}
+          {recentForm >= 5 ? (
             <TrendingUp className="h-3.5 w-3.5 text-green-400" />
-          ) : recentForm < 0 ? (
+          ) : recentForm <= -5 ? (
             <TrendingDown className="h-3.5 w-3.5 text-red-400" />
           ) : (
             <Minus className="h-3.5 w-3.5 text-muted" />
           )}
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">最近の調子</span>
         </div>
-        <p className={`mt-1 text-2xl font-bold ${recentForm > 0 ? "text-green-400" : recentForm < 0 ? "text-red-400" : ""}`}>
+        <p className={`mt-1 text-2xl font-bold ${recentForm >= 5 ? "text-green-400" : recentForm <= -5 ? "text-red-400" : ""}`}>
           {allEvents.length >= 2 ? `${recentForm > 0 ? "+" : ""}${recentForm}%` : "—"}
         </p>
         <p className="text-[10px] text-muted">
@@ -663,11 +664,25 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
               tickFormatter={(v) => v.slice(2, 7)}
               axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
             />
-            <YAxis
-              tick={{ fontSize: 10, fill: "#888" }}
-              axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
-              domain={["auto", "auto"]}
-            />
+            {/* F/S はスコア体系が異なる（タイプ分類では z 正規化して比較している）ため
+                生得点を同一軸に重ねず、左=Forest / 右=Sprint の二軸で描く */}
+            {hasForest && (
+              <YAxis
+                yAxisId="f"
+                tick={{ fontSize: 10, fill: "#4ade80" }}
+                axisLine={{ stroke: "rgba(74,222,128,0.3)" }}
+                domain={["auto", "auto"]}
+              />
+            )}
+            {hasSprint && (
+              <YAxis
+                yAxisId="s"
+                orientation="right"
+                tick={{ fontSize: 10, fill: "#60a5fa" }}
+                axisLine={{ stroke: "rgba(96,165,250,0.3)" }}
+                domain={["auto", "auto"]}
+              />
+            )}
             <Tooltip
               contentStyle={{
                 backgroundColor: "#1a2332",
@@ -696,6 +711,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
             {hasForest && (
               <Line
                 name="forest"
+                yAxisId="f"
                 type="monotone"
                 dataKey="forest"
                 stroke="#4ade80"
@@ -709,6 +725,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
             {hasSprint && (
               <Line
                 name="sprint"
+                yAxisId="s"
                 type="monotone"
                 dataKey="sprint"
                 stroke="#60a5fa"
@@ -722,6 +739,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
             {hasForest && (
               <Line
                 name="forestMa"
+                yAxisId="f"
                 type="linear"
                 dataKey="forestMa"
                 stroke="rgba(74,222,128,0.4)"
@@ -737,6 +755,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
             {hasSprint && (
               <Line
                 name="sprintMa"
+                yAxisId="s"
                 type="linear"
                 dataKey="sprintMa"
                 stroke="rgba(96,165,250,0.3)"

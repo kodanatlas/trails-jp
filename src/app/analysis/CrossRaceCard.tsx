@@ -70,6 +70,23 @@ function DisciplineRow({
         高ミス率レース: {entry.blow}/{entry.n}
         <span className="text-[10px]">（種目内ミス率の上位四分位＝{q3Miss}%以上）</span>
       </p>
+      {(() => {
+        // 1行解釈（参考・断定しない）: 中央値の帯位置 × 大崩れ頻度（構成上の期待=25%）の組合せ。
+        // n が小さいと頻度の解釈自体が不安定なので n>=8 のときだけ出す
+        if (entry.n < 8) return null;
+        const blowRate = entry.blow / entry.n;
+        let text: string | null = null;
+        if (blowRate >= 0.4) {
+          text = neutral
+            ? "読み方: ミスの中央値は同水準帯なみですが、大きく崩れるレースの割合が高め＝平均型というより「ムラ型」の出方です（参考）"
+            : better
+              ? "読み方: ふだんのミスは少なめですが、崩れるときは大きい傾向です（参考）"
+              : "読み方: ミスが多めで、大崩れの頻度も高めです（参考）";
+        } else if (blowRate <= 0.15) {
+          text = "読み方: 大崩れの少ない安定した出方です（参考）";
+        }
+        return text ? <p className="mt-1 text-xs text-muted">{text}</p> : null;
+      })()}
     </div>
   );
 }
