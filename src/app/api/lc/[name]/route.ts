@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+interface LcPerfRow {
+  event_date: string;
+  event_name: string;
+  class_name: string;
+  cruising_speed: number | string;
+  miss_rate: number | string;
+  race_type: string;
+  rank: number | null;
+}
+
 /**
  * GET /api/lc/[name] — 1選手のLCパフォーマンス全履歴を返す
  * DB から直接クエリ。レスポンスは数KB。
@@ -12,11 +22,10 @@ export async function GET(
   const { name } = await params;
   const decoded = decodeURIComponent(name);
 
-  const { data, error } = await supabaseAdmin
-    .from("lc_performances")
-    .select("event_date, event_name, class_name, cruising_speed, miss_rate, race_type")
-    .eq("athlete_name", decoded)
-    .order("event_date", { ascending: true });
+  // 出走順位(rank)は lc_leg_splits を DB 側で LEFT JOIN する RPC で1クエリ取得する。
+  // 2クエリに分けると1リクエストあたりのDB負荷が倍化し、脆弱なインスタンスを飽和させた
+  // ため（2026-07-08 regression）、元の単一クエリと同じ負荷プロファイルに揃える。
+  const { data, error } = await supabaseAdmin.rpc("get_lc_perf_with_rank", { p_name: decoded });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -26,17 +35,15 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // クライアントが期待する形式に変換（既存の LapCenterPerformance 型）
-  // 注: 出走順位の補完は lc_leg_splits の runner_key 全件スキャンが遅く（未インデックス）、
-  //     小さな Supabase インスタンスを飽和させたため撤去。再導入は runner_key への
-  //     インデックス追加が前提（2026-07-08 regression）。
-  const performances = data.map((r) => ({
+  // クライアントが期待する形式に変換（既存の LapCenterPerformance 型 + 任意の順位 r）
+  const performances = (data as LcPerfRow[]).map((r) => ({
     d: r.event_date,
     e: r.event_name,
     c: r.class_name,
     s: Number(r.cruising_speed),
     m: Number(r.miss_rate),
     t: r.race_type as "forest" | "sprint",
+    r: r.rank ?? null,
   }));
 
   return NextResponse.json(performances, {

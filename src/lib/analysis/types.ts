@@ -38,6 +38,7 @@ export interface AthleteSummary {
   forestCount: number;
   sprintCount: number;
   type: "sprinter" | "forester" | "allrounder" | "unknown";
+  forestSprintLean?: number | null; // z-score差(正=Forest寄り/負=Sprint寄り)。両無差別出場時のみ。旧インデックスには無い
   recentForm: number; // 直近3大会 vs 全体平均 (%), 種目別算出
   raceCount?: number; // 重複排除済みの出場大会数（種目合算）。旧インデックスには無い
 }

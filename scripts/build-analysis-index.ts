@@ -39,6 +39,7 @@ interface AthleteSummary {
   forestCount: number;
   sprintCount: number;
   type: "sprinter" | "forester" | "allrounder" | "unknown";
+  forestSprintLean: number | null; // z-score差(正=Forest寄り/負=Sprint寄り)。両無差別出場時のみ
   recentForm: number;
   raceCount: number; // 重複排除済みの出場大会数（種目合算）
 }
@@ -108,6 +109,27 @@ function classifyType(
   if (hasSprint && !hasForest) return "sprinter";
   if (hasForest && hasSprint) return "allrounder";
   return "unknown";
+}
+
+/**
+ * Forest/Sprint の「寄り」度合いを z-score 差で返す（正=Forest寄り / 負=Sprint寄り）。
+ * バッジ分類(classifyType)と同じ母集団正規化を使う。両無差別カテゴリに出場している場合のみ
+ * 値を返す（=公平に比較できる場合のみ）。生ポイント差はスプリントが全体に高得点なため
+ * 77%がSprint寄りに偏る → z-score差で補正する。UI のバー位置に使う。
+ */
+function forestSprintLean(
+  appearances: RankingRef[],
+  popStats: { forestMean: number; forestStd: number; sprintMean: number; sprintStd: number },
+): number | null {
+  const isFemale = appearances.some((r) => r.className === "女子無差別" || r.className === "S_女子無差別");
+  const fClass = isFemale ? "女子無差別" : "無差別";
+  const sClass = isFemale ? "S_女子無差別" : "S_無差別";
+  const fApp = appearances.find((r) => r.type === "age_forest" && r.className === fClass);
+  const sApp = appearances.find((r) => r.type === "age_sprint" && r.className === sClass);
+  if (!fApp || !sApp || popStats.forestStd === 0 || popStats.sprintStd === 0) return null;
+  const fZ = (fApp.totalPoints - popStats.forestMean) / popStats.forestStd;
+  const sZ = (sApp.totalPoints - popStats.sprintMean) / popStats.sprintStd;
+  return Math.round((fZ - sZ) * 1000) / 1000;
 }
 
 function parseFilename(file: string): { type: string; className: string } | null {
@@ -552,6 +574,7 @@ for (const [name, data] of athleteMap) {
     forestCount,
     sprintCount,
     type: classifyType(data.appearances, popStats),
+    forestSprintLean: forestSprintLean(data.appearances, popStats),
     recentForm: 0,
     raceCount: 0,
   };

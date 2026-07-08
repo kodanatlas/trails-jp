@@ -496,7 +496,8 @@ function TypeBadge({ profile }: { profile: AthleteProfile }) {
     unknown: "bg-white/10 text-muted",
   };
 
-  const total = forestPoints + sprintPoints;
+  // 寄りバーの位置は build 側の z-score 正規化 lean を使う（正=Forest寄り/負=Sprint寄り）。
+  const lean = profile.forestSprintLean;
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
@@ -514,8 +515,11 @@ function TypeBadge({ profile }: { profile: AthleteProfile }) {
         </span>
       </div>
 
-      {/* Forest vs Sprint 得意度（中央=同等・マーカーが寄っている側が得意） */}
-      {total > 0 && (
+      {/* Forest vs Sprint 得意度（中央=同等・マーカーが寄っている側が得意）
+          位置は z-score 差（種目間のポイント水準差を補正）。生ポイント差だと
+          スプリントが全体に高得点なため 77% が Sprint 寄りに偏る（→補正）。
+          lean は build 側で両無差別カテゴリ出場時のみ算出。null なら公平に比較不可＝バー非表示。 */}
+      {lean != null && (
         <div className="mt-3">
           <div className="mb-1 flex justify-between text-[10px] text-muted">
             <span className="text-green-400">◀ Forest寄り {forestRank !== null ? `(${forestRank}位)` : ""}</span>
@@ -526,7 +530,7 @@ function TypeBadge({ profile }: { profile: AthleteProfile }) {
             <div
               className="absolute top-1/2 h-4 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary transition-all"
               style={{
-                left: `${50 + Math.max(-45, Math.min(45, ((sprintPoints - forestPoints) / (total / 2)) * 250))}%`,
+                left: `${50 - Math.max(-45, Math.min(45, lean * 18))}%`,
               }}
             />
           </div>
@@ -534,6 +538,9 @@ function TypeBadge({ profile }: { profile: AthleteProfile }) {
             <span>{forestPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}</span>
             <span>{sprintPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}</span>
           </div>
+          <p className="mt-1 text-[9px] text-muted/70">
+            ※ 位置は種目間のポイント水準差を補正した相対評価（スプリントは全体に高得点なため単純差では測れない）。下段は実ポイント。
+          </p>
         </div>
       )}
     </div>
