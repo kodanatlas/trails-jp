@@ -197,6 +197,7 @@ function ProfileHeader({ profile }: { profile: AthleteProfile }) {
               F・S 無差別平均
               <ChevronDown className={`h-3 w-3 transition-transform ${showBreakdown ? "rotate-180" : ""}`} />
             </button>
+            <p className="text-[9px] text-muted/60">各種目 上位3大会合計点の平均</p>
           </div>
         </div>
       </div>
@@ -433,25 +434,24 @@ function TypeBadge({ profile }: { profile: AthleteProfile }) {
           {typeLabel(profile.type)}
         </span>
         <span className="text-xs text-muted">
-          Forest: {profile.forestCount} カテゴリ / Sprint: {profile.sprintCount} カテゴリ
+          ランキング掲載: Forest {profile.forestCount}区分 / Sprint {profile.sprintCount}区分
         </span>
       </div>
 
-      {/* Forest vs Sprint bar */}
+      {/* Forest vs Sprint 得意度（中央=同等・マーカーが寄っている側が得意） */}
       {total > 0 && (
         <div className="mt-3">
           <div className="mb-1 flex justify-between text-[10px] text-muted">
-            <span>Forest {forestRank !== null ? `(${forestRank}位)` : ""}</span>
-            <span>Sprint {sprintRank !== null ? `(${sprintRank}位)` : ""}</span>
+            <span className="text-green-400">◀ Forest寄り {forestRank !== null ? `(${forestRank}位)` : ""}</span>
+            <span className="text-blue-400">Sprint寄り ▶ {sprintRank !== null ? `(${sprintRank}位)` : ""}</span>
           </div>
-          <div className="flex h-3 overflow-hidden rounded-full">
+          <div className="relative h-3 rounded-full bg-white/10">
+            <div className="absolute left-1/2 top-0 h-full w-px bg-white/25" />
             <div
-              className="bg-green-500/60 transition-all"
-              style={{ width: `${(forestPoints / total) * 100}%` }}
-            />
-            <div
-              className="bg-blue-500/60 transition-all"
-              style={{ width: `${(sprintPoints / total) * 100}%` }}
+              className="absolute top-1/2 h-4 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary transition-all"
+              style={{
+                left: `${50 + Math.max(-45, Math.min(45, ((sprintPoints - forestPoints) / (total / 2)) * 250))}%`,
+              }}
             />
           </div>
           <div className="mt-1 flex justify-between text-[10px] font-mono text-muted">
@@ -660,12 +660,13 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
             <XAxis
               dataKey="date"
               tick={{ fontSize: 10, fill: "#888" }}
-              tickFormatter={(v) => v.slice(5)}
+              tickFormatter={(v) => v.slice(2, 7)}
               axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
             />
             <YAxis
               tick={{ fontSize: 10, fill: "#888" }}
               axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
+              domain={["auto", "auto"]}
             />
             <Tooltip
               contentStyle={{
@@ -915,7 +916,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
     <XAxis
       dataKey="date"
       tick={{ fontSize: 10, fill: "#888" }}
-      tickFormatter={(v) => v.slice(5)}
+      tickFormatter={(v) => v.slice(2, 7)}
       axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
     />
   );
@@ -1185,7 +1186,8 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
         </ResponsiveContainer>
       </div>
       <p className="mt-2 text-[9px] text-muted">
-        破線＝トレンド（Theil–Sen 頑健回帰・レース順ベース・信頼度加重〔クリーンレッグ数×出走規模・データある場合〕・信頼できるレース5本以上で表示）
+        破線＝トレンド（外れ値に強い頑健回帰・レース順ベース・信頼できるレース5本以上で表示。
+        <a href="/docs/analysis-system" className="underline hover:text-foreground">算出方法</a>）
       </p>
     </div>
   );

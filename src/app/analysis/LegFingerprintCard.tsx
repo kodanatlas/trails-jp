@@ -53,7 +53,7 @@ function DisciplineBlock({
       }
     }
     if (best && best.diff >= BAND_DIFF_MIN_PT) {
-      bandLine = `参考: 巡航速度が近い帯（${norm.athletes}人）の平均と観測差が最大: ${best.label} 約+${Math.round(best.diff / 5) * 5}pt（検定なし）`;
+      bandLine = `同レベル帯（${norm.athletes}人）より${best.label}のミスが約${Math.round(best.diff / 5) * 5}pt多い（参考値）`;
     }
   }
   return (
@@ -61,7 +61,7 @@ function DisciplineBlock({
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p className="text-sm font-semibold">{label}</p>
         <p className="text-[10px] text-muted">
-          {fp.racesUsed}レース / {fp.legsValid}レッグ / 全体ミス率 {(base * 100).toFixed(0)}%
+          {fp.racesUsed}レース / {fp.legsValid}レッグ / 全レッグ中ミス {(base * 100).toFixed(0)}%
         </p>
       </div>
 
@@ -104,7 +104,8 @@ function DisciplineBlock({
       </div>
 
       {/* 重大度ヒストグラム */}
-      <div className="mt-2 space-y-0.5">
+      <p className="mt-2 text-[9px] text-muted/70">ミスの規模別 件数</p>
+      <div className="mt-1 space-y-0.5">
         {fp.sev.map((count, i) => (
           <div key={i} className="flex items-center gap-2 text-[10px]">
             <span className="w-20 flex-shrink-0 text-muted">{sevLabels[i]}</span>
@@ -125,6 +126,9 @@ function DisciplineBlock({
       )}
 
       {bandLine && <p className="mt-1.5 text-[10px] text-muted">{bandLine}</p>}
+      {fp.cells.every((c) => c.flag === 0) && (
+        <p className="mt-1.5 text-[10px] text-muted/80">統計的に偏って多いセルはありません。</p>
+      )}
 
       {(fp.legsPack > 0 || fp.packUnchecked > 0) && (
         <p className="mt-1.5 text-[9px] text-muted/70">
@@ -185,14 +189,11 @@ export function LegFingerprintCard({ name }: { name: string }) {
         )}
       </div>
       <p className="mt-3 text-[10px] leading-relaxed text-muted">
-        「ミス」＝LapCenter のレッグ別ロス（自分の巡航ペース基準の残差）が想定タイムの30%以上（フォレスト10秒/スプリント5秒未満は除外）
-        となったレッグの規約判定で、ナビミスそのものではありません（パック・地形・コンディション・慎重な安全ルートのロスも含まれえます。
-        「もっと攻めるべき」という意味ではありません）。
-        赤フラグはレース内のミス総数を固定した並べ替え検定（レース内相関・日次調子を保存）＋BH-FDR（q=0.10・9セル）＋効果量ゲートによる判定で、
-        フラグの1割程度は偶然でも生じえます。レッグ長はレース内相対（短/中/長はそのレース内の三分位）。
-        「近い巡航速度帯」は出走クラスのトップ基準の相対推定帯で、絶対走力の帯ではありません（帯比較は参考値・検定なし）。
-        集団走の疑いレッグ（前後の通過時刻が別走者と連続近接）は集計から除外していますが、検出は完全ではなく、
-        除外自体も無作為ではありません（除外数を上に表示）。リレー・フォーク形式のクラスは対象外。
+        「ミス」はレッグのロスが自分の想定タイムの30%を超えた場合の機械判定で、ナビミスとは限りません
+        （パック・地形・慎重な安全ルートのロスも含まれえます。「もっと攻めるべき」という意味ではありません）。
+        赤フラグは統計的な偏りの判定で、1割程度は偶然でも生じえます。
+        集団走の疑いレッグは除外済み・リレー系クラスは対象外。対象レース数は取込状況により他のカードと異なることがあります。
+        <a href="/docs/analysis-system" className="underline hover:text-foreground">判定方法の詳細</a>
       </p>
     </div>
   );
