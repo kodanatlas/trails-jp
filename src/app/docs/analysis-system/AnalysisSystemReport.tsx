@@ -703,7 +703,7 @@ export function AnalysisSystemReport({
             </h2>
           </div>
           <div className="road">
-            <div className="ph now">
+            <div className="ph">
               <div className="p">P1</div>
               <div className="w">完了</div>
               <div className="d">分析データを静的 JSON から Supabase DB へ移行。</div>
@@ -714,18 +714,23 @@ export function AnalysisSystemReport({
             </div>
             <div className="ph">
               <div className="p">P2</div>
-              <div className="w">進行中</div>
-              <div className="d">残る静的 JSON（athlete-index 等）も DB API 化。</div>
+              <div className="w">完了</div>
+              <div className="d">
+                レッグ単位の統計分析基盤 — per-leg DB 取込（11万レッグ超）・ミスの傾向（並べ替え検定）・同水準帯コホート比較・順位が動いたレッグ。
+              </div>
               <div className="chips">
-                <span className="chip b">API</span>
+                <span className="chip a">DB</span>
+                <span className="chip b">統計</span>
               </div>
             </div>
-            <div className="ph">
+            <div className="ph now">
               <div className="p">P3</div>
-              <div className="w">構想</div>
-              <div className="d">応援機能の運用拡充（トレンド表示・グループ応援）。</div>
+              <div className="w">次の焦点</div>
+              <div className="d">
+                堅牢性と精緻化 — API 障害時の縮退表示・検定の過分散対応・データ鮮度の監視。
+              </div>
               <div className="chips">
-                <span className="chip c">応援</span>
+                <span className="chip c">運用</span>
               </div>
             </div>
           </div>
@@ -751,7 +756,7 @@ export function AnalysisSystemReport({
           <b>trails.jp 技術ドキュメント</b> ｜ 日本オリエンテーリング統合プラットフォーム ｜{" "}
           {buildDate}
           <br />
-          数値は 2026-05〜06 時点の規模感。本ページは直リンク用の技術解説です。 ／{" "}
+          本ページは直リンク用の技術解説です。 ／{" "}
           <a href="/">trails.jp を開く</a>
         </footer>
       </div>
