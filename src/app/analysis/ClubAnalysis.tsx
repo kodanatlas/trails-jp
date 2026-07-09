@@ -357,9 +357,12 @@ function MemberRow({ member: m, onSelect }: { member: ClubMember; onSelect?: (na
         {m.eventCount}大会
       </span>
 
-      {/* Points */}
-      <span className="w-14 flex-shrink-0 text-right font-mono text-xs font-bold text-primary">
-        {m.avgTotalPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+      {/* Points（補正済み） */}
+      <span
+        className="w-14 flex-shrink-0 text-right font-mono text-xs font-bold text-primary"
+        title="補正済みポイント"
+      >
+        {(m.adjustedPoints ?? m.avgTotalPoints).toLocaleString(undefined, { maximumFractionDigits: 1 })}
       </span>
     </button>
   );

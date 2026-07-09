@@ -253,6 +253,9 @@ function ProfileHeader({ profile }: { profile: AthleteProfile }) {
   const sprintPts = sprintRanking?.totalPoints;
   const hasBoth = forestPts != null && sprintPts != null;
 
+  // 補正済みポイント（旧インデックスには無いので従来値にフォールバック）
+  const adjPoints = profile.adjustedPoints ?? profile.avgTotalPoints;
+
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center justify-between">
@@ -264,16 +267,37 @@ function ProfileHeader({ profile }: { profile: AthleteProfile }) {
           <ShareButtons name={profile.name} />
           <div className="text-right">
             <p className="text-2xl font-bold text-primary">
-              {profile.avgTotalPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+              {adjPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
             </p>
             <button
               onClick={() => setShowBreakdown((v) => !v)}
               className="inline-flex items-center gap-0.5 text-[10px] text-muted hover:text-foreground transition-colors"
             >
-              F・S 無差別平均
+              補正済みポイント
               <ChevronDown className={`h-3 w-3 transition-transform ${showBreakdown ? "rotate-180" : ""}`} />
             </button>
-            <p className="text-[9px] text-muted/60">各種目 上位3大会合計点の平均</p>
+            {(forestRanking || sprintRanking) && (
+              <p className="text-[10px] text-muted">
+                {forestRanking && (
+                  <span className="text-green-400 whitespace-nowrap">
+                    F {forestRanking.totalPoints.toLocaleString()}（{forestRanking.rank}位）
+                  </span>
+                )}
+                {forestRanking && sprintRanking && <span className="text-muted/50"> / </span>}
+                {sprintRanking && (
+                  <span className="text-blue-400 whitespace-nowrap">
+                    S {sprintRanking.totalPoints.toLocaleString()}（{sprintRanking.rank}位）
+                  </span>
+                )}
+              </p>
+            )}
+            <p className="text-[9px] text-muted/60">
+              種目間の水準差を補正（
+              <a href="/docs/analysis-system#adjusted" className="underline hover:text-foreground">
+                算出方法
+              </a>
+              ）
+            </p>
           </div>
         </div>
       </div>
@@ -283,19 +307,19 @@ function ProfileHeader({ profile }: { profile: AthleteProfile }) {
           {/* 計算式 */}
           <div className="rounded bg-surface p-2.5 text-xs text-muted">
             <p className="mb-1 text-[9px] text-muted/60">
-              各種目の上位3大会の合計 = totalPoints（JOYランキング規則）
+              各大会の得点をフォレスト基準に補正（スプリントの大会は水準差 約0.4σ/3 を差し引く）し、フォレスト／スプリント混在で上位3大会を合計。下段は無補正の無差別総合（参考）。
             </p>
             <div className="font-mono">
               {hasBoth ? (
                 <>
-                  (<span className="text-green-400">{forestPts!.toLocaleString()}</span>
+                  <span className="text-green-400">{forestPts!.toLocaleString()}</span>
                   <span className="text-muted/60 text-[9px]"> {openForestClass}</span>
-                  <span className="mx-1">+</span>
+                  <span className="mx-1">／</span>
                   <span className="text-blue-400">{sprintPts!.toLocaleString()}</span>
                   <span className="text-muted/60 text-[9px]"> {openSprintClass}</span>
-                  ) / 2 ={" "}
+                  <span className="mx-1">→ 補正後 上位3大会合計</span>
                   <span className="font-bold text-primary">
-                    {profile.avgTotalPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                    {adjPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                   </span>
                 </>
               ) : forestPts != null ? (

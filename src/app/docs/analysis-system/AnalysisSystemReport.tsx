@@ -658,6 +658,57 @@ function LegImpactDiagram() {
   );
 }
 
+/** 補正済みポイント: 各大会をフォレスト基準に補正し、混在で上位3大会を合計。 */
+function AdjustedPointsDiagram() {
+  const forestX = [524, 448, 372, 300];
+  const sprintX = [486, 410, 336]; // 補正後（水準差を差し引き済み）
+  const all = [
+    ...forestX.map((x) => ({ x, d: "f" as const })),
+    ...sprintX.map((x) => ({ x, d: "s" as const })),
+  ].sort((a, b) => b.x - a.x);
+  const top3 = new Set(all.slice(0, 3).map((o) => `${o.d}${o.x}`));
+  const fY = 66;
+  const sY = 128;
+  return (
+    <svg viewBox="0 0 620 208" role="img" aria-label="補正済みポイントの図解">
+      <text x={330} y={24} textAnchor="middle" fontSize="11.5" fontWeight="700" fill="var(--pink)">
+        ○ = 補正後の上位3大会 → 合計が補正済みポイント
+      </text>
+      <line x1={90} y1={174} x2={565} y2={174} stroke="var(--line)" />
+      <text x={90} y={194} fontSize="10.5" fill="var(--dim)">
+        ← 低い
+      </text>
+      <text x={330} y={194} textAnchor="middle" fontSize="10.5" fill="var(--dim)">
+        補正後の 1 大会あたり得点
+      </text>
+      <text x={565} y={194} textAnchor="end" fontSize="10.5" fill="var(--dim)">
+        高い →
+      </text>
+      <text x={80} y={fY + 4} textAnchor="end" fontSize="11" fontWeight="700" fill="var(--green)">
+        フォレスト
+      </text>
+      {forestX.map((x) => (
+        <g key={`f${x}`}>
+          <circle cx={x} cy={fY} r={6} fill="var(--green)" />
+          {top3.has(`f${x}`) && <circle cx={x} cy={fY} r={11} fill="none" stroke="var(--pink)" strokeWidth={2} />}
+        </g>
+      ))}
+      <text x={80} y={sY + 1} textAnchor="end" fontSize="11" fontWeight="700" fill="var(--cyan)">
+        スプリント
+      </text>
+      <text x={80} y={sY + 15} textAnchor="end" fontSize="9" fill="var(--muted)">
+        水準差を差引後
+      </text>
+      {sprintX.map((x) => (
+        <g key={`s${x}`}>
+          <circle cx={x} cy={sY} r={6} fill="var(--cyan)" />
+          {top3.has(`s${x}`) && <circle cx={x} cy={sY} r={11} fill="none" stroke="var(--pink)" strokeWidth={2} />}
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 export function AnalysisSystemReport({
   buildDate,
   stats,
@@ -1042,6 +1093,15 @@ export function AnalysisSystemReport({
               <div className="cap">
                 無差別 F／S の得点を母集団で <b>z-score 正規化</b>し、差で forester／sprinter／allrounder を判定（閾値 ±0.3σ）。
                 スプリントは母集団平均が <b>約 0.4σ 高い</b>ため生の得点差だと <b>8 割近くが Sprint 寄り</b>に偏る → 正規化で補正。選手ページの寄りバー位置もこの補正値を使う。
+              </div>
+            </div>
+            <div className="dec fig" id="adjusted" style={{ scrollMarginTop: "80px" }}>
+              <div className="k">ADJUSTED ｜ 補正済みポイント（選手ヘッダー）</div>
+              <AdjustedPointsDiagram />
+              <div className="cap">
+                JOY の「上位3大会合計」を種目補正した、選手ヘッダーのメイン数値。無差別クラスの各大会の得点を
+                <b>フォレスト基準に補正</b>（スプリントは全体に高得点なため 1 大会あたりの水準差 ≈約660/3 を差し引く）した上で、
+                <b>フォレスト／スプリント混在で上位3大会を合計</b>する。強い種目1つに限定せず両種目のベスト回を拾う。無補正の Forest／Sprint 実点＋順位もヘッダーに併記。
               </div>
             </div>
             <div className="dec fig" id="trend" style={{ scrollMarginTop: "80px" }}>
