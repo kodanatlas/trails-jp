@@ -266,12 +266,12 @@ function ProfileHeader({ profile, perEventGap }: { profile: AthleteProfile; perE
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold">{profile.name}</h2>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex-shrink-0">
+          <h2 className="whitespace-nowrap text-lg font-bold">{profile.name}</h2>
           <p className="text-xs text-muted">{profile.clubs.join(" / ")}</p>
         </div>
-        <div className="flex items-start gap-3">
+        <div className="flex min-w-0 items-start gap-3">
           <ShareButtons name={profile.name} />
           <div className="text-right">
             <p className="text-2xl font-bold text-primary">
