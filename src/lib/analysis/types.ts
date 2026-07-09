@@ -104,6 +104,7 @@ export interface LapCenterIndex {
 
 export interface AthleteIndex {
   athletes: Record<string, AthleteSummary>;
+  perEventGap?: number; // 補正済みポイントの1大会あたり種目間水準差（スプリント大会から差引く）。旧indexには無い
   generatedAt: string;
 }
 

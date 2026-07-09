@@ -1064,7 +1064,10 @@ if (supabaseUrl && supabaseKey) {
 }
 
 // Write output
-const athleteIndex = { athletes, generatedAt: new Date().toISOString() };
+// perEventGap = 補正済みポイントで各スプリント大会から差し引く1大会あたりの水準差。
+// 選手ページが上位3大会を再現するため索引に載せる（computeAdjustedPoints と同一式）。
+const indexPerEventGap = Math.round(((popStats.sprintMean - popStats.forestMean) / 3) * 10) / 10;
+const athleteIndex = { athletes, perEventGap: indexPerEventGap, generatedAt: new Date().toISOString() };
 const clubIndex = { clubs, generatedAt: new Date().toISOString() };
 
 const athleteJson = JSON.stringify(athleteIndex);
