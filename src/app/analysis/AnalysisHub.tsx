@@ -215,6 +215,17 @@ export function AnalysisHub() {
       {/* Athlete Tab */}
       {activeTab === "athlete" && (
         <div>
+          {/* 補正済みポイントの補足（今回の変更点） */}
+          <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs leading-relaxed text-muted">
+            ポイントは
+            <span className="font-semibold text-foreground">「補正済みポイント」</span>
+            に変わりました。各大会の得点をフォレスト基準に補正（スプリントは全体に高得点が出やすいため水準差を差し引く）した上で、フォレスト／スプリント混在で
+            <span className="font-semibold text-foreground">上位3大会を合計</span>
+            しています。強い種目1つに限定せず、両種目のベスト回を拾えます。
+            <a href="/docs/analysis-system#adjusted" className="ml-1 underline hover:text-foreground">
+              算出方法
+            </a>
+          </div>
           {/* Search */}
           <div className="relative mb-4">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
@@ -256,11 +267,9 @@ export function AnalysisHub() {
                   </div>
                   <div className="text-right">
                     <p className="font-mono text-sm font-bold text-primary">
-                      {a.avgTotalPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                      {(a.adjustedPoints ?? a.avgTotalPoints).toLocaleString(undefined, { maximumFractionDigits: 1 })}
                     </p>
-                    <p className="text-[10px] text-muted">
-                      {a.appearances.length} カテゴリ
-                    </p>
+                    <p className="text-[10px] text-muted">補正済み・{a.appearances.length}カテゴリ</p>
                   </div>
                 </button>
               ))}

@@ -39,6 +39,9 @@ export interface AthleteSummary {
   sprintCount: number;
   type: "sprinter" | "forester" | "allrounder" | "unknown";
   forestSprintLean?: number | null; // z-score差(正=Forest寄り/負=Sprint寄り)。両無差別出場時のみ。旧インデックスには無い
+  adjustedPoints?: number | null; // 補正済みポイント（各大会をフォレスト基準に補正→混在で上位3大会合計）。旧インデックスには無い
+  openForest?: { pts: number; rank: number } | null; // 無補正の実点＋順位（Forest無差別）
+  openSprint?: { pts: number; rank: number } | null; // 無補正の実点＋順位（Sprint無差別）
   recentForm: number; // 直近3大会 vs 全体平均 (%), 種目別算出
   raceCount?: number; // 重複排除済みの出場大会数（種目合算）。旧インデックスには無い
 }
@@ -52,6 +55,7 @@ export interface ClubMember {
   name: string;
   bestRank: number;
   avgTotalPoints: number;
+  adjustedPoints?: number | null; // 補正済みポイント（各大会をフォレスト基準に補正→混在で上位3大会合計）。旧インデックスには無い
   rankingType: string; // "age_forest" etc. (best ranking's type)
   className: string;
   athleteType: "sprinter" | "forester" | "allrounder" | "unknown";

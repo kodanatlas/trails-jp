@@ -190,7 +190,7 @@ function AthleteCheerCard({
           {formStr}
         </p>
         <p className="text-[10px] text-muted">
-          {athlete.avgTotalPoints.toLocaleString(undefined, {
+          {(athlete.adjustedPoints ?? athlete.avgTotalPoints).toLocaleString(undefined, {
             maximumFractionDigits: 1,
           })}
           pt

@@ -330,11 +330,14 @@ function CompareView({
 
             <div className="space-y-2">
               <CompareRow
-                label="F・S平均ポイント"
-                values={athleteStats.map((s) => s.profile.avgTotalPoints)}
+                label="補正済みポイント"
+                values={athleteStats.map((s) => s.profile.adjustedPoints ?? s.profile.avgTotalPoints)}
                 colors={athleteStats.map((s) => s.entry.color)}
                 format={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 1 })}
-                bestSet={makeBestSet(athleteStats.map((s) => s.profile.avgTotalPoints), true)}
+                bestSet={makeBestSet(
+                  athleteStats.map((s) => s.profile.adjustedPoints ?? s.profile.avgTotalPoints),
+                  true,
+                )}
               />
               <CompareRow
                 label="最高ランク"

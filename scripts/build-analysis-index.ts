@@ -40,6 +40,9 @@ interface AthleteSummary {
   sprintCount: number;
   type: "sprinter" | "forester" | "allrounder" | "unknown";
   forestSprintLean: number | null; // z-score差(正=Forest寄り/負=Sprint寄り)。両無差別出場時のみ
+  adjustedPoints: number | null; // 補正済みポイント（各大会をフォレスト基準に補正→混在で上位3大会合計）
+  openForest: { pts: number; rank: number } | null; // 無補正の実点＋順位（Forest無差別）
+  openSprint: { pts: number; rank: number } | null; // 無補正の実点＋順位（Sprint無差別）
   recentForm: number;
   raceCount: number; // 重複排除済みの出場大会数（種目合算）
 }
@@ -48,6 +51,7 @@ interface ClubMember {
   name: string;
   bestRank: number;
   avgTotalPoints: number;
+  adjustedPoints: number | null; // 補正済みポイント（各大会をフォレスト基準に補正→混在で上位3大会合計）
   rankingType: string;
   className: string;
   athleteType: "sprinter" | "forester" | "allrounder" | "unknown";
@@ -132,6 +136,46 @@ function forestSprintLean(
   return Math.round((fZ - sZ) * 1000) / 1000;
 }
 
+/**
+ * 補正済みポイント: 各大会の得点をフォレスト基準に補正（スプリントは無差別の平均が約0.4σ高いため
+ * 1大会あたりの水準差を差し引く）した上で、フォレスト/スプリント混在で上位3大会を合計する。
+ * JOY の「上位3大会合計」を種目補正した版で、強い種目1つに限定せず両種目のベスト回を拾う。
+ * openEvents（無差別クラスの大会得点）が無ければ null（表示側で従来値にフォールバック）。
+ * openForest/openSprint は無補正の実点＋順位（A表示用）。
+ */
+function computeAdjustedPoints(
+  appearances: RankingRef[],
+  openEvents: { points: number; discipline: "forest" | "sprint" }[],
+  popStats: { forestMean: number; forestStd: number; sprintMean: number; sprintStd: number },
+): {
+  adjustedPoints: number | null;
+  openForest: { pts: number; rank: number } | null;
+  openSprint: { pts: number; rank: number } | null;
+} {
+  const isFemale = appearances.some((r) => r.className === "女子無差別" || r.className === "S_女子無差別");
+  const fClass = isFemale ? "女子無差別" : "無差別";
+  const sClass = isFemale ? "S_女子無差別" : "S_無差別";
+  const fApp = appearances.find((r) => r.type === "age_forest" && r.className === fClass);
+  const sApp = appearances.find((r) => r.type === "age_sprint" && r.className === sClass);
+  const openForest = fApp ? { pts: fApp.totalPoints, rank: fApp.rank } : null;
+  const openSprint = sApp ? { pts: sApp.totalPoints, rank: sApp.rank } : null;
+
+  if (openEvents.length === 0) {
+    return { adjustedPoints: null, openForest, openSprint };
+  }
+  // 1大会あたりの水準差（総合＝上位3大会合計の平均差を1大会分に按分）
+  const perEventGap = (popStats.sprintMean - popStats.forestMean) / 3;
+  const corrected = openEvents
+    .map((e) => (e.discipline === "sprint" ? e.points - perEventGap : e.points))
+    .sort((a, b) => b - a);
+  const top3Sum = corrected.slice(0, 3).reduce((s, v) => s + v, 0);
+  return {
+    adjustedPoints: Math.round(top3Sum * 10) / 10,
+    openForest,
+    openSprint,
+  };
+}
+
 function parseFilename(file: string): { type: string; className: string } | null {
   const base = file.replace(".json", "");
   const prefixes = ["elite_forest_", "elite_sprint_", "age_forest_", "age_sprint_"];
@@ -162,6 +206,7 @@ const athleteMap = new Map<string, {
   clubs: Set<string>;
   appearances: RankingRef[];
   allEvents: ParsedEvent[]; // 全イベントスコア（重複排除前）
+  openEvents: { points: number; discipline: "forest" | "sprint" }[]; // 無差別クラスの大会得点（補正済みポイント用）
 }>();
 
 // --- 無差別4クラスをJOYから最新取得してJSON上書き ---
@@ -439,7 +484,7 @@ for (const file of files) {
     // スペース有無の表記ゆれを統一（例: "佐藤 遼平" → "佐藤遼平"）
     const key = entry.athlete_name.replace(/\s+/g, "");
     if (!athleteMap.has(key)) {
-      athleteMap.set(key, { clubs: new Set(), appearances: [], allEvents: [] });
+      athleteMap.set(key, { clubs: new Set(), appearances: [], allEvents: [], openEvents: [] });
     }
     const data = athleteMap.get(key)!;
 
@@ -463,6 +508,15 @@ for (const file of files) {
       const { date, eventName } = parseEventName(es.event_name);
       if (date) {
         data.allEvents.push({ date, eventName, points: es.points, discipline });
+      }
+    }
+    // 補正済みポイント用: 無差別クラスの大会得点のみ（種目間で同一スケール）
+    const isOpen =
+      (type === "age_forest" && (className === "無差別" || className === "女子無差別")) ||
+      (type === "age_sprint" && (className === "S_無差別" || className === "S_女子無差別"));
+    if (isOpen) {
+      for (const es of entry.event_scores) {
+        if (es.points > 0) data.openEvents.push({ points: es.points, discipline });
       }
     }
   }
@@ -565,6 +619,7 @@ for (const [name, data] of athleteMap) {
     avgTotalPoints = forestPts ?? sprintPts ?? Math.max(...data.appearances.map((r) => r.totalPoints));
   }
 
+  const adj = computeAdjustedPoints(data.appearances, data.openEvents, popStats);
   athletes[name] = {
     name,
     clubs: [...data.clubs],
@@ -575,6 +630,9 @@ for (const [name, data] of athleteMap) {
     sprintCount,
     type: classifyType(data.appearances, popStats),
     forestSprintLean: forestSprintLean(data.appearances, popStats),
+    adjustedPoints: adj.adjustedPoints,
+    openForest: adj.openForest,
+    openSprint: adj.openSprint,
     recentForm: 0,
     raceCount: 0,
   };
@@ -629,6 +687,7 @@ for (const profile of Object.values(athletes)) {
         name: profile.name,
         bestRank: profile.bestRank,
         avgTotalPoints: profile.avgTotalPoints,
+        adjustedPoints: profile.adjustedPoints,
         rankingType: bestApp.type,
         className: bestApp.className,
         athleteType: profile.type,
@@ -654,12 +713,12 @@ for (const profile of Object.values(athletes)) {
 
 const clubs: Record<string, ClubProfile> = {};
 for (const [name, data] of clubMap) {
-  const memberList = [...data.members.values()].sort((a, b) => b.avgTotalPoints - a.avgTotalPoints);
+  // 補正済みポイント（種目間の水準差を補正）で並べ替え・クラブ平均を算出
+  const memberPts = (m: ClubMember) => m.adjustedPoints ?? m.avgTotalPoints;
+  const memberList = [...data.members.values()].sort((a, b) => memberPts(b) - memberPts(a));
   const activeCount = memberList.filter((m) => m.isActive).length;
   const avgPoints =
-    memberList.length > 0
-      ? memberList.reduce((s, m) => s + m.avgTotalPoints, 0) / memberList.length
-      : 0;
+    memberList.length > 0 ? memberList.reduce((s, m) => s + memberPts(m), 0) / memberList.length : 0;
 
   clubs[name] = {
     name,
