@@ -155,7 +155,7 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
 
   return (
     <div className="space-y-5">
-      <ProfileHeader profile={profile} />
+      <ProfileHeader profile={profile} perEventGap={athleteIndex.perEventGap ?? 0} />
       <TypeBadge profile={profile} />
       <RecentMovement profile={profile} />
       <StatsCards profile={profile} />
@@ -232,7 +232,7 @@ function RecentMovement({ profile }: { profile: AthleteProfile }) {
 }
 
 /** ヘッダー: 名前・クラブ・カテゴリ数 */
-function ProfileHeader({ profile }: { profile: AthleteProfile }) {
+function ProfileHeader({ profile, perEventGap }: { profile: AthleteProfile; perEventGap: number }) {
   const [showBreakdown, setShowBreakdown] = useState(false);
 
   // 無差別クラスのランキングを特定（ビルドスクリプトと同一ロジック）
@@ -255,6 +255,14 @@ function ProfileHeader({ profile }: { profile: AthleteProfile }) {
 
   // 補正済みポイント（旧インデックスには無いので従来値にフォールバック）
   const adjPoints = profile.adjustedPoints ?? profile.avgTotalPoints;
+
+  // 補正済みポイントを構成する上位3大会（無差別イベントをフォレスト基準に補正→混在で上位3）
+  const adjustedTop3 = [
+    ...(forestRanking?.events ?? []).map((e) => ({ ...e, disc: "forest" as const, corrected: e.points })),
+    ...(sprintRanking?.events ?? []).map((e) => ({ ...e, disc: "sprint" as const, corrected: e.points - perEventGap })),
+  ]
+    .sort((a, b) => b.corrected - a.corrected)
+    .slice(0, 3);
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
@@ -337,6 +345,43 @@ function ProfileHeader({ profile }: { profile: AthleteProfile }) {
               )}
             </div>
           </div>
+
+          {/* 補正済みポイントを構成する上位3大会 */}
+          {adjustedTop3.length > 0 && (
+            <div className="rounded bg-surface p-2.5 text-xs">
+              <p className="mb-1.5 text-[9px] text-muted/60">
+                補正済みポイントを構成する上位3大会（フォレスト／スプリント混在・スプリントは補正後）
+              </p>
+              <div className="space-y-0.5">
+                {adjustedTop3.map((e, i) => {
+                  const isS = e.disc === "sprint";
+                  const cc = isS ? "text-blue-400" : "text-green-400";
+                  const bg = isS
+                    ? "bg-blue-500/20 border border-blue-500/30"
+                    : "bg-green-500/20 border border-green-500/30";
+                  return (
+                    <div key={i} className={`flex items-center gap-2 rounded px-2 py-1.5 text-[10px] ${bg}`}>
+                      <span className={`w-4 flex-shrink-0 text-center font-bold ${cc}`}>{isS ? "S" : "F"}</span>
+                      <span className="w-[4.5rem] flex-shrink-0 font-mono text-muted">{e.date}</span>
+                      <span className="min-w-0 flex-1 truncate">{e.eventName}</span>
+                      <span className={`flex-shrink-0 font-mono font-bold ${cc}`}>
+                        {isS && (
+                          <span className="mr-1 font-normal text-muted/60">{e.points.toLocaleString()}→</span>
+                        )}
+                        {Math.round(e.corrected).toLocaleString()}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-1.5 text-right text-[10px] text-muted">
+                合計{" "}
+                <span className="font-mono text-xs font-bold text-primary">
+                  {adjPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                </span>
+              </p>
+            </div>
+          )}
 
           {/* Forest 内訳 */}
           {forestRanking && (
