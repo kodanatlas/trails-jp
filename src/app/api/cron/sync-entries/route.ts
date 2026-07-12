@@ -6,13 +6,13 @@ import { assessRegression } from "@/lib/entries/index-quality";
 import { logCron } from "@/lib/cron-logger";
 import { notifyCronWarning } from "@/lib/cron-notifier";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { scrapeDocuments } from "@/lib/scraper/documents";
+import { scrapeDocuments, type JoeDocument } from "@/lib/scraper/documents";
 
 const JOE_BASE_URL = "https://japan-o-entry.com";
 
-// 配車割 Phase 4 相乗りステップの予算・上限。本体(45s)を侵さない範囲でだけ働く。
-// 既存本体が overallBudget=45s を使い切る前提で、全体 maxDuration=60s の残余から数秒だけ割く。
-const STARTLIST_STEP_BUDGET_MS = 8000;
+// 配車割 Phase 4 相乗りステップの予算・上限。本体を侵さない範囲でだけ働く。
+// 本体 overallBudget=35s を使い切る前提で、全体 maxDuration=60s に安全余白(>10s)を残して数秒だけ割く。
+const STARTLIST_STEP_BUDGET_MS = 4000;
 // 1 リクエストで処理する carpool_events の上限（予算超過の保険）。
 const STARTLIST_MAX_EVENTS = 8;
 // title にこのいずれかを含む発行書類をスタートリストとみなす。
@@ -47,7 +47,19 @@ async function fillStartlistUrls(deadline: number): Promise<number> {
     if (row.joe_event_id === null || row.joe_event_id === undefined) continue;
 
     const joeUrl = `${JOE_BASE_URL}/event/view/${row.joe_event_id}`;
-    const docs = await scrapeDocuments(joeUrl);
+    // 単一の発行書類フェッチがハングして関数全体(maxDuration=60s)を巻き添えにしないよう
+    // 明示タイムアウトを付す（残予算との min、下限500ms）。abort/失敗時は空配列が返る。
+    const docController = new AbortController();
+    const docTimer = setTimeout(
+      () => docController.abort(),
+      Math.min(4000, Math.max(500, deadline - Date.now())),
+    );
+    let docs: JoeDocument[] = [];
+    try {
+      docs = await scrapeDocuments(joeUrl, { signal: docController.signal });
+    } finally {
+      clearTimeout(docTimer);
+    }
     const hit = docs.find((d) =>
       STARTLIST_TITLE_HINTS.some((h) =>
         d.title.toLowerCase().includes(h.toLowerCase()),
@@ -138,12 +150,14 @@ export async function GET(request: Request) {
       targets = targets.slice(0, MAX_SCRAPE);
     }
 
-    // maxDuration=60s 内に収める。全体予算は書き込み/直列化の余白を残して 45 秒。
+    // maxDuration=60s に対し安全余白(>15s)を残す。全体予算 35s(書き込み/劣化判定/相乗り/直列化の余白)。
+    // 予算超過後の cheerio 同期パース(中断不可)や脆弱インスタンスの Storage/DB レイテンシで
+    // 60s を突破し 504(関数タイムアウト)→索引凍結する事故(2026-07-08〜)を防ぐため 45s→35s に圧縮。
     // perEventTimeout は 800人超の大規模エントリー表(数MB級HTML)も取り切れるよう余裕を持たせる。
     const index = await buildEntryIndex(targets, {
       concurrency: 12,
       perEventTimeoutMs: 9000,
-      overallBudgetMs: 45000,
+      overallBudgetMs: 35000,
     });
 
     // 全件失敗（JOYのburst遮断・障害など）のときは既存の良いインデックスを空で上書きしない。
