@@ -88,19 +88,28 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
     setLcData(null);
     setEntryData(null);
 
-    // DB 由来 API（/api/lc・/api/athletes）は Supabase 障害時にハングしうる。
-    // アボート付き fetch でページ全体を固めない（12秒で諦めて null 扱い）。
+    // DB 由来 API（/api/lc・/api/athletes）は Supabase 障害時にハング/遅延しうる。
+    // アボート付き fetch でページ全体を固めない。さらに Supabase の一時的な遅延/不達で
+    // カード・レッグリンクが消えるのを防ぐため、タイムアウト/ネットワーク/5xx のときだけ
+    // 1回リトライする（404=データ無しは即 null＝無駄打ちしない）。
     const fetchJson = async (url: string): Promise<Record<string, unknown> | unknown[] | null> => {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 12000);
-      try {
-        const r = await fetch(url, { signal: ctrl.signal });
-        return r.ok ? await r.json() : null;
-      } catch {
-        return null;
-      } finally {
-        clearTimeout(timer);
-      }
+      const attempt = async (): Promise<{ value: Record<string, unknown> | unknown[] | null; retry: boolean }> => {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 20000);
+        try {
+          const r = await fetch(url, { signal: ctrl.signal });
+          if (r.ok) return { value: (await r.json()) as Record<string, unknown> | unknown[], retry: false };
+          return { value: null, retry: r.status >= 500 };
+        } catch {
+          return { value: null, retry: true };
+        } finally {
+          clearTimeout(timer);
+        }
+      };
+      const first = await attempt();
+      if (first.value !== null || !first.retry) return first.value;
+      await new Promise((res) => setTimeout(res, 800));
+      return (await attempt()).value;
     };
 
     // 必須データ＝プロフィール（静的ランキング JSON 由来）。これが決まった時点でページを描画する。
