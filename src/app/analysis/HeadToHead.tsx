@@ -79,7 +79,9 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
           .then((r) => (r.ok ? r.json() : null))
           .then((d) => {
             const entries: AthleteEntryRef[] = d?.entries ?? [];
-            entriesCache.current.set(opponent.name, entries);
+            // 索引不達(503→d=null)のときは空をキャッシュしない＝次回の相手選択で再取得させる
+            // （一時障害で再戦相手のエントリーがセッション中ずっと消えるのを防ぐ。2026-07-13 レビュー反映）。
+            if (d) entriesCache.current.set(opponent.name, entries);
             return entries;
           })
           .catch(() => [] as AthleteEntryRef[]);

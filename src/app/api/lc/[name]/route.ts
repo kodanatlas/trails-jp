@@ -47,9 +47,9 @@ export async function GET(
   }));
 
   return NextResponse.json(performances, {
-    // ブラウザは毎回CDNに確認(max-age=0)し旧版を抱えない。CDNは10分fresh＋以降は
-    // stale配信しつつ裏で再検証。日次のper-leg取込・デプロイが最大10分で反映される。
-    // stale-if-error: オリジン(DB)が5xx/不達でも直近の良い応答を24h配信し、DB一時障害で
+    // ブラウザは毎回CDNに確認(max-age=0)し旧版を抱えない。CDNは1h fresh＋以降は
+    // stale配信しつつ裏で再検証（LCは日次更新なので最大1hラグは許容）。
+    // stale-if-error: オリジン(DB)が5xx/不達でも直近の良い応答を48h配信し、DB一時障害で
     // カード/レッグリンクが消えるのを防ぐ(2026-07-12 DBオリジン不達事故の緩和)。
     headers: { "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400, stale-if-error=172800" },
   });

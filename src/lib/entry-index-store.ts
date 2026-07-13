@@ -4,7 +4,9 @@ import type { EntryIndex } from "./entries/index-types";
 const BUCKET = "app-data";
 const FILE_PATH = "entry-index.json";
 
-let bucketReady = false;
+// app-data バケットは既存（events.json / entry-index.json が常駐）。cold start ごとに createBucket を
+// 叩くと write のクリティカルパスに Storage 往復が増え 60s 予算を圧迫するため、既存前提で true 起点にする。
+let bucketReady = true;
 
 /** バケットが無ければ作成（初回のみ。既存ならエラーは無視）。events-store と同一バケット。 */
 async function ensureBucket(): Promise<void> {

@@ -11,8 +11,9 @@ import { notifyCronWarning } from "@/lib/cron-notifier";
 import { entryIndexAgeHours, isEntryIndexStale } from "@/lib/entries/freshness";
 
 // 索引鮮度ウォッチドッグの閾値（時間）。これより古ければ sync-entries の無音停止を疑い警告。
-// このジョブは sync-entries の8h後(03:00 UTC)に走るため、26h で「前夜の定期実行スキップ」を検知できる。
-const STALE_INDEX_WARN_HOURS = 26;
+// sync-entries(20:23 JST) と本ジョブ(21:41 JST)は約1h18差のため、24h で「前日の定期実行スキップ」
+// (索引齢≈25h) を検知できる（旧 26h は cron 夜帯移動後に検知漏れ。2026-07-13 レビュー指摘）。
+const STALE_INDEX_WARN_HOURS = 24;
 
 // 多クラスの大規模イベントでも壁時計予算内で処理できるよう実行時間上限を延長。
 export const maxDuration = 60;

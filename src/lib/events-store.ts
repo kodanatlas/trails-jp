@@ -5,7 +5,9 @@ import eventsJson from "@/data/events.json";
 const BUCKET = "app-data";
 const FILE_PATH = "events.json";
 
-let bucketReady = false;
+// app-data バケットは既存（events.json / entry-index.json が常駐）。cold start ごとに createBucket を
+// 叩くと write のクリティカルパスに Storage 往復が増えるため、既存前提で true 起点にする。
+let bucketReady = true;
 
 /** バケットが無ければ作成（初回のみ） */
 async function ensureBucket(): Promise<void> {

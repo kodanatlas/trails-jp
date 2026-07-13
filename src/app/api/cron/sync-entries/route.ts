@@ -109,6 +109,11 @@ export async function GET(request: Request) {
   }
 
   const start = Date.now();
+  // 索引 write を Vercel maxDuration=60s 内に必ず収めるための絶対デッドラインと、
+  // 単一の writeEntryIndex(最大15s)のための予約時間(RESERVE)。劣化判定の read は scrape 前に
+  // 先読みしテールから外すので、write 前に残る Storage op は write 1回だけ。2026-07-13 レビュー反映。
+  const HANDLER_DEADLINE = start + 50_000;
+  const WRITE_RESERVE_MS = 16_000;
   try {
     // fail-closed: Storage から events.json を読めなければ、古いバンドルで作り直さず既存 index を保持。
     const events = await readEventsStrict();
@@ -151,14 +156,22 @@ export async function GET(request: Request) {
       targets = targets.slice(0, MAX_SCRAPE);
     }
 
-    // maxDuration=60s に対し安全余白(>15s)を残す。全体予算 35s(書き込み/劣化判定/相乗り/直列化の余白)。
-    // 予算超過後の cheerio 同期パース(中断不可)や脆弱インスタンスの Storage/DB レイテンシで
-    // 60s を突破し 504(関数タイムアウト)→索引凍結する事故(2026-07-08〜)を防ぐため 45s→35s に圧縮。
+    // 劣化判定用の旧 index は scrape の前に先読みする（この Storage read を write のクリティカル
+    // テールから外すため）。以降 write 前に残る Storage op は writeEntryIndex(1回)だけになる。
+    const prevIndex = await readEntryIndex();
+
+    // 索引 write を60s内に必ず収める: 2つの先読み(readEventsStrict / readEntryIndex 各最大15s)後に
+    // scrape 予算を絶対デッドラインから逆算し、単一 write(最大15s)分の余白(RESERVE)を確保する。
+    // read が遅いほど scrape が短縮され、write は必ずデッドライン内に始まり60s内に終わる(2026-07-13 レビュー反映)。
     // perEventTimeout は 800人超の大規模エントリー表(数MB級HTML)も取り切れるよう余裕を持たせる。
+    const scrapeBudget = Math.max(
+      4_000,
+      Math.min(35_000, HANDLER_DEADLINE - Date.now() - WRITE_RESERVE_MS),
+    );
     const index = await buildEntryIndex(targets, {
       concurrency: 12,
       perEventTimeoutMs: 9000,
-      overallBudgetMs: 35000,
+      overallBudgetMs: scrapeBudget,
     });
 
     // 全件失敗（JOYのburst遮断・障害など）のときは既存の良いインデックスを空で上書きしない。
@@ -179,7 +192,7 @@ export async function GET(request: Request) {
     // 劣化上書き防止: 「同一大会のエントリー数」が既存比で大幅減なら上書きしない（低品質 index で良い index を潰さない）。
     // 大会が窓外へ出たことによる athletes 総数の正常減少は per-event 比較で中和される（誤発火しない）。
     // 全滅(scraped=0)は上で別処理済み。ここは「成功扱いだが同一大会で取りこぼした」部分失敗・競合を弾く。
-    const prevIndex = await readEntryIndex();
+    // prevIndex は scrape 前に先読み済＝ここは in-memory 判定のみ（write テールに Storage read を足さない）。
     const reg = assessRegression(prevIndex, index, {
       minRatio: 0.6,
       floor: 100,
@@ -231,7 +244,7 @@ export async function GET(request: Request) {
     // 例外・失敗は握りつぶし、本体レスポンス（200）に一切影響させない。
     let startlistFilled = 0;
     try {
-      const remaining = 45000 - (Date.now() - start);
+      const remaining = HANDLER_DEADLINE - Date.now();
       if (remaining > 1000) {
         const budget = Math.min(STARTLIST_STEP_BUDGET_MS, remaining);
         startlistFilled = await fillStartlistUrls(Date.now() + budget);

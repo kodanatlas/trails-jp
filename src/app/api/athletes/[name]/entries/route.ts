@@ -23,20 +23,30 @@ export async function GET(
 
   try {
     const index = await readEntryIndex();
-    const entries = index?.athletes[key] ?? [];
+    // 索引が読めない(Storage一時障害/不達)＝「エントリー無し」ではない。空を200で成功キャッシュすると
+    // 一時障害中に「今後のエントリー」が最大1h消える(2026-07-13 レビュー指摘)。→ 503 を返して
+    // クライアントにリトライさせ、CDN の stale-if-error で直近の良い応答を配信させる。
+    if (!index) {
+      return NextResponse.json(
+        { name: decoded, entries: [], generatedAt: null, error: "index_unavailable" },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    const entries = index.athletes[key] ?? [];
     return NextResponse.json(
-      { name: decoded, entries, generatedAt: index?.generatedAt ?? null },
+      { name: decoded, entries, generatedAt: index.generatedAt ?? null },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+          // stale-if-error: 後続で索引不達(503)になっても直近の良い応答を24h配信する。
+          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400, stale-if-error=86400",
         },
       },
     );
   } catch (error) {
     console.error("Athlete entries fetch failed:", error);
     return NextResponse.json(
-      { name: decoded, entries: [], generatedAt: null },
-      { status: 200 },
+      { name: decoded, entries: [], generatedAt: null, error: "fetch_failed" },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
 }
