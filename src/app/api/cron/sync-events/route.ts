@@ -11,10 +11,12 @@ import { notifyCronWarning } from "@/lib/cron-notifier";
 // 正常時はほぼ 0。年なし表記の補完が効かなくなる等の異常を無音にしないためのカナリア。
 const EMPTY_DATE_WARN_THRESHOLD = 5;
 
-// Vercel Cron: 日次 03:00 JST (18:00 UTC)
+// Vercel Cron: 日次 19:07 JST (10:07 UTC)
 // イベント同期 + LapCenterマッチング
 // 水曜のみ: Vercel再デプロイをトリガー（ビルド時にランキング最新取得）
-// vercel.json: { "path": "/api/cron/sync-events", "schedule": "0 18 * * *" }
+// 実行時刻はDBデータ面が健全な夜帯に配置（2026-07-13。旧 03:00 JST は不達の窓 00-12 JST に
+// 当たっていた）。分は minute 0 を避けプラットフォームの herd を回避。
+// vercel.json: { "path": "/api/cron/sync-events", "schedule": "7 10 * * *" }
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");

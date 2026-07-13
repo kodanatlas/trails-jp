@@ -17,9 +17,10 @@ const STALE_INDEX_WARN_HOURS = 26;
 // 多クラスの大規模イベントでも壁時計予算内で処理できるよう実行時間上限を延長。
 export const maxDuration = 60;
 
-// Vercel Cron: 日次 12:00 JST (03:00 UTC)
+// Vercel Cron: 日次 21:41 JST (12:41 UTC)
 // 巡航速度・ミス率スクレイプも毎日実行（壁時計予算内で新しい順に処理）
-// vercel.json: { "path": "/api/cron/sync-lapcenter", "schedule": "0 3 * * *" }
+// 実行時刻はDB健全な夜帯へ（2026-07-13。旧 12:00 JST は不達窓 00-12 JST の末尾で不安定だった）。
+// vercel.json: { "path": "/api/cron/sync-lapcenter", "schedule": "41 12 * * *" }
 
 // クラブ正規化・sprint 判定は leg-ingest.ts に移設（backfill スクリプトと共用）
 

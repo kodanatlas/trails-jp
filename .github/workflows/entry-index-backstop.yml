@@ -11,8 +11,9 @@ name: entry-index-backstop
 
 on:
   schedule:
-    # 20:30 UTC = 05:30 JST。Vercel の sync-entries(19:00 UTC 枠・実行は枠内のどこか)より十分後。
-    - cron: "30 20 * * *"
+    # 13:30 UTC = 22:30 JST。DBデータ面が健全な夜帯。Vercel の sync-entries(11:23 UTC 枠)より十分後。
+    # 旧 05:30 JST は DB不達窓(00-12 JST)に当たり毎回 504 で失敗していた → 2026-07-13 夜帯へ移動。
+    - cron: "30 13 * * *"
   workflow_dispatch: {}
 
 # 同時実行を避ける（手動 + スケジュールの重なり対策）。

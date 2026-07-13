@@ -79,9 +79,10 @@ async function fillStartlistUrls(deadline: number): Promise<number> {
 // 対象(targets)のうち取得失敗がこの件数以上なら警告（取りこぼし＝選手エントリーの欠落に直結）。
 const SCRAPE_SHORTFALL_WARN_THRESHOLD = 5;
 
-// Vercel Cron: 日次 04:00 JST (19:00 UTC) — sync-events(03:00 JST) の1時間後
+// Vercel Cron: 日次 20:23 JST (11:23 UTC) — sync-events(19:07 JST) の後
 // 受付中∪締切済かつ未開催の大会のエントリーリストを集計し、選手別インデックスを生成。
-// vercel.json: { "path": "/api/cron/sync-entries", "schedule": "0 19 * * *" }
+// 実行時刻はDB健全な夜帯へ（2026-07-13。旧 04:00 JST は不達窓 00-12 JST に当たり毎回504で凍結）。
+// vercel.json: { "path": "/api/cron/sync-entries", "schedule": "23 11 * * *" }
 
 // 関数の最大実行時間（秒）。既定(短い)だと大規模大会(例: 800人超のエントリー表)を
 // スクレイプ予算内に取り切れず脱落するため明示的に延長する。
