@@ -238,13 +238,29 @@ export async function GET(request: Request) {
       );
     }
 
+    // ハード保証: write を始めても60s内に終わらない時間なら fail-closed（既存index保持・backstop再試行）。
+    // scrape 予算超過分(中断不可の in-flight cheerio パース末尾など)を含め、write 開始可否をここで最終判定。
+    // → 「write 開始時に残 >= WRITE_RESERVE(16s >= 単一op write の最大15s)」を保証＝write は必ず60s内に完了。
+    if (Date.now() + WRITE_RESERVE_MS > start + 60_000) {
+      await logCron(
+        "sync-entries",
+        "error",
+        { error: "deadline_before_write", elapsed_ms: Date.now() - start, scraped: index.scrapedEventCount },
+        Date.now() - start,
+      );
+      return NextResponse.json(
+        { error: "deadline exceeded before write; existing index preserved" },
+        { status: 503 },
+      );
+    }
+
     await writeEntryIndex(index);
 
-    // 配車割 Phase 4 相乗り（完全隔離）: 本体成功後の残予算でだけ動く。
-    // 例外・失敗は握りつぶし、本体レスポンス（200）に一切影響させない。
+    // 配車割 Phase 4 相乗り（完全隔離）: 本体成功後の残予算でだけ動く。例外・失敗は握りつぶし本体200に影響させない。
+    // startlist は非必須なので、write 後に logCron 等の余白(~6s)を残せるときだけ動かす（60s超過→spurious 504 防止）。
     let startlistFilled = 0;
     try {
-      const remaining = HANDLER_DEADLINE - Date.now();
+      const remaining = start + 60_000 - Date.now() - 6_000;
       if (remaining > 1000) {
         const budget = Math.min(STARTLIST_STEP_BUDGET_MS, remaining);
         startlistFilled = await fillStartlistUrls(Date.now() + budget);

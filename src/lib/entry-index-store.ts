@@ -53,6 +53,16 @@ export async function writeEntryIndex(index: EntryIndex): Promise<void> {
     });
 
   if (error) {
+    // 新規環境でバケット未作成のときだけ作成して1回だけ再試行（通常は既存＝この経路に来ない＝write は単一op）。
+    if (/bucket not found/i.test(error.message)) {
+      await supabaseAdmin.storage.createBucket(BUCKET, { public: false });
+      const { error: retryError } = await supabaseAdmin.storage
+        .from(BUCKET)
+        .upload(FILE_PATH, blob, { upsert: true, contentType: "application/json" });
+      if (!retryError) return;
+      console.error("Failed to write entry-index after bucket create:", retryError.message);
+      throw retryError;
+    }
     console.error("Failed to write entry-index to Supabase Storage:", error.message);
     throw error;
   }
