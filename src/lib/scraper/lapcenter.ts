@@ -337,8 +337,44 @@ export async function matchLapCenterEvents<
 // イベント内クラス一覧を取得
 // ---------------------------------------------------------------------------
 
+// mulka2 の file 番号は大会ごとに異なる。file=1 がスタートリストで、結果＋ラップ解析が
+// file=2 以降のことがある（例: 2日間大会/リハーサルは file=1 スタートリスト・file=2 記録一覧/ラップ解析）。
+// event ページ(index.jsp?event=X, file 未指定)の file 一覧から「記録/ラップ/リザルト/成績」系ラベルで
+// 「スタート」を含まない最小 file を選ぶ。判別不能なら 1 にフォールバック。プロセス内キャッシュで
+// event ごとの重複取得を避ける（2026-07-13: file 固定で結果分析が空になる不具合の修正）。
+const resultsFileCache = new Map<number, number>();
+export async function resolveResultsFile(eventId: number): Promise<number> {
+  const cached = resultsFileCache.get(eventId);
+  if (cached != null) return cached;
+  let file = 1;
+  try {
+    const res = await lcFetch(`${BASE_URL}/lapcombat2/index.jsp?event=${eventId}`, {
+      headers: { "User-Agent": "trails.jp/1.0 (lapcenter sync)" },
+      dispatcher: mulka2Dispatcher,
+    });
+    if (res.ok) {
+      const html = await res.text();
+      const re = /<a[^>]*file=(\d+)[^>]*>([\s\S]*?)<\/a>/g;
+      const candidates: number[] = [];
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(html)) !== null) {
+        const label = m[2].replace(/<[^>]+>/g, "");
+        if (/記録|ラップ|リザルト|成績/.test(label) && !/スタート/.test(label)) {
+          candidates.push(parseInt(m[1], 10));
+        }
+      }
+      if (candidates.length > 0) file = Math.min(...candidates);
+    }
+  } catch {
+    // 取得失敗 → file=1 フォールバック
+  }
+  resultsFileCache.set(eventId, file);
+  return file;
+}
+
 export async function fetchEventClasses(eventId: number): Promise<LapCenterClass[]> {
-  const url = `${BASE_URL}/lapcombat2/index.jsp?event=${eventId}&file=1`;
+  const file = await resolveResultsFile(eventId);
+  const url = `${BASE_URL}/lapcombat2/index.jsp?event=${eventId}&file=${file}`;
   const res = await lcFetch(url, {
     headers: { "User-Agent": "trails.jp/1.0 (lapcenter sync)" },
     dispatcher: mulka2Dispatcher,
@@ -384,7 +420,8 @@ export async function fetchSplitList(
   eventId: number,
   classId: number
 ): Promise<LapCenterRunnerStat[]> {
-  const url = `${BASE_URL}/lapcombat2/split-list.jsp?event=${eventId}&file=1&class=${classId}`;
+  const file = await resolveResultsFile(eventId);
+  const url = `${BASE_URL}/lapcombat2/split-list.jsp?event=${eventId}&file=${file}&class=${classId}`;
   const res = await lcFetch(url, {
     headers: { "User-Agent": "trails.jp/1.0 (lapcenter sync)" },
     dispatcher: mulka2Dispatcher,
@@ -438,7 +475,8 @@ export async function fetchSplitListDetailed(
   eventId: number,
   classId: number
 ) {
-  const url = `${BASE_URL}/lapcombat2/split-list.jsp?event=${eventId}&file=1&class=${classId}`;
+  const file = await resolveResultsFile(eventId);
+  const url = `${BASE_URL}/lapcombat2/split-list.jsp?event=${eventId}&file=${file}&class=${classId}`;
   const res = await lcFetch(url, {
     headers: { "User-Agent": "trails.jp/1.0 (lapcenter sync)" },
     dispatcher: mulka2Dispatcher,
