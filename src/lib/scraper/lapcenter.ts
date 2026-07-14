@@ -231,6 +231,8 @@ export interface MatchResult {
   matched: number;
   total: number;
   lcEventsCount: number;
+  /** lapcenter_event_id を新規セット/変更した件数（新規マッチ＋override再マッチ）。>0 なら呼び出し側は writeEvents すべき。 */
+  changed: number;
 }
 
 /**
@@ -291,6 +293,10 @@ export async function matchLapCenterEvents<
   }
 
   let matched = 0;
+  // lapcenter_event_id を新規セット/変更した件数。override で既マッチを別 id へ再マッチしても
+  // 未マッチ件数は減らないため、呼び出し側が「未マッチ→マッチの減少」だけで writeEvents を
+  // 判定すると再マッチが Storage に永続化されない。それを検知するための変更カウンタ。
+  let changed = 0;
   for (const joe of joeEvents) {
     // 手動オーバーライドを最優先で適用（未マッチも誤マッチも正しい id へ強制設定）
     const override = MANUAL_LC_OVERRIDES[joe.joe_event_id];
@@ -300,6 +306,7 @@ export async function matchLapCenterEvents<
         joe.lapcenter_event_id = override;
         joe.lapcenter_url = `https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=${override}&file=1`;
         usedLcIds.add(override);
+        changed++;
       }
       matched++;
       continue;
@@ -328,10 +335,11 @@ export async function matchLapCenterEvents<
       joe.lapcenter_url = `https://mulka2.com/lapcenter/lapcombat2/index.jsp?event=${bestMatch.eventId}&file=1`;
       usedLcIds.add(bestMatch.eventId);
       matched++;
+      changed++;
     }
   }
 
-  return { matched, total: joeEvents.length, lcEventsCount: lcEvents.length };
+  return { matched, total: joeEvents.length, lcEventsCount: lcEvents.length, changed };
 }
 
 // ---------------------------------------------------------------------------

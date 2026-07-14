@@ -57,11 +57,16 @@ export async function GET(request: Request) {
       const result = await matchLapCenterEvents(events);
       const afterUnmatched = events.filter((e) => !e.lapcenter_event_id).length;
       const newMatches = beforeUnmatched - afterUnmatched;
-      if (newMatches > 0) {
+      // 新規マッチ(未マッチ→マッチ)だけでなく override による再マッチ(既マッチの id 変更)も
+      // 永続化する。再マッチは未マッチ件数を変えず newMatches=0 になるため、以前は sync-lapcenter
+      // では Storage に反映されず、次の sync-events まで /results が旧 id を指したままだった。
+      // result.changed は新規＋再マッチの両方を数える。no-op 日は 0 なので余分な書込みは増えない。
+      if (result.changed > 0) {
         await writeEvents(events);
       }
       matchingResult = {
         new_matches: newMatches,
+        changed: result.changed,
         total_matched: result.matched,
         total_events: result.total,
         lc_events_fetched: result.lcEventsCount,
