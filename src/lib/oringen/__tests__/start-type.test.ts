@@ -78,7 +78,7 @@ describe("isFreeStart — フリースタート（true）", () => {
   });
 });
 
-describe("isChaseStartOnFinalStage — 5日目の追い抜きスタート", () => {
+describe("isChaseStartOnFinalStage — 5日目のチェイシングスタート", () => {
   // 実データ: 5日目に時刻を持つのは D10/D11/D12/H10/H11/H12 とその Kort の12クラスだけ。
   // 公式: 「jaktstart för alla utom DH10–DH12 och Para-I」
   it("DH10〜DH12 は対象外（5日目も抽選で公開済み）", () => {
@@ -91,26 +91,26 @@ describe("isChaseStartOnFinalStage — 5日目の追い抜きスタート", () =
     expect(isChaseStartOnFinalStage("D-Para-I")).toBe(false);
   });
 
-  it("DH14 以上は追い抜き対象", () => {
+  it("DH14 以上はチェイシング対象", () => {
     for (const n of ["D14", "H14", "D21", "H40", "H70", "H75"]) {
       expect(isChaseStartOnFinalStage(n), n).toBe(true);
     }
   });
 
-  it("Kort（成人）も5日目は追い抜き（公式: På femte etappen är det jaktstart）", () => {
+  it("Kort（成人）も5日目はチェイシング（公式: På femte etappen är det jaktstart）", () => {
     for (const n of ["D21 Kort-2", "H60 Kort", "D55 Kort"]) {
       expect(isChaseStartOnFinalStage(n), n).toBe(true);
     }
   });
 
-  it("D14/H14/D16/H16 Kort は追い抜き対象（実データで5日目に時刻あり＝要注意）", () => {
+  it("D14/H14/D16/H16 Kort はチェイシング対象（実データで5日目に時刻あり＝要注意）", () => {
     // 実データでは D14 Kort/H14 Kort/D16 Kort/H16 Kort が5日目に時刻を持つ。
     // 少年 Kort は全日抽選なので、5日目の時刻も先に出ている。
     // isChaseStartOnFinalStage は true を返すが、時刻が既にあるので UI では時刻が優先される。
     expect(isChaseStartOnFinalStage("D14 Kort")).toBe(true);
   });
 
-  it("Etappstart / PreO は総合が無いので追い抜きではない", () => {
+  it("Etappstart / PreO は総合が無いのでチェイシングではない", () => {
     for (const n of ["Etappstart Svart 7,5", "MTBO Etappstart Svår kort", "Pre-Elit", "Inskolning"]) {
       expect(isChaseStartOnFinalStage(n), n).toBe(false);
     }
@@ -118,7 +118,7 @@ describe("isChaseStartOnFinalStage — 5日目の追い抜きスタート", () =
 });
 
 describe("missingStartReason — 時刻が無い理由", () => {
-  it("5日目の追い抜きは chase-start（フリーと混同しない）", () => {
+  it("5日目のチェイシングは chase-start（フリーと混同しない）", () => {
     expect(missingStartReason("H60 Kort", 5)).toBe("chase-start");
     expect(missingStartReason("H40", 5)).toBe("chase-start");
   });
@@ -128,7 +128,7 @@ describe("missingStartReason — 時刻が無い理由", () => {
     expect(missingStartReason("H60 Kort", 4)).toBe("free-start");
   });
 
-  it("Etappstart は5日目でも free-start（総合が無いので追い抜きにならない）", () => {
+  it("Etappstart は5日目でも free-start（総合が無いのでチェイシングにならない）", () => {
     expect(missingStartReason("Etappstart Svart 7,5", 5)).toBe("free-start");
   });
 

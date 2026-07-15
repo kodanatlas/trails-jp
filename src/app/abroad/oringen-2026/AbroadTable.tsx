@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { missingStartReason } from "@/lib/oringen/start-type";
+import { difficultyOf, type DifficultyLevel } from "@/lib/oringen/difficulty";
+import programJson from "@/data/oringen-program.json";
 import type { OringenData, OringenPerson } from "@/lib/oringen/types";
 
 /**
@@ -15,6 +17,28 @@ import type { OringenData, OringenPerson } from "@/lib/oringen/types";
  */
 
 const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
+
+const LEVELS = programJson.difficultyLevels as DifficultyLevel[];
+
+/**
+ * クラス名。開放クラス／Etappstart は**色名が難易度そのもの**（Grön=初心者 … Svart=難）なので
+ * 色見本を添える。スウェーデン語の色名だけでは日本の読み手に難易度が伝わらない。
+ * ページ下部の凡例と対応する。
+ */
+function ClassName({ name }: { name: string }) {
+  const d = difficultyOf(name, LEVELS);
+  if (!d) return <>{name}</>;
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span
+        aria-hidden="true"
+        className="inline-block h-2 w-2 shrink-0 rounded-full border border-border"
+        style={{ backgroundColor: d.hex }}
+      />
+      <span title={`${d.sv} = ${d.ja}（${d.level}）`}>{name}</span>
+    </span>
+  );
+}
 
 function dayLabel(date: string): string {
   const d = new Date(`${date}T00:00:00Z`);
@@ -51,7 +75,7 @@ function NameCell({ person }: { person: OringenPerson }) {
 
 /**
  * スタート時刻。時刻が無い場合、**理由によって表示を分ける**。
- * 全部「—」にすると、永久に入らないもの（フリー）と入るもの（追い抜き）が区別できない。
+ * 全部「—」にすると、永久に入らないもの（フリー）と入るもの（チェイシング）が区別できない。
  */
 function StartTime({
   value,
@@ -74,8 +98,8 @@ function StartTime({
   }
   if (reason === "chase-start") {
     return (
-      <span className="text-muted" title="追い抜きスタート。4日目までの累計順位から決まるため、それまで未定">
-        追い抜き
+      <span className="text-muted" title="チェイシングスタート。4日目までの累計順位から決まるため、それまで未定">
+        チェイシング
       </span>
     );
   }
@@ -185,7 +209,9 @@ export function AbroadTable({ data }: { data: OringenData }) {
                           entries.map((e) => (
                             <span key={e.className} className="block">
                               <StartTime value={e.startTime} className={e.className} stage={r.n} />
-                              <span className="block font-mono text-[10px] text-muted">{e.className}</span>
+                              <span className="block font-mono text-[10px] text-muted">
+                                <ClassName name={e.className} />
+                              </span>
                             </span>
                           ))
                         )}
@@ -220,7 +246,9 @@ export function AbroadTable({ data }: { data: OringenData }) {
                   <td className="whitespace-nowrap px-2 py-1.5">
                     <NameCell person={person} />
                   </td>
-                  <td className="whitespace-nowrap px-2 py-1.5 text-muted">{entry.className}</td>
+                  <td className="whitespace-nowrap px-2 py-1.5 text-muted">
+                    <ClassName name={entry.className} />
+                  </td>
                   <td className="whitespace-nowrap px-2 py-1.5 text-muted">{person.club}</td>
                   <td className="whitespace-nowrap px-2 py-1.5 font-mono tabular-nums text-muted">
                     {entry.distanceM ? `${(entry.distanceM / 1000).toFixed(2)} km` : "—"}

@@ -63,7 +63,7 @@ export function isFreeStart(className: string): boolean {
 }
 
 /**
- * 5日目（最終日）が追い抜きスタート（jaktstart）かどうか。
+ * 5日目（最終日）がチェイシングスタート（jaktstart）かどうか。
  *
  * 公式: 「Tävlingen avgörs på sista etappen med **jaktstart för alla utom DH10–DH12 och Para-I**」
  *       Kortklass も「På femte etappen är det **jaktstart**」（1〜4日目はフリースタートなのに5日目だけ抽選相当）
@@ -77,9 +77,9 @@ export function isFreeStart(className: string): boolean {
 export function isChaseStartOnFinalStage(className: string): boolean {
   const n = className.trim();
   if (/Para-I/.test(n)) return false;
-  // DH10〜DH12（Kort 含む）は追い抜きスタートの対象外＝5日目も抽選で公開済み
+  // DH10〜DH12（Kort 含む）はチェイシングスタートの対象外＝5日目も抽選で公開済み
   if (/^[DH]1[012](\s|$)/.test(n)) return false;
-  // PreO / Inskolning は総合順位を争わないので追い抜きスタートではない
+  // PreO / Inskolning は総合順位を争わないのでチェイシングスタートではない
   if (/^(Pre-A|Pre-B|Pre-C|Pre-Elit|Inskolning|Prova på)/.test(n)) return false;
   // Etappstart は単日参加なので総合が無い
   if (/^(Etappstart |MTBO Etappstart )/.test(n)) return false;
@@ -93,7 +93,7 @@ export type MissingStartReason = "free-start" | "chase-start" | "unpublished";
  * ある (クラス, 日) で時刻が無いときの理由を返す。
  *
  * - `free-start`  … 当日スタート地点で自分で分を選ぶ。**永久に入らない**
- * - `chase-start` … 5日目の追い抜きスタート。**4日目の結果が出たら入る**
+ * - `chase-start` … 5日目のチェイシングスタート。**4日目の結果が出たら入る**
  * - `unpublished` … 抽選クラスだが未公開（日本勢では Elit のみ＝該当者なし）
  */
 export function missingStartReason(className: string, stage: number): MissingStartReason {

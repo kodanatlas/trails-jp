@@ -129,9 +129,9 @@ export default async function OringenPage() {
           </p>
           <p className="mt-1 text-xs text-muted">
             抽選クラスのスタート時刻は公開済みです（OL 7/7・MTBO 7/13）。
-            <strong className="text-foreground"> 5日目の「追い抜き」</strong>は別で、
+            <strong className="text-foreground"> 5日目の「チェイシング」</strong>は別で、
             4日目までの累計順位から決まるため、それまで未定です（DH10〜DH12 を除く全クラスが対象。
-            Kort は1〜4日目がフリー、5日目だけ追い抜き）。
+            Kort は1〜4日目がフリー、5日目だけチェイシング）。
           </p>
         </div>
       )}
@@ -247,8 +247,21 @@ export default async function OringenPage() {
                 {programJson.difficultyLevels.map((d) => (
                   <tr key={d.sv} className="border-b border-border/50">
                     <td className="whitespace-nowrap px-2 py-1.5">
-                      {d.sv}
-                      <span className="ml-1 text-muted">{d.ja}</span>
+                      <span className="flex items-center gap-1.5">
+                        {/*
+                          色の凡例なので実際の色を出す。白(#FFFFFF)と黒(#1A1A1A)は
+                          ライト/ダークどちらかの背景に溶けるため、常に枠線を付ける。
+                        */}
+                        <span
+                          aria-hidden="true"
+                          className="inline-block h-3 w-3 shrink-0 rounded-sm border border-border"
+                          style={{ backgroundColor: d.hex }}
+                        />
+                        <span>
+                          {d.sv}
+                          <span className="ml-1 text-muted">{d.ja}</span>
+                        </span>
+                      </span>
                     </td>
                     <td className="whitespace-nowrap px-2 py-1.5 text-muted">{d.level}</td>
                     <td className="px-2 py-1.5 text-muted">{d.desc}</td>
