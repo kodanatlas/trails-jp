@@ -1,4 +1,5 @@
 import type { OringenEntry, OringenPerson, OringenRace } from "./types";
+import { isFreeStart } from "./start-type";
 
 /**
  * O-Ringen API の生レコード → 表示用モデル。純関数（外部依存なし・決定的）。
@@ -178,6 +179,23 @@ export function countConfirmedStarts(people: OringenPerson[]): number {
   for (const p of people) {
     for (const entries of Object.values(p.entries)) {
       for (const e of entries) if (e.startTime) n++;
+    }
+  }
+  return n;
+}
+
+/**
+ * 抽選クラス（＝スタート時刻が割り当てられる）のエントリー数。
+ *
+ * 「確定 93/245」と出すと、残り152が「待てば埋まる」ように読める。実際は**フリースタートで
+ * 永久に埋まらない**（2026-07-15 に発覚した誤り。start-type.ts のコメント参照）。
+ * 分母を抽選クラスだけにすれば「93/93 = 全部確定」と正しく言える。
+ */
+export function countDrawnEntries(people: OringenPerson[]): number {
+  let n = 0;
+  for (const p of people) {
+    for (const entries of Object.values(p.entries)) {
+      for (const e of entries) if (!isFreeStart(e.className)) n++;
     }
   }
   return n;
