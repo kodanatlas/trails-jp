@@ -91,7 +91,8 @@ async function main() {
       note: "Bagheerastafetten と同時開催",
     },
     startWindows: [
-      { discipline: "オリエンテーリング（徒歩）", window: "08:30–13:30" },
+      // 公式は "Orienteringslöpning"。日本のオリエンテーリングでは MTBO / PreO と並べて FootO と呼ぶ
+      { discipline: "FootO", window: "08:30–13:30" },
       { discipline: "MTBO", window: "10:00–12:30" },
     ],
     // 会場。徒歩とMTBOで別（日本勢は茅野浩司さんのみ MTBO）。

@@ -132,15 +132,14 @@ export default async function OringenPage() {
         <div className="mb-4 border-l-2 border-accent bg-card px-3 py-2">
           <p className="text-xs text-muted">
             <strong className="text-foreground">フリースタート</strong>は当日スタート地点に行って自分でスタート分を
-            選ぶ方式で、そもそも時刻が割り当てられません。
-            <strong className="text-foreground">待っても時刻は入りません。</strong>
-            （公式:「Du har fri starttid och väljer startminut när du kommer fram till din start」）
+            選ぶ方式で、そもそも時刻が割り当てられません
+            （公式:「Du har fri starttid och väljer startminut när du kommer fram till din start」）。
             対象は <strong className="text-foreground">Kort（成人）・Motion・Etappstart・開放クラス（色）・DH75以上・PreO</strong>。
             スタートできる時間帯は{" "}
             {programJson.startWindows.map((w) => `${w.discipline} ${w.window}`).join(" / ")} です。
           </p>
           <p className="mt-1 text-xs text-muted">
-            抽選クラスのスタート時刻は公開済みです（OL 7/7・MTBO 7/13）。
+            抽選クラスのスタート時刻は公開済みです（FootO 7/7・MTBO 7/13）。
             <strong className="text-foreground"> 5日目の「チェイシング」</strong>は別で、
             4日目までの累計順位から決まるため、それまで未定です（DH10〜DH12 を除く全クラスが対象。
             Kort は1〜4日目がフリー、5日目だけチェイシング）。
@@ -204,7 +203,7 @@ export default async function OringenPage() {
           ))}
           {hasMtbo && (
             <div>
-              MTBO の会場は徒歩競技と異なります:{" "}
+              MTBO の会場は FootO と異なります:{" "}
               {programJson.venues.mtbo.map((v) => `E${v.stages.join("・")} ${v.name}`).join(" / ")}
             </div>
           )}
@@ -293,7 +292,7 @@ export default async function OringenPage() {
         <ul className="flex flex-col gap-1 text-xs">
           {[
             { href: programJson.officialUrls.pm, label: "PM（競技注意事項）", note: "各ステージの詳細。スタート地点名・地図の注意など。暫定版のため直前まで更新される" },
-            { href: programJson.officialUrls.classes, label: "クラス制度（OL）", note: "抽選スタート／フリースタートの規定" },
+            { href: programJson.officialUrls.classes, label: "クラス制度（FootO）", note: "抽選スタート／フリースタートの規定" },
             { href: programJson.officialUrls.travel, label: "会場への行き方（Resa）", note: "各エタップへの交通" },
             { href: programJson.officialUrls.news, label: "ニュース", note: "スタート時刻の公開・キャンプ・訓練用地図など直前情報" },
             { href: programJson.officialUrls.areas, label: "競技地域（Tävlingsområden）", note: "会場と地形の解説" },
