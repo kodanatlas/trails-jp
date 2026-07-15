@@ -49,6 +49,15 @@ export interface OringenPerson {
   /** "high" = 確定 / "medium" = 推定（読み・クラブから人手照合。UI で区別する） */
   kanjiConfidence: "high" | "medium" | null;
   club: string;
+  /**
+   * trails.jp の選手ページ `/a/[key]` のキー。ページが**存在するときだけ**入る。
+   *
+   * 漢字が特定できていても選手ページがあるとは限らない。照合に使った Supabase `athletes`(2,418名) と、
+   * 選手ページが引く `public/data/athlete-index.json`(1,684名) は**別物**で、後者に無ければ 404 になる
+   * （2026 実測: 漢字41名中3名がページ無し）。存在確認はサーバー側で行う
+   * — athlete-index.json は 1.9MB あり、クライアントへ送れない。
+   */
+  athleteKey?: string | null;
   /** stage番号("1"〜"5") → その日のエントリー配列 */
   entries: Record<string, OringenEntry[]>;
 }

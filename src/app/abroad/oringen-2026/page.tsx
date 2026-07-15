@@ -8,8 +8,18 @@ import {
   EVENT_TIME_ZONE,
 } from "@/lib/oringen/normalize";
 import { nextSyncAt } from "@/lib/oringen/schedule";
+import { attachAthleteLinks } from "@/lib/oringen/athlete-link";
 import programJson from "@/data/oringen-program.json";
+import athleteIndexJson from "../../../../public/data/athlete-index.json";
 import { AbroadTable } from "./AbroadTable";
+
+/**
+ * 選手ページ `/a/[key]` の存在確認用。**サーバー側でだけ触る**
+ * （athlete-index.json は 1.9MB。クライアントバンドルに入れてはいけない）。
+ */
+const ATHLETE_INDEX_KEYS = new Set(
+  Object.keys((athleteIndexJson as unknown as { athletes: Record<string, unknown> }).athletes),
+);
 
 /**
  * O-Ringen Göteborg 2026 の日本勢情報。**期間限定**。
@@ -62,7 +72,9 @@ function footVenue(stage: number) {
 }
 
 export default async function OringenPage() {
-  const data = await readOringen();
+  const stored = await readOringen();
+  // 選手ページが実在する人にだけリンクを張る（張れない人が居るのは正常。athlete-link.ts 参照）
+  const data = { ...stored, people: attachAthleteLinks(stored.people, ATHLETE_INDEX_KEYS) };
   const entries = countEntries(data.people);
   const confirmed = countConfirmedStarts(data.people);
   // 分母は「抽選クラス」だけ。全エントリーを分母にすると、フリースタート（＝永久に埋まらない）を

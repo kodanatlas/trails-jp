@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { missingStartReason } from "@/lib/oringen/start-type";
 import { difficultyOf, type DifficultyLevel } from "@/lib/oringen/difficulty";
@@ -53,20 +54,41 @@ function compareStart(a: string | null, b: string | null): number {
   return 0;
 }
 
+/**
+ * 氏名。選手ページが**実在するときだけ**リンクにする。
+ *
+ * 漢字が特定できていてもページがあるとは限らない（athlete-link.ts 参照）。
+ * `athleteKey` はサーバー側で索引と突合して詰めてあるので、ここでは有無を見るだけ。
+ */
 function NameCell({ person }: { person: OringenPerson }) {
   if (!person.kanji) return <span className="font-medium">{person.name}</span>;
+
+  const kanji = (
+    <span
+      className={cn(
+        "font-medium",
+        // 推定は点線で区別する（読み・クラブからの人手照合であり確定ではない）
+        person.kanjiConfidence === "medium" && "border-b border-dotted border-muted",
+      )}
+      title={person.kanjiConfidence === "medium" ? "trails.jp の選手データとの照合による推定" : undefined}
+    >
+      {person.kanji}
+    </span>
+  );
+
   return (
     <span className="block">
-      <span
-        className={cn(
-          "font-medium",
-          // 推定は点線で区別する（読み・クラブからの人手照合であり確定ではない）
-          person.kanjiConfidence === "medium" && "border-b border-dotted border-muted",
-        )}
-        title={person.kanjiConfidence === "medium" ? "trails.jp の選手データとの照合による推定" : undefined}
-      >
-        {person.kanji}
-      </span>
+      {person.athleteKey ? (
+        <Link
+          href={`/a/${encodeURIComponent(person.athleteKey)}`}
+          className="text-primary hover:underline"
+          title={`${person.kanji} の選手ページ`}
+        >
+          {kanji}
+        </Link>
+      ) : (
+        kanji
+      )}
       {/* ローマ字は現地の掲示・呼出しで使われる正式表記なので必ず併記する */}
       <span className="block font-mono text-[10px] text-muted">{person.name}</span>
     </span>
