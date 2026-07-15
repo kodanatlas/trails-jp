@@ -1,0 +1,102 @@
+{
+  "extractedAt": "2026-07-15",
+  "sources": [
+    {
+      "url": "https://oringen.se/tavling/oversikt.html",
+      "hash": "f9a19467cc1e45be"
+    },
+    {
+      "url": "https://oringen.se/tavling/tavlingsomraden.html",
+      "hash": "cc5215ef059365ab"
+    }
+  ],
+  "officialUrls": {
+    "overview": "https://oringen.se/tavling/oversikt.html",
+    "areas": "https://oringen.se/tavling/tavlingsomraden.html",
+    "pm": "https://oringen.se/tavling/pm.html"
+  },
+  "opening": {
+    "date": "2026-07-19",
+    "time": "15:30",
+    "venue": "Arena Tuve",
+    "note": "Bagheerastafetten と同時開催"
+  },
+  "startWindows": [
+    {
+      "discipline": "オリエンテーリング（徒歩）",
+      "window": "08:30–13:30"
+    },
+    {
+      "discipline": "MTBO",
+      "window": "10:00–12:30"
+    }
+  ],
+  "venues": {
+    "foot": [
+      {
+        "stages": [
+          1,
+          2
+        ],
+        "name": "Jennylund",
+        "area": "Vättlefjäll 自然保護区",
+        "format": "ロング×2"
+      },
+      {
+        "stages": [
+          3
+        ],
+        "name": "Slottsskogen",
+        "area": "イェーテボリ市内の公園",
+        "format": "短縮ミドル"
+      },
+      {
+        "stages": [
+          4,
+          5
+        ],
+        "name": "Länsmansgården",
+        "area": "Hisingen / Svarte Mosse",
+        "format": "ミドル＋ロング"
+      }
+    ],
+    "mtbo": [
+      {
+        "stages": [
+          1,
+          2
+        ],
+        "name": "Delsjöterrängen",
+        "area": "イェーテボリ近郊",
+        "format": "ロング＋ミドル"
+      },
+      {
+        "stages": [
+          3
+        ],
+        "name": "Hisingsparken",
+        "area": "O-Ringen 広場から自転車圏",
+        "format": "ミドル"
+      },
+      {
+        "stages": [
+          4
+        ],
+        "name": "Gunnebo / Herkulesgården",
+        "area": "2023年SMスプリントと同エリア",
+        "format": "スプリント"
+      },
+      {
+        "stages": [
+          5
+        ],
+        "name": "OK Landehof クラブハウス周辺",
+        "area": "スキースタジアム",
+        "format": "ロング"
+      }
+    ]
+  },
+  "notes": [
+    "7/22（水）は日本勢が出場するクラスに競技がない（3日目は 7/23）。ただし大会としては休養日ではなく、Elit クラスはこの日にスプリント（16:00–18:00）を行う。"
+  ]
+}
