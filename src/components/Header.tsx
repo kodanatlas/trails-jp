@@ -13,6 +13,8 @@ const navItems = [
   { href: "/rankings", label: "ランキング" },
   { href: "/analysis", label: "選手分析" },
   { href: "/results", label: "結果分析" },
+  // 期間限定（O-Ringen 2026）。大会後に削除する — docs/plans/2026-07-15_abroad_oringen.md
+  { href: "/abroad", label: "海外遠征" },
 ];
 
 export function Header() {

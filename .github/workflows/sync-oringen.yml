@@ -1,0 +1,53 @@
+name: sync-oringen
+
+# O-Ringen Göteborg 2026（2026-07-20〜25）の日本勢データを取得して本番の ingest へ送る。
+# **期間限定**。大会後は schedule をコメントアウトする（docs/plans/2026-07-15_abroad_oringen.md）。
+#
+# なぜ Vercel cron ではなく GitHub Actions か:
+#   - 取得は 189クラス×5日で 45秒/27MB。Vercel Hobby の関数は 60秒上限で、既存 sync-entries が
+#     同じ形で 504 を起こしエントリー索引を凍結させた実績がある（DB max_connections=60 が根本原因）。
+#   - Vercel Hobby の cron は「1日1回・±59分精度」。開催中に1日2回動かしたい要件を満たせない。
+#   - 前例: entry-index-backstop.yml（GH Actions から本番 cron URL を叩く）。
+#
+# 必要な Secret: ORINGEN_INGEST_SECRET（Vercel 本番の同名環境変数と同値）。
+# 手動実行可（Actions 画面の "Run workflow" / workflow_dispatch）。
+
+on:
+  schedule:
+    # 04:00 UTC = 現地 06:00（その日のスタート前＝スタートリスト確定後）/ 13:00 JST
+    # 14:00 UTC = 現地 16:00（その日のレース終了後＝結果反映）/ 23:00 JST
+    # ※ GitHub の schedule は高負荷時に遅延・drop されうる（公式）。「速報」ではなく定時更新。
+    #    ページに generatedAt を出しているので、止まれば利用者が気づける。
+    - cron: "0 4,14 * * *"
+  workflow_dispatch: {}
+
+# 手動 + スケジュールの重なりを避ける
+concurrency:
+  group: sync-oringen
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # npm install はしない。scripts/fetch-oringen.ts の依存は tsx だけ（src/lib/oringen/* は
+      # 外部ランタイム依存を持たない純関数）。trails.jp の依存一式（maplibre/recharts/highs 等）を
+      # 入れる必要はなく、`npm ci` は oxide wasm の lockfile ドリフトで落ちる既知問題もある。
+      - name: Fetch O-Ringen data and POST to ingest
+        env:
+          ORINGEN_INGEST_URL: https://trailsjp.vercel.app/api/oringen/ingest
+          ORINGEN_INGEST_SECRET: ${{ secrets.ORINGEN_INGEST_SECRET }}
+        run: |
+          if [ -z "$ORINGEN_INGEST_SECRET" ]; then
+            echo "::error::ORINGEN_INGEST_SECRET secret が未設定です（リポジトリ Secrets に登録してください）"
+            exit 1
+          fi
+          # スクリプト側で「HTTP 200 でも success:false（品質ガードのブロック）」を検出して非0終了する。
+          # 200 だけ見て緑にすると「更新されていないのに成功」になるため。
+          npx --yes tsx scripts/fetch-oringen.ts
