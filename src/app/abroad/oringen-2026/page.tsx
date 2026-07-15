@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { readOringen } from "@/lib/oringen-store";
-import { countConfirmedStarts, countEntries, EVENT_TIME_ZONE } from "@/lib/oringen/normalize";
+import {
+  countConfirmedStarts,
+  countDrawnEntries,
+  countEntries,
+  EVENT_TIME_ZONE,
+} from "@/lib/oringen/normalize";
 import { nextSyncAt } from "@/lib/oringen/schedule";
 import programJson from "@/data/oringen-program.json";
 import { AbroadTable } from "./AbroadTable";
@@ -60,9 +65,19 @@ export default async function OringenPage() {
   const data = await readOringen();
   const entries = countEntries(data.people);
   const confirmed = countConfirmedStarts(data.people);
+  // 分母は「抽選クラス」だけ。全エントリーを分母にすると、フリースタート（＝永久に埋まらない）を
+  // 「未確定・待てば埋まる」と誤読させる。2026-07-15 に実際にそう表示していた。
+  const drawn = countDrawnEntries(data.people);
+  const freeStart = entries - drawn;
   const clubs = new Set(data.people.map((p) => p.club)).size;
   const hasMtbo = data.people.some((p) =>
     Object.values(p.entries).flat().some((e) => e.className.startsWith("MTBO")),
+  );
+  // 色クラス（Blå/Gul/Orange/Svart …）に出る人がいるときだけ難易度の凡例を出す
+  const usesColorClass = data.people.some((p) =>
+    Object.values(p.entries)
+      .flat()
+      .some((e) => /(Vit|Gul|Orange|Lila|Blå|Svart)/.test(e.className)),
   );
 
   return (
@@ -89,8 +104,9 @@ export default async function OringenPage() {
         <span>{clubs} クラブ</span>
         <span>延べ {entries} エントリー</span>
         <span>
-          スタート時刻 確定 {confirmed}/{entries}
+          抽選クラス {confirmed}/{drawn} 確定
         </span>
+        {freeStart > 0 && <span>フリースタート {freeStart}</span>}
         {/* いつ時点のデータか。更新が止まったことを利用者が検知する唯一の手段 */}
         <span>更新 {toJst(data.generatedAt)} JST</span>
         {/*
@@ -100,16 +116,22 @@ export default async function OringenPage() {
         <span>次回 {toJstTime(nextSyncAt(new Date()))} 頃</span>
       </div>
 
-      {confirmed < entries && (
+      {freeStart > 0 && (
         <div className="mb-4 border-l-2 border-accent bg-card px-3 py-2">
           <p className="text-xs text-muted">
-            スタート時刻は{" "}
-            <strong className="text-foreground">
-              {confirmed}/{entries}
-            </strong>{" "}
-            件のみ確定しています。残りは空欄（—）です。これは取得漏れではなく{" "}
-            <strong className="text-foreground">O-Ringen 側が未抽選</strong>のためで、開催が近づくと埋まります
-            （2025年大会では最終的に全クラスが確定していました）。
+            表の空欄（—）は <strong className="text-foreground">フリースタート</strong>です。
+            <strong className="text-foreground">待っても時刻は入りません。</strong>
+            当日スタート地点に行って自分でスタート分を選ぶ方式で、そもそも時刻が割り当てられません
+            （公式:「Du har fri starttid och väljer startminut när du kommer fram till din start」）。
+            対象は <strong className="text-foreground">Kort（成人）・Motion・Etappstart・開放クラス（色）・DH75以上・PreO</strong>。
+            スタートできる時間帯は{" "}
+            {programJson.startWindows.map((w) => `${w.discipline} ${w.window}`).join(" / ")} です。
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            抽選クラスのスタート時刻は公開済みです（OL 7/7・MTBO 7/13）。
+            <strong className="text-foreground"> 5日目の「追い抜き」</strong>は別で、
+            4日目までの累計順位から決まるため、それまで未定です（DH10〜DH12 を除く全クラスが対象。
+            Kort は1〜4日目がフリー、5日目だけ追い抜き）。
           </p>
         </div>
       )}
@@ -203,6 +225,71 @@ export default async function OringenPage() {
       <section className="mb-6">
         <h2 className="mb-2 text-sm font-bold">日本人スタートリスト</h2>
         <AbroadTable data={data} />
+      </section>
+
+      {/*
+        表に Blå / Gul / Orange / Svart というクラス名が並ぶが、スウェーデン語の色が何を意味するか
+        日本の読み手には分からない。11名が色クラスに出場している。
+      */}
+      {usesColorClass && (
+        <section className="mb-6">
+          <h2 className="mb-2 text-sm font-bold">クラス名の色＝難易度</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-border text-left text-muted">
+                  <th className="whitespace-nowrap px-2 py-1.5 font-medium">色</th>
+                  <th className="whitespace-nowrap px-2 py-1.5 font-medium">難易度</th>
+                  <th className="px-2 py-1.5 font-medium">内容</th>
+                </tr>
+              </thead>
+              <tbody>
+                {programJson.difficultyLevels.map((d) => (
+                  <tr key={d.sv} className="border-b border-border/50">
+                    <td className="whitespace-nowrap px-2 py-1.5">
+                      {d.sv}
+                      <span className="ml-1 text-muted">{d.ja}</span>
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-1.5 text-muted">{d.level}</td>
+                    <td className="px-2 py-1.5 text-muted">{d.desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-[10px] text-muted">
+            数字はコース長（km）。例: <span className="font-mono">Etappstart Svart 7,5</span> = 1日エントリーの黒（難）7.5km。
+          </p>
+        </section>
+      )}
+
+      <section className="mb-6">
+        <h2 className="mb-2 text-sm font-bold">公式サイトの関連ページ</h2>
+        <ul className="flex flex-col gap-1 text-xs">
+          {[
+            { href: programJson.officialUrls.pm, label: "PM（競技注意事項）", note: "各ステージの詳細。スタート地点名・地図の注意など。暫定版のため直前まで更新される" },
+            { href: programJson.officialUrls.classes, label: "クラス制度（OL）", note: "抽選スタート／フリースタートの規定" },
+            { href: programJson.officialUrls.travel, label: "会場への行き方（Resa）", note: "各エタップへの交通" },
+            { href: programJson.officialUrls.news, label: "ニュース", note: "スタート時刻の公開・キャンプ・訓練用地図など直前情報" },
+            { href: programJson.officialUrls.areas, label: "競技地域（Tävlingsområden）", note: "会場と地形の解説" },
+          ].map((l) => (
+            <li key={l.href}>
+              <a href={l.href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                {l.label}
+              </a>
+              <span className="ml-2 text-[10px] text-muted">{l.note}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted">
+          <span>PM の各日:</span>
+          {programJson.officialUrls.pmStages.map((u, i) => (
+            <a key={u} href={u} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              {i + 1}日目
+            </a>
+          ))}
+          <span>（スウェーデン語）</span>
+        </div>
       </section>
 
       <div className="border-t border-border pt-3 text-[10px] leading-relaxed text-muted">

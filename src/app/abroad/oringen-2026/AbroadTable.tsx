@@ -2,12 +2,16 @@
 
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { missingStartReason } from "@/lib/oringen/start-type";
 import type { OringenData, OringenPerson } from "@/lib/oringen/types";
 
 /**
  * 日本勢のスタートリスト表。「選手一覧」（1人=1行 × 5日）と日別（時刻順）を切り替える。
  *
  * 生年は持たない・出さない（types.ts のコメント参照）。同定はクラス＋クラブで足りる。
+ *
+ * 時刻が無いセルは「フリー」と明示する。ただの「—」だと**待てば埋まる**ように読めるが、
+ * フリースタートのクラスは永久に埋まらない（2026-07-15 に実際そう表示していた誤りの修正）。
  */
 
 const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
@@ -17,7 +21,7 @@ function dayLabel(date: string): string {
   return `${d.getUTCMonth() + 1}/${d.getUTCDate()}（${WEEKDAY[d.getUTCDay()]}）`;
 }
 
-/** 未抽選は常に最後（Excel の空白セルと同じ）。確定分は時刻順。 */
+/** 時刻の無いものは常に最後（Excel の空白セルと同じ）。確定分は時刻順。 */
 function compareStart(a: string | null, b: string | null): number {
   if (a && b) return a.localeCompare(b);
   if (a) return -1;
@@ -45,9 +49,41 @@ function NameCell({ person }: { person: OringenPerson }) {
   );
 }
 
-function StartTime({ value }: { value: string | null }) {
-  if (!value) return <span className="text-muted">—</span>;
-  return <span className="font-mono tabular-nums">{value}</span>;
+/**
+ * スタート時刻。時刻が無い場合、**理由によって表示を分ける**。
+ * 全部「—」にすると、永久に入らないもの（フリー）と入るもの（追い抜き）が区別できない。
+ */
+function StartTime({
+  value,
+  className,
+  stage,
+}: {
+  value: string | null;
+  className: string;
+  stage: number;
+}) {
+  if (value) return <span className="font-mono tabular-nums">{value}</span>;
+
+  const reason = missingStartReason(className, stage);
+  if (reason === "free-start") {
+    return (
+      <span className="text-muted" title="当日スタート地点で自分でスタート分を選ぶ方式。時刻の割当なし">
+        フリー
+      </span>
+    );
+  }
+  if (reason === "chase-start") {
+    return (
+      <span className="text-muted" title="追い抜きスタート。4日目までの累計順位から決まるため、それまで未定">
+        追い抜き
+      </span>
+    );
+  }
+  return (
+    <span className="text-muted" title="抽選クラスだが未公開">
+      —
+    </span>
+  );
 }
 
 export function AbroadTable({ data }: { data: OringenData }) {
@@ -148,7 +184,7 @@ export function AbroadTable({ data }: { data: OringenData }) {
                         ) : (
                           entries.map((e) => (
                             <span key={e.className} className="block">
-                              <StartTime value={e.startTime} />
+                              <StartTime value={e.startTime} className={e.className} stage={r.n} />
                               <span className="block font-mono text-[10px] text-muted">{e.className}</span>
                             </span>
                           ))
@@ -175,7 +211,11 @@ export function AbroadTable({ data }: { data: OringenData }) {
               {dayRows.map(({ person, entry }) => (
                 <tr key={`${person.name}:${entry.className}`} className="border-b border-border/50 align-top">
                   <td className="whitespace-nowrap px-2 py-1.5">
-                    <StartTime value={entry.startTime} />
+                    <StartTime
+                      value={entry.startTime}
+                      className={entry.className}
+                      stage={typeof tab === "number" ? tab : 0}
+                    />
                   </td>
                   <td className="whitespace-nowrap px-2 py-1.5">
                     <NameCell person={person} />

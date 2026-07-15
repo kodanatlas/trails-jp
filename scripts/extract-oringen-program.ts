@@ -22,6 +22,7 @@ import { join } from "node:path";
 const SOURCES = {
   oversikt: "https://oringen.se/tavling/oversikt.html",
   areas: "https://oringen.se/tavling/tavlingsomraden.html",
+  difficulty: "https://oringen.se/tavling/svarighetsgrader.html",
 };
 
 /** HTML から本文テキストだけ取り出す（ハッシュ比較の対象。タグ変更に過敏にならないようテキスト化する）。 */
@@ -51,6 +52,7 @@ async function getText(url: string): Promise<string> {
 async function main() {
   const oversikt = await getText(SOURCES.oversikt);
   const areas = await getText(SOURCES.areas);
+  const difficulty = await getText(SOURCES.difficulty);
 
   // 抽出した事実は下に手で書き起こす（スウェーデン語の自動翻訳はしない。誤訳より人の確認を優先）。
   // ハッシュだけ自動で取り、次回以降の変更検知に使う。
@@ -65,11 +67,22 @@ async function main() {
         url: SOURCES.areas,
         hash: sectionHash(areas, "Orienteringslöpning, OL", "Precisionsorientering, PreO"),
       },
+      {
+        url: SOURCES.difficulty,
+        hash: sectionHash(difficulty, "Svårighetsgrader Nivå", "PM Ny på O-Ringen"),
+      },
     ],
     officialUrls: {
       overview: SOURCES.oversikt,
       areas: SOURCES.areas,
       pm: "https://oringen.se/tavling/pm.html",
+      // PM は各ステージが個別ページ。日別の詳細（スタート地点名・地図の注意）はここ。
+      // **見出しが「PM - Etapp N (Preliminärt)」＝暫定版**なので、翻訳して載せず原文へ送る。
+      pmStages: [1, 2, 3, 4, 5].map((n) => `https://oringen.se/tavling/pm/etapp-${n}.html`),
+      difficulty: SOURCES.difficulty,
+      classes: "https://oringen.se/tavling/ol.html",
+      travel: "https://oringen.se/resa.html",
+      news: "https://oringen.se/nyheter.html",
     },
     opening: {
       date: "2026-07-19",
@@ -95,6 +108,20 @@ async function main() {
         { stages: [5], name: "OK Landehof クラブハウス周辺", area: "スキースタジアム", format: "ロング" },
       ],
     },
+    /**
+     * 難易度（色）。**私の表に Blå / Gul / Orange / Svart というクラス名が並ぶのに、
+     * 日本の読み手にはスウェーデン語の色が何を意味するか分からない**ため載せる。
+     * 出典 https://oringen.se/tavling/svarighetsgrader.html の要約。固定情報で動かない。
+     */
+    difficultyLevels: [
+      { sv: "Grön", ja: "緑", level: "初心者", desc: "道・柵・水路など明瞭な線状物の上か、すぐ脇にコントロール" },
+      { sv: "Vit", ja: "白", level: "非常に易", desc: "緑と同じ地形。コントロールが線状物から少し離れるが、岩や明瞭な丘など分かりやすい地点" },
+      { sv: "Gul", ja: "黄", level: "易", desc: "やや難しい地形。道から少し離れる。道と道の間をショートカットできる程度" },
+      { sv: "Orange", ja: "橙", level: "中", desc: "湿地・崖・尾根・窪地なども辿る。近くに必ず明瞭な目標物がある" },
+      { sv: "Lila", ja: "紫", level: "中", desc: "橙・赤と同難度だがコントロール自体が難しい。単純化して確実に取る技術が要る" },
+      { sv: "Blå", ja: "青", level: "難", desc: "上級者向け。等高線と細部の読図が大きな武器になる" },
+      { sv: "Svart", ja: "黒", level: "難", desc: "青と同難度だが、あらゆる地形が出現しうる" },
+    ],
     notes: [
       // 「7/22 は休養日」は日本勢にとっては正しいが、大会としては誤り。Elit はこの日にスプリントを走る。
       "7/22（水）は日本勢が出場するクラスに競技がない（3日目は 7/23）。ただし大会としては休養日ではなく、Elit クラスはこの日にスプリント（16:00–18:00）を行う。",
