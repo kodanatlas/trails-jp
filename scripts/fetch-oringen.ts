@@ -16,6 +16,8 @@
 import { normalize, toLocalDate, type RawResult, type NameMapEntry } from "../src/lib/oringen/normalize";
 import type { OringenData, OringenRace } from "../src/lib/oringen/types";
 import nameMapJson from "../src/data/oringen-name-map.json";
+import programJson from "../src/data/oringen-program.json";
+import { toPlainText, sectionHash } from "./extract-oringen-program";
 
 const API = "https://resultat.oringen.se/api";
 const SLUG = "2026";
@@ -51,8 +53,55 @@ async function getJson<T>(url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+/**
+ * 公式プログラムが更新されていないか照合する（＝再抽出のトリガー）。
+ *
+ * プログラム（会場・スタート窓・開会式）は静的に持っている。動かない情報だからだが、
+ * **開催が近づくと更新されうる**（2026-07-15 ユーザー指摘）。ここで本文ハッシュを比べて、
+ * 変わっていれば警告を出す。
+ *
+ * **必ず非致命**。プログラムの文言が変わっただけでスタートリストの同期が止まるのは本末転倒。
+ * oringen.se への到達性も別問題（実際 WSL からは IPv6 の都合で届かない）なので、
+ * 失敗しても握りつぶして先へ進む。
+ */
+async function checkProgramFreshness(): Promise<void> {
+  const markers: Record<string, [string, string]> = {
+    "oversikt.html": ["Översikt O-Ringen Göteborg", "Precisionsorientering, PreO"],
+    "tavlingsomraden.html": ["Orienteringslöpning, OL", "Precisionsorientering, PreO"],
+  };
+
+  for (const src of programJson.sources) {
+    try {
+      const key = Object.keys(markers).find((k) => src.url.endsWith(k));
+      if (!key) continue;
+      const res = await fetch(src.url, { signal: AbortSignal.timeout(20_000) });
+      if (!res.ok) {
+        console.log(`::warning::プログラム照合をスキップ（${src.url} -> HTTP ${res.status}）`);
+        continue;
+      }
+      const [start, end] = markers[key]!;
+      const now = sectionHash(toPlainText(await res.text()), start, end);
+      if (now !== src.hash) {
+        console.log(
+          `::warning::公式プログラムが更新されています（${src.url}: ${src.hash} -> ${now}）。` +
+            `src/data/oringen-program.json は ${programJson.extractedAt} 時点の抽出です。` +
+            `\`npx tsx scripts/extract-oringen-program.ts\` で再抽出し、内容を確認してコミットしてください。`,
+        );
+      } else {
+        console.log(`  プログラム照合: 変更なし（${key}）`);
+      }
+    } catch (e) {
+      // 到達不能・タイムアウト等。本処理は続ける。
+      console.log(`::warning::プログラム照合をスキップ（${src.url}: ${e instanceof Error ? e.message : String(e)}）`);
+    }
+  }
+}
+
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
+
+  // 本処理より先に。失敗しても握りつぶすので本処理には影響しない。
+  await checkProgramFreshness();
 
   console.log("イベント情報を取得中...");
   const event = await getJson<EventJson>(
