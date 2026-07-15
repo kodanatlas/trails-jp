@@ -1,0 +1,2606 @@
+{
+    "generatedAt":  "2026-07-15T03:26:59Z",
+    "eventId":  25,
+    "eventName":  "O-Ringen Göteborg",
+    "resultUrl":  "https://resultat.oringen.se/2026",
+    "races":  [
+                  {
+                      "n":  1,
+                      "raceId":  124,
+                      "date":  "2026-07-20"
+                  },
+                  {
+                      "n":  2,
+                      "raceId":  125,
+                      "date":  "2026-07-21"
+                  },
+                  {
+                      "n":  3,
+                      "raceId":  126,
+                      "date":  "2026-07-23"
+                  },
+                  {
+                      "n":  4,
+                      "raceId":  127,
+                      "date":  "2026-07-24"
+                  },
+                  {
+                      "n":  5,
+                      "raceId":  128,
+                      "date":  "2026-07-25"
+                  }
+              ],
+    "people":  [
+                   {
+                       "name":  "Otsuka Koichi",
+                       "kanji":  "大塚校市",
+                       "kanjiConfidence":  "high",
+                       "club":  "Chiba OLK",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3460
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3250
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2140
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2460
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3460
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Suzuki Masao",
+                       "kanji":  null,
+                       "kanjiConfidence":  null,
+                       "club":  "Chiba OLK",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3460
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3250
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2140
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2460
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3460
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Shikano Kanji",
+                       "kanji":  "鹿野勘次",
+                       "kanjiConfidence":  "high",
+                       "club":  "Gifu OLC",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3460
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3250
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2140
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2460
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3460
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Ebisawa Tadashi",
+                       "kanji":  "海老沢正",
+                       "kanjiConfidence":  "high",
+                       "club":  "Irumashi OLC",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3460
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3250
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2140
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2460
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3460
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Kodama Takeshi",
+                       "kanji":  "児玉健",
+                       "kanjiConfidence":  "high",
+                       "club":  "Irumashi OLC",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H40",
+                                                     "startTime":  "10:22",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  6880
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H40",
+                                                     "startTime":  "12:13",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  6790
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H40",
+                                                     "startTime":  "13:09",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3410
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H40",
+                                                     "startTime":  "09:00",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3960
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H40",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7590
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Kojima Masako",
+                       "kanji":  null,
+                       "kanjiConfidence":  null,
+                       "club":  "Irumashi OLC",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "Etappstart Gul 2,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2350
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "Etappstart Gul 3,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3310
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "Etappstart Orange 2,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  1830
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "Etappstart Orange 3,3",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2480
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "Etappstart Blå 3,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3560
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Kojima Taro",
+                       "kanji":  "小嶋太郎",
+                       "kanjiConfidence":  "high",
+                       "club":  "Irumashi OLC",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H40",
+                                                     "startTime":  "10:37",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  6880
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H40",
+                                                     "startTime":  "11:56",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  6790
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H40",
+                                                     "startTime":  "13:04",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3410
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H40",
+                                                     "startTime":  "08:31",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3960
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H40",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7590
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Miyake Yuko",
+                       "kanji":  "三宅裕子",
+                       "kanjiConfidence":  "high",
+                       "club":  "Irumashi OLC",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "D55 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3310
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "D55 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3110
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "D55 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2000
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "D55 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2710
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "D55 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3330
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Okuyama Keitoku",
+                       "kanji":  "奥山景得",
+                       "kanjiConfidence":  "high",
+                       "club":  "Irumashi OLC",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H70",
+                                                     "startTime":  "10:31",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3640
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H70",
+                                                     "startTime":  "11:30",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3610
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H70",
+                                                     "startTime":  "13:17",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2590
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H70",
+                                                     "startTime":  "09:11",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2880
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H70",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3760
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Tsuji Yuka",
+                       "kanji":  "辻悠佳",
+                       "kanjiConfidence":  "high",
+                       "club":  "Irumashi OLC",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "D21 Lång",
+                                                     "startTime":  "10:43",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  8120
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "D21 Lång",
+                                                     "startTime":  "11:43",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  8320
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "D21 Lång",
+                                                     "startTime":  "12:54",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3650
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "D21 Lång",
+                                                     "startTime":  "09:09",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4330
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "D21 Lång",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  9320
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Uezono Kumiko",
+                       "kanji":  "上園久美子",
+                       "kanjiConfidence":  "high",
+                       "club":  "Irumashi OLC",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "D40 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3780
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "D40 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3620
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "D40 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2760
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "D40 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3070
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "D40 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3960
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Fukuda Masahide",
+                       "kanji":  "福田雅秀",
+                       "kanjiConfidence":  "high",
+                       "club":  "KawagoeOLC",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "09:49",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5180
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "11:39",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5020
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "13:29",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2630
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "09:20",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3040
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5450
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Yoshida Tsutomu",
+                       "kanji":  "吉田勉",
+                       "kanjiConfidence":  "high",
+                       "club":  "Michi",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "10:05",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5180
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "11:44",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5020
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "12:49",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2630
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "08:39",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3040
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5450
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Yamamoto Hidekatsu",
+                       "kanji":  "山本英勝",
+                       "kanjiConfidence":  "medium",
+                       "club":  "Navitabi",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  "10:06",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5770
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  "11:59",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5290
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  "13:19",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2870
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  "09:22",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3490
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5850
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Wakabayashi Kaito",
+                       "kanji":  null,
+                       "kanjiConfidence":  null,
+                       "club":  "Niigataunv",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H21 Lång",
+                                                     "startTime":  "10:34",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  10810
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H21 Lång",
+                                                     "startTime":  "11:54",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  11020
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H21 Lång",
+                                                     "startTime":  "13:18",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4090
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H21 Lång",
+                                                     "startTime":  "08:59",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5340
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H21 Lång",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  12130
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Kume Junya",
+                       "kanji":  null,
+                       "kanjiConfidence":  null,
+                       "club":  "OC Tortoise",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H21 Kort-2",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  6030
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H21 Kort-2",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5780
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H21 Kort-2",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3640
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H21 Kort-2",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4400
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H21 Kort-2",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  6490
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Kume Saho",
+                       "kanji":  null,
+                       "kanjiConfidence":  null,
+                       "club":  "OC Tortoise",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "D21 Kort-2",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5210
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "D21 Kort-2",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5030
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "D21 Kort-2",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3150
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "D21 Kort-2",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4000
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "D21 Kort-2",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5470
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Kunisawa Itsuki",
+                       "kanji":  "国沢五月",
+                       "kanjiConfidence":  "medium",
+                       "club":  "OC Tortoise",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  "10:35",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5770
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  "11:22",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5290
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  "12:50",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2870
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  "09:40",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3490
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5850
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Tsukiyama Aya",
+                       "kanji":  null,
+                       "kanjiConfidence":  null,
+                       "club":  "OC Tortoise",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "D35 Motion",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3810
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "D35 Motion",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3880
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "D35 Motion",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2310
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "D35 Motion",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2970
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "D35 Motion",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3890
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Yuki Katsuya",
+                       "kanji":  "結城克哉",
+                       "kanjiConfidence":  "high",
+                       "club":  "OC Tortoise",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "10:01",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  8490
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "11:23",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  8890
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "12:19",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3730
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "09:37",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4950
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  9870
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Fujiwara Kotaro",
+                       "kanji":  "藤原考太郎",
+                       "kanjiConfidence":  "medium",
+                       "club":  "OK22",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7250
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7130
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4920
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Furukado Kaiji",
+                       "kanji":  "古角海志",
+                       "kanjiConfidence":  "high",
+                       "club":  "OK22",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7250
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7130
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Minobe Ryo",
+                       "kanji":  "美濃部遼",
+                       "kanjiConfidence":  "high",
+                       "club":  "OK22",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7250
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7130
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4920
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Mori Sonosuke",
+                       "kanji":  "森創之介",
+                       "kanjiConfidence":  "high",
+                       "club":  "OK22",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7250
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7130
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4920
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Nakamura Ryota",
+                       "kanji":  "中村涼太",
+                       "kanjiConfidence":  "medium",
+                       "club":  "OK22",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7250
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7130
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4920
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Tanaka Masataka",
+                       "kanji":  "田中雅崇",
+                       "kanjiConfidence":  "medium",
+                       "club":  "OK22",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7250
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7130
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4920
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Ishii Haruka",
+                       "kanji":  "石井遥花",
+                       "kanjiConfidence":  "high",
+                       "club":  "OLP Hyogo",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "D10",
+                                                     "startTime":  "10:51",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  1930
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "D10",
+                                                     "startTime":  "11:00",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2460
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "D10",
+                                                     "startTime":  "12:22",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  1930
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "D10",
+                                                     "startTime":  "09:16",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  1980
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "D10",
+                                                     "startTime":  "12:43",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2510
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Ishii Momoka",
+                       "kanji":  "石井百花",
+                       "kanjiConfidence":  "high",
+                       "club":  "OLP Hyogo",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "D13",
+                                                     "startTime":  "10:41",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3550
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "D13",
+                                                     "startTime":  "11:29",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3490
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "D13",
+                                                     "startTime":  "13:09",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2480
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "D13",
+                                                     "startTime":  "09:28",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2790
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "D13",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3720
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Ishii Yasuaki",
+                       "kanji":  "石井泰朗",
+                       "kanjiConfidence":  "high",
+                       "club":  "OLP Hyogo",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H45",
+                                                     "startTime":  "10:54",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  6730
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H45",
+                                                     "startTime":  "11:06",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  6110
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H45",
+                                                     "startTime":  "12:38",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3170
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H45",
+                                                     "startTime":  "08:57",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3740
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H45",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7000
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Ishii Yuko",
+                       "kanji":  "石井祐子",
+                       "kanjiConfidence":  "high",
+                       "club":  "OLP Hyogo",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "Blå 2,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2420
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "Blå 2,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2530
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "Blå 2,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2130
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "Blå 2,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2090
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "Blå 2,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2480
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Yamamoto Yoshihiko",
+                       "kanji":  "山本賀彦",
+                       "kanjiConfidence":  "high",
+                       "club":  "OLP Hyogo",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H60 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3930
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H60 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3660
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H60 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2550
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H60 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2950
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H60 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3910
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Yoshino Shinji",
+                       "kanji":  "吉野信治",
+                       "kanjiConfidence":  "high",
+                       "club":  "OLP Hyogo",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "10:47",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5180
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "11:17",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5020
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "13:02",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2630
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "09:15",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3040
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5450
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Yamamoto Miho",
+                       "kanji":  "山本美保",
+                       "kanjiConfidence":  "high",
+                       "club":  "Shibuya De Hashirukai",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "Etappstart Orange 3,3",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3350
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "Etappstart Orange 3,3",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3140
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "Etappstart Orange 3,3",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2140
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "Etappstart Blå 3,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2920
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "Etappstart Blå 3,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3560
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Tashiro Masayuki",
+                       "kanji":  "田代雅之",
+                       "kanjiConfidence":  "high",
+                       "club":  "Shizuoka OLC",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "10:07",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5180
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "11:47",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5020
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "13:25",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2630
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  "09:35",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3040
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H60",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5450
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Fujisawa Yui",
+                       "kanji":  "藤澤ゆい",
+                       "kanjiConfidence":  "high",
+                       "club":  "Siosio Japan",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  "09:45",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7550
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  "11:22",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7280
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  "13:10",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3430
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  "08:49",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4040
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7950
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Haoka Miki",
+                       "kanji":  "羽岡美紀",
+                       "kanjiConfidence":  "high",
+                       "club":  "Siosio Japan",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  "10:31",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7550
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  "11:13",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7280
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  "12:24",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3430
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  "09:25",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4040
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7950
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Ishihara Shioto",
+                       "kanji":  "石原潮人",
+                       "kanjiConfidence":  "high",
+                       "club":  "Siosio Japan",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "09:57",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  8490
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "11:21",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  8890
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "12:35",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3730
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "08:43",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4950
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  9870
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Kadomoto Yuka",
+                       "kanji":  "角本柚香",
+                       "kanjiConfidence":  "high",
+                       "club":  "Siosio Japan",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  "09:56",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7550
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  "11:06",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7280
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  "13:13",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3430
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  "09:14",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4040
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "D21",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7950
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Malta Yudai",
+                       "kanji":  "丸田祐大",
+                       "kanjiConfidence":  "medium",
+                       "club":  "Siosio Japan",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "10:05",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  8490
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "11:31",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  8890
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "13:02",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3730
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "08:47",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4950
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  9870
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Mori Tomoki",
+                       "kanji":  "毛利智紀",
+                       "kanjiConfidence":  "medium",
+                       "club":  "Siosio Japan",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "10:57",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  8490
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "11:10",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  8890
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "12:52",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3730
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "09:13",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4950
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  9870
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Tanaka Yu",
+                       "kanji":  null,
+                       "kanjiConfidence":  null,
+                       "club":  "Siosio Japan",
+                       "entries":  {
+                                       "3":  [
+                                                 {
+                                                     "className":  "3-dagars Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4920
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "3-dagars Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4660
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "3-dagars Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7430
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Tsunoda Kazuki",
+                       "kanji":  "角田和貴",
+                       "kanjiConfidence":  "high",
+                       "club":  "Siosio Japan",
+                       "entries":  {
+                                       "3":  [
+                                                 {
+                                                     "className":  "3-dagars Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4920
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "3-dagars Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4660
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "3-dagars Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  7430
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Yoshioka Haruki",
+                       "kanji":  "吉岡春樹",
+                       "kanjiConfidence":  "high",
+                       "club":  "Siosio Japan",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "10:08",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  8490
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "12:12",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  8890
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "12:28",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3730
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  "09:20",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4950
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H21",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  9870
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Kato Shoji",
+                       "kanji":  "加藤昭次",
+                       "kanjiConfidence":  "high",
+                       "club":  "Tama OL",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H70 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2870
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H70 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2690
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H70 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  1840
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H70 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2480
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H70 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3300
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Ueda Toshio",
+                       "kanji":  "上田俊雄",
+                       "kanjiConfidence":  "high",
+                       "club":  "Tokyo OLC",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3460
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3250
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2140
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2460
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H75",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3460
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Koizumi Tatsuyoshi",
+                       "kanji":  "小泉辰喜",
+                       "kanjiConfidence":  "high",
+                       "club":  "Tokyo Orienteering Club",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H60 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3930
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H60 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3660
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H60 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2550
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H60 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2950
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H60 Kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3910
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Iwai Ryunosuke",
+                       "kanji":  null,
+                       "kanjiConfidence":  null,
+                       "club":  "Torch",
+                       "entries":  {
+                                       "4":  [
+                                                 {
+                                                     "className":  "Etappstart Svart 7,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  4660
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Iwai Saaya",
+                       "kanji":  null,
+                       "kanjiConfidence":  null,
+                       "club":  "Torch",
+                       "entries":  {
+                                       "4":  [
+                                                 {
+                                                     "className":  "Etappstart Orange 4,0",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3050
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Chino Koji",
+                       "kanji":  "茅野耕治",
+                       "kanjiConfidence":  "high",
+                       "club":  "Wanderers",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "Etappstart Blå 3,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3470
+                                                 },
+                                                 {
+                                                     "className":  "MTBO Etappstart Svår kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  11390
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "Etappstart Blå 3,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3240
+                                                 },
+                                                 {
+                                                     "className":  "MTBO Etappstart Svår kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5030
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "Etappstart Blå 3,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3180
+                                                 },
+                                                 {
+                                                     "className":  "MTBO Etappstart Svår kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  6120
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "Etappstart Blå 3,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2920
+                                                 },
+                                                 {
+                                                     "className":  "MTBO Etappstart Svår kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3330
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "Etappstart Blå 3,5",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3560
+                                                 },
+                                                 {
+                                                     "className":  "MTBO Etappstart Svår kort",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5020
+                                                 },
+                                                 {
+                                                     "className":  "Pre-Elit",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  null
+                                                 }
+                                             ]
+                                   }
+                   },
+                   {
+                       "name":  "Mori Tatsuo",
+                       "kanji":  "森竜生",
+                       "kanjiConfidence":  "medium",
+                       "club":  "Yokohama OL Club",
+                       "entries":  {
+                                       "1":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  "10:15",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5770
+                                                 }
+                                             ],
+                                       "2":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  "11:57",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5290
+                                                 }
+                                             ],
+                                       "3":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  "13:05",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  2870
+                                                 }
+                                             ],
+                                       "4":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  "08:52",
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  3490
+                                                 }
+                                             ],
+                                       "5":  [
+                                                 {
+                                                     "className":  "H55",
+                                                     "startTime":  null,
+                                                     "place":  null,
+                                                     "time":  null,
+                                                     "distanceM":  5850
+                                                 }
+                                             ]
+                                   }
+                   }
+               ],
+    "links":  {
+                  "official":  "https://oringen.se",
+                  "eventor":  "https://eventor.orientering.se/Events/Show/50594",
+                  "livelox":  null,
+                  "winsplits":  null
+              }
+}

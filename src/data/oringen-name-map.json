@@ -1,0 +1,166 @@
+{
+    "Shikano Kanji":  {
+                          "confidence":  "high",
+                          "kanji":  "鹿野勘次"
+                      },
+    "Yoshino Shinji":  {
+                           "confidence":  "high",
+                           "kanji":  "吉野信治"
+                       },
+    "Kojima Taro":  {
+                        "confidence":  "high",
+                        "kanji":  "小嶋太郎"
+                    },
+    "Yamamoto Miho":  {
+                          "confidence":  "high",
+                          "kanji":  "山本美保"
+                      },
+    "Yuki Katsuya":  {
+                         "confidence":  "high",
+                         "kanji":  "結城克哉"
+                     },
+    "Mori Sonosuke":  {
+                          "confidence":  "high",
+                          "kanji":  "森創之介"
+                      },
+    "Yamamoto Yoshihiko":  {
+                               "confidence":  "high",
+                               "kanji":  "山本賀彦"
+                           },
+    "Kunisawa Itsuki":  {
+                            "confidence":  "medium",
+                            "kanji":  "国沢五月"
+                        },
+    "Tashiro Masayuki":  {
+                             "confidence":  "high",
+                             "kanji":  "田代雅之"
+                         },
+    "Kodama Takeshi":  {
+                           "confidence":  "high",
+                           "kanji":  "児玉健"
+                       },
+    "Fujisawa Yui":  {
+                         "confidence":  "high",
+                         "kanji":  "藤澤ゆい"
+                     },
+    "Minobe Ryo":  {
+                       "confidence":  "high",
+                       "kanji":  "美濃部遼"
+                   },
+    "Kato Shoji":  {
+                       "confidence":  "high",
+                       "kanji":  "加藤昭次"
+                   },
+    "Fujiwara Kotaro":  {
+                            "confidence":  "medium",
+                            "kanji":  "藤原考太郎"
+                        },
+    "Okuyama Keitoku":  {
+                            "confidence":  "high",
+                            "kanji":  "奥山景得"
+                        },
+    "Tanaka Masataka":  {
+                            "confidence":  "medium",
+                            "kanji":  "田中雅崇"
+                        },
+    "Otsuka Koichi":  {
+                          "confidence":  "high",
+                          "kanji":  "大塚校市"
+                      },
+    "Ebisawa Tadashi":  {
+                            "confidence":  "high",
+                            "kanji":  "海老沢正"
+                        },
+    "Nakamura Ryota":  {
+                           "confidence":  "medium",
+                           "kanji":  "中村涼太"
+                       },
+    "Ishii Yasuaki":  {
+                          "confidence":  "high",
+                          "kanji":  "石井泰朗"
+                      },
+    "Ishii Yuko":  {
+                       "confidence":  "high",
+                       "kanji":  "石井祐子"
+                   },
+    "Mori Tomoki":  {
+                        "confidence":  "medium",
+                        "kanji":  "毛利智紀"
+                    },
+    "Yoshida Tsutomu":  {
+                            "confidence":  "high",
+                            "kanji":  "吉田勉"
+                        },
+    "Chino Koji":  {
+                       "confidence":  "high",
+                       "kanji":  "茅野耕治"
+                   },
+    "Yoshioka Haruki":  {
+                            "confidence":  "high",
+                            "kanji":  "吉岡春樹"
+                        },
+    "Ishihara Shioto":  {
+                            "confidence":  "high",
+                            "kanji":  "石原潮人"
+                        },
+    "Tsunoda Kazuki":  {
+                           "confidence":  "high",
+                           "kanji":  "角田和貴"
+                       },
+    "Ishii Haruka":  {
+                         "confidence":  "high",
+                         "kanji":  "石井遥花"
+                     },
+    "Uezono Kumiko":  {
+                          "confidence":  "high",
+                          "kanji":  "上園久美子"
+                      },
+    "Yamamoto Hidekatsu":  {
+                               "confidence":  "medium",
+                               "kanji":  "山本英勝"
+                           },
+    "Furukado Kaiji":  {
+                           "confidence":  "high",
+                           "kanji":  "古角海志"
+                       },
+    "Malta Yudai":  {
+                        "confidence":  "medium",
+                        "kanji":  "丸田祐大"
+                    },
+    "Koizumi Tatsuyoshi":  {
+                               "confidence":  "high",
+                               "kanji":  "小泉辰喜"
+                           },
+    "Tsuji Yuka":  {
+                       "confidence":  "high",
+                       "kanji":  "辻悠佳"
+                   },
+    "Kadomoto Yuka":  {
+                          "confidence":  "high",
+                          "kanji":  "角本柚香"
+                      },
+    "Ishii Momoka":  {
+                         "confidence":  "high",
+                         "kanji":  "石井百花"
+                     },
+    "Fukuda Masahide":  {
+                            "confidence":  "high",
+                            "kanji":  "福田雅秀"
+                        },
+    "Haoka Miki":  {
+                       "confidence":  "high",
+                       "kanji":  "羽岡美紀"
+                   },
+    "Mori Tatsuo":  {
+                        "confidence":  "medium",
+                        "kanji":  "森竜生"
+                    },
+    "Miyake Yuko":  {
+                        "confidence":  "high",
+                        "kanji":  "三宅裕子"
+                    },
+    "Ueda Toshio":  {
+                        "confidence":  "high",
+                        "kanji":  "上田俊雄"
+                    }
+}
