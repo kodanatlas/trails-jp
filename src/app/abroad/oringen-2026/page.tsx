@@ -131,10 +131,10 @@ export default async function OringenPage() {
       {freeStart > 0 && (
         <div className="mb-4 border-l-2 border-accent bg-card px-3 py-2">
           <p className="text-xs text-muted">
-            表の空欄（—）は <strong className="text-foreground">フリースタート</strong>です。
+            <strong className="text-foreground">フリースタート</strong>は当日スタート地点に行って自分でスタート分を
+            選ぶ方式で、そもそも時刻が割り当てられません。
             <strong className="text-foreground">待っても時刻は入りません。</strong>
-            当日スタート地点に行って自分でスタート分を選ぶ方式で、そもそも時刻が割り当てられません
-            （公式:「Du har fri starttid och väljer startminut när du kommer fram till din start」）。
+            （公式:「Du har fri starttid och väljer startminut när du kommer fram till din start」）
             対象は <strong className="text-foreground">Kort（成人）・Motion・Etappstart・開放クラス（色）・DH75以上・PreO</strong>。
             スタートできる時間帯は{" "}
             {programJson.startWindows.map((w) => `${w.discipline} ${w.window}`).join(" / ")} です。
