@@ -1,0 +1,39 @@
+{
+  "_comment": [
+    "O-Ringen のクラブ名 → 日本語名。**照合済み選手の trails.jp 側の実所属から割り出したもの**で、",
+    "私の推測ではない（scripts の club 集計を参照）。O-Ringen 側はローマ字しか持たないため対応表が要る。",
+    "",
+    "ja      … 日本語のクラブ名。表に併記する",
+    "adhoc   … true = O-Ringen 用の臨時チーム。日本の実在クラブではないので日本語名を出さず、",
+    "          代わりに『臨時チーム』と示す。メンバーの実所属はバラバラ（下の note 参照）",
+    "",
+    "根拠（照合済み38名の trails.jp 所属の集計）:",
+    "  Irumashi OLC(8名) -> 入間市OLC×7 / JDOA×5（JDOA=日本デフオリエンテーリング協会・副所属）",
+    "  OLP Hyogo(6名)    -> OLP兵庫×5",
+    "  OK22(6名)         -> OLC東海×2 / 筑波大学×2 / OLCルーパー×1 / ES関東C×1  = 臨時",
+    "  Siosio Japan(9名) -> 京都OLC×3 / みゅーしぐ×2 / OLP兵庫×1 / つるまいOLC×1 = 臨時（関西勢）",
+    "  Navitabi(1名)     -> ナビたび×1（山本英勝が実際に所属）",
+    "  Torch(2名)        -> 該当者が索引に無く手がかりなし。trails.jp に TORCH クラブは実在するが確証なし"
+  ],
+  "clubs": {
+    "Irumashi OLC": { "ja": "入間市OLC" },
+    "OLP Hyogo": { "ja": "OLP兵庫" },
+    "Chiba OLK": { "ja": "千葉OLK" },
+    "Shizuoka OLC": { "ja": "静岡OLC" },
+    "Gifu OLC": { "ja": "岐阜OLC" },
+    "KawagoeOLC": { "ja": "川越OLC" },
+    "Tama OL": { "ja": "多摩OL" },
+    "Yokohama OL Club": { "ja": "横浜OLC" },
+    "Tokyo OLC": { "ja": "東京OLC" },
+    "Tokyo Orienteering Club": { "ja": "東京OLC" },
+    "Niigataunv": { "ja": "新潟大学" },
+    "Shibuya De Hashirukai": { "ja": "渋谷で走る会" },
+    "OC Tortoise": { "ja": "トータス" },
+    "Wanderers": { "ja": "ワンダラーズ" },
+    "Michi": { "ja": "みちの会" },
+    "Navitabi": { "ja": "ナビたび" },
+    "Siosio Japan": { "ja": null, "adhoc": true, "note": "関西勢の臨時チーム（京都OLC・OLP兵庫・朱雀OK・大阪OLC 等の混成）" },
+    "OK22": { "ja": null, "adhoc": true, "note": "臨時チーム（筑波大学・OLC東海・早大OC 等の混成）" },
+    "Torch": { "ja": null }
+  }
+}

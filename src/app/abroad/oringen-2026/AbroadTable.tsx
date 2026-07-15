@@ -5,7 +5,9 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { missingStartReason } from "@/lib/oringen/start-type";
 import { difficultyOf, type DifficultyLevel } from "@/lib/oringen/difficulty";
+import { clubDisplay, type ClubInfo } from "@/lib/oringen/club";
 import programJson from "@/data/oringen-program.json";
+import clubMapJson from "@/data/oringen-club-map.json";
 import type { OringenData, OringenPerson } from "@/lib/oringen/types";
 
 /**
@@ -20,6 +22,27 @@ import type { OringenData, OringenPerson } from "@/lib/oringen/types";
 const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
 
 const LEVELS = programJson.difficultyLevels as DifficultyLevel[];
+const CLUB_MAP = clubMapJson.clubs as Record<string, ClubInfo>;
+
+/**
+ * クラブ名。O-Ringen はローマ字しか持たないので日本語名を併記する。
+ * `Siosio Japan` `OK22` は O-Ringen 用の臨時チームで日本の実在クラブではないため、
+ * 日本語名を捏造せず「臨時チーム」と示す。
+ */
+function ClubName({ club }: { club: string }) {
+  const d = clubDisplay(club, CLUB_MAP);
+  return (
+    <span className="block">
+      <span>{club}</span>
+      {d.ja && <span className="block text-[10px] text-foreground/70">{d.ja}</span>}
+      {d.adhoc && (
+        <span className="block text-[10px] text-muted" title={d.note ?? undefined}>
+          臨時チーム
+        </span>
+      )}
+    </span>
+  );
+}
 
 /**
  * クラス名。開放クラス／Etappstart は**色名が難易度そのもの**（Grön=初心者 … Svart=難）なので
@@ -140,7 +163,14 @@ export function AbroadTable({ data }: { data: OringenData }) {
     const needle = q.trim().toLowerCase();
     if (!needle) return data.people;
     return data.people.filter((p) => {
-      const hay = [p.name, p.kanji ?? "", p.club, ...Object.values(p.entries).flat().map((e) => e.className)]
+      const hay = [
+        p.name,
+        p.kanji ?? "",
+        p.club,
+        // 日本語のクラブ名でも引けるようにする（「入間市OLC」で検索して0件では意味がない）
+        clubDisplay(p.club, CLUB_MAP).ja ?? "",
+        ...Object.values(p.entries).flat().map((e) => e.className),
+      ]
         .join(" ")
         .toLowerCase();
       return hay.includes(needle);
@@ -220,7 +250,9 @@ export function AbroadTable({ data }: { data: OringenData }) {
                   <td className="whitespace-nowrap px-2 py-1.5">
                     <NameCell person={p} />
                   </td>
-                  <td className="whitespace-nowrap px-2 py-1.5 text-muted">{p.club}</td>
+                  <td className="whitespace-nowrap px-2 py-1.5 text-muted">
+                    <ClubName club={p.club} />
+                  </td>
                   {data.races.map((r) => {
                     const entries = p.entries[String(r.n)] ?? [];
                     return (
@@ -271,7 +303,9 @@ export function AbroadTable({ data }: { data: OringenData }) {
                   <td className="whitespace-nowrap px-2 py-1.5 text-muted">
                     <ClassName name={entry.className} />
                   </td>
-                  <td className="whitespace-nowrap px-2 py-1.5 text-muted">{person.club}</td>
+                  <td className="whitespace-nowrap px-2 py-1.5 text-muted">
+                    <ClubName club={person.club} />
+                  </td>
                   <td className="whitespace-nowrap px-2 py-1.5 font-mono tabular-nums text-muted">
                     {entry.distanceM ? `${(entry.distanceM / 1000).toFixed(2)} km` : "—"}
                   </td>
