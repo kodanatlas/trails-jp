@@ -19,6 +19,9 @@ const entrySchema = z.strictObject({
   place: z.number().int().positive().nullable(),
   time: z.string().regex(/^\d+:\d{2}:\d{2}$/).nullable(),
   distanceM: z.number().nonnegative().nullable(),
+  // 公式選手ページの ID（API の e=entryId。official-link.ts 参照）。
+  // 必須にしている: 上流が送らなくなったら黙ってリンクが消えるのではなく、ここで 400 にして退行を可視化する
+  competitorId: z.number().int().positive().nullable(),
 });
 
 /**

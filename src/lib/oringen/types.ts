@@ -33,6 +33,17 @@ export interface OringenEntry {
   time: string | null;
   /** 距離(m)。クラス×日で決まる */
   distanceM: number | null;
+  /**
+   * O-Ringen 公式の選手ページ `/{slug}/competitors/{id}` の ID（API の `e` = entryId）。
+   *
+   * **「人」ではなく「エントリー」の ID**（SPA のルート定義 `competitors/:entryId` を実測確認）。
+   * 5日間クラスは人×クラスで1つの ID を5日間共有するが、Etappstart（1日単位エントリー）は
+   * 日ごとに別 ID になる。人単位のリンク先の決め方は official-link.ts 参照。
+   *
+   * この項目の追加（2026-07-16）より前に Storage へ書かれた旧データには無いので optional。
+   * 欠落時はリンクを出さない（次回 sync で埋まる）。
+   */
+  competitorId?: number | null;
 }
 
 /**

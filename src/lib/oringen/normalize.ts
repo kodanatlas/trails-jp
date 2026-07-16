@@ -18,7 +18,7 @@ export interface RawResult {
   c?: { i?: number };
   /** raceId */
   r?: number;
-  /** entryId */
+  /** entryId。公式選手ページ `/competitors/{id}` の ID でもある（official-link.ts 参照） */
   e?: number;
   /** startTime "YYYY-MM-DDTHH:MM:SS"（現地時間）。未抽選なら欠落 */
   st?: string;
@@ -160,6 +160,7 @@ export function normalize(input: NormalizeInput): OringenPerson[] {
       place: null,
       time: null,
       distanceM: distances[`${raceId}:${classId}`] ?? null,
+      competitorId: typeof raw.e === "number" ? raw.e : null,
     };
 
     const slot = (person.entries[String(stage)] ??= []);
