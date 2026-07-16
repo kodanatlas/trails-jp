@@ -146,6 +146,16 @@ describe("normalize", () => {
     expect(people[0]!.entries["1"]![0]!.distanceM).toBe(6880);
   });
 
+  it("competitorId（公式選手ページの ID = e）を entry に入れる", () => {
+    const people = normalize({ ...base, raws: [jpn()] });
+    expect(people[0]!.entries["1"]![0]!.competitorId).toBe(2295);
+  });
+
+  it("e が欠けたら competitorId は null（throw しない）", () => {
+    const people = normalize({ ...base, raws: [jpn({ e: undefined })] });
+    expect(people[0]!.entries["1"]![0]!.competitorId).toBeNull();
+  });
+
   it("同一人物の複数日を1人にまとめる", () => {
     const people = normalize({
       ...base,

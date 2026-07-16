@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { missingStartReason } from "@/lib/oringen/start-type";
 import { difficultyOf, type DifficultyLevel } from "@/lib/oringen/difficulty";
 import { clubDisplay, type ClubInfo } from "@/lib/oringen/club";
+import { competitorPageUrl, officialCompetitorUrl } from "@/lib/oringen/official-link";
 import programJson from "@/data/oringen-program.json";
 import clubMapJson from "@/data/oringen-club-map.json";
 import type { OringenData, OringenPerson } from "@/lib/oringen/types";
@@ -78,13 +79,43 @@ function compareStart(a: string | null, b: string | null): number {
 }
 
 /**
- * 氏名。選手ページが**実在するときだけ**リンクにする。
- *
- * 漢字が特定できていてもページがあるとは限らない（athlete-link.ts 参照）。
- * `athleteKey` はサーバー側で索引と突合して詰めてあるので、ここでは有無を見るだけ。
+ * 氏名。リンクの行き先を2系統に分けている:
+ * - 漢字 → trails.jp の選手ページ。**実在するときだけ**リンクにする（athlete-link.ts 参照。
+ *   `athleteKey` はサーバー側で索引と突合して詰めてあるので、ここでは有無を見るだけ）
+ * - ローマ字 → O-Ringen 公式の選手ページ（official-link.ts）。ローマ字は公式サイトの登録名
+ *   そのものなので、公式への入口をここに置く。旧データで ID が無ければ素のテキストに戻る
  */
-function NameCell({ person }: { person: OringenPerson }) {
-  if (!person.kanji) return <span className="font-medium">{person.name}</span>;
+function NameCell({ person, officialUrl }: { person: OringenPerson; officialUrl: string | null }) {
+  const romaji = officialUrl ? (
+    <a
+      href={officialUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-mono text-[10px] text-muted hover:text-primary hover:underline"
+      title="O-Ringen 公式の選手ページ"
+    >
+      {person.name} <span aria-hidden="true">↗</span>
+    </a>
+  ) : (
+    <span className="font-mono text-[10px] text-muted">{person.name}</span>
+  );
+
+  if (!person.kanji) {
+    // 漢字未特定: ローマ字が主表記なので font-medium のまま公式リンクにする
+    return officialUrl ? (
+      <a
+        href={officialUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-medium hover:text-primary hover:underline"
+        title="O-Ringen 公式の選手ページ"
+      >
+        {person.name} <span aria-hidden="true" className="text-[10px] text-muted">↗</span>
+      </a>
+    ) : (
+      <span className="font-medium">{person.name}</span>
+    );
+  }
 
   const kanji = (
     <span
@@ -113,7 +144,7 @@ function NameCell({ person }: { person: OringenPerson }) {
         kanji
       )}
       {/* ローマ字は現地の掲示・呼出しで使われる正式表記なので必ず併記する */}
-      <span className="block font-mono text-[10px] text-muted">{person.name}</span>
+      <span className="block">{romaji}</span>
     </span>
   );
 }
@@ -248,7 +279,7 @@ export function AbroadTable({ data }: { data: OringenData }) {
               {people.map((p) => (
                 <tr key={p.name} className="border-b border-border/50 align-top">
                   <td className="whitespace-nowrap px-2 py-1.5">
-                    <NameCell person={p} />
+                    <NameCell person={p} officialUrl={officialCompetitorUrl(p, data.resultUrl)} />
                   </td>
                   <td className="whitespace-nowrap px-2 py-1.5 text-muted">
                     <ClubName club={p.club} />
@@ -298,7 +329,15 @@ export function AbroadTable({ data }: { data: OringenData }) {
                     />
                   </td>
                   <td className="whitespace-nowrap px-2 py-1.5">
-                    <NameCell person={person} />
+                    {/* 行＝その日の1エントリーなので、Etappstart（日別 ID）でもその日の公式ページへ直接飛べる */}
+                    <NameCell
+                      person={person}
+                      officialUrl={
+                        typeof entry.competitorId === "number"
+                          ? competitorPageUrl(data.resultUrl, entry.competitorId)
+                          : officialCompetitorUrl(person, data.resultUrl)
+                      }
+                    />
                   </td>
                   <td className="whitespace-nowrap px-2 py-1.5 text-muted">
                     <ClassName name={entry.className} />

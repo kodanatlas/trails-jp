@@ -21,7 +21,16 @@ const valid = {
       kanjiConfidence: "high",
       club: "Irumashi OLC",
       entries: {
-        "1": [{ className: "H40", startTime: "10:22", place: null, time: null, distanceM: 6880 }],
+        "1": [
+          {
+            className: "H40",
+            startTime: "10:22",
+            place: null,
+            time: null,
+            distanceM: 6880,
+            competitorId: 2297,
+          },
+        ],
       },
     },
   ],
@@ -58,7 +67,14 @@ describe("oringenDataSchema", () => {
           ...valid.people[0],
           entries: {
             "1": [
-              { className: "H40", startTime: "2026-07-20T08:22:00", place: null, time: null, distanceM: null },
+              {
+                className: "H40",
+                startTime: "2026-07-20T08:22:00",
+                place: null,
+                time: null,
+                distanceM: null,
+                competitorId: 2297,
+              },
             ],
           },
         },
@@ -73,11 +89,37 @@ describe("oringenDataSchema", () => {
       people: [
         {
           ...valid.people[0],
-          entries: { "1": [{ className: "H40", startTime: null, place: null, time: null, distanceM: null }] },
+          entries: {
+            "1": [
+              {
+                className: "H40",
+                startTime: null,
+                place: null,
+                time: null,
+                distanceM: null,
+                competitorId: null,
+              },
+            ],
+          },
         },
       ],
     };
     expect(oringenDataSchema.safeParse(pending).success).toBe(true);
+  });
+
+  it("competitorId が欠落したら落とす（上流が送らなくなった退行を可視化する）", () => {
+    const missing = {
+      ...valid,
+      people: [
+        {
+          ...valid.people[0],
+          entries: {
+            "1": [{ className: "H40", startTime: null, place: null, time: null, distanceM: null }],
+          },
+        },
+      ],
+    };
+    expect(oringenDataSchema.safeParse(missing).success).toBe(false);
   });
 
   it("stage キーが 1-5 以外なら落とす", () => {
