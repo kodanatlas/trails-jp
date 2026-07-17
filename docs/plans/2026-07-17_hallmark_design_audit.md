@@ -1,6 +1,11 @@
 # 2026-07-17 Hallmark デザイン監査（トップページ＋共通chrome）
 
-ステータス: 実装完了・二段レビュー済・ローカルプレビュー確認済（コミット `1a2de1a` on `design/hallmark-audit`）。**push/マージ/デプロイは未実施＝ユーザー承認待ち**
+ステータス: **完了・本番反映済み（2026-07-17）**。PR #71 を squash マージ＝main `ddbaa95`・Vercel 自動デプロイ後にダーク/ライト両テーマ・表彰台絵文字撤去を本番実描画で確認済み。
+
+## 切り戻し手順（ユーザー要望により保全）
+- **即時**: Vercel ダッシュボード → trails_jp → Deployments → `ddbaa95` ビルドの1つ前を Promote to Production（ビルド不要・即時）
+- **履歴で戻す**: `git revert ddbaa95` → main へ push（自動再デプロイ 約15〜20分）
+- 元ブランチ `design/hallmark-audit` はローカル・origin とも保持（参照用）
 
 ## 二次レビュー（Codex read-only）結果と対応
 - must-fix「ライト補正値が小サイズ文字 4.5:1 未達」→ 対応済（accent #0e7490 / positive #047857 / negative #b91c1c / cheer #be185d に濃色化）
