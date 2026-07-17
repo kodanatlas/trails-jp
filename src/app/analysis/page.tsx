@@ -11,7 +11,7 @@ export default function AnalysisPage() {
     <div className="mx-auto max-w-5xl overflow-x-hidden px-4 py-6">
       <div className="mb-1 flex items-center gap-2">
         <h1 className="text-2xl font-bold">分析</h1>
-        <span className="rounded bg-accent/20 px-2 py-0.5 text-[10px] font-medium text-[#00e5ff]">
+        <span className="rounded bg-accent/20 px-2 py-0.5 text-[10px] font-medium text-accent">
           JOY データ
         </span>
       </div>

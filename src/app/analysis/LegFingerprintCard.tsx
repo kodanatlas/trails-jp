@@ -94,7 +94,7 @@ function DisciplineBlock({
                 <div
                   key={len}
                   className={`rounded px-1 py-1 leading-none ${
-                    c.flag ? "bg-red-500/25 font-bold text-red-200" : "bg-white/5 text-foreground/85"
+                    c.flag ? "bg-negative/25 font-bold text-negative" : "bg-tag text-foreground/85"
                   }`}
                   title={`n=${c.n} ミス${c.m}${b != null ? `｜参考: 近い巡航速度帯の平均 約${Math.round(b * 100)}%` : ""}`}
                 >
@@ -199,7 +199,7 @@ export function LegFingerprintCard({ name }: { name: string }) {
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-sm font-bold">ミスの傾向（クロスレース）</h3>
-        <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[9px] font-medium text-[#00e5ff]">β</span>
+        <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[9px] font-medium text-accent">β</span>
       </div>
       <p className="mt-1 text-xs text-foreground/80">
         どの局面・どの所要時間のレッグでミスが出やすいか。赤いセルは自分の平均より統計的に偏って多い場所。

@@ -58,8 +58,8 @@ const disciplineLabel = (d: "forest" | "sprint") =>
  * ミス悪化行も出得る → 固定符号ではなく値から符号・色を決める。単位は「%pt」。
  */
 function missDisplay(pp: number): { text: string; cls: string } {
-  if (pp > 0) return { text: `ミス −${num(pp)}%pt`, cls: "text-green-400" };
-  if (pp < 0) return { text: `ミス +${num(Math.abs(pp))}%pt`, cls: "text-red-400" };
+  if (pp > 0) return { text: `ミス −${num(pp)}%pt`, cls: "text-positive" };
+  if (pp < 0) return { text: `ミス +${num(Math.abs(pp))}%pt`, cls: "text-negative" };
   return { text: "ミス ±0%pt", cls: "text-muted" };
 }
 
@@ -84,13 +84,13 @@ function PointRow({ item, rank }: { item: WeekendPointItem; rank: number }) {
   return (
     <Link
       href={`/a/${encodeURIComponent(item.key)}`}
-      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/30 hover:bg-card-hover"
     >
       <RankBadge n={rank} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h4 className="text-sm font-semibold">{item.name}</h4>
-          <span className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-muted">
+          <span className="rounded bg-tag px-2 py-0.5 text-[10px] text-muted">
             {disciplineLabel(item.discipline)}
           </span>
         </div>
@@ -101,7 +101,7 @@ function PointRow({ item, rank }: { item: WeekendPointItem; rank: number }) {
       </div>
       {/* 指標: モバイルは名前の下に全幅で回り込み（崩れ防止）。常に右寄せ。 */}
       <div className="flex w-full flex-col items-end gap-0.5 sm:w-auto">
-        <p className="font-mono text-sm font-bold text-green-400">+{num(item.delta)} pt</p>
+        <p className="font-mono text-sm font-bold text-positive">+{num(item.delta)} pt</p>
         {/* 内訳はモバイルでも表示（ユーザー必須要望） */}
         <p className="text-right text-[10px] text-muted">
           今回 {num(item.pRecent)}・平均 {num(item.pAvg)}
@@ -119,13 +119,13 @@ function StandoutRowItem({ row, rank }: { row: StandoutRow; rank: number }) {
   return (
     <Link
       href={`/a/${encodeURIComponent(key)}`}
-      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/30 hover:bg-card-hover"
     >
       <RankBadge n={rank} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h4 className="text-sm font-semibold">{key}</h4>
-          <span className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-muted">
+          <span className="rounded bg-tag px-2 py-0.5 text-[10px] text-muted">
             {row.class_name}・{disciplineLabel(row.race_type)}
           </span>
         </div>
@@ -137,7 +137,7 @@ function StandoutRowItem({ row, rank }: { row: StandoutRow; rank: number }) {
       {/* 指標: モバイルは名前の下に全幅で回り込み（崩れ防止）。常に右寄せ。 */}
       <div className="flex w-full flex-col items-end gap-0.5 sm:w-auto">
         <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-0.5">
-          <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-green-400">
+          <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-positive">
             <Gauge className="h-3 w-3" />巡航 +{num(row.speed_gain_pct)}% 速
           </span>
           <span className={`inline-flex items-center gap-1 font-mono text-xs font-bold ${miss.cls}`}>
@@ -198,7 +198,7 @@ export async function WeekendHighlights() {
         {/* セクション見出し */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-green-400" />
+            <TrendingUp className="h-4 w-4 text-positive" />
             <h2 className="text-lg font-bold">直近の大会ハイライト</h2>
           </div>
           <Link href="/analysis" className="text-xs font-medium text-primary hover:underline">
@@ -226,7 +226,7 @@ export async function WeekendHighlights() {
           <div className="mt-6">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-bold">ポイント上昇度</h3>
-              <span className="rounded bg-green-500/15 px-1.5 py-0.5 text-[9px] font-medium text-green-400">
+              <span className="rounded bg-positive/15 px-1.5 py-0.5 text-[9px] font-medium text-positive">
                 ポイント・自己平均比
               </span>
             </div>
@@ -264,7 +264,7 @@ export async function WeekendHighlights() {
           <div className="mt-8">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-bold">合成上昇度</h3>
-              <span className="rounded bg-green-500/15 px-1.5 py-0.5 text-[9px] font-medium text-green-400">
+              <span className="rounded bg-positive/15 px-1.5 py-0.5 text-[9px] font-medium text-positive">
                 巡航/ミス・自己平均比
               </span>
             </div>
