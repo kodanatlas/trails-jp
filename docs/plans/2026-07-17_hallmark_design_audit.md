@@ -1,6 +1,12 @@
 # 2026-07-17 Hallmark デザイン監査（トップページ＋共通chrome）
 
-ステータス: 実装中（デプロイ前プレビューまで。push/deploy はユーザー承認後）
+ステータス: 実装完了・二段レビュー済・ローカルプレビュー確認済（コミット `1a2de1a` on `design/hallmark-audit`）。**push/マージ/デプロイは未実施＝ユーザー承認待ち**
+
+## 二次レビュー（Codex read-only）結果と対応
+- must-fix「ライト補正値が小サイズ文字 4.5:1 未達」→ 対応済（accent #0e7490 / positive #047857 / negative #b91c1c / cheer #be185d に濃色化）
+- must-fix「置換漏れ」→ スコープ内（events/loading.tsx スケルトン・LegFingerprintCard ミス指紋セル）は対応済。**EventList.tsx 6箇所・AuthGuard.tsx はスコープ外＝下記フォローアップ**
+- should-fix「ダークの見た目微差」（Footer 文字色が muted に統一・green-400(v4=#05df72)→positive #10b981 の色相差・tag α5%→6%）→ トークン統一の意図した変化として許容
+- should-fix「EventList.tsx の transition-all 残 2 件」→ フォローアップ
 
 ## 背景
 公開スキル [nutlope/hallmark](https://github.com/nutlope/hallmark)（anti-AI-slop デザインスキル、`~/.claude/skills/hallmark/` に導入済）の `audit` モードを trails.jp に適用する実験。対象はトップページ（`src/app/page.tsx`＋構成コンポーネント）と Header/Footer。全面 redesign は行わない（2026-06-28 エディトリアルリデザインの確立済アイデンティティを維持）。
