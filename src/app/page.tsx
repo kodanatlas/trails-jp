@@ -126,7 +126,7 @@ export default async function Home() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold">近日開催のイベント</h2>
-              <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[9px] font-medium text-[#00e5ff]">
+              <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[9px] font-medium text-accent">
                 JOY連携
               </span>
             </div>
@@ -137,9 +137,9 @@ export default async function Home() {
           <div className="mt-5 space-y-2">
             {upcomingEvents.map((event) => {
               const entryBadge = event.entry_status === "open"
-                ? { bg: "bg-green-500/15", text: "text-green-400", label: "受付中" }
+                ? { bg: "bg-positive/15", text: "text-positive", label: "受付中" }
                 : event.entry_status === "closed"
-                ? { bg: "bg-white/5", text: "text-muted", label: "締切済" }
+                ? { bg: "bg-tag", text: "text-muted", label: "締切済" }
                 : null;
 
               return (
@@ -148,7 +148,7 @@ export default async function Home() {
                   href={event.joe_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-4 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover"
+                  className="flex items-center gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/30 hover:bg-card-hover"
                 >
                   <div className="hidden w-16 flex-shrink-0 text-center sm:block">
                     <div className="font-mono text-xl font-bold tabular-nums text-primary">
@@ -166,7 +166,7 @@ export default async function Home() {
                         </span>
                       )}
                       {event.tags.map((tag) => (
-                        <span key={tag} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-muted">
+                        <span key={tag} className="rounded bg-tag px-2 py-0.5 text-[10px] text-muted">
                           {tag}
                         </span>
                       ))}

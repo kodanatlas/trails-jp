@@ -20,9 +20,9 @@ const MAX_NAMES = 6;
 
 /** 表彰台の段ごとの装飾（1位/2位/3位） */
 const PLACE_STYLES = [
-  { medal: "🥇", block: "h-16 border-amber-400/40 bg-amber-400/15 text-amber-400" },
-  { medal: "🥈", block: "h-12 border-slate-300/40 bg-slate-300/10 text-slate-300" },
-  { medal: "🥉", block: "h-8 border-orange-400/40 bg-orange-400/10 text-orange-400" },
+  { block: "h-16 border-medal-gold/40 bg-medal-gold/15 text-medal-gold" },
+  { block: "h-12 border-medal-silver/40 bg-medal-silver/10 text-medal-silver" },
+  { block: "h-8 border-medal-bronze/40 bg-medal-bronze/10 text-medal-bronze" },
 ];
 
 /** トップページ「今週の応援」表彰台（クライアント側で likes API を取得） */
@@ -92,9 +92,9 @@ export function WeeklyCheerPodium() {
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Heart className="h-4 w-4 fill-pink-400 text-pink-400" />
+            <Heart className="h-4 w-4 fill-cheer text-cheer" />
             <h2 className="text-lg font-bold">{label}の応援</h2>
-            <span className="rounded bg-pink-500/15 px-1.5 py-0.5 text-[9px] font-medium text-pink-400">
+            <span className="rounded bg-cheer/15 px-1.5 py-0.5 text-[9px] font-medium text-cheer">
               応援数{label === "累計" ? "（累計）" : ""}
             </span>
           </div>
@@ -114,9 +114,8 @@ export function WeeklyCheerPodium() {
                 key={tier.place}
                 className="flex w-full max-w-[220px] flex-1 flex-col items-center"
               >
-                <span className="text-2xl">{style.medal}</span>
-                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-pink-500/15 px-2 py-0.5 text-xs font-bold text-pink-400">
-                  <Heart className="h-3 w-3 fill-pink-400" />
+                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-cheer/15 px-2 py-0.5 text-xs font-bold text-cheer">
+                  <Heart className="h-3 w-3 fill-cheer" />
                   {tier.count}
                 </span>
                 <div className="mt-2 flex flex-col items-center gap-0.5 pb-2">

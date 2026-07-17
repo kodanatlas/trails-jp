@@ -7,7 +7,7 @@ export default function EventsLoading() {
     <div className="mx-auto max-w-5xl px-4 py-6">
       <div className="mb-1 flex items-center gap-2">
         <h1 className="text-2xl font-bold">イベント</h1>
-        <span className="rounded bg-accent/20 px-2 py-0.5 text-[10px] font-medium text-[#00e5ff]">
+        <span className="rounded bg-accent/20 px-2 py-0.5 text-[10px] font-medium text-accent">
           JOY 連携
         </span>
       </div>
@@ -28,10 +28,10 @@ export default function EventsLoading() {
               key={i}
               className="overflow-hidden rounded-lg border border-border bg-card p-4"
             >
-              <div className="mb-3 h-5 w-2/3 rounded bg-white/5" />
+              <div className="mb-3 h-5 w-2/3 rounded bg-tag" />
               <div className="flex gap-3">
-                <div className="h-3.5 w-24 rounded bg-white/5" />
-                <div className="h-3.5 w-32 rounded bg-white/5" />
+                <div className="h-3.5 w-24 rounded bg-tag" />
+                <div className="h-3.5 w-32 rounded bg-tag" />
               </div>
             </div>
           ))}

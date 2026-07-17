@@ -39,9 +39,9 @@ export function MonthlyMovers() {
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-green-400" />
+            <TrendingUp className="h-4 w-4 text-positive" />
             <h2 className="text-lg font-bold">{title}</h2>
-            <span className="rounded bg-green-500/15 px-1.5 py-0.5 text-[9px] font-medium text-green-400">
+            <span className="rounded bg-positive/15 px-1.5 py-0.5 text-[9px] font-medium text-positive">
               {badge}
             </span>
           </div>
@@ -55,7 +55,7 @@ export function MonthlyMovers() {
             <Link
               key={item.key}
               href={`/a/${encodeURIComponent(item.key)}`}
-              className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover sm:gap-4"
+              className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/30 hover:bg-card-hover sm:gap-4"
             >
               {/* 順位バッジ */}
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-surface text-xs font-bold text-muted">
@@ -66,7 +66,7 @@ export function MonthlyMovers() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-sm font-semibold">{item.name}</h3>
-                  <span className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-muted">
+                  <span className="rounded bg-tag px-2 py-0.5 text-[10px] text-muted">
                     {item.className}
                   </span>
                 </div>
@@ -75,7 +75,7 @@ export function MonthlyMovers() {
 
               {/* 順位上昇 */}
               <div className="flex-shrink-0 text-right">
-                <p className="font-mono text-sm font-bold text-green-400">
+                <p className="font-mono text-sm font-bold text-positive">
                   ↑{item.delta.toLocaleString()}
                 </p>
                 <p className="text-[10px] text-muted">現在 {item.rank.toLocaleString()}位</p>
@@ -83,7 +83,7 @@ export function MonthlyMovers() {
 
               {/* ポイント上昇 */}
               <div className="hidden w-24 flex-shrink-0 text-right sm:block">
-                <p className="font-mono text-xs font-medium text-green-400">
+                <p className="font-mono text-xs font-medium text-positive">
                   {item.pointsDelta >= 0 ? "+" : ""}
                   {item.pointsDelta.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                 </p>

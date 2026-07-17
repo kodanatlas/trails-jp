@@ -21,10 +21,17 @@
   --negative: #ef4444; /* 下降・ミス */
   --optimal: #84cc16; /* クリーンレース */
   --warning: #f59e0b;
+
+  /* chips/装飾 — 生値直書きだった箇所をトークン化（2026-07-17 監査対応） */
+  --tag: rgba(255, 255, 255, 0.06); /* 情報チップの下地（旧 bg-white/5） */
+  --cheer: #f472b6; /* 応援（likes） */
+  --medal-gold: #fbbf24;
+  --medal-silver: #cbd5e1;
+  --medal-bronze: #fb923c;
 }
 
 /* ライトモード（data-theme="light" を <html> に付与＝トグルで切替）。
-   surfaces/border/text のみ反転。brand・semantic（橙/シアン/緑/赤）は明色でも視認可なので据え置き。 */
+   surfaces/border/text のみ反転。brand（橙）は明色でも視認可なので据え置き。シアン/緑/赤等の semantic は明色用に濃度補正（下記）。 */
 :root[data-theme="light"] {
   --background: #f5f7fa;
   --foreground: #1b2430;
@@ -34,6 +41,21 @@
   --surface: #edf1f6;
   --border: rgba(15, 23, 42, 0.10);
   --border-strong: rgba(15, 23, 42, 0.18);
+
+  /* semantic/brand の明色補正 — 暗色向けの高輝度値は白地で不可読のため濃色化
+     （小サイズ文字の 4.5:1 を白地で満たす値。二次レビュー指摘対応） */
+  --accent: #0e7490;
+  --positive: #047857;
+  --negative: #b91c1c;
+  --optimal: #4d7c0f;
+  --warning: #b45309;
+
+  /* chips/装飾の明色版 */
+  --tag: rgba(15, 23, 42, 0.06);
+  --cheer: #be185d;
+  --medal-gold: #b45309;
+  --medal-silver: #64748b;
+  --medal-bronze: #c2410c;
 }
 
 @theme inline {
@@ -52,6 +74,11 @@
   --color-negative: var(--negative);
   --color-optimal: var(--optimal);
   --color-warning: var(--warning);
+  --color-tag: var(--tag);
+  --color-cheer: var(--cheer);
+  --color-medal-gold: var(--medal-gold);
+  --color-medal-silver: var(--medal-silver);
+  --color-medal-bronze: var(--medal-bronze);
   /* 本文・UI・和文 = IBM Plex Sans JP / 数値 = IBM Plex Mono */
   --font-sans: var(--font-plex-jp);
   --font-mono: var(--font-plex-mono);
