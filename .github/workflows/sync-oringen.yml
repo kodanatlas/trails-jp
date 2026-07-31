@@ -13,12 +13,13 @@ name: sync-oringen
 # 手動実行可（Actions 画面の "Run workflow" / workflow_dispatch）。
 
 on:
-  schedule:
-    # 04:00 UTC = 現地 06:00（その日のスタート前＝スタートリスト確定後）/ 13:00 JST
-    # 14:00 UTC = 現地 16:00（その日のレース終了後＝結果反映）/ 23:00 JST
-    # ※ GitHub の schedule は高負荷時に遅延・drop されうる（公式）。「速報」ではなく定時更新。
-    #    ページに generatedAt を出しているので、止まれば利用者が気づける。
-    - cron: "0 4,14 * * *"
+  # 大会終了（2026-07-25）につき定時実行を停止（2026-07-31）。手動実行（workflow_dispatch）は残す。
+  # schedule:
+  #   # 04:00 UTC = 現地 06:00（その日のスタート前＝スタートリスト確定後）/ 13:00 JST
+  #   # 14:00 UTC = 現地 16:00（その日のレース終了後＝結果反映）/ 23:00 JST
+  #   # ※ GitHub の schedule は高負荷時に遅延・drop されうる（公式）。「速報」ではなく定時更新。
+  #   #    ページに generatedAt を出しているので、止まれば利用者が気づける。
+  #   - cron: "0 4,14 * * *"
   workflow_dispatch: {}
 
 # 手動 + スケジュールの重なりを避ける
