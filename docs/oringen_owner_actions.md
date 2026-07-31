@@ -89,15 +89,15 @@ Squash and merge → Vercel が自動デプロイ（2〜3分）。
 
 ---
 
-## 6. 大会が終わったら（7/26 以降）
+## 6. 大会後の扱い — 方針変更: ページは残す（2026-07-31 決定）
 
-「海外遠征を消して」と Claude に言えば PR を出す。手順は3つだけ:
+大会終了（7/25）を受けて実施・決定したこと:
 
-1. `src/components/Header.tsx` の `navItems` から `/abroad` の行を削除
-2. `src/app/abroad` → `src/app/_abroad` にリネーム（`_` prefix でルーティング除外）
-3. `.github/workflows/sync-oringen.yml` の `schedule` をコメントアウト
-
-**Vercel と GitHub の `ORINGEN_INGEST_SECRET` も消す**（使わない秘密は残さない）。
+- `sync-oringen` の定時実行は停止済み（workflow を API で無効化＋schedule をコメントアウト。
+  手動実行 workflow_dispatch は残してある）
+- **ページは撤去しない。「海外遠征」は恒久セクションとして残し、今後参加する海外大会が
+  出てきたらここに追加していく**（当初の「大会後に撤去」は取りやめ）
+- `ORINGEN_INGEST_SECRET` も残す（手動実行と将来の大会で使う）
 
 ---
 
