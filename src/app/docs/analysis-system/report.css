@@ -92,6 +92,8 @@
   -webkit-background-clip:text;background-clip:text;color:transparent;}
 .report-root p.lead{margin:.4em 0 0;max-width:60em;color:var(--muted);font-size:15.5px;}
 .report-root p.lead b{color:var(--ink);font-weight:600;}
+.report-root p.lead a{color:var(--ink);font-weight:600;text-decoration:none;border-bottom:1px solid var(--line);transition:color .15s,border-color .15s;}
+.report-root p.lead a:hover{color:var(--cyan);border-color:var(--cyan);}
 
 /* ---- KPI ---- */
 .report-root .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:30px 0 8px;}
