@@ -9,11 +9,16 @@ import { join } from "path";
 import { readEntryIndex } from "@/lib/entry-index-store";
 import { notifyCronWarning } from "@/lib/cron-notifier";
 import { entryIndexAgeHours, isEntryIndexStale } from "@/lib/entries/freshness";
+import { isWatchdogSilent, watchdogPingAgeHours } from "@/lib/watchdog/heartbeat";
 
 // 索引鮮度ウォッチドッグの閾値（時間）。これより古ければ sync-entries の無音停止を疑い警告。
 // sync-entries(20:23 JST) と本ジョブ(21:41 JST)は約1h18差のため、24h で「前日の定期実行スキップ」
 // (索引齢≈25h) を検知できる（旧 26h は cron 夜帯移動後に検知漏れ。2026-07-13 レビュー指摘）。
 const STALE_INDEX_WARN_HOURS = 24;
+
+// GitHub watchdog は 16:17 UTC、本ジョブは 12:41 UTC。正常なら ping は約20.4時間前。
+// watchdog が1日飛ぶと約44.4時間前になり36hを超えるため、誤警告を避けつつ欠測を検知できる。
+const SILENT_WATCHDOG_WARN_HOURS = 36;
 
 // 多クラスの大規模イベントでも壁時計予算内で処理できるよう実行時間上限を延長。
 export const maxDuration = 60;
@@ -44,6 +49,53 @@ export async function GET(request: Request) {
   }
 
   const start = Date.now();
+
+  // ---- GitHub watchdog heartbeat 鮮度チェック (非致命・隔離) ----
+  // 重いマッチング／スクレイプが maxDuration を使い切っても相互監視を開始できるよう、本処理より先に確認する。
+  // GitHub の scheduled workflow 自体が未実行・自動無効化・失敗しても heartbeat は更新されないため、
+  // 最後に正常判定できた時刻を Vercel 側から監視する。本処理への影響を避けるため完全隔離する。
+  try {
+    const now = Date.now();
+    const { data, error } = await supabaseAdmin
+      .from("cron_log")
+      .select("created_at")
+      .eq("job_name", "gh-watchdog")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      await notifyCronWarning(
+        "gh-watchdog",
+        "watchdog_check_failed",
+        {
+          warning: "watchdog_check_failed",
+          error: error.message,
+          hint: "GitHub watchdog の heartbeat 取得に失敗。Supabase の接続状態を確認する。",
+        },
+        0,
+      );
+    } else {
+      const latestPingAt = data?.created_at ?? null;
+      if (isWatchdogSilent(latestPingAt, now, SILENT_WATCHDOG_WARN_HOURS)) {
+        const ageHours = watchdogPingAgeHours(latestPingAt, now);
+        await notifyCronWarning(
+          "gh-watchdog",
+          "watchdog_silent",
+          {
+            warning: "watchdog_silent",
+            latestPingAt,
+            ageHours,
+            threshold_hours: SILENT_WATCHDOG_WARN_HOURS,
+            hint: "GitHub Actions の cron-watchdog が未実行・自動無効化・workflow 失敗のいずれかにより heartbeat を記録していない可能性。",
+          },
+          0,
+        );
+      }
+    }
+  } catch (e) {
+    console.error("GitHub watchdog freshness check failed (ignored):", e);
+  }
+
   try {
     const events = (await readEvents()).map((e) => ({ ...e }));
 

@@ -6,17 +6,23 @@ export async function logCron(
   status: "success" | "error",
   result: unknown,
   durationMs: number,
-) {
+): Promise<boolean> {
+  let insertSucceeded = false;
   try {
-    await supabaseAdmin.from("cron_log").insert({
+    const { error } = await supabaseAdmin.from("cron_log").insert({
       job_name: jobName,
       status,
       result,
       duration_ms: durationMs,
     });
-  } catch {
+    if (error) {
+      console.error("cron_log insert failed:", error);
+    } else {
+      insertSucceeded = true;
+    }
+  } catch (error) {
     // ログ失敗でCron本体を巻き込まない
-    console.error("cron_log insert failed");
+    console.error("cron_log insert failed:", error);
   }
 
   // error 時はメール通知（内部で例外握りつぶし、呼び出し元に投げない）。
@@ -24,4 +30,6 @@ export async function logCron(
   if (status === "error") {
     await notifyCronError(jobName, result, durationMs);
   }
+
+  return insertSucceeded;
 }

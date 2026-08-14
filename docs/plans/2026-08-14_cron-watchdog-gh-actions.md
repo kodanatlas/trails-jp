@@ -133,7 +133,8 @@ GET {BASE}/rest/v1/lc_performances?select=event_date&order=event_date.desc&limit
 ### 3-6. 撤収作業（メインセッションの Claude が実施。Codex にはやらせない）
 - ✅ クラウドルーティン `trig_017n7Jko3feKQLNMrFwQsTWp` を `enabled: false` にした（2026-08-14）
 - ✅ `SUPABASE_ANON_KEY` を repo secret に登録（BOM 混入で1度やり直し。下記「投入時に起きた実障害」）
-- ⏳ 滞留している約60通の Gmail 下書きの削除は**ユーザー確認待ち**
+- ✅ 滞留していた Gmail 下書き 60 通（6/15〜8/13）を削除（2026-08-14・ユーザー承認）。
+  実際に届いた 8/14 のアラートメールは保持
 
 ## 4. 受入条件
 1. `npx --yes actionlint`（version 固定）で `.github/workflows/cron-watchdog.yml` が通ること
@@ -180,10 +181,7 @@ GET {BASE}/rest/v1/lc_performances?select=event_date&order=event_date.desc&limit
   自動停止する。run が作られなければ失敗メールも存在しない。
   **kodanatlas/trails-jp は public・最終 push 2026-08-02（実測）** なので、この自動無効化は理論上の話ではない。
   同じリスクは既存の `entry-index-backstop.yml` にも今この瞬間かかっている。
-  → **Phase 2（相互監視）**: watchdog 成功時に `/api/cron/watchdog-ping`（`CRON_SECRET` 認証）を叩いて
-  `cron_log` に `job_name='gh-watchdog'` を記録し、Vercel 側の既存 cron が「gh-watchdog が36時間書かれていない」
-  ことを検知して `notifyCronWarning` で Resend 通報する。GH が Vercel を、Vercel が GH を見る形になり、
-  片方が沈黙してももう片方が鳴る。app 側の変更＋デプロイが必要なため本 Phase のスコープ外。
+  → **Phase 2（相互監視）で対応する**（下記 8 章。2026-08-14 にユーザー承認・着手）。
 - **sync-entries の片系停止**: Vercel cron と backstop が同じ `job_name` を書くため区別できない。
   Phase 2 で `source` を記録するまでは「索引が日次更新されている」ことのみを保証する。
 - **既存 `entry-index-backstop.yml` の潜在バグ**（本件スコープ外・未修正）: `code=$(curl ...)` の直後の
@@ -231,6 +229,66 @@ Node の `fetch` はヘッダ値に変換できず
 `Cannot convert argument to a ByteString because the character at index 0 has a value of 65279` を投げていた。
 
 - 教訓1: **PowerShell からシークレットを設定するときは `.TrimStart([char]0xFEFF)` を必ず入れる**
-  （`~/.claude/memory` の PowerShell BOM の罠と同根）
+  （`gh secret set` はパイプでなく `--body` で渡す。パイプは末尾に改行が付く）
 - 教訓2: watchdog 自体は設計どおり **fail-closed** で落ち、原因を1発で特定できるエラーを出した。
   「静かに OK を返さない」という設計目標が実地で機能した
+
+## 8. Phase 2 — 相互監視（GH ⇄ Vercel）
+
+Phase 1 は「GitHub が Vercel を見る」だけなので、**GitHub 側が沈黙すると誰も気づかない**。
+Vercel 側からも GitHub を見る経路を足し、片方が沈黙してももう片方が鳴るようにする。
+
+### 仕組み
+1. `cron-watchdog` は判定成功時のみ `/api/cron/watchdog-ping`（`CRON_SECRET` 認証）を叩く。
+   判定が異常なら GitHub Actions の既定 `if: success()` により ping は走らない
+   （**不健全なのに heartbeat を更新しない**ため。意図的挙動）
+2. エンドポイントは `logCron("gh-watchdog", "success", …)` で `cron_log` に記録する
+3. Vercel の `sync-lapcenter`（12:41 UTC）が、`gh-watchdog` の最新記録が
+   **36時間**より古ければ `notifyCronWarning("gh-watchdog", "watchdog_silent", …)` で Resend 通報する
+
+### なぜ 36 時間か
+watchdog は 16:17 UTC、`sync-lapcenter` は 12:41 UTC。正常なら ping は約 **20.4時間前**。
+watchdog が1日飛ぶと約 **44.4時間前**になり 36h を超える。つまり watchdog 停止を約1.5日以内に検知できる。
+
+### 既存の前例に揃える
+「entry-index が古ければ `notifyCronWarning`」（`STALE_INDEX_WARN_HOURS = 24`／`src/lib/entries/freshness.ts`）が
+ほぼ同型の前例。判定は**純粋・依存なし・`now` 注入**のモジュールに切り出し、
+鮮度不明（ping 行なし・パース不能）は **fail-closed で「沈黙」扱い**にする（freshness.ts と同じ思想）。
+
+### 投入順序（重要）
+鮮度不明を fail-closed にしているため、**ping 行が1件も無い状態で検査が動くと `watchdog_silent` が飛ぶ**。
+これを事故ではなく**通報経路の実地試験として使う**（`cron-notifier` は Resend 失敗を握りつぶすため、
+Vercel→Resend の配送が生きていることは実際に送ってみないと確認できない）。
+
+1. コードをデプロイ（ping エンドポイント＋検査＋workflow のステップ）
+2. デプロイ完了を確認
+3. **まだ ping 行が無い状態で `sync-lapcenter` を手動実行する**
+   → `watchdog_silent` の警告メールが届くことを確認（＝**Vercel→Resend 経路の実証**）
+4. `cron-watchdog` を手動実行して ping を1件作る
+5. `cron_log` に `gh-watchdog` 行ができたことを確認
+6. 翌日 12:41 UTC の `sync-lapcenter` が静かなら完了
+
+※ `cron-notifier` の24hデダブにより、3 の後に同じ `watchdog_silent` は24時間送られない。
+デプロイは 12:41 UTC より十分前に行い、3〜5 を連続して実施すること（間に定時実行を挟まない）。
+
+### Phase 2 の二段レビュー（2026-08-14）
+
+一次（Claude）が「`logCron` が失敗を握りつぶすので ping が嘘の成功を返す」を検出し、
+二次（Codex）がそれを**より広い欠陥として確定**させた。
+
+| 指摘 | 採否 | 対応 |
+|---|---|---|
+| `logCron` は `try/catch` だけで、**supabase の insert が例外でなく `{ error }` を返すケースを一切見ていない**（Major） | 採用 | `logCron` を `Promise<boolean>` にし、`{ error }`・throw の両方で false。ping route は false のとき 500。既存呼び出し元は戻り値を無視＝挙動不変 |
+| heartbeat 取得の `{ error }` 未確認で、DB 一時障害が `watchdog_silent` に化ける（Minor） | 採用 | `watchdog_check_failed` の別シグネチャで通知し、原因を取り違えないようにする |
+| heartbeat 検査が重いスクレイプの**後**にあり 60 秒予算を使い切ると走らない（Minor） | 採用 | 認証直後（重い処理の前）へ移動 |
+| 投入順序だけでは競合を防げない（Minor） | 部分採用 | 二段階デプロイはせず、デプロイ〜seed を連続実施。**代わりに「ping 行が無い状態」を通報経路の実地試験に転用**（上記 投入順序 3） |
+| `cron-notifier` が Resend 失敗を握りつぶす（Minor） | **今回は不採用** | 全ジョブ共通経路のため変更しない。代わりに投入時に実配送を試験する（同上） |
+| 36h ちょうどの境界テストが無い（Minor） | 採用 | `isWatchdogSilent(hAgo(36), …) === false` を追加 |
+| workflow ヘッダの「必要な Secret」に `CRON_SECRET` が無い（Minor） | 採用 | コメント追記 |
+| 36h の運用計算・通常時の DB 負荷・workflow の制御フローと安全性・規約追従 | 問題なしと判定 | `(job_name, created_at DESC)` の既存インデックスあり・1日1回 `limit(1)`。`github.run_id` は数値、`github.repository` は GitHub 管理値で注入リスクなし |
+
+### 残る穴（Phase 2 でも消えないもの）
+GitHub と Vercel が**同時に**沈黙した場合は誰も鳴らない。相関障害の確率は低く、
+その状況ではサイト自体が落ちて利用者が気づくため、ここは許容する。
+また `cron-notifier` の配送失敗は握りつぶされたままなので、Resend 側の障害は検知できない
+（投入時に実配送を確認するのはこのため）。
