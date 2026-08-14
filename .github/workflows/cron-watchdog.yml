@@ -1,0 +1,59 @@
+name: cron-watchdog
+
+# Vercel の日次 cron は無音で欠測しうるため、Supabase の実行履歴を別基盤の GitHub Actions から監視する。
+# 最新時刻だけでなく7日間の実行間隔と失敗回数も見ることで、watchdog 自身が1回 drop されても欠測を隠さない。
+#
+# 必要な Secret: SUPABASE_ANON_KEY（Supabase の公開 anon key。ログには出さない）。
+# 手動実行の force_fail は、判定だけでなく GitHub の失敗通知経路まで実証するために一度だけ使用する。
+
+on:
+  schedule:
+    # 16:17 UTC = 01:17 JST。監視対象3本と backstop の完了後で、遅延・drop が多い正時を避ける。
+    - cron: "17 16 * * *"
+  workflow_dispatch:
+    inputs:
+      force_fail:
+        description: "判定結果に関わらず失敗させ、通知経路を確認する"
+        required: false
+        type: boolean
+        default: false
+
+# 手動実行と定時実行が重なっても、一方をキャンセルして監視機会を失わない。
+concurrency:
+  group: cron-watchdog
+  cancel-in-progress: false
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      FORCE_FAIL: ${{ inputs.force_fail }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # アプリ依存は不要で、lockfile の optional dependency ドリフトも持ち込まないため npm ci は使わない。
+      # スクリプトの終了コードを一度受け、force_fail=true なら元の判定に関わらず通知用の明示的な失敗にする。
+      - name: Check cron health
+        run: |
+          if [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::SUPABASE_ANON_KEY secret が未設定です（リポジトリ Secrets に登録してください）"
+            exit 1
+          fi
+
+          set +e
+          npx --yes tsx scripts/cron-watchdog.ts
+          watchdog_rc=$?
+          set -e
+
+          if [ "$FORCE_FAIL" = "true" ]; then
+            echo "::error::force_fail=true: GitHub Actions の失敗通知経路を検証するため意図的に失敗しました"
+            exit 1
+          fi
+
+          exit "$watchdog_rc"
