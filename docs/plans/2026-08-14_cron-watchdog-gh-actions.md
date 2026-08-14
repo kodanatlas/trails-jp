@@ -1,7 +1,7 @@
 # cron 死活監視を GitHub Actions へ移設する
 
 - 日付: 2026-08-14 JST
-- ステータス: **v2（Codex 壁打ち反映）・実装委譲中**
+- ステータス: **完了**（2026-08-14。`fd0af0f` を main へ push・GH 上で success・通知メール到達を実証）
 - 発端: 2026-08-14 13:07 JST に「[trails.jp監視] cron異常検知 / 異常区分 D」メールが届いた
 
 ## 1. 何が起きていたか（調査結果・実値）
@@ -131,9 +131,9 @@ GET {BASE}/rest/v1/lc_performances?select=event_date&order=event_date.desc&limit
   → GitHub の workflow 失敗通知メールが届く（新しい通知基盤を足さない）
 
 ### 3-6. 撤収作業（メインセッションの Claude が実施。Codex にはやらせない）
-- クラウドルーティン `trig_017n7Jko3feKQLNMrFwQsTWp` を `enabled: false` にする
-- `SUPABASE_ANON_KEY` を repo secret に登録
-- 滞留している約60通の Gmail 下書きの削除は**ユーザー確認待ち**
+- ✅ クラウドルーティン `trig_017n7Jko3feKQLNMrFwQsTWp` を `enabled: false` にした（2026-08-14）
+- ✅ `SUPABASE_ANON_KEY` を repo secret に登録（BOM 混入で1度やり直し。下記「投入時に起きた実障害」）
+- ⏳ 滞留している約60通の Gmail 下書きの削除は**ユーザー確認待ち**
 
 ## 4. 受入条件
 1. `npx --yes actionlint`（version 固定）で `.github/workflows/cron-watchdog.yml` が通ること
@@ -216,4 +216,21 @@ GET {BASE}/rest/v1/lc_performances?select=event_date&order=event_date.desc&limit
 | `npx vitest run scripts/cron-watchdog.test.ts` | 17 tests passed（修正後に再実行して件数増を確認する） |
 | `npx vitest run`（全体） | 64 files / 789 tests passed |
 | 本番データに対する実行 | **exit 0**。sync-events 8/13 19:48 JST・sync-entries 8/13 23:35 JST・sync-lapcenter 8/13 21:58 JST、`max_gap_h` は 24.001 / 22.050 / 24.004、lc_performances 最新 2026-08-09 |
-| GH Actions 上での定時実行・通知メール到達 | **未実施**（投入後に実証） |
+| `npx tsc --noEmit` | exit 0（`tsconfig` の include は `**/*.ts` なので新規ファイルも本番ビルドの型検査対象） |
+| 新テストが**修正前コードで落ちる**ことの確認 | 旧ロジックへ一時的に戻して実行 → 該当テストが fail（`result.ok` が true になる＝8日欠測の復旧を正常と誤報）。復元後は 19 tests passed |
+| secret 未設定ガード | `::error::` を出力して exit 1（`process.exitCode` 化後も出力が欠落しないことを確認） |
+| GH Actions 上での実行 | run 31774938067 **success**。出力はローカル実行と一致 |
+| 通知メール到達 | **実証済み**。下記 BOM 障害の run 31774829700 が失敗し、06:01:46Z に GitHub から「Run failed: cron-watchdog - main (fd0af0f)」が kodan1126@gmail.com へ着信 |
+
+### 投入時に起きた実障害（記録）
+初回の GH 実行が全ジョブ区分 D で失敗した。原因は**コードではなく secret の値**で、
+`SUPABASE_ANON_KEY` の先頭に **BOM (U+FEFF)** が混入していた
+（Windows 側でキーをファイル経由で扱った際、`Get-Content -Raw` が BOM を読み、
+.NET の `Trim()` は U+FEFF を空白とみなさないため除去されない）。
+Node の `fetch` はヘッダ値に変換できず
+`Cannot convert argument to a ByteString because the character at index 0 has a value of 65279` を投げていた。
+
+- 教訓1: **PowerShell からシークレットを設定するときは `.TrimStart([char]0xFEFF)` を必ず入れる**
+  （`~/.claude/memory` の PowerShell BOM の罠と同根）
+- 教訓2: watchdog 自体は設計どおり **fail-closed** で落ち、原因を1発で特定できるエラーを出した。
+  「静かに OK を返さない」という設計目標が実地で機能した
