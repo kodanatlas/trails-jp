@@ -4,7 +4,7 @@
 - ステータス: **完了**（2026-08-14）
   - Phase 1 = GH Actions watchdog（`fd0af0f`）: GH 上で success・失敗通知メール到達を実証
   - Phase 2 = 相互監視（`8336f13`）: heartbeat 記録・`watchdog_silent` の Resend 配送を実証
-  - 残り: 翌日 12:41 UTC の定時 `sync-lapcenter` が静かなことの確認のみ
+  - 残り: 次の定時 `sync-lapcenter`（12:41 UTC）が静かなことの確認のみ
 - 発端: 2026-08-14 13:07 JST に「[trails.jp監視] cron異常検知 / 異常区分 D」メールが届いた
 
 ## 1. 何が起きていたか（調査結果・実値）
@@ -269,7 +269,7 @@ Vercel→Resend の配送が生きていることは実際に送ってみない�
    → `watchdog_silent` の警告メールが届くことを確認（＝**Vercel→Resend 経路の実証**）
 4. `cron-watchdog` を手動実行して ping を1件作る
 5. `cron_log` に `gh-watchdog` 行ができたことを確認
-6. 翌日 12:41 UTC の `sync-lapcenter` が静かなら完了
+6. 次の定時 `sync-lapcenter`（12:41 UTC）が静かなら完了
 
 ※ `cron-notifier` の24hデダブにより、3 の後に同じ `watchdog_silent` は24時間送られない。
 デプロイは 12:41 UTC より十分前に行い、3〜5 を連続して実施すること（間に定時実行を挟まない）。
@@ -282,7 +282,7 @@ Vercel→Resend の配送が生きていることは実際に送ってみない�
 | 3. ping 無しで `sync-lapcenter` 手動実行 | HTTP 200・本体は正常完走。**`[trails.jp] Cron warning: gh-watchdog` が 07:13:19Z に着信**（`detail` に `"watchdog_silent"`, `"latestPingAt": null`）。`cron_notification_log` にも記録 ＝ **Vercel→Resend 配送経路を実証** |
 | 4. `cron-watchdog` 手動実行 | run 31779162851 **success**。3ジョブとも OK 判定のうえ heartbeat ステップまで到達 |
 | 5. heartbeat 行の確認 | `gh-watchdog` / status=success / 08-14 16:14:32 JST / `result={"repo":"kodanatlas/trails-jp","run_id":"31779162851","source":"github-actions"}` |
-| 6. 翌日 12:41 UTC の定時 `sync-lapcenter` が静かなこと | **未確認**（翌日確認） |
+| 6. 次の定時 `sync-lapcenter`（本日 12:41 UTC）が静かなこと | **未確認**。デプロイ・seed はいずれも 07:14 UTC までに完了しているので、本日の定時実行時点で heartbeat 齢は約5.5時間＝健全側の経路を通るはず |
 
 3 は「ping 行が無い」という一過性の状態を利用した実地試験である。`cron-notifier` は Resend の
 配送失敗を握りつぶすため、**実際に送ってみる以外に経路の生存を確認する方法がない**。
