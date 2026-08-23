@@ -1,0 +1,32 @@
+-- ============================================================
+-- セキュリティ修正: db_health_samples の RLS を有効化
+-- 適用日: 2026-08-23（本番へは Management API で適用済み。このファイルは記録）
+-- ============================================================
+--
+-- 背景:
+--   Supabase の security advisor が rls_disabled_in_public を Critical として
+--   毎週メール通知していた（2026-08-11 / 08-18 に着信）。
+--   public スキーマで RLS が無効なのはこのテーブル1つだけで、
+--   carpool_* を含む他の24テーブルはすべて RLS 有効だった。
+--   anon ロールには SELECT/INSERT/UPDATE/DELETE/TRUNCATE が付与されているため、
+--   公開 anon キーを持つ誰でも監視データを読み書き・全削除できる状態だった
+--   （適用前に anon キーで実際に3行取得できることを確認している）。
+--
+-- アプリへの影響: なし
+--   - 書き込みは pg_cron の db-health-sample（*/5 * * * *、select sample_db_health()）。
+--     ジョブの username=postgres で rolbypassrls=true のため RLS をバイパスする。
+--   - 読み取り側は存在しない。cron-watchdog が anon で読むのは cron_log と
+--     lc_performances だけで、このテーブルは参照していない。
+--   - ポリシーは作らない。carpool_* と同じ
+--     「RLS 有効・ポリシーなし＝service_role / postgres 専用」の形に揃う。
+--
+
+ALTER TABLE public.db_health_samples ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- 適用後の実測 (2026-08-23):
+-- ============================================================
+--   - pg_class.relrowsecurity = true
+--   - anon キーでの SELECT: 3行 → 0行
+--   - postgres 経路での書き込み: 継続（11812 → 11813 行、ts も更新）
+-- ============================================================
