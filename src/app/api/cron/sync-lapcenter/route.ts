@@ -186,34 +186,6 @@ export async function GET(request: Request) {
       runnersResult = { error: String(err) };
     }
 
-    // 純粋な検知は前、ネットワークを伴う通知は後。スクレイプ予算を通知に食わせない。
-    // 通知は best-effort とし、送信側が停止しても cron 本体の記録まで到達させる。
-    if (matchGapsStatus === "ok" && likelyMatchGaps.length > 0) {
-      let notifyTimeout: ReturnType<typeof setTimeout> | null = null;
-      try {
-        const likelyIds = likelyMatchGaps
-          .map((gap) => gap.joe_event_id)
-          .sort((a, b) => a - b)
-          .join(",");
-        // デダブキーは通知側で200文字に切られるため、候補が概ね34件を超えると末尾の
-        // 集合変化を表現できない既知の制約がある。現行の60日窓の件数では許容する。
-        const notification = notifyCronWarning(
-          "sync-lapcenter",
-          `unmatched_lc_candidates:${likelyIds}`,
-          { likely: likelyMatchGaps, hint: MATCH_GAP_HINT },
-          Date.now() - start,
-        );
-        const timeout = new Promise<void>((resolve) => {
-          notifyTimeout = setTimeout(resolve, MATCH_GAP_NOTIFY_TIMEOUT_MS);
-        });
-        await Promise.race([notification, timeout]);
-      } catch (err) {
-        console.error("LC match gap notification failed (ignored):", err);
-      } finally {
-        if (notifyTimeout !== null) clearTimeout(notifyTimeout);
-      }
-    }
-
     const payload = {
       success: true,
       matching: matchingResult,
@@ -255,6 +227,38 @@ export async function GET(request: Request) {
     }
 
     await logCron("sync-lapcenter", "success", payload, Date.now() - start);
+
+    // 突合漏れの通知は「純粋な検知は前・ネットワークは後」に加えて、**logCron より後**に置く。
+    // 2026-08-24 の実測で本ジョブは 59.2 秒（maxDuration=60秒）まで伸びており、
+    // scrapeRunners が長引いた日に通知の待ち時間が加わると 60 秒キルで logCron まで
+    // 到達できない。稼働記録が欠けると死活監視が「実行されなかった」と誤検知するため、
+    // 記録を先に確定させ、通知は完全な best-effort の後始末として最後に回す。
+    if (matchGapsStatus === "ok" && likelyMatchGaps.length > 0) {
+      let notifyTimeout: ReturnType<typeof setTimeout> | null = null;
+      try {
+        const likelyIds = likelyMatchGaps
+          .map((gap) => gap.joe_event_id)
+          .sort((a, b) => a - b)
+          .join(",");
+        // デダブキーは通知側で200文字に切られるため、候補が概ね34件を超えると末尾の
+        // 集合変化を表現できない既知の制約がある。現行の60日窓の件数では許容する。
+        const notification = notifyCronWarning(
+          "sync-lapcenter",
+          `unmatched_lc_candidates:${likelyIds}`,
+          { likely: likelyMatchGaps, hint: MATCH_GAP_HINT },
+          Date.now() - start,
+        );
+        const timeout = new Promise<void>((resolve) => {
+          notifyTimeout = setTimeout(resolve, MATCH_GAP_NOTIFY_TIMEOUT_MS);
+        });
+        await Promise.race([notification, timeout]);
+      } catch (err) {
+        console.error("LC match gap notification failed (ignored):", err);
+      } finally {
+        if (notifyTimeout !== null) clearTimeout(notifyTimeout);
+      }
+    }
+
     return NextResponse.json(payload);
   } catch (error) {
     console.error("Lap Center sync failed:", error);
