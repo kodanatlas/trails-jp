@@ -29,15 +29,40 @@
 --     2026-08-24 に実測済み。したがって anon がこの関数を呼んでも anon 権限で実行され、
 --     RLS が書き込みを拒否する。関数経由の RLS 迂回は成立しない。
 --
--- 残課題（このファイルでは対処しない）:
---   - supabase_migrations.schema_migrations に記録されているのは
---     20260311_fix_security_policies の 1 件のみで、migrations/ 配下の他 14 ファイルは未登録。
---     マイグレーション台帳と実 DB が乖離しており、db reset や新環境構築では再現されない。
---     これは 2026-03-11 以降続いている状態で、本ファイルの変更が持ち込んだものではない。
---     別課題として扱う。
---   - anon / authenticated には SELECT/INSERT/UPDATE/DELETE の GRANT も残っている。
---     こちらは RLS が拒否するため実害はないが、多層防御としては revoke する余地がある
---     （今回は対象外）。
+-- 残課題（このファイルでは対処しない。2026-08-24 に実測して追記・改訂）:
+--
+--   [1] マイグレーション台帳の乖離
+--   supabase_migrations.schema_migrations に記録されているのは 20260311_fix_security_policies の
+--   1 件のみで、migrations/ 配下の残り 15 ファイルは未登録。supabase CLI に実際に聞いたところ、
+--   内訳は 2 種類だった:
+--     (a) ハイフン名の 6 ファイル（2026-06-17_ 等）は
+--         "file name must match pattern <timestamp>_name.sql" として読み飛ばされる。
+--         台帳以前の問題で、新環境では最初から適用対象にすらならない。
+--     (b) 数値名の 9 ファイルは Local のみ＝pending 扱い。ただし supabase db push を打っても
+--         先頭の 20260325_create_cron_log.sql が CREATE TABLE cron_log（IF NOT EXISTS なし）で
+--         即エラーになり中断する（20260612_carpool_fixes.sql の ADD PRIMARY KEY も同様）。
+--         つまり静かに本番を壊す類ではなく、失敗して止まる。
+--   失われているのは実害ではなく再現性（db reset・新環境構築・DR で migrations が使えない）。
+--   直すには (a) を数値名へリネームしたうえで、全件を migration repair --status applied で
+--   台帳へ記録する。2026-03-11 以降続いている状態で、本ファイルが持ち込んだものではない。
+--
+--   [2] anon / authenticated の DML GRANT ― 「多層防御として revoke の余地あり」は取り下げる
+--   当初ここに「RLS が拒否するので実害はないが、多層防御としては revoke する余地がある」と
+--   書いたが、実測すると前提が 3 つとも違っていた:
+--     - public のポリシーはすべて SELECT のみ。likes の authenticated INSERT ポリシーは残骸で、
+--       実際の書き込みは service_role の supabaseAdmin 経由（src/app/api/likes/route.ts）。
+--       よって INSERT/UPDATE/DELETE の revoke は RLS と完全に重複するだけで、得るものがない。
+--     - RLS が塞げないのは TRUNCATE だけであり、それは public の他 24 テーブル全部に
+--       anon / authenticated 向けで付いたまま。本ファイルが外したのは db_health_samples の
+--       1 件のみで、「RLS で塞がらないから revoke する」という理由づけと現状が揃っていない。
+--       ただし到達経路は無い（PostgREST は TRUNCATE を公開しない・public に truncate/delete を
+--       含む関数は 0 件・アプリコードに SQL の TRUNCATE 使用なし）。
+--     - public スキーマの default privileges が anon / authenticated に arwdDxtm を配っている
+--       （grantor は postgres と supabase_admin の 2 系統）。したがって個別に revoke しても
+--       次に CREATE TABLE した時点で元に戻る＝一回限りの revoke は必ず劣化する。
+--   よって DML の revoke は行わない。やるなら「全テーブルから TRUNCATE を revoke ＋
+--   ALTER DEFAULT PRIVILEGES で今後も付与しない」を 1 本にまとめる形にすべきで、
+--   SELECT は公開ポリシーが依存しているので触らない。優先度は低い（到達経路が無いため）。
 --
 -- ファイル名: 既存ファイルは 20260311_ 形式と 2026-06-17_ 形式が混在しているが、ハイフンを含む形式は Supabase CLI の version 規約に適合せず、辞書順でも数値形式より前に来てしまう。新規ファイルは数値形式（20260824_）に揃える。既存ファイルの rename は履歴との突合が必要なため行わない。
 --
