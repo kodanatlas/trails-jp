@@ -118,10 +118,11 @@ function isExcluded(event: MatchGapJoeEvent, start: string, end: string): boolea
  * 分離できなかった。真をすべて拾う側に倒し、残る誤検出は MANUAL_LC_NO_MATCH でミュートする。
  *
  * 同日に中高選手権・彩の森入間公園の alias を EVENT_ALIASES へ追加したため、上記3件の実測値は
- * 現在 0.84 / 0.364 / 0.905 まで上がっている（nameAffinity は fuzzyMatch と同じ normalize を通す）。
- * **この新しい値を根拠に閾値を上げてはいけない**。alias があるケースは既に自動突合されるので
- * そもそも検知に上がらず、ここに来るのは alias が無い未知の漏れ＝旧レンジ（0.15〜0.35 程度）
- * だからである。閾値を上げると拾いたいものだけが落ちる。
+ * 現在 0.84 / 0.286 / 0.905 まで上がっている（nameAffinity は fuzzyMatch と同じ normalize を通す）。
+ * **この新しい値を根拠に閾値を上げないこと**。これらは既知パターンに専用の変換を足した後の値で、
+ * 未知の漏れには一般化できない。閾値を上げれば既知の誤検出(0.167)は確かに落ちるが、未知ケースで
+ * どれだけ取りこぼすかは 8 ペアからは分からない。現在の実測値だけでは上げる根拠が無い、というのが
+ * 事実に即した言い方。上げるなら、alias を持たない実際の漏れを新たに何件か観測してから判断する。
  */
 export function findMatchGaps(
   joeEvents: MatchGapJoeEvent[],

@@ -80,7 +80,7 @@ describe("nameAffinity", () => {
       label: "彩の森入間公園の体験会は likely 側になる",
       joe: "彩の森入間公園OL体験会＆併設ロゲ",
       lc: "第56回(26年度8月度)入間市オリエンテーリング体験会",
-      expected: 0.364, // alias 追加前は 0.214
+      expected: 0.286, // alias 追加前は 0.214（会場名 alias を「入間市彩の森」に変えて 0.364 から低下）
       tier: "likely",
     },
     {
