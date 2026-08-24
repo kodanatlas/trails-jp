@@ -7,7 +7,8 @@ export const metadata: Metadata = {
   description: "LapCenter のスプリットを元にしたレッグ別レース分析（trails.jp 結果分析）。",
 };
 
-// events ストアは日次 cron（03:00 / 12:00 JST）でしか変わらない → 10分 ISR で十分
+// events ストアは日次 cron（sync-events 19:07 JST / sync-lapcenter 21:41 JST・vercel.json が正）
+// でしか変わらない → 10分 ISR で十分
 export const revalidate = 600;
 
 export default async function ResultsLanding() {
@@ -31,7 +32,7 @@ export default async function ResultsLanding() {
       </div>
       <p className="mb-5 text-xs text-muted">
         スプリットを元にしたレッグ別のレース分析。大会を選ぶ → クラス → レース。選手ページの参加大会からも開けます。
-        大会一覧は LapCenter 掲載後、毎日の自動同期（12:00 JST ごろ）で追加されます。
+        大会一覧は LapCenter 掲載後、毎日の自動同期（夜 19 時ごろ）で追加されます。
       </p>
       <ResultsBrowse events={events} />
     </div>
