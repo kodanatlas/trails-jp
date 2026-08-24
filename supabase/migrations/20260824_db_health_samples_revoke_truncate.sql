@@ -1,0 +1,45 @@
+-- ============================================================
+-- セキュリティ修正: db_health_samples の TRUNCATE 権限を revoke
+-- 作成日: 2026-08-24
+-- ============================================================
+--
+-- 背景:
+--   2026-08-23 に ALTER TABLE public.db_health_samples ENABLE ROW LEVEL SECURITY を適用済み。
+--   RLS は有効（relrowsecurity = true）、ポリシーは 0 件で、anon の
+--   SELECT/INSERT/UPDATE/DELETE は RLS が拒否する状態になっている。
+--   しかし TRUNCATE は RLS の適用対象外であり、RLS 有効化では塞がらない。
+--   2026-08-24 に実測した結果、anon と authenticated の両方が
+--   has_table_privilege(..., 'TRUNCATE') = true だった。
+--   relacl は {postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}
+--   で、D が TRUNCATE にあたる。
+--   PUBLIC ロールにはこのテーブルへの権限が付いていないため、revoke 対象は anon と
+--   authenticated の 2 つのみ。service_role はサーバー専用ロールなので TRUNCATE を残す。
+--
+-- 到達可能性:
+--   PostgREST は TRUNCATE を公開しないため、2026-08-24 時点で anon キー単体から
+--   TRUNCATE を実行できる経路は確認されていない。したがってこれは実際に開いている穴ではなく、
+--   潜在リスクの除去（最小権限の徹底）である。
+--
+-- アプリへの影響: なし
+--   - リポジトリ全体を db_health_samples|sample_db_health で grep した結果、src/ 配下に
+--     参照は存在しない（ヒットは docs 2 件とマイグレーション自身のみ）。
+--   - 書き込みは pg_cron の db-health-sample（*/5 * * * *、select sample_db_health()）。
+--     ジョブは postgres で走り rolbypassrls = true のため影響を受けない。
+--   - sample_db_health() は SECURITY INVOKER（prosecdef = false）であることを
+--     2026-08-24 に実測済み。したがって anon がこの関数を呼んでも anon 権限で実行され、
+--     RLS が書き込みを拒否する。関数経由の RLS 迂回は成立しない。
+--
+-- 残課題（このファイルでは対処しない）:
+--   - supabase_migrations.schema_migrations に記録されているのは
+--     20260311_fix_security_policies の 1 件のみで、migrations/ 配下の他 14 ファイルは未登録。
+--     マイグレーション台帳と実 DB が乖離しており、db reset や新環境構築では再現されない。
+--     これは 2026-03-11 以降続いている状態で、本ファイルの変更が持ち込んだものではない。
+--     別課題として扱う。
+--   - anon / authenticated には SELECT/INSERT/UPDATE/DELETE の GRANT も残っている。
+--     こちらは RLS が拒否するため実害はないが、多層防御としては revoke する余地がある
+--     （今回は対象外）。
+--
+-- ファイル名: 既存ファイルは 20260311_ 形式と 2026-06-17_ 形式が混在しているが、ハイフンを含む形式は Supabase CLI の version 規約に適合せず、辞書順でも数値形式より前に来てしまう。新規ファイルは数値形式（20260824_）に揃える。既存ファイルの rename は履歴との突合が必要なため行わない。
+--
+
+REVOKE TRUNCATE ON TABLE public.db_health_samples FROM anon, authenticated;
