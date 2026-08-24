@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
-import { matchLapCenterEvents, fetchEventClasses, fetchSplitListDetailed, MANUAL_LC_OVERRIDE_EVENT_IDS } from "@/lib/scraper/lapcenter";
+import {
+  matchLapCenterEvents,
+  fetchEventClasses,
+  fetchSplitListDetailed,
+  MANUAL_LC_OVERRIDE_EVENT_IDS,
+  type LapCenterEvent,
+} from "@/lib/scraper/lapcenter";
 import { buildClassIngest, isSprint, type AthleteLookupEntry, type LegSplitRow, type ScalarRecord } from "@/lib/analysis/leg-ingest";
+import {
+  DEFAULT_WINDOW_DAYS,
+  findMatchGaps,
+  type MatchGapCandidate,
+} from "@/lib/analysis/match-gaps";
 import { readEvents, writeEvents } from "@/lib/events-store";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { readFileSync } from "fs";
@@ -38,6 +49,11 @@ const DELAY_MS = 300;
 // 新しいイベントへの着手を打ち切る経過時間（リクエスト開始からの ms）。
 // maxDuration=60s に対し、着手後に多クラスイベントが完走できる余裕(~30s)を残す。
 const START_EVENT_BEFORE_MS = 30_000;
+const MATCH_GAPS_PAYLOAD_LIMIT = 20;
+const MATCH_GAP_ERROR_MAX_LENGTH = 200;
+const MATCH_GAP_NOTIFY_TIMEOUT_MS = 5_000;
+const MATCH_GAP_HINT =
+  "MANUAL_LC_OVERRIDES に追記して突合するか、結果が出ない大会なら MANUAL_LC_NO_MATCH に追記する。";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -104,9 +120,12 @@ export async function GET(request: Request) {
     // mulka2 取得が一時的に失敗(TypeError: fetch failed 等)しても致命とはせず、
     // ストア済みマッチを使って下のスクレイプを必ず続行する（毎日のスクレイプを守る）。
     let matchingResult: Record<string, unknown>;
+    let fetchedLcEvents: LapCenterEvent[] | null = null;
+    let matchingError: string | null = null;
     try {
       const beforeUnmatched = events.filter((e) => !e.lapcenter_event_id).length;
       const result = await matchLapCenterEvents(events);
+      fetchedLcEvents = result.lcEvents;
       const afterUnmatched = events.filter((e) => !e.lapcenter_event_id).length;
       const newMatches = beforeUnmatched - afterUnmatched;
       // 新規マッチ(未マッチ→マッチ)だけでなく override による再マッチ(既マッチの id 変更)も
@@ -125,7 +144,37 @@ export async function GET(request: Request) {
       };
     } catch (err) {
       console.error("LC matching failed (non-fatal):", err);
-      matchingResult = { error: String(err) };
+      const errorText = String(err);
+      matchingError = errorText.slice(0, MATCH_GAP_ERROR_MAX_LENGTH);
+      matchingResult = { error: errorText };
+    }
+
+    // ---- JOY↔LapCenter 突合漏れ検知 (非致命・隔離) ----
+    // マッチングで取得済みのLC一覧だけを使う。純粋で安価な検知だけをスクレイプ前に済ませる。
+    let matchGaps: MatchGapCandidate[] = [];
+    let matchGapsTotal: number | null = null;
+    let matchGapsStatus: "ok" | "unavailable" | "error" = "unavailable";
+    let matchGapsError: string | null = null;
+    let likelyMatchGaps: MatchGapCandidate[] = [];
+    try {
+      if (fetchedLcEvents) {
+        const allMatchGaps = findMatchGaps(events, fetchedLcEvents, {
+          now: new Date(),
+          windowDays: DEFAULT_WINDOW_DAYS,
+        });
+        matchGaps = allMatchGaps.slice(0, MATCH_GAPS_PAYLOAD_LIMIT);
+        if (allMatchGaps.length > MATCH_GAPS_PAYLOAD_LIMIT) {
+          matchGapsTotal = allMatchGaps.length;
+        }
+        likelyMatchGaps = allMatchGaps.filter((gap) => gap.tier === "likely");
+        matchGapsStatus = "ok";
+      } else {
+        matchGapsError = matchingError ?? "LapCenter一覧を取得できませんでした";
+      }
+    } catch (err) {
+      console.error("LC match gap detection failed (ignored):", err);
+      matchGapsStatus = "error";
+      matchGapsError = String(err).slice(0, MATCH_GAP_ERROR_MAX_LENGTH);
     }
 
     // ---- 巡航速度・ミス率スクレイプ (毎日・壁時計予算内で新しい順に処理) ----
@@ -137,10 +186,44 @@ export async function GET(request: Request) {
       runnersResult = { error: String(err) };
     }
 
+    // 純粋な検知は前、ネットワークを伴う通知は後。スクレイプ予算を通知に食わせない。
+    // 通知は best-effort とし、送信側が停止しても cron 本体の記録まで到達させる。
+    if (matchGapsStatus === "ok" && likelyMatchGaps.length > 0) {
+      let notifyTimeout: ReturnType<typeof setTimeout> | null = null;
+      try {
+        const likelyIds = likelyMatchGaps
+          .map((gap) => gap.joe_event_id)
+          .sort((a, b) => a - b)
+          .join(",");
+        // デダブキーは通知側で200文字に切られるため、候補が概ね34件を超えると末尾の
+        // 集合変化を表現できない既知の制約がある。現行の60日窓の件数では許容する。
+        const notification = notifyCronWarning(
+          "sync-lapcenter",
+          `unmatched_lc_candidates:${likelyIds}`,
+          { likely: likelyMatchGaps, hint: MATCH_GAP_HINT },
+          Date.now() - start,
+        );
+        const timeout = new Promise<void>((resolve) => {
+          notifyTimeout = setTimeout(resolve, MATCH_GAP_NOTIFY_TIMEOUT_MS);
+        });
+        await Promise.race([notification, timeout]);
+      } catch (err) {
+        console.error("LC match gap notification failed (ignored):", err);
+      } finally {
+        if (notifyTimeout !== null) clearTimeout(notifyTimeout);
+      }
+    }
+
     const payload = {
       success: true,
       matching: matchingResult,
       runners: runnersResult,
+      match_gaps: matchGaps,
+      match_gaps_status: matchGapsStatus,
+      ...(matchGapsError !== null ? { match_gaps_error: matchGapsError } : {}),
+      ...(matchGapsTotal !== null
+        ? { match_gaps_truncated: true, match_gaps_total: matchGapsTotal }
+        : {}),
       synced_at: new Date().toISOString(),
     };
 

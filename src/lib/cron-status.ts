@@ -1,3 +1,5 @@
+import type { MatchGapCandidate } from "./analysis/match-gaps";
+
 /**
  * Cron 稼働状況の健康判定ロジック（純粋関数）。
  * /admin/cron-status ページで使用。
@@ -203,4 +205,112 @@ export function formatJst(iso: string): string {
     minute: "2-digit",
     second: "2-digit",
   }).format(new Date(iso));
+}
+
+export interface MatchGapSummary {
+  candidates: MatchGapCandidate[];
+  truncated: boolean;
+  total: number;
+  status: "ok" | "unavailable" | "error" | "unknown";
+  error: string | null;
+  rejected: number;
+}
+
+const JOY_EVENT_URL_PREFIX = "https://japan-o-entry.com/event/view/";
+const MATCH_GAP_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const MATCH_GAP_NAME_MAX_LENGTH = 200;
+const MATCH_GAP_LC_MAX_ITEMS = 50;
+const MATCH_GAP_DISPLAY_MAX_ITEMS = 20;
+const MATCH_GAP_ERROR_MAX_LENGTH = 200;
+
+function isPositiveSafeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+
+function isBoundedName(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length >= 1 &&
+    value.length <= MATCH_GAP_NAME_MAX_LENGTH
+  );
+}
+
+function isMatchGapCandidate(value: unknown): value is MatchGapCandidate {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Record<string, unknown>;
+  if (
+    !isPositiveSafeInteger(candidate.joe_event_id) ||
+    !isBoundedName(candidate.joe_name) ||
+    typeof candidate.date !== "string" ||
+    !MATCH_GAP_DATE_PATTERN.test(candidate.date) ||
+    typeof candidate.joe_url !== "string" ||
+    !candidate.joe_url.startsWith(JOY_EVENT_URL_PREFIX) ||
+    typeof candidate.affinity !== "number" ||
+    !Number.isFinite(candidate.affinity) ||
+    candidate.affinity < 0 ||
+    candidate.affinity > 1 ||
+    (candidate.tier !== "likely" && candidate.tier !== "possible") ||
+    !Array.isArray(candidate.lc) ||
+    candidate.lc.length < 1 ||
+    candidate.lc.length > MATCH_GAP_LC_MAX_ITEMS
+  ) {
+    return false;
+  }
+  return candidate.lc.every((lc) => {
+    if (!lc || typeof lc !== "object") return false;
+    const item = lc as Record<string, unknown>;
+    return isPositiveSafeInteger(item.eventId) && isBoundedName(item.name);
+  });
+}
+
+/** 最新cron resultから表示可能な突合漏れ候補だけを安全に取り出す。 */
+export function extractMatchGapSummary(result: unknown): MatchGapSummary {
+  if (!result || typeof result !== "object") {
+    return {
+      candidates: [],
+      truncated: false,
+      total: 0,
+      status: "unknown",
+      error: null,
+      rejected: 0,
+    };
+  }
+  const record = result as Record<string, unknown>;
+  const status =
+    record.match_gaps_status === "ok" ||
+    record.match_gaps_status === "unavailable" ||
+    record.match_gaps_status === "error"
+      ? record.match_gaps_status
+      : "unknown";
+  const error =
+    (status === "unavailable" || status === "error") &&
+    typeof record.match_gaps_error === "string" &&
+    record.match_gaps_error.length > 0
+      ? record.match_gaps_error.slice(0, MATCH_GAP_ERROR_MAX_LENGTH)
+      : null;
+  const rawCandidates = Array.isArray(record.match_gaps) ? record.match_gaps : [];
+  const validCandidates = rawCandidates
+    .filter(isMatchGapCandidate)
+    .sort((a, b) => {
+      if (a.tier !== b.tier) return a.tier === "likely" ? -1 : 1;
+      return b.date.localeCompare(a.date);
+    });
+  const candidates = validCandidates.slice(0, MATCH_GAP_DISPLAY_MAX_ITEMS);
+  const reportedTotal = record.match_gaps_total;
+  const total =
+    typeof reportedTotal === "number" &&
+    Number.isSafeInteger(reportedTotal) &&
+    reportedTotal >= 0
+      ? Math.max(reportedTotal, validCandidates.length)
+      : validCandidates.length;
+  return {
+    candidates,
+    truncated:
+      record.match_gaps_truncated === true ||
+      validCandidates.length > MATCH_GAP_DISPLAY_MAX_ITEMS,
+    total,
+    status,
+    error,
+    rejected: rawCandidates.length - validCandidates.length,
+  };
 }

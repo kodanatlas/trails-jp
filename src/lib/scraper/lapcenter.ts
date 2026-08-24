@@ -115,7 +115,7 @@ const EVENT_ALIASES: [RegExp, string][] = [
   [/インカレ/g, "日本学生選手権"],
 ];
 
-function normalize(name: string): string {
+export function normalize(name: string): string {
   let s = name;
   // 全角→半角
   s = s.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) =>
@@ -231,6 +231,7 @@ export interface MatchResult {
   matched: number;
   total: number;
   lcEventsCount: number;
+  lcEvents: LapCenterEvent[];
   /** lapcenter_event_id を新規セット/変更した件数（新規マッチ＋override再マッチ）。>0 なら呼び出し側は writeEvents すべき。 */
   changed: number;
 }
@@ -265,11 +266,26 @@ export const MANUAL_LC_OVERRIDES: Record<number, number> = {
   2518: 9973, // 彩の森入間公園OL体験会＆併設ロゲ (2026-08-22) — LC は「第56回(26年度8月度)入間市オリエンテーリング体験会」。主催はいずれも入間市オリエンテーリングクラブ。
 };
 
+/** 突合漏れ検知の恒久ミュート。joe_event_id → 除外理由。LapCenter に結果が出ない大会をここに載せる。 */
+export const MANUAL_LC_NO_MATCH: Record<number, string> = {
+  2583: "コーチ資格更新研修会（オンライン）— 研修でありレース結果は出ない",
+  2592: "コーチ資格更新研修会（集合2日目）— 同上",
+  2567: "ネイチャリングフェスタ2026 — 野外フェスで mulka2 には結果を出さない",
+};
+
 /** 手動マッチ表でマッチした LapCenter event id の集合（スクレイプ優先用）。 */
 export const MANUAL_LC_OVERRIDE_EVENT_IDS = new Set<number>(Object.values(MANUAL_LC_OVERRIDES));
 
 export async function matchLapCenterEvents<
-  T extends { joe_event_id: number; name: string; date: string; lapcenter_event_id?: number; lapcenter_url?: string }
+  T extends {
+    joe_event_id: number;
+    name: string;
+    date: string;
+    lapcenter_event_id?: number;
+    lapcenter_url?: string;
+    tags?: string[];
+    source?: string;
+  }
 >(joeEvents: T[]): Promise<MatchResult> {
   // Determine which years to fetch — min event year から current year まで全取得
   const now = new Date();
@@ -349,7 +365,13 @@ export async function matchLapCenterEvents<
     }
   }
 
-  return { matched, total: joeEvents.length, lcEventsCount: lcEvents.length, changed };
+  return {
+    matched,
+    total: joeEvents.length,
+    lcEventsCount: lcEvents.length,
+    lcEvents,
+    changed,
+  };
 }
 
 // ---------------------------------------------------------------------------

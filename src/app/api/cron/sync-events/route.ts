@@ -82,6 +82,10 @@ export async function GET(request: Request) {
           event.date = existing.date;
           event.end_date = existing.end_date;
         }
+        // JOYアーカイブはtagsを返さないため、トップページから落ちた後も直近取得値を保持する。
+        if (event.tags.length === 0 && existing.tags.length > 0) {
+          event.tags = [...existing.tags];
+        }
         if (event.source === "dokori") {
           // どこオリはスクレイプ時に会場座標を持つため store で上書きしない（会場変更にも追従）。
           // 万一スクレイプで座標が取れなかった場合のみ store からフォールバック。

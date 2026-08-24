@@ -4,6 +4,7 @@ import { ArrowLeft, Activity, AlertCircle, CheckCircle2 } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import {
   assessJobHealth,
+  extractMatchGapSummary,
   formatAge,
   formatJst,
   healthColors,
@@ -25,6 +26,7 @@ export const metadata: Metadata = {
 
 const HISTORY_LIMIT = 30;
 const JOB_NAMES: CronJobName[] = ["sync-events", "sync-lapcenter", "sync-entries"];
+const LAPCENTER_EVENT_URL = "https://mulka2.com/lapcenter/lapcombat2/index.jsp";
 
 async function fetchRecent(job: CronJobName): Promise<CronLogRow[]> {
   if (!isSupabaseConfigured) return [];
@@ -55,6 +57,10 @@ export default async function CronStatusPage() {
     rows,
     assessment: assessJobHealth(job, rows, now),
   }));
+  const latestLapCenterResult = dataByJob.find(
+    ({ job }) => job === "sync-lapcenter",
+  )?.rows[0]?.result;
+  const matchGapSummary = extractMatchGapSummary(latestLapCenterResult);
 
   if (!isSupabaseConfigured) {
     return (
@@ -93,6 +99,9 @@ export default async function CronStatusPage() {
         ))}
       </section>
 
+      {/* ---- JOY↔LapCenter 突合漏れ候補 ---- */}
+      <MatchGapSection summary={matchGapSummary} />
+
       {/* ---- KPI 時系列 ---- */}
       <section className="mt-10">
         <h2 className="mb-4 text-lg font-semibold">KPI推移（直近{HISTORY_LIMIT}件）</h2>
@@ -109,6 +118,96 @@ export default async function CronStatusPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+function MatchGapSection({
+  summary,
+}: {
+  summary: ReturnType<typeof extractMatchGapSummary>;
+}) {
+  return (
+    <section className="mt-10">
+      <div className="mb-4 flex items-baseline justify-between gap-3">
+        <h2 className="text-lg font-semibold">突合漏れ候補</h2>
+        {summary.status === "ok" && summary.truncated && (
+          <span className="text-xs text-muted">
+            先頭{summary.candidates.length}件 / 全{summary.total}件
+          </span>
+        )}
+      </div>
+      <div className="rounded-lg border border-border">
+        {summary.status === "unknown" ? (
+          <p className="px-4 py-6 text-center text-xs text-muted">
+            この実行では未計測（旧バージョン）
+          </p>
+        ) : summary.status === "unavailable" || summary.status === "error" ? (
+          <div className="px-4 py-6 text-center text-xs text-red-400">
+            <div className="font-semibold">検知できず</div>
+            <div className="mt-1 break-words">{summary.error ?? "理由の記録なし"}</div>
+          </div>
+        ) : summary.candidates.length === 0 ? (
+          <p className="px-4 py-6 text-center text-xs text-muted">候補なし</p>
+        ) : (
+          summary.candidates.map((candidate, candidateIndex) => (
+            <article
+              key={`${candidate.joe_event_id}-${candidate.date}-${candidateIndex}`}
+              className="border-t border-border px-4 py-3 first:border-t-0"
+            >
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 text-xs">
+                  <div className="font-mono text-muted">{candidate.date}</div>
+                  <a
+                    href={candidate.joe_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-block font-semibold text-foreground hover:text-primary"
+                  >
+                    {candidate.joe_name}
+                  </a>
+                </div>
+                <div className="flex shrink-0 items-center gap-2 text-xs">
+                  <span className="font-mono text-muted">
+                    類似度 {candidate.affinity.toFixed(3)}
+                  </span>
+                  <span
+                    className={
+                      candidate.tier === "likely"
+                        ? "rounded bg-yellow-500/10 px-1.5 py-0.5 text-yellow-400"
+                        : "rounded bg-surface px-1.5 py-0.5 text-muted"
+                    }
+                  >
+                    {candidate.tier}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 text-xs">
+                <div className="mb-1 text-muted">同日の未使用 LapCenter 候補</div>
+                <ul className="space-y-1">
+                  {candidate.lc.map((lc, lcIndex) => (
+                    <li key={`${lc.eventId}-${lcIndex}`}>
+                      <a
+                        href={`${LAPCENTER_EVENT_URL}?event=${lc.eventId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-primary"
+                      >
+                        {lc.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+      {summary.rejected > 0 && (
+        <p className="mt-2 text-xs text-red-400">
+          不正な候補 {summary.rejected} 件を除外
+        </p>
+      )}
+    </section>
   );
 }
 
