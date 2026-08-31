@@ -11,7 +11,8 @@ import { jstNowLabel, jstToday } from "../src/lib/weekend-window";
 import { eventFuzzyMatch } from "../src/lib/analysis/event-match";
 import { buildCrossRaceIndex, type LcRaceRow } from "../src/lib/analysis/cross-race";
 import { buildLegFingerprintIndex, detectHomonymKeys, type TrackedLegRow, type CompanionRow } from "../src/lib/analysis/leg-fingerprint";
-import { isAliasedName, resolveAliasName, resolveEntryAliases } from "../src/lib/identity/athlete-alias";
+import { findDuplicateNames, makeScoreMergeKey } from "../src/lib/analysis/score-merge";
+import { resolveAliasName, resolveEntryAliases } from "../src/lib/identity/athlete-alias";
 
 // --- Types ---
 interface RawEntry {
@@ -375,16 +376,17 @@ async function fetchRankingPage(typeId: number, classId: number, page: number): 
   throw lastErr;
 }
 
-/** 既存スコアのマージキー（別名選手は表示名、それ以外は従来どおり所属も含める） */
-function scoreMergeKey(e: { athlete_name: string; club: string }): string {
-  if (isAliasedName(e.athlete_name)) return e.athlete_name;
-  return `${e.athlete_name} ${e.club}`;
+interface EventScoreLossStats {
+  lostAthletes: number;
+  lostScores: number;
+  lostTwoPlusAthletes: number;
 }
 
 interface FetchCategoryResult {
   message: string;
   renamed: number;
   passthrough: number;
+  eventScoreLoss: EventScoreLossStats;
 }
 
 /**
@@ -444,6 +446,7 @@ async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult>
       message: `${cls.file}: 0 entries (kept existing)`,
       renamed: renamed + existingStats.renamed,
       passthrough: passthrough + existingStats.passthrough,
+      eventScoreLoss: { lostAthletes: 0, lostScores: 0, lostTwoPlusAthletes: 0 },
     };
   }
 
@@ -455,12 +458,24 @@ async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult>
   } catch { /* first run */ }
 
   const existingResolution = resolveEntryAliases(existing);
+  // 旧版・新版の各ファイル内で見つかった重複名の和を、両側で共通して使う。
+  // 単純に旧版と新版を連結して数えると、継続掲載中の全選手を重複と誤判定するため分けて検出する。
+  const duplicateNames = new Set([
+    ...findDuplicateNames(existingResolution.entries),
+    ...findDuplicateNames(allFresh),
+  ]);
+  if (duplicateNames.size > 0) {
+    console.warn(
+      `⚠ ${cls.file}: duplicate athlete names use club-specific score merge keys (${[...duplicateNames].join(", ")})`,
+    );
+  }
+
   const existingScores = new Map<string, { event_name: string; points: number }[]>();
   for (const e of existingResolution.entries) {
-    existingScores.set(scoreMergeKey(e), e.event_scores || []);
+    existingScores.set(makeScoreMergeKey(e, duplicateNames), e.event_scores || []);
   }
   for (const entry of allFresh) {
-    const oldScores = existingScores.get(scoreMergeKey(entry));
+    const oldScores = existingScores.get(makeScoreMergeKey(entry, duplicateNames));
     if (oldScores && oldScores.length > 0) {
       const scoreMap = new Map<string, { event_name: string; points: number }>();
       for (const s of oldScores) scoreMap.set(s.event_name, s);
@@ -469,11 +484,37 @@ async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult>
     }
   }
 
+  // 書き出し直前に旧版と比較する。ランキングから消えた選手は新件数0として検知する。
+  const beforeCounts = new Map<string, number>();
+  const afterCounts = new Map<string, number>();
+  for (const entry of existingResolution.entries) {
+    const key = makeScoreMergeKey(entry, duplicateNames);
+    beforeCounts.set(key, Math.max(beforeCounts.get(key) ?? 0, entry.event_scores?.length ?? 0));
+  }
+  for (const entry of allFresh) {
+    const key = makeScoreMergeKey(entry, duplicateNames);
+    afterCounts.set(key, Math.max(afterCounts.get(key) ?? 0, entry.event_scores?.length ?? 0));
+  }
+
+  const eventScoreLoss: EventScoreLossStats = {
+    lostAthletes: 0,
+    lostScores: 0,
+    lostTwoPlusAthletes: 0,
+  };
+  for (const [key, beforeCount] of beforeCounts) {
+    const lost = beforeCount - (afterCounts.get(key) ?? 0);
+    if (lost <= 0) continue;
+    eventScoreLoss.lostAthletes++;
+    eventScoreLoss.lostScores += lost;
+    if (lost >= 2) eventScoreLoss.lostTwoPlusAthletes++;
+  }
+
   writeRankingFileAtomic(filePath, allFresh);
   return {
     message: `${cls.file}: ${allFresh.length} entries${skipped ? ` (${skipped} page(s) skipped on error)` : ""}`,
     renamed,
     passthrough,
+    eventScoreLoss,
   };
 }
 
@@ -483,6 +524,11 @@ async function fetchFreshRankings(): Promise<AliasStats> {
   const queue = [...ALL_CLASSES];
   let updated = 0, kept = 0, failed = 0;
   let renamed = 0, passthrough = 0;
+  const eventScoreLoss: EventScoreLossStats = {
+    lostAthletes: 0,
+    lostScores: 0,
+    lostTwoPlusAthletes: 0,
+  };
 
   async function worker() {
     for (;;) {
@@ -493,6 +539,9 @@ async function fetchFreshRankings(): Promise<AliasStats> {
         if (result.message.includes("kept existing")) kept++; else updated++;
         renamed += result.renamed;
         passthrough += result.passthrough;
+        eventScoreLoss.lostAthletes += result.eventScoreLoss.lostAthletes;
+        eventScoreLoss.lostScores += result.eventScoreLoss.lostScores;
+        eventScoreLoss.lostTwoPlusAthletes += result.eventScoreLoss.lostTwoPlusAthletes;
         console.log(` → ${result.message}`);
       } catch (e) {
         failed++;
@@ -512,6 +561,16 @@ async function fetchFreshRankings(): Promise<AliasStats> {
   await Promise.all(Array.from({ length: FETCH_CONCURRENCY }, () => worker()));
   const elapsedSec = ((Date.now() - t0) / 1000).toFixed(1);
   console.log(`Rankings fetch done in ${elapsedSec}s (concurrency=${FETCH_CONCURRENCY}): ${updated} updated, ${kept} kept(empty), ${failed} failed(kept existing).`);
+  const lossMessage =
+    `Event scores: ${eventScoreLoss.lostAthletes} athletes lost scores (total -${eventScoreLoss.lostScores}).` +
+    (eventScoreLoss.lostTwoPlusAthletes > 0
+      ? ` ⚠ ${eventScoreLoss.lostTwoPlusAthletes} athletes lost 2+ scores.`
+      : "");
+  if (eventScoreLoss.lostTwoPlusAthletes > 0) {
+    console.warn(lossMessage);
+  } else {
+    console.log(lossMessage);
+  }
   return { renamed, passthrough };
 }
 
