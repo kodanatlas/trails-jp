@@ -6,10 +6,11 @@ export function findDuplicateNames(
   const duplicates = new Set<string>();
 
   for (const entry of entries) {
-    if (seen.has(entry.athlete_name)) {
-      duplicates.add(entry.athlete_name);
+    const normalizedName = entry.athlete_name.replace(/\s+/g, "");
+    if (seen.has(normalizedName)) {
+      duplicates.add(normalizedName);
     } else {
-      seen.add(entry.athlete_name);
+      seen.add(normalizedName);
     }
   }
 
@@ -21,8 +22,12 @@ export function makeScoreMergeKey(
   entry: { athlete_name: string; club: string },
   duplicateNames: ReadonlySet<string>,
 ): string {
-  if (duplicateNames.has(entry.athlete_name)) {
-    return `${entry.athlete_name} ${entry.club}`;
+  const normalizedName = entry.athlete_name.replace(/\s+/g, "");
+  const isDuplicate = [...duplicateNames].some(
+    (name) => name.replace(/\s+/g, "") === normalizedName,
+  );
+  if (isDuplicate) {
+    return `${normalizedName} ${entry.club}`;
   }
-  return entry.athlete_name;
+  return normalizedName;
 }

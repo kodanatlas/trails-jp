@@ -11,6 +11,34 @@ describe("score merge key", () => {
     ).toBe("奈良崎有香");
   });
 
+  it("空白なしと空白1つの氏名を同じキーにする", () => {
+    expect(
+      makeScoreMergeKey(
+        { athlete_name: "谷川友太", club: "京都大学" },
+        new Set(),
+      ),
+    ).toBe(
+      makeScoreMergeKey(
+        { athlete_name: "谷川 友太", club: "京都大学" },
+        new Set(),
+      ),
+    );
+  });
+
+  it("空白2つと空白1つの氏名を同じキーにする", () => {
+    expect(
+      makeScoreMergeKey(
+        { athlete_name: "中島  遼", club: "東京大学" },
+        new Set(),
+      ),
+    ).toBe(
+      makeScoreMergeKey(
+        { athlete_name: "中島 遼", club: "東京大学" },
+        new Set(),
+      ),
+    );
+  });
+
   it("同一ファイル内の同名2行を検出する", () => {
     const duplicateNames = findDuplicateNames([
       { athlete_name: "同姓同名" },
@@ -21,11 +49,29 @@ describe("score merge key", () => {
     expect(duplicateNames).toEqual(new Set(["同姓同名"]));
   });
 
+  it("空白表記が異なる氏名を同一人物として重複判定する", () => {
+    const duplicateNames = findDuplicateNames([
+      { athlete_name: "谷川友太" },
+      { athlete_name: "谷川 友太" },
+    ]);
+
+    expect(duplicateNames).toEqual(new Set(["谷川友太"]));
+  });
+
   it("検出された氏名は所属込みのキーにフォールバックする", () => {
     expect(
       makeScoreMergeKey(
         { athlete_name: "同姓同名", club: "筑波大学" },
         new Set(["同姓同名"]),
+      ),
+    ).toBe("同姓同名 筑波大学");
+  });
+
+  it("所属込みのフォールバックでも氏名部分を正規化する", () => {
+    expect(
+      makeScoreMergeKey(
+        { athlete_name: "同姓  同名", club: "筑波大学" },
+        new Set(["同姓 同名"]),
       ),
     ).toBe("同姓同名 筑波大学");
   });

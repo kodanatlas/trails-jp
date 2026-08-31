@@ -377,9 +377,11 @@ async function fetchRankingPage(typeId: number, classId: number, page: number): 
 }
 
 interface EventScoreLossStats {
+  matchedAthletes: number;
   lostAthletes: number;
   lostScores: number;
   lostTwoPlusAthletes: number;
+  leftRankingAthletes: number;
 }
 
 interface FetchCategoryResult {
@@ -446,7 +448,13 @@ async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult>
       message: `${cls.file}: 0 entries (kept existing)`,
       renamed: renamed + existingStats.renamed,
       passthrough: passthrough + existingStats.passthrough,
-      eventScoreLoss: { lostAthletes: 0, lostScores: 0, lostTwoPlusAthletes: 0 },
+      eventScoreLoss: {
+        matchedAthletes: 0,
+        lostAthletes: 0,
+        lostScores: 0,
+        lostTwoPlusAthletes: 0,
+        leftRankingAthletes: 0,
+      },
     };
   }
 
@@ -484,7 +492,7 @@ async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult>
     }
   }
 
-  // 書き出し直前に旧版と比較する。ランキングから消えた選手は新件数0として検知する。
+  // 書き出し直前に旧版と比較する。ランキングから消えた選手は損失と分けて数える。
   const beforeCounts = new Map<string, number>();
   const afterCounts = new Map<string, number>();
   for (const entry of existingResolution.entries) {
@@ -497,12 +505,21 @@ async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult>
   }
 
   const eventScoreLoss: EventScoreLossStats = {
+    matchedAthletes: 0,
     lostAthletes: 0,
     lostScores: 0,
     lostTwoPlusAthletes: 0,
+    leftRankingAthletes: 0,
   };
   for (const [key, beforeCount] of beforeCounts) {
-    const lost = beforeCount - (afterCounts.get(key) ?? 0);
+    const afterCount = afterCounts.get(key);
+    if (afterCount == null) {
+      eventScoreLoss.leftRankingAthletes++;
+      continue;
+    }
+
+    eventScoreLoss.matchedAthletes++;
+    const lost = beforeCount - afterCount;
     if (lost <= 0) continue;
     eventScoreLoss.lostAthletes++;
     eventScoreLoss.lostScores += lost;
@@ -525,9 +542,11 @@ async function fetchFreshRankings(): Promise<AliasStats> {
   let updated = 0, kept = 0, failed = 0;
   let renamed = 0, passthrough = 0;
   const eventScoreLoss: EventScoreLossStats = {
+    matchedAthletes: 0,
     lostAthletes: 0,
     lostScores: 0,
     lostTwoPlusAthletes: 0,
+    leftRankingAthletes: 0,
   };
 
   async function worker() {
@@ -539,9 +558,11 @@ async function fetchFreshRankings(): Promise<AliasStats> {
         if (result.message.includes("kept existing")) kept++; else updated++;
         renamed += result.renamed;
         passthrough += result.passthrough;
+        eventScoreLoss.matchedAthletes += result.eventScoreLoss.matchedAthletes;
         eventScoreLoss.lostAthletes += result.eventScoreLoss.lostAthletes;
         eventScoreLoss.lostScores += result.eventScoreLoss.lostScores;
         eventScoreLoss.lostTwoPlusAthletes += result.eventScoreLoss.lostTwoPlusAthletes;
+        eventScoreLoss.leftRankingAthletes += result.eventScoreLoss.leftRankingAthletes;
         console.log(` → ${result.message}`);
       } catch (e) {
         failed++;
@@ -562,7 +583,7 @@ async function fetchFreshRankings(): Promise<AliasStats> {
   const elapsedSec = ((Date.now() - t0) / 1000).toFixed(1);
   console.log(`Rankings fetch done in ${elapsedSec}s (concurrency=${FETCH_CONCURRENCY}): ${updated} updated, ${kept} kept(empty), ${failed} failed(kept existing).`);
   const lossMessage =
-    `Event scores: ${eventScoreLoss.lostAthletes} athletes lost scores (total -${eventScoreLoss.lostScores}).` +
+    `Event scores: ${eventScoreLoss.matchedAthletes} matched, ${eventScoreLoss.lostAthletes} lost (total -${eventScoreLoss.lostScores}), ${eventScoreLoss.leftRankingAthletes} left ranking.` +
     (eventScoreLoss.lostTwoPlusAthletes > 0
       ? ` ⚠ ${eventScoreLoss.lostTwoPlusAthletes} athletes lost 2+ scores.`
       : "");
