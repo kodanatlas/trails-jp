@@ -11,7 +11,7 @@ import { jstNowLabel, jstToday } from "../src/lib/weekend-window";
 import { eventFuzzyMatch } from "../src/lib/analysis/event-match";
 import { buildCrossRaceIndex, type LcRaceRow } from "../src/lib/analysis/cross-race";
 import { buildLegFingerprintIndex, detectHomonymKeys, type TrackedLegRow, type CompanionRow } from "../src/lib/analysis/leg-fingerprint";
-import { isAliasedName, resolveAliasName } from "../src/lib/identity/athlete-alias";
+import { isAliasedName, resolveAliasName, resolveEntryAliases } from "../src/lib/identity/athlete-alias";
 
 // --- Types ---
 interface RawEntry {
@@ -196,6 +196,48 @@ function parseFilename(file: string): { type: string; className: string } | null
 const RANKINGS_DIR = path.resolve(__dirname, "../public/data/rankings");
 const OUTPUT_DIR = path.resolve(__dirname, "../public/data");
 
+interface AliasStats {
+  renamed: number;
+  passthrough: number;
+}
+
+function writeRankingFileAtomic(filePath: string, entries: RawEntry[]): void {
+  const tmpPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    fs.writeFileSync(tmpPath, JSON.stringify(entries, null, 2));
+    fs.renameSync(tmpPath, filePath);
+  } finally {
+    if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+  }
+}
+
+/** 既存ランキングを改名し、変更がある場合だけ同一ディレクトリ内で原子的に置換する。 */
+function rewriteExistingRankingAliases(fileName: string): AliasStats {
+  const filePath = path.join(RANKINGS_DIR, fileName);
+  let entries: RawEntry[];
+  try {
+    entries = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  } catch {
+    return { renamed: 0, passthrough: 0 };
+  }
+
+  const resolution = resolveEntryAliases(entries);
+  if (resolution.renamed > 0) writeRankingFileAtomic(filePath, resolution.entries);
+  return { renamed: resolution.renamed, passthrough: resolution.passthrough };
+}
+
+function rewriteAllExistingRankingAliases(): AliasStats {
+  let renamed = 0;
+  let passthrough = 0;
+  const fileNames = fs.readdirSync(RANKINGS_DIR).filter((file) => file.endsWith(".json"));
+  for (const fileName of fileNames) {
+    const stats = rewriteExistingRankingAliases(fileName);
+    renamed += stats.renamed;
+    passthrough += stats.passthrough;
+  }
+  return { renamed, passthrough };
+}
+
 interface ParsedEvent {
   date: string;
   eventName: string;
@@ -339,32 +381,10 @@ function scoreMergeKey(e: { athlete_name: string; club: string }): string {
   return `${e.athlete_name} ${e.club}`;
 }
 
-function resolveEntryAliases(entries: RawEntry[]): {
-  entries: RawEntry[];
-  renamed: number;
-  unresolved: number;
-} {
-  const resolved: RawEntry[] = [];
-  let renamed = 0;
-  let unresolved = 0;
-
-  for (const entry of entries) {
-    const result = resolveAliasName(entry.athlete_name, [entry.club]);
-    if (result.kind === "unresolved") {
-      unresolved++;
-      continue;
-    }
-    if (result.kind === "renamed") renamed++;
-    resolved.push({ ...entry, athlete_name: result.name });
-  }
-
-  return { entries: resolved, renamed, unresolved };
-}
-
 interface FetchCategoryResult {
   message: string;
   renamed: number;
-  unresolved: number;
+  passthrough: number;
 }
 
 /**
@@ -378,7 +398,7 @@ async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult>
   let skipped = 0;
   let consecutiveFailures = 0;
   let renamed = 0;
-  let unresolved = 0;
+  let passthrough = 0;
   for (let page = 0; page < MAX_PAGES; page++) {
     let html: string;
     try {
@@ -401,15 +421,15 @@ async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult>
     let added = 0;
     for (const e of entries) {
       const resolution = resolveEntryAliases([e]);
-      unresolved += resolution.unresolved;
       const resolvedEntry = resolution.entries[0];
-      if (!resolvedEntry) continue;
-
-      const key = `${resolvedEntry.rank}:${resolvedEntry.athlete_name}`;
+      const key = resolution.passthrough > 0
+        ? `${resolvedEntry.rank}:${resolvedEntry.athlete_name}:${resolvedEntry.club}`
+        : `${resolvedEntry.rank}:${resolvedEntry.athlete_name}`;
       if (!seen.has(key)) {
         seen.add(key);
         allFresh.push(resolvedEntry);
         renamed += resolution.renamed;
+        passthrough += resolution.passthrough;
         added++;
       }
     }
@@ -419,7 +439,12 @@ async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult>
 
   // 取得結果が空 → 既存ファイルを保持（空クラス or 一時的空応答でデータを消さない）
   if (allFresh.length === 0) {
-    return { message: `${cls.file}: 0 entries (kept existing)`, renamed, unresolved };
+    const existingStats = rewriteExistingRankingAliases(cls.file);
+    return {
+      message: `${cls.file}: 0 entries (kept existing)`,
+      renamed: renamed + existingStats.renamed,
+      passthrough: passthrough + existingStats.passthrough,
+    };
   }
 
   // 既存データのイベントスコアをマージ（JOYは直近~1年分のみ返すため過去分を引き継ぐ）
@@ -444,20 +469,20 @@ async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult>
     }
   }
 
-  fs.writeFileSync(filePath, JSON.stringify(allFresh, null, 2));
+  writeRankingFileAtomic(filePath, allFresh);
   return {
     message: `${cls.file}: ${allFresh.length} entries${skipped ? ` (${skipped} page(s) skipped on error)` : ""}`,
     renamed,
-    unresolved,
+    passthrough,
   };
 }
 
 /** 全カテゴリを並列度を絞って取得。失敗カテゴリは既存ファイルを保持する。 */
-async function fetchFreshRankings() {
+async function fetchFreshRankings(): Promise<AliasStats> {
   const t0 = Date.now();
   const queue = [...ALL_CLASSES];
   let updated = 0, kept = 0, failed = 0;
-  let renamed = 0, unresolved = 0;
+  let renamed = 0, passthrough = 0;
 
   async function worker() {
     for (;;) {
@@ -467,30 +492,49 @@ async function fetchFreshRankings() {
         const result = await fetchCategory(cls);
         if (result.message.includes("kept existing")) kept++; else updated++;
         renamed += result.renamed;
-        unresolved += result.unresolved;
+        passthrough += result.passthrough;
         console.log(` → ${result.message}`);
       } catch (e) {
         failed++;
-        console.warn(`  Failed ${cls.file}: keeping existing file (${(e as Error).message})`);
+        let aliasRewriteFailure = "";
+        try {
+          const existingStats = rewriteExistingRankingAliases(cls.file);
+          renamed += existingStats.renamed;
+          passthrough += existingStats.passthrough;
+        } catch (aliasError) {
+          aliasRewriteFailure = `; alias rewrite failed: ${(aliasError as Error).message}`;
+        }
+        console.warn(`  Failed ${cls.file}: keeping existing file (${(e as Error).message}${aliasRewriteFailure})`);
       }
     }
   }
 
   await Promise.all(Array.from({ length: FETCH_CONCURRENCY }, () => worker()));
-  console.log(`Athlete aliases: ${renamed} renamed, ${unresolved} unresolved entries excluded.`);
   const elapsedSec = ((Date.now() - t0) / 1000).toFixed(1);
   console.log(`Rankings fetch done in ${elapsedSec}s (concurrency=${FETCH_CONCURRENCY}): ${updated} updated, ${kept} kept(empty), ${failed} failed(kept existing).`);
+  return { renamed, passthrough };
 }
 
 // --- メイン処理（async fetch後に同期処理を続行） ---
 async function main() {
 
 // SKIP_FETCH=1: JOY 再取得を丸ごとスキップ（ローカル既存 JSON で index/snapshot/movers 経路だけ回すドライラン用）
+let aliasStats: AliasStats;
 if (process.env.SKIP_FETCH === "1") {
   console.log("⚠ SKIP_FETCH=1: JOY 再取得をスキップし、ローカル既存 JSON を使用します");
+  aliasStats = rewriteAllExistingRankingAliases();
 } else {
   console.log(`Fetching fresh rankings from JOY (all ${ALL_CLASSES.length} categories, concurrency=${FETCH_CONCURRENCY})...`);
-  await fetchFreshRankings().catch((e: unknown) => console.warn("Ranking fetch failed, using local files:", e));
+  try {
+    aliasStats = await fetchFreshRankings();
+  } catch (e) {
+    console.warn("Ranking fetch failed, using local files:", e);
+    aliasStats = rewriteAllExistingRankingAliases();
+  }
+}
+console.log(`Athlete aliases: ${aliasStats.renamed} renamed, ${aliasStats.passthrough} passthrough (unresolved).`);
+if (aliasStats.passthrough > 0) {
+  console.warn(`⚠ Athlete alias table needs review: ${aliasStats.passthrough} unresolved entries passed through.`);
 }
 
 // ランキング取得時刻を記録（ランキングページの「最終更新」表示用）。
@@ -935,7 +979,8 @@ if (supabaseUrl && supabaseKey) {
       const parsed = parseFilename(fileName);
       if (!parsed) continue;
       const filePath = path.join(RANKINGS_DIR, fileName);
-      const entries: RawEntry[] = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      const rawEntries: RawEntry[] = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      const entries = resolveEntryAliases(rawEntries).entries;
       const fileKey = fileName.replace(".json", "");
 
       // 同姓同名ガード: 同一ファイル内に同じ athlete_name が2件以上ある名前は
@@ -1002,7 +1047,7 @@ if (supabaseUrl && supabaseKey) {
           }
         }
       }
-      fs.writeFileSync(filePath, JSON.stringify(entries, null, 2));
+      writeRankingFileAtomic(filePath, entries);
       if (deltaCount > 0) console.log(`✓ ranking deltas: ${fileKey} (${deltaCount} athletes)`);
     }
 

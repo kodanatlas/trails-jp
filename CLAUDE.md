@@ -87,7 +87,7 @@ trails_jp/
 
 ### Vercel
 - プロジェクト: `trails_jp`
-- Cron: 日次 03:00 JST (sync-events), 04:00 JST (sync-entries), 12:00 JST (sync-lapcenter)
+- Cron: 日次 19:07 JST (sync-events), 20:23 JST (sync-entries), 21:41 JST (sync-lapcenter)
 - 水曜 Cron で Deploy Hook による自動再デプロイ → ビルド時に Proxy API 経由で JOY ランキング最新取得
 - Cron 実行ログ: Supabase `cron_log` テーブルに記録
 - Hobby プラン（Cron 1日1回制限、Function 10秒制限）
@@ -100,7 +100,7 @@ trails_jp/
 - **ランキング**: ビルド時に Proxy API (`/api/rankings/proxy`) 経由で JOY から無差別4クラス全ページ取得（水曜自動再デプロイ、PC起動不要）
 - **選手・クラブ**: ビルド時に `build-analysis-index.ts` → 静的JSON + Supabase DB (`athletes`, `athlete_appearances` テーブル)
 - **エントリーリスト**: `/events` で各イベントの JOY エントリー者を所属（クラブ）別に集計表示。`/api/events/[id]/entries` が `show_detail` をオンデマンド取得（1hキャッシュ）。名寄せは `club-normalize.ts`（選手ページと共有）。複数所属は分割して各クラブに計上（二重計上）、total は実人数。対象は受付中＋直近30日の締切済。
-- **選手別エントリー状況**: 日次Cron `sync-entries`(04:00 JST) が未開催(date>=今日, ~120日以内)の **全大会**(最大60件)のエントリーリストを並列スクレイプ（`entry_status` は信頼せず全statusスキャン＝アーカイブ由来は `none` になり受付中でも none のため。連続供給プール＋全体予算6.5秒・失敗は1回リトライ）→ 氏名キー(スペース除去)で選手別インデックス `entry-index.json` を Supabase Storage に保存。`/api/athletes/[name]/entries` が当該選手分を返し、選手ページ(`/analysis`)の「大会エントリー状況」カード(`UpcomingEntries`, `RecentEvents` の直下)が表示。非2xxは失敗扱いで空集計せず、全件失敗時は既存インデックスを保持（空上書き防止）。`entryStatus` の `none` はバッジ非表示。
+- **選手別エントリー状況**: 日次Cron `sync-entries`(20:23 JST) が未開催(date>=今日, ~120日以内)の **全大会**(最大60件)のエントリーリストを並列スクレイプ（`entry_status` は信頼せず全statusスキャン＝アーカイブ由来は `none` になり受付中でも none のため。連続供給プール＋全体予算6.5秒・失敗は1回リトライ）→ 氏名キー(スペース除去)で選手別インデックス `entry-index.json` を Supabase Storage に保存。`/api/athletes/[name]/entries` が当該選手分を返し、選手ページ(`/analysis`)の「大会エントリー状況」カード(`UpcomingEntries`, `RecentEvents` の直下)が表示。非2xxは失敗扱いで空集計せず、全件失敗時は既存インデックスを保持（空上書き防止）。`entryStatus` の `none` はバッジ非表示。
 
 ## DB構成 (Supabase PostgreSQL)
 

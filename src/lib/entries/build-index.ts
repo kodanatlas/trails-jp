@@ -72,14 +72,13 @@ async function scrapeOne(ev: JOEEvent, timeoutMs: number): Promise<ScrapedEvent 
 
         // チーム名(個人なら本人名、リレーならチーム名)。従来挙動を保つため索引に追加する。
         const teamAlias = resolveAliasName(row.name, [row.affiliation]);
-        if (teamAlias.kind !== "unresolved") {
-          const teamKey = normalizeNameKey(teamAlias.name);
-          if (teamKey) {
-            const dedupeKey = `${teamKey}|${row.className}`;
-            if (!seen.has(dedupeKey)) {
-              seen.add(dedupeKey);
-              rows.push({ className: row.className, name: teamAlias.name, affiliation: row.affiliation });
-            }
+        const teamName = teamAlias.kind === "renamed" ? teamAlias.name : row.name;
+        const teamKey = normalizeNameKey(teamName);
+        if (teamKey) {
+          const dedupeKey = `${teamKey}|${row.className}`;
+          if (!seen.has(dedupeKey)) {
+            seen.add(dedupeKey);
+            rows.push({ className: row.className, name: teamName, affiliation: row.affiliation });
           }
         }
 
@@ -87,13 +86,13 @@ async function scrapeOne(ev: JOEEvent, timeoutMs: number): Promise<ScrapedEvent 
         if (row.members) {
           for (const member of parseRelayMembers(row.members)) {
             const memberAlias = resolveAliasName(member, [row.affiliation]);
-            if (memberAlias.kind === "unresolved") continue;
-            const mKey = normalizeNameKey(memberAlias.name);
+            const memberName = memberAlias.kind === "renamed" ? memberAlias.name : member;
+            const mKey = normalizeNameKey(memberName);
             if (!mKey) continue;
             const mDedupe = `${mKey}|${row.className}`;
             if (seen.has(mDedupe)) continue;
             seen.add(mDedupe);
-            rows.push({ className: row.className, name: memberAlias.name, affiliation: row.affiliation });
+            rows.push({ className: row.className, name: memberName, affiliation: row.affiliation });
           }
         }
       }
@@ -132,8 +131,8 @@ export async function buildEntryIndex(
     const entryStatus = ev.entry_status; // "open" | "closed" | "none"（そのまま保持）
     for (const row of rows) {
       const alias = resolveAliasName(row.name, [row.affiliation]);
-      if (alias.kind === "unresolved") continue;
-      const baseKey = normalizeNameKey(alias.name);
+      const athleteName = alias.kind === "renamed" ? alias.name : row.name;
+      const baseKey = normalizeNameKey(athleteName);
       if (!baseKey) continue; // scrapeOne 側で保証済みだが念のため空キー除外
       const ref: AthleteEntryRef = {
         joe_event_id: ev.joe_event_id,

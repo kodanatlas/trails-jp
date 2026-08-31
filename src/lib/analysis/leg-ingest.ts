@@ -178,6 +178,10 @@ export function buildClassIngest(args: ClassIngestArgs): {
       r.index,
     );
     const runnerName = alias.kind === "unresolved" ? r.name : alias.name;
+    const runnerKeyName =
+      alias.kind === "unresolved" && isAliasedName(r.name)
+        ? `${r.name}#unresolved`
+        : runnerName;
     return {
       lc_event_id: lcEventId,
       lc_class_id: lcClassId,
@@ -187,7 +191,7 @@ export function buildClassIngest(args: ClassIngestArgs): {
       race_type: raceType,
       runner_index: r.index,
       runner_name: r.name,
-      runner_key: runnerName.replace(/\s+/g, ""),
+      runner_key: runnerKeyName.replace(/\s+/g, ""),
       club: r.club || null,
       rank: r.rank,
       result_sec: lapStrToSeconds(r.result),

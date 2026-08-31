@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { resolveAliasName, resolveAliasNameForLc } from "../athlete-alias";
+import {
+  resolveAliasName,
+  resolveAliasNameForLc,
+  resolveEntryAliases,
+  validateAliases,
+  type AthleteAlias,
+} from "../athlete-alias";
 
 describe("resolveAliasName", () => {
   it("表に無い氏名は元の名前を変えない", () => {
@@ -30,6 +36,13 @@ describe("resolveAliasName", () => {
     });
   });
 
+  it("学年数字つきの筑波大学を筑波側の別名へ解決する", () => {
+    expect(resolveAliasName("鈴木健太", ["筑波大学1"])).toEqual({
+      kind: "renamed",
+      name: "鈴木健太（筑波大学）",
+    });
+  });
+
   it("学年数字つきの金沢大学を金沢側の別名へ解決する", () => {
     expect(resolveAliasName("鈴木 健太", ["金沢大学3"])).toEqual({
       kind: "renamed",
@@ -48,6 +61,22 @@ describe("resolveAliasName", () => {
     expect(resolveAliasName("鈴木健太", ["金大"])).toEqual({
       kind: "renamed",
       name: "鈴木健太（金沢大学）",
+    });
+  });
+
+  it("大学附属高校を大学本体へ誤マッチしない", () => {
+    expect(resolveAliasName("鈴木健太", ["筑波大学附属高等学校"])).toEqual({
+      kind: "unresolved",
+    });
+  });
+
+  it("金沢という地名だけでは金沢大学へ解決しない", () => {
+    expect(resolveAliasName("鈴木健太", ["金沢"])).toEqual({ kind: "unresolved" });
+  });
+
+  it("対応表に無い所属は未解決のままにする", () => {
+    expect(resolveAliasName("鈴木健太", ["ときわ走林会"])).toEqual({
+      kind: "unresolved",
     });
   });
 
@@ -79,6 +108,21 @@ describe("resolveAliasName", () => {
   );
 });
 
+describe("resolveEntryAliases", () => {
+  it("未解決の行を破棄せず元の氏名で素通しする", () => {
+    const entry = {
+      athlete_name: "鈴木健太",
+      club: "ときわ走林会",
+      rank: 1,
+    };
+    expect(resolveEntryAliases([entry])).toEqual({
+      entries: [entry],
+      renamed: 0,
+      passthrough: 1,
+    });
+  });
+});
+
 describe("resolveAliasNameForLc", () => {
   it("LC overrideを所属照合より優先する", () => {
     expect(resolveAliasNameForLc("鈴木 健太", ["金沢大学"], 9435, 11, 54)).toEqual({
@@ -94,6 +138,19 @@ describe("resolveAliasNameForLc", () => {
     });
   });
 
+  it.each([
+    [29, 36],
+    [16, 27],
+  ])("event 9983 class %i のoverrideをrunnerIndex %iにだけ適用する", (lcClassId, runnerIndex) => {
+    expect(resolveAliasNameForLc("鈴木 健太", [], 9983, lcClassId, runnerIndex)).toEqual({
+      kind: "renamed",
+      name: "鈴木健太（金沢大学）",
+    });
+    expect(resolveAliasNameForLc("鈴木 健太", [], 9983, lcClassId, runnerIndex + 1)).toEqual({
+      kind: "unresolved",
+    });
+  });
+
   it.each(["鈴木健太（筑波大学）", "鈴木健太（金沢大学）"])(
     "改名済みの%sはLC解決を再適用しても変えない",
     (displayName) => {
@@ -103,4 +160,21 @@ describe("resolveAliasNameForLc", () => {
       });
     },
   );
+});
+
+describe("validateAliases", () => {
+  it("identity間で正規化後のクラブ集合が重複する表を拒否する", () => {
+    const invalid = [
+      {
+        sourceName: "同姓同名",
+        identities: [
+          { displayName: "同姓同名（1）", clubs: ["金沢大学"] },
+          { displayName: "同姓同名（2）", clubs: ["金大OLC"] },
+        ],
+        lcOverrides: [],
+      },
+    ] satisfies AthleteAlias[];
+
+    expect(() => validateAliases(invalid)).toThrow(/Overlapping athlete alias club/);
+  });
 });
