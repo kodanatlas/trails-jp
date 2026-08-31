@@ -6,6 +6,7 @@ import { Loader2, X } from "lucide-react";
 import type { LapCenterRunnerDetail } from "@/lib/scraper/lapcenter-detail";
 import { lapStrToSeconds } from "@/lib/scraper/lapcenter-detail";
 import type { LapCenterPerformance } from "@/lib/analysis/types";
+import { resolveAliasNameForLc } from "@/lib/identity/athlete-alias";
 import {
   buildLegView,
   buildLegPrizes,
@@ -30,6 +31,47 @@ interface Props {
 }
 
 const norm = normalizeName; // 名前正規化は leg-analysis に集約（レビュー H: 二重定義解消）
+
+type LapCenterRunnerIdentity = Pick<LapCenterRunnerDetail, "name" | "club" | "index">;
+
+/** 取込時と同じ規則で LapCenter の走者名を表示名へ解決する。未解決なら null。 */
+export function resolveLcRunnerName(
+  runner: LapCenterRunnerIdentity,
+  eventId: number,
+  classId: number,
+): string | null {
+  const result = resolveAliasNameForLc(
+    runner.name,
+    runner.club ? [runner.club] : [],
+    eventId,
+    classId,
+    runner.index,
+  );
+  return result.kind === "unresolved" ? null : result.name;
+}
+
+/** 改名解決後の氏名で、選手ページから指定された主役を特定する純関数。 */
+export function findLcRunnerForAthlete<T extends LapCenterRunnerIdentity>(
+  runners: readonly T[],
+  athlete: string,
+  eventId: number,
+  classId: number,
+): T | undefined {
+  const athleteKey = norm(athlete);
+  return runners.find((runner) => {
+    const resolvedName = resolveLcRunnerName(runner, eventId, classId);
+    return resolvedName != null && norm(resolvedName) === athleteKey;
+  });
+}
+
+/** 選手ページへのリンクは解決後の表示名を使い、未解決なら生氏名へ戻す。 */
+function athletePageNameForLc(
+  runner: LapCenterRunnerIdentity,
+  eventId: number,
+  classId: number,
+): string {
+  return resolveLcRunnerName(runner, eventId, classId) ?? runner.name;
+}
 
 /**
  * 結果分析・レッグ分析（①）。relay-first：LapCenter の per-leg 値を整形表示。
@@ -69,7 +111,9 @@ export function LegAnalysisClient({
         // 既定列: 上位3名。選手ページ経由ならその選手を先頭に加える。
         const finishers = [...d.runners].filter((r) => r.rank != null).sort((a, b) => a.rank! - b.rank!);
         const top = finishers.slice(0, 3).map((r) => r.name);
-        const aName = athlete ? d.runners.find((r) => norm(r.name) === norm(athlete))?.name : undefined;
+        const aName = athlete
+          ? findLcRunnerForAthlete(d.runners, athlete, eventId, classId)?.name
+          : undefined;
         const def = aName && !top.includes(aName) ? [aName, ...top].slice(0, 4) : top;
         setSelected(def.length ? def : d.runners.slice(0, 1).map((r) => r.name));
       })
@@ -95,8 +139,8 @@ export function LegAnalysisClient({
   }, [eventId, classId, athlete]);
 
   const athleteName = useMemo(
-    () => (athlete && runners ? runners.find((r) => norm(r.name) === norm(athlete))?.name ?? null : null),
-    [athlete, runners],
+    () => (athlete && runners ? findLcRunnerForAthlete(runners, athlete, eventId, classId)?.name ?? null : null),
+    [athlete, runners, eventId, classId],
   );
 
   if (status === "loading") {
@@ -178,9 +222,18 @@ export function LegAnalysisClient({
           raceDiscipline={raceDiscipline}
           history={history}
           excludeDate={excludeDate}
+          eventId={eventId}
+          classId={classId}
         />
       ) : (
-        <CompareGrid runners={runners} names={ordered} athleteName={athleteName} onRemove={remove} />
+        <CompareGrid
+          runners={runners}
+          names={ordered}
+          athleteName={athleteName}
+          eventId={eventId}
+          classId={classId}
+          onRemove={remove}
+        />
       )}
       <LegPrizeBoardView runners={runners} athleteName={athleteName} />
       <LegImpactSection runners={runners} eventName={eventName} className={className} />
@@ -454,6 +507,8 @@ function SingleView({
   raceDiscipline,
   history,
   excludeDate,
+  eventId,
+  classId,
 }: {
   runners: LapCenterRunnerDetail[];
   name: string;
@@ -462,6 +517,8 @@ function SingleView({
   raceDiscipline: "forest" | "sprint";
   history: LapCenterPerformance[] | null;
   excludeDate: string | null;
+  eventId: number;
+  classId: number;
 }) {
   const view = useMemo<LegView | null>(() => {
     const useSelf = isAthlete && discipline != null && history != null;
@@ -523,7 +580,9 @@ function SingleView({
       <div className="rounded-2xl border border-border bg-card p-4">
         <h2 className="text-xl font-extrabold">
           <Link
-            href={`/a/${encodeURIComponent(norm(s.name))}`}
+            href={`/a/${encodeURIComponent(
+              norm(subjRunner ? athletePageNameForLc(subjRunner, eventId, classId) : s.name),
+            )}`}
             className="transition-colors hover:text-primary hover:underline"
             title="この選手のページへ"
           >
@@ -775,11 +834,15 @@ function CompareGrid({
   runners,
   names,
   athleteName,
+  eventId,
+  classId,
   onRemove,
 }: {
   runners: LapCenterRunnerDetail[];
   names: string[];
   athleteName: string | null;
+  eventId: number;
+  classId: number;
   onRemove: (name: string) => void;
 }) {
   const subjects = names.map((n) => runners.find((r) => r.name === n)).filter(Boolean) as LapCenterRunnerDetail[];
@@ -816,7 +879,7 @@ function CompareGrid({
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="text-[10px] font-bold text-primary">{r.rank ?? "—"}位</span>
                   <Link
-                    href={`/a/${encodeURIComponent(norm(r.name))}`}
+                    href={`/a/${encodeURIComponent(norm(athletePageNameForLc(r, eventId, classId)))}`}
                     className="max-w-[78px] truncate text-[11px] font-bold transition-colors hover:text-primary hover:underline"
                     title={`${r.name}（選手ページへ）`}
                   >
