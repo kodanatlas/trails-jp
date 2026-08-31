@@ -1305,17 +1305,57 @@ async function buildLegFingerprintStep(): Promise<Set<string> | null> {
     const rows: T[] = [];
     const PAGE = 10000;
     const MAX_REQUESTS = 300;
+    const RETRY_DELAYS_MS = [1000, 3000] as const;
+    const warnFailure = (status: number | "fetch-error", range: string, body: string) => {
+      console.warn(
+        `⚠ pageAll 失敗: status=${status} range=${range} rows=${rows.length} body=${JSON.stringify(body.slice(0, 200))}`,
+      );
+    };
+    const fetchPage = async (range: string): Promise<T[] | null> => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        let res: Response;
+        try {
+          res = await fetch(`${supabaseUrl}/rest/v1/${pathAndQuery}`, {
+            headers: {
+              apikey: supabaseKey!,
+              Authorization: `Bearer ${supabaseKey}`,
+              Range: range,
+            },
+          });
+        } catch (e) {
+          const message = e instanceof Error ? e.message : String(e);
+          if (attempt < RETRY_DELAYS_MS.length) {
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+            continue;
+          }
+          warnFailure("fetch-error", range, message);
+          return null;
+        }
+
+        if (res.ok) return (await res.json()) as T[];
+
+        let body: string;
+        try {
+          body = await res.text();
+        } catch (e) {
+          const message = e instanceof Error ? e.message : String(e);
+          body = `レスポンスボディ取得失敗: ${message}`;
+        }
+        const retryable = res.status === 429 || res.status >= 500;
+        if (retryable && attempt < RETRY_DELAYS_MS.length) {
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+          continue;
+        }
+        warnFailure(res.status, range, body);
+        return null;
+      }
+      return null;
+    };
+
     let from = 0;
     for (let i = 0; i < MAX_REQUESTS; i++) {
-      const res = await fetch(`${supabaseUrl}/rest/v1/${pathAndQuery}`, {
-        headers: {
-          apikey: supabaseKey!,
-          Authorization: `Bearer ${supabaseKey}`,
-          Range: `${from}-${from + PAGE - 1}`,
-        },
-      });
-      if (!res.ok) return null;
-      const page = (await res.json()) as T[];
+      const page = await fetchPage(`${from}-${from + PAGE - 1}`);
+      if (!page) return null;
       if (page.length === 0) break;
       rows.push(...page);
       from += page.length;
@@ -1331,36 +1371,43 @@ async function buildLegFingerprintStep(): Promise<Set<string> | null> {
     keepOrSkeleton("tracked 行の取得失敗");
     return null;
   }
-  const companions = await pageAll<CompanionRow>(
-    "lc_leg_splits?tracked=is.false&select=lc_event_id,lc_class_id,runner_index,start_time,elapsed_sec" + order
-  );
-  if (!companions) {
-    keepOrSkeleton("companion 行の取得失敗");
-    return null;
-  }
-  // 健全性ガード: 明らかな不足（キャップ1枚分等）で良品を上書きしない
-  if (tracked.length < 40000) {
-    keepOrSkeleton(`tracked 行数が異常に少ない (${tracked.length}) — 不完全データでの上書きを回避`);
-    return null;
-  }
+  // cross-race の除外キーは tracked だけで算出できるため、以降の artifact 生成処理から分離する
+  const homonymKeys = detectHomonymKeys(tracked);
 
-  // 期間比較の境界＝ビルド時点の12ヶ月前（"recent" = event_date ≥ これ）
-  const cut = new Date();
-  cut.setFullYear(cut.getFullYear() - 1);
-  const periodCutoff = cut.toISOString().slice(0, 10);
-  const index = {
-    ...buildLegFingerprintIndex(tracked, companions, { periodCutoff }),
-    generatedAt: new Date().toISOString(),
-  };
-  const json = JSON.stringify(index);
-  fs.writeFileSync(outPath, json);
-  const nAth = Object.keys(index.athletes).length;
-  console.log(
-    `✓ leg-fingerprint.json: 選手 ${nAth}・同姓同名除外 ${index.homonymExcluded ?? 0} 名・` +
-      `入力 tracked=${tracked.length}/companion=${companions.length} 行 (${(json.length / 1024).toFixed(0)} KB)`
-  );
-  // cross-race 側でも同一基準で除外できるよう検出名を返す
-  return detectHomonymKeys(tracked);
+  try {
+    const companions = await pageAll<CompanionRow>(
+      "lc_leg_splits?tracked=is.false&select=lc_event_id,lc_class_id,runner_index,start_time,elapsed_sec" + order
+    );
+    if (!companions) {
+      keepOrSkeleton("companion 行の取得失敗");
+      return homonymKeys;
+    }
+    // 健全性ガード: 明らかな不足（キャップ1枚分等）で良品を上書きしない
+    if (tracked.length < 40000) {
+      keepOrSkeleton(`tracked 行数が異常に少ない (${tracked.length}) — 不完全データでの上書きを回避`);
+      return homonymKeys;
+    }
+
+    // 期間比較の境界＝ビルド時点の12ヶ月前（"recent" = event_date ≥ これ）
+    const cut = new Date();
+    cut.setFullYear(cut.getFullYear() - 1);
+    const periodCutoff = cut.toISOString().slice(0, 10);
+    const index = {
+      ...buildLegFingerprintIndex(tracked, companions, { periodCutoff }),
+      generatedAt: new Date().toISOString(),
+    };
+    const json = JSON.stringify(index);
+    fs.writeFileSync(outPath, json);
+    const nAth = Object.keys(index.athletes).length;
+    console.log(
+      `✓ leg-fingerprint.json: 選手 ${nAth}・同姓同名除外 ${index.homonymExcluded ?? 0} 名・` +
+        `入力 tracked=${tracked.length}/companion=${companions.length} 行 (${(json.length / 1024).toFixed(0)} KB)`
+    );
+    return homonymKeys;
+  } catch (e) {
+    console.warn("⚠ leg-fingerprint 生成例外（ビルドは継続）:", (e as Error).message);
+    return homonymKeys;
+  }
 }
 let homonymKeys: Set<string> | null = null;
 try {
