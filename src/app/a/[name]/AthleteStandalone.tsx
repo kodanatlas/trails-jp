@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import type { AthleteIndex, AthleteSummary } from "@/lib/analysis/types";
+import { hasMergedNamesakes } from "@/lib/analysis/head-to-head";
 import { typeLabel } from "@/lib/analysis/utils";
 import { AthleteDetail } from "@/app/analysis/AthleteDetail";
 
@@ -53,6 +54,11 @@ export function AthleteStandalone({ summary }: { summary: AthleteSummary }) {
       </div>
       {summary.clubs.length > 0 && (
         <p className="text-xs text-muted">{summary.clubs.join(" / ")}</p>
+      )}
+      {hasMergedNamesakes(summary) && (
+        <p className="mt-2 rounded bg-amber-500/10 px-2 py-1 text-[10px] text-amber-300/90">
+          ※ このページには同姓同名の別人の成績が混在している可能性があります（複数の所属が表示されている場合は特にご注意ください）
+        </p>
       )}
 
       <div className="mt-5">
