@@ -274,7 +274,7 @@ async function scrapeRunners(
   events: Array<{ joe_event_id: number; name: string; date: string; lapcenter_event_id?: number }>,
   requestStart: number
 ) {
-  // 追跡選手のロード
+  // 追跡選手のロード。athlete-index のキーはランキング生成時に改名解決済み。
   const athleteIndex = JSON.parse(
     readFileSync(join(process.cwd(), "public/data/athlete-index.json"), "utf-8")
   );
@@ -356,6 +356,7 @@ async function scrapeRunners(
     for (const cls of classes) {
       await new Promise((r) => setTimeout(r, DELAY_MS));
       const detailed = await fetchSplitListDetailed(eventId, cls.classId);
+      // LC側も buildClassIngest 内で同じ別名へ解決し、lookup・lc_performances・runner_key を揃える。
       const { scalarRecords, legRows } = buildClassIngest({
         detailed,
         athleteLookup,

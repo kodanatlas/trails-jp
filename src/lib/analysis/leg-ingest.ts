@@ -8,6 +8,7 @@
  */
 import type { LapCenterRunnerDetail } from "@/lib/scraper/lapcenter-detail";
 import { lapStrToSeconds } from "@/lib/scraper/lapcenter-detail";
+import { isAliasedName, resolveAliasNameForLc } from "@/lib/identity/athlete-alias";
 
 export const SPRINT_KEYWORDS = ["スプリント", "Sprint", "sprint", "パークO", "パーク・オリエンテーリング"];
 
@@ -86,11 +87,24 @@ export interface LegSplitRow {
 /** 追跡選手か（名前＋クラブ照合）。cron の判定（route.ts 旧239-252行）と同一規則 */
 function matchTracked(
   r: LapCenterRunnerDetail,
-  athleteLookup: Map<string, AthleteLookupEntry>
-): AthleteLookupEntry | null {
-  const normalized = r.name.replace(/\s+/g, "");
+  athleteLookup: Map<string, AthleteLookupEntry>,
+  lcEventId: number,
+  lcClassId: number,
+): { entry: AthleteLookupEntry | null; unresolvedAlias: boolean } {
+  const alias = resolveAliasNameForLc(
+    r.name,
+    r.club ? [r.club] : [],
+    lcEventId,
+    lcClassId,
+    r.index,
+  );
+  if (alias.kind === "unresolved") {
+    return { entry: null, unresolvedAlias: isAliasedName(r.name) };
+  }
+  const normalized = alias.name.replace(/\s+/g, "");
   const entry = athleteLookup.get(normalized);
-  if (!entry) return null;
+  if (!entry) return { entry: null, unresolvedAlias: false };
+  if (alias.kind === "renamed") return { entry, unresolvedAlias: false };
   const lcClubs = r.club ? r.club.split("/").map((c) => normalizeClub(c)) : [];
   const joyClubs = entry.clubs.map((c) => normalizeClub(c));
   const clubMatch =
@@ -99,7 +113,7 @@ function matchTracked(
     lcClubs.some((lc) =>
       joyClubs.some((joy) => lc === joy || lc.includes(joy) || joy.includes(lc))
     );
-  return clubMatch ? entry : null;
+  return { entry: clubMatch ? entry : null, unresolvedAlias: false };
 }
 
 export interface ClassIngestArgs {
@@ -118,7 +132,7 @@ export interface ClassIngestArgs {
  * - scalarRecords: 旧 fetchSplitList パスと同一の選別
  *   （rank なし skip＝旧 lapcenter.ts:414-416 / speed・miss なし skip＝旧 :412 /
  *     追跡選手＋クラブ照合＝旧 route.ts:239-252 / speed=100&miss=0 skip＝旧 :255）
- * - legRows: クラスに追跡選手が1人もいなければ空（クラス保持ルール）。
+ * - legRows: クラスに追跡選手も所属未解決の別名候補もいなければ空（クラス保持ルール）。
  *   いれば**全走者**を保存（MP/DISQ/DNS も rank=null で保持・フィールド基盤に必要）。
  *   tracked は名前＋クラブ照合のみで判定（MP でも tracked）。
  */
@@ -133,9 +147,9 @@ export function buildClassIngest(args: ClassIngestArgs): {
   const trackedFlags: boolean[] = [];
 
   for (const r of detailed) {
-    const entry = matchTracked(r, athleteLookup);
+    const { entry, unresolvedAlias } = matchTracked(r, athleteLookup, lcEventId, lcClassId);
     trackedFlags.push(entry != null);
-    if (entry) anyTracked = true;
+    if (entry || unresolvedAlias) anyTracked = true;
 
     // ---- scalar 行（旧パスとビット同一の選別） ----
     if (r.rank == null) continue; // 旧 fetchSplitList: isNaN(rank) → skip
@@ -155,32 +169,42 @@ export function buildClassIngest(args: ClassIngestArgs): {
 
   if (!anyTracked) return { scalarRecords, legRows: [] };
 
-  const legRows: LegSplitRow[] = detailed.map((r, i) => ({
-    lc_event_id: lcEventId,
-    lc_class_id: lcClassId,
-    event_date: eventDate,
-    event_name: eventName,
-    class_name: className,
-    race_type: raceType,
-    runner_index: r.index,
-    runner_name: r.name,
-    runner_key: r.name.replace(/\s+/g, ""),
-    club: r.club || null,
-    rank: r.rank,
-    result_sec: lapStrToSeconds(r.result),
-    start_time: r.start || null,
-    speed: r.speed,
-    loss_rate: r.lossRate,
-    ideal_sec: lapStrToSeconds(r.idealTime),
-    total_loss_sec: lapStrToSeconds(r.totalLossTime),
-    lap_sec: r.lapTime.map(lapStrToSeconds),
-    lap_rank: r.lapRank,
-    elapsed_sec: r.elapsedTime.map(lapStrToSeconds),
-    elapsed_rank: r.elapsedRank,
-    leg_loss_sec: r.legLossTime.map(lapStrToSeconds),
-    leg_speed: r.legSpeed.map((v) => (v == null ? null : Math.round(v))),
-    tracked: trackedFlags[i],
-  }));
+  const legRows: LegSplitRow[] = detailed.map((r, i) => {
+    const alias = resolveAliasNameForLc(
+      r.name,
+      r.club ? [r.club] : [],
+      lcEventId,
+      lcClassId,
+      r.index,
+    );
+    const runnerName = alias.kind === "unresolved" ? r.name : alias.name;
+    return {
+      lc_event_id: lcEventId,
+      lc_class_id: lcClassId,
+      event_date: eventDate,
+      event_name: eventName,
+      class_name: className,
+      race_type: raceType,
+      runner_index: r.index,
+      runner_name: r.name,
+      runner_key: runnerName.replace(/\s+/g, ""),
+      club: r.club || null,
+      rank: r.rank,
+      result_sec: lapStrToSeconds(r.result),
+      start_time: r.start || null,
+      speed: r.speed,
+      loss_rate: r.lossRate,
+      ideal_sec: lapStrToSeconds(r.idealTime),
+      total_loss_sec: lapStrToSeconds(r.totalLossTime),
+      lap_sec: r.lapTime.map(lapStrToSeconds),
+      lap_rank: r.lapRank,
+      elapsed_sec: r.elapsedTime.map(lapStrToSeconds),
+      elapsed_rank: r.elapsedRank,
+      leg_loss_sec: r.legLossTime.map(lapStrToSeconds),
+      leg_speed: r.legSpeed.map((v) => (v == null ? null : Math.round(v))),
+      tracked: trackedFlags[i],
+    };
+  });
 
   return { scalarRecords, legRows };
 }

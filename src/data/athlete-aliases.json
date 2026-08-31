@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "aliases": [
+    {
+      "sourceName": "鈴木健太",
+      "note": "金沢大学と筑波大学の同姓同名。2026-08-31 の問い合わせで判明。同一ランキング(M21E)に2行・M20とM21に分離・全日本ミドルで2クラス出走で別人と確認済み。",
+      "identities": [
+        { "displayName": "鈴木健太（筑波大学）", "clubs": ["筑波大学"] },
+        { "displayName": "鈴木健太（金沢大学）", "clubs": ["金沢大学", "金大", "金大OLC"] }
+      ],
+      "lcOverrides": [
+        { "lcEventId": 9435, "lcClassId": 11, "runnerIndex": 54, "displayName": "鈴木健太（筑波大学）", "note": "CC7 2025 7F 筑波大学51期A 7走" },
+        { "lcEventId": 9435, "lcClassId": 7, "runnerIndex": 65, "displayName": "鈴木健太（筑波大学）", "note": "CC7 2025 4G 筑波大学51期B 4走" },
+        { "lcEventId": 9983, "lcClassId": 29, "displayName": "鈴木健太（金沢大学）", "note": "CC7 2026 3G 金大チームベテラン 3走" },
+        { "lcEventId": 9983, "lcClassId": 16, "displayName": "鈴木健太（金沢大学）", "note": "CC7 2026 3走オープン・3G と同一走(start 10:25:45)" }
+      ]
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import { jstNowLabel, jstToday } from "../src/lib/weekend-window";
 import { eventFuzzyMatch } from "../src/lib/analysis/event-match";
 import { buildCrossRaceIndex, type LcRaceRow } from "../src/lib/analysis/cross-race";
 import { buildLegFingerprintIndex, detectHomonymKeys, type TrackedLegRow, type CompanionRow } from "../src/lib/analysis/leg-fingerprint";
+import { isAliasedName, resolveAliasName } from "../src/lib/identity/athlete-alias";
 
 // --- Types ---
 interface RawEntry {
@@ -332,21 +333,52 @@ async function fetchRankingPage(typeId: number, classId: number, page: number): 
   throw lastErr;
 }
 
-/** 既存スコアのマージキー（同姓同名の衝突回避のため所属も含める） */
+/** 既存スコアのマージキー（別名選手は表示名、それ以外は従来どおり所属も含める） */
 function scoreMergeKey(e: { athlete_name: string; club: string }): string {
+  if (isAliasedName(e.athlete_name)) return e.athlete_name;
   return `${e.athlete_name} ${e.club}`;
+}
+
+function resolveEntryAliases(entries: RawEntry[]): {
+  entries: RawEntry[];
+  renamed: number;
+  unresolved: number;
+} {
+  const resolved: RawEntry[] = [];
+  let renamed = 0;
+  let unresolved = 0;
+
+  for (const entry of entries) {
+    const result = resolveAliasName(entry.athlete_name, [entry.club]);
+    if (result.kind === "unresolved") {
+      unresolved++;
+      continue;
+    }
+    if (result.kind === "renamed") renamed++;
+    resolved.push({ ...entry, athlete_name: result.name });
+  }
+
+  return { entries: resolved, renamed, unresolved };
+}
+
+interface FetchCategoryResult {
+  message: string;
+  renamed: number;
+  unresolved: number;
 }
 
 /**
  * 1カテゴリ分を全ページ取得してJSONを更新する。
  * いずれかのページ取得が失敗した場合は例外が伝播し、呼び出し側で既存ファイルを保持する（原子的更新）。
- * 戻り値は結果サマリ文字列。
+ * 戻り値は結果サマリと改名件数。
  */
-async function fetchCategory(cls: RankingClassRef): Promise<string> {
+async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult> {
   const allFresh: RawEntry[] = [];
   const seen = new Set<string>();
   let skipped = 0;
   let consecutiveFailures = 0;
+  let renamed = 0;
+  let unresolved = 0;
   for (let page = 0; page < MAX_PAGES; page++) {
     let html: string;
     try {
@@ -368,10 +400,16 @@ async function fetchCategory(cls: RankingClassRef): Promise<string> {
 
     let added = 0;
     for (const e of entries) {
-      const key = `${e.rank}:${e.athlete_name}`;
+      const resolution = resolveEntryAliases([e]);
+      unresolved += resolution.unresolved;
+      const resolvedEntry = resolution.entries[0];
+      if (!resolvedEntry) continue;
+
+      const key = `${resolvedEntry.rank}:${resolvedEntry.athlete_name}`;
       if (!seen.has(key)) {
         seen.add(key);
-        allFresh.push(e);
+        allFresh.push(resolvedEntry);
+        renamed += resolution.renamed;
         added++;
       }
     }
@@ -380,7 +418,9 @@ async function fetchCategory(cls: RankingClassRef): Promise<string> {
   }
 
   // 取得結果が空 → 既存ファイルを保持（空クラス or 一時的空応答でデータを消さない）
-  if (allFresh.length === 0) return `${cls.file}: 0 entries (kept existing)`;
+  if (allFresh.length === 0) {
+    return { message: `${cls.file}: 0 entries (kept existing)`, renamed, unresolved };
+  }
 
   // 既存データのイベントスコアをマージ（JOYは直近~1年分のみ返すため過去分を引き継ぐ）
   const filePath = path.join(RANKINGS_DIR, cls.file);
@@ -389,8 +429,9 @@ async function fetchCategory(cls: RankingClassRef): Promise<string> {
     existing = JSON.parse(fs.readFileSync(filePath, "utf-8"));
   } catch { /* first run */ }
 
+  const existingResolution = resolveEntryAliases(existing);
   const existingScores = new Map<string, { event_name: string; points: number }[]>();
-  for (const e of existing) {
+  for (const e of existingResolution.entries) {
     existingScores.set(scoreMergeKey(e), e.event_scores || []);
   }
   for (const entry of allFresh) {
@@ -404,7 +445,11 @@ async function fetchCategory(cls: RankingClassRef): Promise<string> {
   }
 
   fs.writeFileSync(filePath, JSON.stringify(allFresh, null, 2));
-  return `${cls.file}: ${allFresh.length} entries${skipped ? ` (${skipped} page(s) skipped on error)` : ""}`;
+  return {
+    message: `${cls.file}: ${allFresh.length} entries${skipped ? ` (${skipped} page(s) skipped on error)` : ""}`,
+    renamed,
+    unresolved,
+  };
 }
 
 /** 全カテゴリを並列度を絞って取得。失敗カテゴリは既存ファイルを保持する。 */
@@ -412,15 +457,18 @@ async function fetchFreshRankings() {
   const t0 = Date.now();
   const queue = [...ALL_CLASSES];
   let updated = 0, kept = 0, failed = 0;
+  let renamed = 0, unresolved = 0;
 
   async function worker() {
     for (;;) {
       const cls = queue.shift();
       if (!cls) return;
       try {
-        const msg = await fetchCategory(cls);
-        if (msg.includes("kept existing")) kept++; else updated++;
-        console.log(` → ${msg}`);
+        const result = await fetchCategory(cls);
+        if (result.message.includes("kept existing")) kept++; else updated++;
+        renamed += result.renamed;
+        unresolved += result.unresolved;
+        console.log(` → ${result.message}`);
       } catch (e) {
         failed++;
         console.warn(`  Failed ${cls.file}: keeping existing file (${(e as Error).message})`);
@@ -429,6 +477,7 @@ async function fetchFreshRankings() {
   }
 
   await Promise.all(Array.from({ length: FETCH_CONCURRENCY }, () => worker()));
+  console.log(`Athlete aliases: ${renamed} renamed, ${unresolved} unresolved entries excluded.`);
   const elapsedSec = ((Date.now() - t0) / 1000).toFixed(1);
   console.log(`Rankings fetch done in ${elapsedSec}s (concurrency=${FETCH_CONCURRENCY}): ${updated} updated, ${kept} kept(empty), ${failed} failed(kept existing).`);
 }
@@ -476,9 +525,10 @@ for (const file of files) {
   }
   const { type, className } = parsed;
 
-  const raw: RawEntry[] = JSON.parse(
+  const rawEntries: RawEntry[] = JSON.parse(
     fs.readFileSync(path.join(RANKINGS_DIR, file), "utf-8")
   );
+  const raw = resolveEntryAliases(rawEntries).entries;
 
   for (const entry of raw) {
     // スペース有無の表記ゆれを統一（例: "佐藤 遼平" → "佐藤遼平"）

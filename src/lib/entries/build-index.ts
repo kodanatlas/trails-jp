@@ -8,6 +8,7 @@
 import type { JOEEvent } from "@/lib/scraper/events";
 import { scrapeEntryListByEventId } from "@/lib/scraper/entry-source";
 import { normalizeNameKey, expandAliasKeys } from "@/lib/name-key";
+import { resolveAliasName } from "@/lib/identity/athlete-alias";
 import type { AthleteEntryRef, EntryIndex } from "./index-types";
 
 /**
@@ -70,24 +71,29 @@ async function scrapeOne(ev: JOEEvent, timeoutMs: number): Promise<ScrapedEvent 
         if (!row.className) continue; // クラス欠落の不正行は除外
 
         // チーム名(個人なら本人名、リレーならチーム名)。従来挙動を保つため索引に追加する。
-        const teamKey = normalizeNameKey(row.name);
-        if (teamKey) {
-          const dedupeKey = `${teamKey}|${row.className}`;
-          if (!seen.has(dedupeKey)) {
-            seen.add(dedupeKey);
-            rows.push({ className: row.className, name: row.name, affiliation: row.affiliation });
+        const teamAlias = resolveAliasName(row.name, [row.affiliation]);
+        if (teamAlias.kind !== "unresolved") {
+          const teamKey = normalizeNameKey(teamAlias.name);
+          if (teamKey) {
+            const dedupeKey = `${teamKey}|${row.className}`;
+            if (!seen.has(dedupeKey)) {
+              seen.add(dedupeKey);
+              rows.push({ className: row.className, name: teamAlias.name, affiliation: row.affiliation });
+            }
           }
         }
 
         // リレー等: メンバー欄の個人を本人名で索引する（チーム名キーは個人ページから引かれないため）。
         if (row.members) {
           for (const member of parseRelayMembers(row.members)) {
-            const mKey = normalizeNameKey(member);
+            const memberAlias = resolveAliasName(member, [row.affiliation]);
+            if (memberAlias.kind === "unresolved") continue;
+            const mKey = normalizeNameKey(memberAlias.name);
             if (!mKey) continue;
             const mDedupe = `${mKey}|${row.className}`;
             if (seen.has(mDedupe)) continue;
             seen.add(mDedupe);
-            rows.push({ className: row.className, name: member, affiliation: row.affiliation });
+            rows.push({ className: row.className, name: memberAlias.name, affiliation: row.affiliation });
           }
         }
       }
@@ -125,7 +131,9 @@ export async function buildEntryIndex(
     scrapedEventIds.push(ev.joe_event_id); // エントリー0件(ロゲイニング/講習等)もフェッチ成功として記録
     const entryStatus = ev.entry_status; // "open" | "closed" | "none"（そのまま保持）
     for (const row of rows) {
-      const baseKey = normalizeNameKey(row.name);
+      const alias = resolveAliasName(row.name, [row.affiliation]);
+      if (alias.kind === "unresolved") continue;
+      const baseKey = normalizeNameKey(alias.name);
       if (!baseKey) continue; // scrapeOne 側で保証済みだが念のため空キー除外
       const ref: AthleteEntryRef = {
         joe_event_id: ev.joe_event_id,
