@@ -31,6 +31,66 @@ export interface LapCenterRunnerDetail {
   legSpeed: (number | null)[]; // レッグ別相対ペース（100=Ave3, 小さいほど速い）
 }
 
+/** HTML セルをプレーンテキスト化し、連続する空白を1文字に畳む。 */
+function htmlCellText(cell: string): string {
+  return cell
+    .replace(/<br\s*\/?\s*>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&(#x[0-9a-f]+|#\d+|nbsp|amp|lt|gt|quot|apos);/gi, (_, entity: string) => {
+      const lower = entity.toLowerCase();
+      if (lower === "nbsp") return " ";
+      if (lower === "amp") return "&";
+      if (lower === "lt") return "<";
+      if (lower === "gt") return ">";
+      if (lower === "quot") return '"';
+      if (lower === "apos") return "'";
+      const codePoint = lower.startsWith("#x")
+        ? parseInt(lower.slice(2), 16)
+        : parseInt(lower.slice(1), 10);
+      return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
+        ? String.fromCodePoint(codePoint)
+        : " ";
+    })
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** relay-result-list.jsp の HTML から (走者名, クラス名) → チーム名 を抽出する。 */
+export function parseRelayTeams(html: string): Map<string, string> {
+  const teams = new Map<string, string>();
+  const rowRe = /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
+  let rowMatch: RegExpExecArray | null;
+
+  while ((rowMatch = rowRe.exec(html)) !== null) {
+    const cells: string[] = [];
+    const cellRe = /<td\b[^>]*>([\s\S]*?)<\/td>/gi;
+    let cellMatch: RegExpExecArray | null;
+    while ((cellMatch = cellRe.exec(rowMatch[1])) !== null) {
+      cells.push(cellMatch[1]);
+    }
+    const teamCellIndex = cells.findIndex((cell) => /<br\s*\/?\s*>/i.test(cell));
+    if (teamCellIndex < 0) continue;
+
+    // 最初に改行を含むセルの先頭行だけがチーム名。以降の総合タイム・順位・DISQ は含めない。
+    const teamName = htmlCellText(cells[teamCellIndex].split(/<br\s*\/?\s*>/i, 1)[0]);
+    if (!teamName) continue;
+
+    const runners: Array<{ name: string; className: string }> = [];
+    for (const cell of cells.slice(teamCellIndex + 1)) {
+      const runner = htmlCellText(cell).match(/^(.+?)\s*\/\s*(\S+)/);
+      if (!runner) continue;
+      const name = runner[1].replace(/\s+/g, "");
+      const className = runner[2];
+      if (name && className) runners.push({ name, className });
+    }
+    if (runners.length === 0) continue;
+
+    for (const { name, className } of runners) teams.set(`${name}|${className}`, teamName);
+  }
+
+  return teams;
+}
+
 /** "h:mm:ss" / "m:ss" / "s"、先頭 "-" 付きを秒へ。空文字・不正は null。 */
 export function lapStrToSeconds(s: string | null | undefined): number | null {
   if (s == null) return null;

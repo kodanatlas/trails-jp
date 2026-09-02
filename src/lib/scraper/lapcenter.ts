@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import { fetch as lcFetch, Agent } from "undici";
-import { parseSplitListDetailed } from "./lapcenter-detail";
+import { parseRelayTeams, parseSplitListDetailed } from "./lapcenter-detail";
 
 export type { LapCenterRunnerDetail } from "./lapcenter-detail";
 
@@ -33,6 +33,11 @@ export interface LapCenterRunnerStat {
 }
 
 const BASE_URL = "https://mulka2.com/lapcenter";
+const DELAY_MS = 300;
+const MAX_RELAY_CLASSES = 12;
+
+// leg-fingerprint.ts の RELAY_RE と同じ語彙。分析除外と所属補完の判定を揃える。
+export const RELAY_RE = /リレー|relay|ペア|チーム|farsta|motala|one.?man|ワンマン|モタラ|ファルスタ|バタフライ|フォーク/i;
 
 // ---------------------------------------------------------------------------
 // Lap Center からイベント一覧を取得
@@ -558,4 +563,34 @@ export async function fetchSplitListDetailed(
 
   const html = await res.text();
   return parseSplitListDetailed(html);
+}
+
+/** リレー大会のチーム名を relay-result-list.jsp から取得する。(走者名|クラス名) → チーム名 */
+export async function fetchRelayTeams(eventId: number): Promise<Map<string, string>> {
+  try {
+    const file = await resolveResultsFile(eventId);
+    const teams = new Map<string, string>();
+
+    for (let relayClass = 0; relayClass < MAX_RELAY_CLASSES; relayClass++) {
+      if (relayClass > 0) {
+        await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
+      }
+      const url = `${BASE_URL}/lapcombat2/relay-result-list.jsp?event=${eventId}&file=${file}&relayClass=${relayClass}`;
+      const res = await lcFetch(url, {
+        headers: { "User-Agent": "trails.jp/1.0 (lapcenter sync)" },
+        dispatcher: mulka2Dispatcher,
+      });
+      if (!res.ok) return new Map();
+
+      const body = await res.arrayBuffer();
+      if (body.byteLength < 500) break;
+      const parsed = parseRelayTeams(new TextDecoder().decode(body));
+      for (const [key, teamName] of parsed) teams.set(key, teamName);
+    }
+
+    return teams;
+  } catch {
+    // 所属補完は best-effort。取得失敗で cron 全体を止めない。
+    return new Map();
+  }
 }

@@ -90,10 +90,11 @@ function matchTracked(
   athleteLookup: Map<string, AthleteLookupEntry>,
   lcEventId: number,
   lcClassId: number,
+  clubs: string[] = r.club ? [r.club] : [],
 ): { entry: AthleteLookupEntry | null; unresolvedAlias: boolean } {
   const alias = resolveAliasNameForLc(
     r.name,
-    r.club ? [r.club] : [],
+    clubs,
     lcEventId,
     lcClassId,
     r.index,
@@ -105,7 +106,7 @@ function matchTracked(
   const entry = athleteLookup.get(normalized);
   if (!entry) return { entry: null, unresolvedAlias: false };
   if (alias.kind === "renamed") return { entry, unresolvedAlias: false };
-  const lcClubs = r.club ? r.club.split("/").map((c) => normalizeClub(c)) : [];
+  const lcClubs = clubs.flatMap((club) => club.split("/")).map((club) => normalizeClub(club));
   const joyClubs = entry.clubs.map((c) => normalizeClub(c));
   const clubMatch =
     lcClubs.length === 0 ||
@@ -119,6 +120,7 @@ function matchTracked(
 export interface ClassIngestArgs {
   detailed: LapCenterRunnerDetail[];
   athleteLookup: Map<string, AthleteLookupEntry>;
+  relayTeams?: ReadonlyMap<string, string>;
   lcEventId: number;
   lcClassId: number;
   eventDate: string;
@@ -140,47 +142,77 @@ export function buildClassIngest(args: ClassIngestArgs): {
   scalarRecords: ScalarRecord[];
   legRows: LegSplitRow[];
 } {
-  const { detailed, athleteLookup, lcEventId, lcClassId, eventDate, eventName, className, raceType } = args;
+  const {
+    detailed,
+    athleteLookup,
+    relayTeams,
+    lcEventId,
+    lcClassId,
+    eventDate,
+    eventName,
+    className,
+    raceType,
+  } = args;
+  const runners = detailed.map((r) => {
+    const relayClub = !r.club
+      ? relayTeams?.get(`${r.name.replace(/\s+/g, "")}|${className}`)
+      : undefined;
+    const runner = r;
+    // リレーのチーム名はクラブ名ではない（同一クラブが複数チームを出すため識別子が付く。
+    // 実測で既知クラブと一致するのは正規クラスでも 6.3%）。よって解決にのみ使い、club には保存しない。
+    // チーム名の語間空白は、照合時だけ空白なし表記も候補にする。
+    // 例: "筑波大学51期 A" は既存の所属表 "筑波大学51期A" と一致する。
+    const matchClubs = relayClub
+      ? [relayClub, relayClub.replace(/\s+/g, "")]
+      : r.club ? [r.club] : [];
+    return { runner, matchClubs };
+  });
 
   const scalarRecords: ScalarRecord[] = [];
   let anyTracked = false;
   const trackedFlags: boolean[] = [];
 
-  for (const r of detailed) {
-    const { entry, unresolvedAlias } = matchTracked(r, athleteLookup, lcEventId, lcClassId);
+  for (const { runner, matchClubs } of runners) {
+    const { entry, unresolvedAlias } = matchTracked(
+      runner,
+      athleteLookup,
+      lcEventId,
+      lcClassId,
+      matchClubs,
+    );
     trackedFlags.push(entry != null);
     if (entry || unresolvedAlias) anyTracked = true;
 
     // ---- scalar 行（旧パスとビット同一の選別） ----
-    if (r.rank == null) continue; // 旧 fetchSplitList: isNaN(rank) → skip
-    if (r.speed == null || r.lossRate == null) continue; // 旧: NaN speed/missRate → skip
+    if (runner.rank == null) continue; // 旧 fetchSplitList: isNaN(rank) → skip
+    if (runner.speed == null || runner.lossRate == null) continue; // 旧: NaN speed/missRate → skip
     if (!entry) continue; // 旧 cron: 追跡選手＋クラブ照合
-    if (r.speed === 100 && r.lossRate === 0) continue; // 旧 cron: 基準ランナー除外
+    if (runner.speed === 100 && runner.lossRate === 0) continue; // 旧 cron: 基準ランナー除外
     scalarRecords.push({
       athlete_name: entry.joyName,
       event_date: eventDate,
       event_name: eventName,
       class_name: className,
-      cruising_speed: r.speed,
-      miss_rate: r.lossRate,
+      cruising_speed: runner.speed,
+      miss_rate: runner.lossRate,
       race_type: raceType,
     });
   }
 
   if (!anyTracked) return { scalarRecords, legRows: [] };
 
-  const legRows: LegSplitRow[] = detailed.map((r, i) => {
+  const legRows: LegSplitRow[] = runners.map(({ runner, matchClubs }, i) => {
     const alias = resolveAliasNameForLc(
-      r.name,
-      r.club ? [r.club] : [],
+      runner.name,
+      matchClubs,
       lcEventId,
       lcClassId,
-      r.index,
+      runner.index,
     );
-    const runnerName = alias.kind === "unresolved" ? r.name : alias.name;
+    const runnerName = alias.kind === "unresolved" ? runner.name : alias.name;
     const runnerKeyName =
-      alias.kind === "unresolved" && isAliasedName(r.name)
-        ? `${r.name}#unresolved`
+      alias.kind === "unresolved" && isAliasedName(runner.name)
+        ? `${runner.name}#unresolved`
         : runnerName;
     return {
       lc_event_id: lcEventId,
@@ -189,23 +221,23 @@ export function buildClassIngest(args: ClassIngestArgs): {
       event_name: eventName,
       class_name: className,
       race_type: raceType,
-      runner_index: r.index,
-      runner_name: r.name,
+      runner_index: runner.index,
+      runner_name: runner.name,
       runner_key: runnerKeyName.replace(/\s+/g, ""),
-      club: r.club || null,
-      rank: r.rank,
-      result_sec: lapStrToSeconds(r.result),
-      start_time: r.start || null,
-      speed: r.speed,
-      loss_rate: r.lossRate,
-      ideal_sec: lapStrToSeconds(r.idealTime),
-      total_loss_sec: lapStrToSeconds(r.totalLossTime),
-      lap_sec: r.lapTime.map(lapStrToSeconds),
-      lap_rank: r.lapRank,
-      elapsed_sec: r.elapsedTime.map(lapStrToSeconds),
-      elapsed_rank: r.elapsedRank,
-      leg_loss_sec: r.legLossTime.map(lapStrToSeconds),
-      leg_speed: r.legSpeed.map((v) => (v == null ? null : Math.round(v))),
+      club: runner.club || null,
+      rank: runner.rank,
+      result_sec: lapStrToSeconds(runner.result),
+      start_time: runner.start || null,
+      speed: runner.speed,
+      loss_rate: runner.lossRate,
+      ideal_sec: lapStrToSeconds(runner.idealTime),
+      total_loss_sec: lapStrToSeconds(runner.totalLossTime),
+      lap_sec: runner.lapTime.map(lapStrToSeconds),
+      lap_rank: runner.lapRank,
+      elapsed_sec: runner.elapsedTime.map(lapStrToSeconds),
+      elapsed_rank: runner.elapsedRank,
+      leg_loss_sec: runner.legLossTime.map(lapStrToSeconds),
+      leg_speed: runner.legSpeed.map((v) => (v == null ? null : Math.round(v))),
       tracked: trackedFlags[i],
     };
   });

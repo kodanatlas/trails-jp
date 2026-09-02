@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
+  parseRelayTeams,
   parseSplitListDetailed,
   lapStrToSeconds,
   deriveAve3Seconds,
@@ -12,9 +13,108 @@ const html = readFileSync(
   fileURLToPath(new URL("./fixtures/lapcenter_splitlist_9534_c0.html", import.meta.url)),
   "utf8",
 );
+const realRelayHtml = readFileSync(
+  fileURLToPath(new URL("./fixtures/relay-result-list-9435.html", import.meta.url)),
+  "utf8",
+);
 
 const runners = parseSplitListDetailed(html);
 const winner = runners[0];
+
+const relayHtml = `
+  <table>
+    <tr>
+      <td><b>筑波大学51期&nbsp;A</b><br>7:29:56 (229)</td>
+      <td><span>佐々木 晴都</span> / <b>12AD</b><br>1:00:02 / 198 1:00:02 /</td>
+      <td>橋本 春 / 12BC<br>1:18:36 / 198 2:18:38 /</td>
+      <td>鈴木 健太 / 7F<br>0:40:04 / 70 7:29:56 /</td>
+    </tr>
+    <tr>
+      <td>筑波大学51期 B<br><b>7:40:01</b><br>(230)</td>
+      <td>鈴木　健太 / 4G 0:42:00 / 72 7:40:01 /</td>
+    </tr>
+  </table>
+`;
+
+describe("parseRelayTeams", () => {
+  const teams = parseRelayTeams(relayHtml);
+
+  it("先頭セルの総合タイムと順位を除き、チーム名だけを返す", () => {
+    expect(teams.get("佐々木晴都|12AD")).toBe("筑波大学51期 A");
+  });
+
+  it("同一チームの複数走者をそれぞれチーム名へ紐づける", () => {
+    expect(teams.get("佐々木晴都|12AD")).toBe("筑波大学51期 A");
+    expect(teams.get("橋本春|12BC")).toBe("筑波大学51期 A");
+  });
+
+  it("同姓同名をクラス名で区別する", () => {
+    expect(teams.get("鈴木健太|7F")).toBe("筑波大学51期 A");
+    expect(teams.get("鈴木健太|4G")).toBe("筑波大学51期 B");
+  });
+});
+
+describe("parseRelayTeams: 実サイト HTML", () => {
+  const teams = parseRelayTeams(realRelayHtml);
+  const rankedTeamRunners = [
+    "山崎葵|12BC",
+    "森清星也|12AD",
+    "永山遼真|3G",
+    "及川悠太郎|4E",
+    "斉藤大己|5F",
+    "樋口佳那|6",
+    "加藤賢斗|7H",
+  ];
+  const teamARunners = [
+    "佐々木晴都|12AD",
+    "橋本春|12BC",
+    "宮川日向|3G",
+    "山田雄飛|4E",
+    "友田りさ|5H",
+    "井川泰成|6",
+    "鈴木健太|7F",
+  ];
+  const teamBRunners = [
+    "松本修汰|12AD",
+    "徳倉朋夏|12BC",
+    "高木浩太|3E",
+    "鈴木健太|4G",
+    "松本修汰|5H",
+    "三宅希々葉|6",
+    "佐々木晴都|7F",
+  ];
+
+  it("順位セルを飛ばし、最初に改行を含むセルからチーム名を抽出する", () => {
+    expect(teams.get("山崎葵|12BC")).toBe("筑波大学体育会オリエンテーリング部 A");
+    expect(teams.get("鈴木健太|7F")).toBe("筑波大学51期 A");
+    expect(teams.get("鈴木健太|4G")).toBe("筑波大学51期 B");
+  });
+
+  it("チーム名に順位・総合タイム・総合順位・DISQを含めない", () => {
+    const teamNames = [...new Set(teams.values())];
+    expect(teamNames).toEqual([
+      "筑波大学体育会オリエンテーリング部 A",
+      "筑波大学51期 A",
+      "筑波大学51期 B",
+    ]);
+    expect(teamNames).not.toContain("1");
+    expect(teamNames.every((name) => !/3:42:15|\(4\)|DISQ/.test(name))).toBe(true);
+  });
+
+  it("3チームそれぞれの7走者すべてを同じチーム名へ紐づける", () => {
+    for (const runner of rankedTeamRunners) {
+      expect(teams.get(runner)).toBe("筑波大学体育会オリエンテーリング部 A");
+    }
+    for (const runner of teamARunners) expect(teams.get(runner)).toBe("筑波大学51期 A");
+    for (const runner of teamBRunners) expect(teams.get(runner)).toBe("筑波大学51期 B");
+    expect(teams.size).toBe(21);
+  });
+
+  it("同姓同名をクラス名で別チームに分ける", () => {
+    expect(teams.get("鈴木健太|7F")).toBe("筑波大学51期 A");
+    expect(teams.get("鈴木健太|4G")).toBe("筑波大学51期 B");
+  });
+});
 
 describe("lapStrToSeconds", () => {
   it("m:ss / h:mm:ss / 負値 / 空 を変換", () => {

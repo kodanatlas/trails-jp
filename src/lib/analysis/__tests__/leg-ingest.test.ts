@@ -173,6 +173,87 @@ describe("buildClassIngest: legRows", () => {
   });
 });
 
+describe("buildClassIngest: リレーチーム名による解決", () => {
+  const mk = (index: number, name: string, club: string) => ({
+    index, name, club, runnerId: String(index), rank: index + 1,
+    result: "10:00", start: "10:00:00", speed: 95, lossRate: 5, totalRelative: 100,
+    totalLossTime: "0:30", idealTime: "9:30",
+    lapTime: ["5:00", "5:00"], lapRank: [1, 1], elapsedTime: ["5:00", "10:00"],
+    elapsedRank: [index + 1, index + 1], legLossTime: ["0:10", "0:20"], legSpeed: [100, 100],
+  });
+  const relayDetailed = [
+    mk(0, "補完 太郎", ""),
+    mk(1, "既存 花子", "既存クラブ"),
+  ];
+  const relayLookup = new Map<string, AthleteLookupEntry>([
+    ["補完太郎", { joyName: "補完 太郎", clubs: ["補完クラブ"] }],
+    ["既存花子", { joyName: "既存 花子", clubs: ["既存クラブ"] }],
+  ]);
+  const relayArgs = {
+    ...ingestArgs,
+    detailed: relayDetailed,
+    athleteLookup: relayLookup,
+    className: "7F",
+  };
+
+  it("relayTeams のチーム名は空の club に保存しない", () => {
+    const relayTeams = new Map([
+      ["補完太郎|7F", "補完クラブ"],
+      ["既存花子|7F", "別クラブ"],
+    ]);
+    const { scalarRecords, legRows } = buildClassIngest({ ...relayArgs, relayTeams });
+
+    expect(legRows.map((row) => row.club)).toEqual([null, "既存クラブ"]);
+    expect(legRows.every((row) => row.tracked)).toBe(true);
+    expect(scalarRecords.map((row) => row.athlete_name)).toEqual(["補完 太郎", "既存 花子"]);
+    expect(relayDetailed.map((runner) => runner.club)).toEqual(["", "既存クラブ"]);
+  });
+
+  it("チーム名を保存せず、追跡照合と同姓同名の別名解決に使う", () => {
+    const aliasedRunner = mk(0, "鈴木 健太", "");
+    const athleteLookup = new Map<string, AthleteLookupEntry>([
+      ["鈴木健太（筑波大学）", {
+        joyName: "鈴木健太（筑波大学）",
+        clubs: ["筑波大学"],
+      }],
+    ]);
+    const { scalarRecords, legRows } = buildClassIngest({
+      ...relayArgs,
+      detailed: [aliasedRunner],
+      athleteLookup,
+      relayTeams: new Map([["鈴木健太|7F", "筑波大学51期 A"]]),
+    });
+
+    expect(scalarRecords[0].athlete_name).toBe("鈴木健太（筑波大学）");
+    expect(legRows[0].runner_key).toBe("鈴木健太（筑波大学）");
+    expect(legRows[0].club).toBeNull();
+    expect(legRows[0].tracked).toBe(true);
+  });
+
+  it("元から club がある走者は relayTeams で上書きせず保持する", () => {
+    const { legRows } = buildClassIngest({
+      ...relayArgs,
+      detailed: [relayDetailed[1]],
+      relayTeams: new Map([["既存花子|7F", "別クラブ"]]),
+    });
+
+    expect(legRows[0].club).toBe("既存クラブ");
+    expect(legRows[0].tracked).toBe(true);
+  });
+
+  it("relayTeams 未指定またはキー不一致なら従来の出力を変えない", () => {
+    const withoutRelayTeams = buildClassIngest(relayArgs);
+    const withoutHit = buildClassIngest({
+      ...relayArgs,
+      relayTeams: new Map([["別人|7F", "別クラブ"]]),
+    });
+
+    expect(withoutHit).toEqual(withoutRelayTeams);
+    expect(withoutRelayTeams.legRows.map((row) => row.club)).toEqual([null, "既存クラブ"]);
+    expect(withoutRelayTeams.legRows.every((row) => row.tracked)).toBe(true);
+  });
+});
+
 describe("isSprint / normalizeClub（leg-ingest へ移設後の回帰）", () => {
   it("sprint 判定", () => {
     expect(isSprint("全日本スプリント")).toBe(true);

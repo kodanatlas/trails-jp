@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import {
   matchLapCenterEvents,
   fetchEventClasses,
+  fetchRelayTeams,
   fetchSplitListDetailed,
   MANUAL_LC_OVERRIDE_EVENT_IDS,
+  RELAY_RE,
   type LapCenterEvent,
 } from "@/lib/scraper/lapcenter";
 import { buildClassIngest, isSprint, type AthleteLookupEntry, type LegSplitRow, type ScalarRecord } from "@/lib/analysis/leg-ingest";
@@ -345,6 +347,12 @@ async function scrapeRunners(
       continue;
     }
 
+    const isRelay = RELAY_RE.test(`${event.name} ${classes.map((cls) => cls.className).join(" ")}`);
+    // 新規イベントへの着手期限を過ぎていれば追加取得を省き、従来どおり空所属で続行する。
+    const relayTeams = isRelay && Date.now() - requestStart <= START_EVENT_BEFORE_MS
+      ? await fetchRelayTeams(eventId)
+      : undefined;
+
     // このイベント分のレコードを集め、イベント単位で即upsert。
     // 途中で関数がタイムアウトしても、完了済みイベントの行は保全される（全損防止）。
     // scalar 版と detailed 版は同一 URL のため、detailed 1回のフェッチから
@@ -360,6 +368,7 @@ async function scrapeRunners(
       const { scalarRecords, legRows } = buildClassIngest({
         detailed,
         athleteLookup,
+        relayTeams,
         lcEventId: eventId,
         lcClassId: cls.classId,
         eventDate: event.date,
