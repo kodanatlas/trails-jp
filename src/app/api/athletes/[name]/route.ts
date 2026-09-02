@@ -1,5 +1,21 @@
+import { readFileSync } from "fs";
+import { join } from "path";
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase-admin";
+import type { AthleteIndex } from "@/lib/analysis/types";
+
+function loadAthleteIndex(): AthleteIndex["athletes"] {
+  try {
+    const index = JSON.parse(
+      readFileSync(join(process.cwd(), "public/data/athlete-index.json"), "utf-8")
+    ) as AthleteIndex;
+    return index.athletes;
+  } catch {
+    return {};
+  }
+}
+
+// 索引はモジュール初期化時に1回だけ読み、リクエスト間で再利用する。
+const athleteIndex = loadAthleteIndex();
 
 /**
  * GET /api/athletes/[name] — 1選手の詳細情報（appearances含む）
@@ -9,40 +25,33 @@ export async function GET(
   { params }: { params: Promise<{ name: string }> }
 ) {
   const { name } = await params;
-  const decoded = decodeURIComponent(name);
-
-  // 選手基本情報
-  const { data: athlete, error: aErr } = await supabaseAdmin
-    .from("athletes")
-    .select("*")
-    .eq("name", decoded)
-    .single();
-
-  if (aErr || !athlete) {
+  let key: string;
+  try {
+    key = decodeURIComponent(name).replace(/\s+/g, "");
+  } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // appearances
-  const { data: appearances } = await supabaseAdmin
-    .from("athlete_appearances")
-    .select("ranking_type, class_name, rank, total_points, is_active")
-    .eq("athlete_id", athlete.id);
+  const athlete = athleteIndex[key];
+  if (!athlete) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const summary = {
     name: athlete.name,
     clubs: athlete.clubs,
-    bestRank: athlete.best_rank,
-    avgTotalPoints: Number(athlete.avg_total_points),
-    forestCount: athlete.forest_count,
-    sprintCount: athlete.sprint_count,
-    type: athlete.athlete_type,
-    recentForm: Number(athlete.recent_form),
-    appearances: (appearances ?? []).map((a) => ({
-      type: a.ranking_type,
-      className: a.class_name,
-      rank: a.rank,
-      totalPoints: Number(a.total_points),
-      isActive: a.is_active,
+    bestRank: athlete.bestRank,
+    avgTotalPoints: athlete.avgTotalPoints,
+    forestCount: athlete.forestCount,
+    sprintCount: athlete.sprintCount,
+    type: athlete.type,
+    recentForm: athlete.recentForm,
+    appearances: athlete.appearances.map((appearance) => ({
+      type: appearance.type,
+      className: appearance.className,
+      rank: appearance.rank,
+      totalPoints: appearance.totalPoints,
+      isActive: appearance.isActive,
     })),
   };
 
