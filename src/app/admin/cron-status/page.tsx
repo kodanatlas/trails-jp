@@ -28,12 +28,17 @@ const HISTORY_LIMIT = 30;
 const JOB_NAMES: CronJobName[] = ["sync-events", "sync-lapcenter", "sync-entries"];
 const LAPCENTER_EVENT_URL = "https://mulka2.com/lapcenter/lapcombat2/index.jsp";
 
+// 開始記録(status=started)は「実行された結果」ではなく起動の痕跡なので健全性判定から除く。
+// 除かないと中断日の最新行が started になり、error ではないため経過時間だけで緑と判定され、
+// 前日の success を最新としていた頃より状態が良く見えてしまう（検知したい日に警告が消える）。
+// 履歴の窓が started 行で半減するのも防ぐ。cron-watchdog の cronLogUrl と同じ意味論に揃えている。
 async function fetchRecent(job: CronJobName): Promise<CronLogRow[]> {
   if (!isSupabaseConfigured) return [];
   const { data, error } = await supabase
     .from("cron_log")
     .select("id, job_name, status, result, duration_ms, created_at")
     .eq("job_name", job)
+    .neq("status", "started")
     .order("created_at", { ascending: false })
     .limit(HISTORY_LIMIT);
   if (error) {

@@ -71,10 +71,16 @@ export function lastWednesdayCutoffJst(now: Date, runHourJst: number): Date {
  */
 export function assessJobHealth(
   job: CronJobName,
-  rows: CronLogRow[],
+  allRows: CronLogRow[],
   now: Date = new Date(),
 ): JobAssessment {
   const reasons: string[] = [];
+
+  // 開始記録(status=started)は「実行された結果」ではなく起動の痕跡なので判定から除く。
+  // 除かないと中断日の最新行が started になり、error でもないため経過時間だけで緑と判定され、
+  // 前日の success を最新としていた頃より状態が良く見える（検知したい日に警告が消える）。
+  // 呼び出し側でも除外しているが、判定側でも落として二重に防ぐ。
+  const rows = allRows.filter((row) => row.status !== "started");
 
   if (rows.length === 0) {
     return {

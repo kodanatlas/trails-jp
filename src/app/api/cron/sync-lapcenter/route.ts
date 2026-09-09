@@ -36,6 +36,10 @@ const SILENT_WATCHDOG_WARN_HOURS = 36;
 // 多クラスの大規模イベントでも壁時計予算内で処理できるよう実行時間上限を延長。
 export const maxDuration = 60;
 
+// 開始記録の打ち切り時間。supabase-admin の共通 fetch タイムアウト(15秒)のままだと
+// DB 不調時に実行予算60秒の1/4を開始記録だけで消費し、着手期限(30秒)まで削るため短く抑える。
+const STARTED_LOG_TIMEOUT_MS = 2_000;
+
 // Vercel Cron: 日次 21:41 JST (12:41 UTC)
 // 巡航速度・ミス率スクレイプも毎日実行（壁時計予算内で新しい順に処理）
 // 実行時刻はDB健全な夜帯へ（2026-07-13。旧 12:00 JST は不達窓 00-12 JST の末尾で不安定だった）。
@@ -72,7 +76,15 @@ export async function GET(request: Request) {
   // 完了記録が残らなかった場合も、未起動と起動後の中断を区別できるようにする。
   // DB 不調時に開始記録の待機が本処理の実行予算を食い潰さないよう、2秒で打ち切る。
   // スクレイプの着手時間を確保しつつ、開始記録の往復時間も実行時間に含める。
-  await logCron("sync-lapcenter", "started", { note: "処理開始。完了時に success/error 行が追記される" }, 0, { timeoutMs: 2000 });
+  // 打ち切られた日は開始記録が残らず「未起動」と区別できなくなるため、成否を payload に載せて
+  // 記録自体の信頼度を可視化する（started_logged=false が常態化していれば2秒が短すぎる兆候）。
+  const startedLogged = await logCron(
+    "sync-lapcenter",
+    "started",
+    { note: "処理開始。完了時に success/error 行が追記される" },
+    0,
+    { timeoutMs: STARTED_LOG_TIMEOUT_MS },
+  );
 
   // ---- GitHub watchdog heartbeat 鮮度チェック (非致命・隔離) ----
   // 重いマッチング／スクレイプが maxDuration を使い切っても相互監視を開始できるよう、本処理より先に確認する。
@@ -196,6 +208,9 @@ export async function GET(request: Request) {
 
     const payload = {
       success: true,
+      // 開始記録が残ったかどうか。false の日は cron_log に started 行が無いため、
+      // 次に欠測したとき「未起動」と「記録前の中断」を区分 C で切り分けられない。
+      started_logged: startedLogged,
       matching: matchingResult,
       runners: runnersResult,
       match_gaps: matchGaps,
