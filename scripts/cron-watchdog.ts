@@ -12,9 +12,6 @@ export const MAX_GAP_H = 26;
 export const HISTORY_DAYS = 7;
 export const ROW_LIMIT = 20;
 export const FAIL_COUNT_7D = 3;
-// 開始記録だけが残り完了記録が続かない状態は、maxDuration キル等で記録前に落ちたことを意味する。
-// 実行中の正常なジョブを誤検知しないよう、関数の実行上限(60秒)に対し十分な猶予を取る。
-export const MAX_RUNNING_H = 0.5;
 
 const BASE_URL = "https://mlbyohpbembeoutaakkr.supabase.co";
 const HOUR_MS = 60 * 60 * 1_000;
@@ -38,11 +35,10 @@ export type ResourceResult =
 export type JudgeInput = {
   cronLogs: Readonly<Record<JobName, ResourceResult>>;
   lcPerformances: ResourceResult;
-  startedRuns?: Partial<Record<JobName, ResourceResult>>;
 };
 
 export type Diagnostic = {
-  category: "A" | "A2" | "B" | "B2" | "C" | "D";
+  category: "A" | "A2" | "B" | "B2" | "D";
   job: JobName | "lc_performances";
   message: string;
 };
@@ -305,46 +301,6 @@ function judgeJob(
   };
 }
 
-function judgeStartedRun(
-  job: JobName,
-  started: ResourceResult | undefined,
-  completed: ResourceResult,
-  nowMs: number,
-): readonly Diagnostic[] {
-  // 最新の開始記録と最新の完了記録の時刻だけを比較し、実行 ID がないため同一実行かは判別しない。
-  // sync-lapcenter は日次1回で同時実行・重複実行が起きない前提で、この簡略化を採用している。
-  // 中断の翌日に再実行が成功すると中断履歴は検知されないが、その時点で区分 A も解消するため実害はない。
-  // 開始記録は補助情報なので、取得失敗だけで既存監視を失敗させるノイズを増やさない。
-  // 完了記録の取得異常は従来どおり judgeJob 側で報告する。
-  if (!started?.ok || started.rows.length === 0) return [];
-  const latestStart = started.rows[0];
-  if (!isRecord(latestStart) || typeof latestStart.created_at !== "string") return [];
-  const startedMs = parseCreatedAt(latestStart.created_at);
-  if (!Number.isFinite(startedMs)) return [];
-
-  // 取得失敗は完了記録がない証拠にはならないため、区分 C は出さず judgeJob の区分 D に委ねる。
-  if (!completed.ok) return [];
-  const latestCompletion = completed.rows[0];
-  const completedAt = isRecord(latestCompletion) ? latestCompletion.created_at : undefined;
-  if (completed.rows.length > 0) {
-    if (typeof completedAt !== "string") return [];
-    const completedMs = parseCreatedAt(completedAt);
-    if (!Number.isFinite(completedMs) || startedMs <= completedMs) return [];
-  }
-  const completionMessage = completed.rows.length === 0
-    ? "完了記録なし"
-    : `最新の完了記録が開始記録より古い（completed=${completedAt}）`;
-
-  const ageHours = (nowMs - startedMs) / HOUR_MS;
-  return ageHours > MAX_RUNNING_H
-    ? [{
-        category: "C",
-        job,
-        message: `started=${latestStart.created_at} age_h=${ageHours.toFixed(3)} ${completionMessage}（起動後に記録の手前で中断した可能性）`,
-      }]
-    : [];
-}
-
 function lcPerformanceSummary(resource: ResourceResult): string {
   if (!resource.ok) return "[INFO] lc_performances latest_event_date=unavailable";
   if (resource.rows.length === 0) return "[INFO] lc_performances latest_event_date=none";
@@ -368,9 +324,6 @@ export function judge(input: JudgeInput, nowMs: number): JudgeResult {
       ];
   const diagnostics = [
     ...jobResults.flatMap((result) => result.diagnostics),
-    ...JOBS.flatMap((job) =>
-      judgeStartedRun(job, input.startedRuns?.[job], input.cronLogs[job], nowMs),
-    ),
     ...lcDiagnostics,
   ];
 
@@ -445,13 +398,8 @@ async function fetchResource(url: string, anonKey: string): Promise<ResourceResu
   return lastFailure;
 }
 
-export function cronLogUrl(job: JobName): string {
-  // 未知の status も従来どおり監視対象に残すため、開始記録だけを除外する。
-  return `${BASE_URL}/rest/v1/cron_log?job_name=eq.${job}&status=neq.started&select=job_name,created_at,status,result&order=created_at.desc&limit=${ROW_LIMIT}`;
-}
-
-function startedLogUrl(job: JobName): string {
-  return `${BASE_URL}/rest/v1/cron_log?job_name=eq.${job}&status=eq.started&select=created_at&order=created_at.desc&limit=1`;
+function cronLogUrl(job: JobName): string {
+  return `${BASE_URL}/rest/v1/cron_log?job_name=eq.${job}&select=job_name,created_at,status,result&order=created_at.desc&limit=${ROW_LIMIT}`;
 }
 
 function writeLines(lines: readonly string[]): void {
@@ -483,7 +431,7 @@ export async function main(): Promise<void> {
     return;
   }
 
-  const [jobResources, lcPerformances, startedResources] = await Promise.all([
+  const [jobResources, lcPerformances] = await Promise.all([
     Promise.all(
       JOBS.map(async (job) => [job, await fetchResource(cronLogUrl(job), anonKey)] as const),
     ),
@@ -491,16 +439,12 @@ export async function main(): Promise<void> {
       `${BASE_URL}/rest/v1/lc_performances?select=event_date&order=event_date.desc&limit=1`,
       anonKey,
     ),
-    Promise.all(
-      JOBS.map(async (job) => [job, await fetchResource(startedLogUrl(job), anonKey)] as const),
-    ),
   ]);
   const cronLogs = Object.fromEntries(jobResources) as Record<
     JobName,
     ResourceResult
   >;
-  const startedRuns = Object.fromEntries(startedResources) as Record<JobName, ResourceResult>;
-  const result = judge({ cronLogs, lcPerformances, startedRuns }, Date.now());
+  const result = judge({ cronLogs, lcPerformances }, Date.now());
   writeResult(result);
   process.exitCode = result.ok ? 0 : 1;
 }
