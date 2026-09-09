@@ -34,7 +34,12 @@ const STALE_INDEX_WARN_HOURS = 24;
 const SILENT_WATCHDOG_WARN_HOURS = 36;
 
 // 多クラスの大規模イベントでも壁時計予算内で処理できるよう実行時間上限を延長。
-export const maxDuration = 60;
+// 60s では上限際まで使い切る日が常態化していた（90日91実行で 55s 超が6回・最大59.4s）。
+// 60s キルされた日は logCron に到達せず記録が残らないため、直近60日で6日あった欠測の
+// 何割がキルだったかは測れない。fluid compute では Hobby でも上限 300s まで取れるので、
+// キルの縁から離れる 180s へ広げる。実行時間の大半は mulka2 への I/O 待ちであり、
+// fluid compute の課金は Active CPU 基準（I/O 待ちは停止）なので費用増は限定的。
+export const maxDuration = 180;
 
 // Vercel Cron: 日次 21:41 JST (12:41 UTC)
 // 巡航速度・ミス率スクレイプも毎日実行（壁時計予算内で新しい順に処理）
@@ -49,8 +54,11 @@ const MAX_RUNNER_EVENTS = 40;
 // 1イベントで予算を食い潰して取りこぼす。mulka2 への礼儀を保ちつつ取込スループットを上げるため短縮。
 const DELAY_MS = 300;
 // 新しいイベントへの着手を打ち切る経過時間（リクエスト開始からの ms）。
-// maxDuration=60s に対し、着手後に多クラスイベントが完走できる余裕(~30s)を残す。
-const START_EVENT_BEFORE_MS = 30_000;
+// maxDuration=180s に対し、着手後に多クラスイベントが完走できる余裕(60s)を残す。
+// 実測の最多クラス数は 70 で、DELAY_MS=300 のスリープだけで 21s。fetch を含めても 60s に収まる。
+// 旧値 30s では毎回 stopped_for_budget=true（90日91実行のうち90回）で候補40件中1〜14件しか
+// 処理できず、取込のバックログが恒常的に残っていた。mulka2 への礼儀は DELAY_MS で保つ。
+const START_EVENT_BEFORE_MS = 120_000;
 const MATCH_GAPS_PAYLOAD_LIMIT = 20;
 const MATCH_GAP_ERROR_MAX_LENGTH = 200;
 const MATCH_GAP_NOTIFY_TIMEOUT_MS = 5_000;
@@ -231,9 +239,10 @@ export async function GET(request: Request) {
     await logCron("sync-lapcenter", "success", payload, Date.now() - start);
 
     // 突合漏れの通知は「純粋な検知は前・ネットワークは後」に加えて、**logCron より後**に置く。
-    // 2026-08-24 の実測で本ジョブは 59.2 秒（maxDuration=60秒）まで伸びており、
-    // scrapeRunners が長引いた日に通知の待ち時間が加わると 60 秒キルで logCron まで
-    // 到達できない。稼働記録が欠けると死活監視が「実行されなかった」と誤検知するため、
+    // maxDuration=60 の頃は実測 59.2 秒（2026-08-24）まで伸び、scrapeRunners が長引いた日に
+    // 通知の待ち時間が加わると 60 秒キルで logCron まで到達できなかった。
+    // 180 秒へ広げた現在も、着手期限を 120 秒に伸ばした分だけ終端は上限に近づきうるため、
+    // この順序は維持する。稼働記録が欠けると死活監視が「実行されなかった」と誤検知するため、
     // 記録を先に確定させ、通知は完全な best-effort の後始末として最後に回す。
     if (matchGapsStatus === "ok" && likelyMatchGaps.length > 0) {
       let notifyTimeout: ReturnType<typeof setTimeout> | null = null;
