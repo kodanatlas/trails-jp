@@ -68,6 +68,12 @@ export async function GET(request: Request) {
 
   const start = Date.now();
 
+  // maxDuration の60秒キルでは catch に到達しないため、処理の最前で起動した事実を残す。
+  // 完了記録が残らなかった場合も、未起動と起動後の中断を区別できるようにする。
+  // DB 不調時に開始記録の待機が本処理の実行予算を食い潰さないよう、2秒で打ち切る。
+  // スクレイプの着手時間を確保しつつ、開始記録の往復時間も実行時間に含める。
+  await logCron("sync-lapcenter", "started", { note: "処理開始。完了時に success/error 行が追記される" }, 0, { timeoutMs: 2000 });
+
   // ---- GitHub watchdog heartbeat 鮮度チェック (非致命・隔離) ----
   // 重いマッチング／スクレイプが maxDuration を使い切っても相互監視を開始できるよう、本処理より先に確認する。
   // GitHub の scheduled workflow 自体が未実行・自動無効化・失敗しても heartbeat は更新されないため、

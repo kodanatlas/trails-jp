@@ -3,18 +3,22 @@ import { notifyCronError } from "./cron-notifier";
 
 export async function logCron(
   jobName: string,
-  status: "success" | "error",
+  status: "success" | "error" | "started",
   result: unknown,
   durationMs: number,
+  options?: { timeoutMs?: number },
 ): Promise<boolean> {
   let insertSucceeded = false;
   try {
-    const { error } = await supabaseAdmin.from("cron_log").insert({
+    const query = supabaseAdmin.from("cron_log").insert({
       job_name: jobName,
       status,
       result,
       duration_ms: durationMs,
     });
+    const { error } = await (options?.timeoutMs === undefined
+      ? query
+      : query.abortSignal(AbortSignal.timeout(options.timeoutMs)));
     if (error) {
       console.error("cron_log insert failed:", error);
     } else {

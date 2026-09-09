@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cronLogUrl,
   decodeResponse,
   judge,
   parseCreatedAt,
@@ -307,5 +308,97 @@ describe("時刻の決定性", () => {
 
     expect(judge(input, NOW_MS).ok).toBe(true);
     expect(judge(input, NOW_MS + 2 * HOUR_MS).ok).toBe(false);
+  });
+});
+
+describe("judge: 区分 C", () => {
+  function withStart(ageHours: number, input = healthyInput()): JudgeInput {
+    return {
+      ...input,
+      startedRuns: { "sync-lapcenter": rowsResource([row(ageHours)]) },
+    };
+  }
+
+  it("startedRuns 省略時は報告しない", () => {
+    expect(diagnosticsFor(healthyInput(), "C")).toEqual([]);
+  });
+
+  it("開始記録が最新の完了記録より古ければ報告しない", () => {
+    expect(diagnosticsFor(withStart(2), "C")).toEqual([]);
+  });
+
+  it("完了記録より新しい開始記録が1時間前なら実値を報告する", () => {
+    const input = withStart(1, replaceJob(
+      healthyInput(), "sync-lapcenter", rowsResource([row(2, { result: { runners: {} } })]),
+    ));
+    const errors = diagnosticsFor(input, "C");
+    expect(errors).toHaveLength(1);
+    expect(errors[0].job).toBe("sync-lapcenter");
+    expect(errors[0].message).toContain(`started=${row(1).created_at}`);
+    expect(errors[0].message).toContain("age_h=1.000");
+    expect(errors[0].message).toContain("完了記録が開始記録より古い");
+  });
+
+  it("完了記録より新しくても10分前の開始は実行中として報告しない", () => {
+    expect(diagnosticsFor(withStart(10 / 60), "C")).toEqual([]);
+  });
+
+  it("完了記録が0件で1時間前の開始記録だけなら報告する", () => {
+    const input = withStart(1, replaceJob(healthyInput(), "sync-lapcenter", rowsResource([])));
+    const errors = diagnosticsFor(input, "C");
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toContain("完了記録なし");
+  });
+
+  it("開始記録の取得失敗は C も D も報告しない", () => {
+    const input: JudgeInput = {
+      ...healthyInput(),
+      startedRuns: { "sync-lapcenter": { ok: false, detail: "HTTP 500" } },
+    };
+    expect(judge(input, NOW_MS).diagnostics).toEqual([]);
+  });
+
+  it("開始記録が空または日時が不正なら報告しない", () => {
+    for (const rows of [[], [{ created_at: "invalid" }], [{}]]) {
+      expect(diagnosticsFor({
+        ...healthyInput(), startedRuns: { "sync-lapcenter": rowsResource(rows) },
+      }, "C")).toEqual([]);
+    }
+  });
+
+  it("開始と完了が同時刻なら報告しない", () => {
+    expect(diagnosticsFor(withStart(1), "C")).toEqual([]);
+  });
+
+  it("30分ちょうどは報告せず1秒超過すると報告する", () => {
+    expect(diagnosticsFor(withStart(0.5), "C")).toEqual([]);
+    expect(diagnosticsFor(withStart(0.5 + 1 / 3_600), "C")).toHaveLength(1);
+  });
+
+  it("完了記録の取得失敗では1時間前の開始記録があっても C は出さず D のみ報告する", () => {
+    const input = withStart(1, replaceJob(
+      healthyInput(), "sync-lapcenter", { ok: false, detail: "HTTP 500" },
+    ));
+    expect(diagnosticsFor(input, "C")).toHaveLength(0);
+    expect(diagnosticsFor(input, "D")).toHaveLength(1);
+  });
+});
+
+
+describe("cronLogUrl", () => {
+  it("開始記録だけを除外し、未知の status を除外する列挙フィルタを使わない", () => {
+    const url = cronLogUrl("sync-lapcenter");
+    expect(url).toContain("status=neq.started");
+    expect(url).not.toContain("status=in.");
+  });
+});
+
+describe("judge: 完了記録の取得失敗", () => {
+  it("1時間前の開始記録があっても中断の証拠とせず区分 C を報告しない", () => {
+    const input: JudgeInput = {
+      ...replaceJob(healthyInput(), "sync-lapcenter", { ok: false, detail: "HTTP 500" }),
+      startedRuns: { "sync-lapcenter": rowsResource([row(1)]) },
+    };
+    expect(diagnosticsFor(input, "C")).toEqual([]);
   });
 });
