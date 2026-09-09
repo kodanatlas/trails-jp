@@ -1,8 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { fuzzyMatch } from "../lapcenter";
+import { fuzzyMatch, normalize } from "../lapcenter";
 
 describe("fuzzyMatch: JOY と LapCenter の恒常的な表記差", () => {
   it.each([
+    ["霧ヶ峰ミドルO", "霧ヶ峰ミドルオリエンテーリング2025"],
+    ["彩の森入間公園OL体験会＆併設ロゲ", "第45回(11月度) 入間市OLCオリエンテーリング体験会"],
+    ["大阪OLC", "大阪オリエンテーリングクラブ"],
+    // 西暦除去後の core は2文字。下限を3に戻すと実データで17件規模の突合を失う回帰番人。
+    ["岩手大会2025 Day1", "岩手オリエンテーリング大会2025Day1スプリント"],
+    ["長岡OLCフィジカル練習会", "長岡OLC練習会"],
+    ["ES関東C壮行会", "ES関東C日本代表壮行会"],
+    // 「日本」を先に消すと残骸「代表」が識別部分の途中に挟まり、core の包含が崩れる回帰番人。
+    ["ES関東C壮行会", "ES日本代表関東C壮行会"],
     [
       "金沢市民オリエンテーリング大会",
       "（令和８年度）第69回金沢市民スポーツ大会オリエンテーリング競技",
@@ -45,5 +54,13 @@ describe("fuzzyMatch: JOY と LapCenter の恒常的な表記差", () => {
     expect(
       fuzzyMatch("中高選手権対策&新人練習会", "第37回全国中学校高等学校オリエンテーリング選手権大会"),
     ).toBe(true);
+  });
+});
+
+describe("normalize: 日付と裸の西暦の除去順", () => {
+  it("8桁日付を先に除去し、月日の残骸を残さない", () => {
+    const normalized = normalize("20250126-みえスポーツフェスティバル2024");
+    expect(normalized).not.toContain("0126");
+    expect(normalized).toBe("みえスポーツフェスティバル");
   });
 });

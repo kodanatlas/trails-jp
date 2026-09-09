@@ -91,7 +91,8 @@ export async function fetchLapCenterEvents(year: number): Promise<LapCenterEvent
 // ---------------------------------------------------------------------------
 
 // 「市民」は除去しない。JOY「金沢市民オリエンテーリング大会」は、除去すると core が
-// 「金沢」の2文字になり、LC「金沢市民スポーツ大会…」との包含判定の3文字下限を満たさない。
+// 「金沢」の2文字になり、導入当時は LC「金沢市民スポーツ大会…」との包含判定の3文字下限を満たさなかった。
+// 現在は下限2文字だが、市名だけへの過剰一致を避けるため「市民」を残す方針は維持する。
 // 残せば「金沢市民」対「金沢市民スポーツ」となり、同一大会を自動突合できる。
 // 【トレードオフ】同一市の別種目同士（例「岡崎市民スプリント大会」と「岡崎市民ミドル大会」。
 // 種目語は STOP_WORDS で落ちるため両方 core が「岡崎市民」になる）が同日に並ぶと取り違えうる。
@@ -152,7 +153,10 @@ export function normalize(name: string): string {
   s = s.replace(/第\s*[0-9一二三四五六七八九十百千]+\s*回/g, "");
   s = s.replace(/(令和|平成|昭和)\s*[0-9一二三四五六七八九十]+\s*年度?/g, "");
   s = s.replace(/20\d{2}年度?/g, "");
+  // 同日限定の突合では裸の西暦も識別に寄与しないため落とす。ただし8桁日付を先に除去する。
+  // 順序を逆にすると「20250126」の先頭4桁だけが消え、「0126」が識別部分に残ってしまう。
   s = s.replace(/20\d{6}/g, "");
+  s = s.replace(/20\d{2}/g, "");
   s = s.replace(/[（(][^)）]*[)）]/g, "");
   s = s.replace(/[・\-\s　&＆「」『』【】〜～/／\\.,、。!！?？:：;；#＃@＠+＋=＝_＿<>＜＞'"'"'"^`~|｜{}\[\]［］]/g, " ");
 
@@ -187,7 +191,9 @@ function extractSignificantTokens(normalizedName: string): string[] {
 
 function coreString(normalizedName: string): string {
   let s = normalizedName.replace(/\s+/g, "");
-  for (const sw of STOP_WORDS) {
+  // 短い語から消すと「OL」が「OLC」を、「日本」が「日本代表」を食い、C・代表が残る。
+  // Set の語彙・宣言順は維持し、文字列を削るここだけ長い語を先に評価して残骸を防ぐ。
+  for (const sw of [...STOP_WORDS].sort((a, b) => b.length - a.length)) {
     s = s.replaceAll(sw, "");
   }
   return s;
@@ -209,11 +215,16 @@ export function fuzzyMatch(name1: string, name2: string): boolean {
   const core1 = coreString(norm1);
   const core2 = coreString(norm2);
 
-  if (core1.length >= 3 && core2.length >= 3) {
+  // 突合は同日限定なので、西暦は識別に寄与しない詰め物にすぎない。西暦と STOP_WORDS を
+  // 正しく消すと真の識別子が「岩手」「大阪」の2文字になるため、core 比較の下限も2へ下げる。
+  // 3のままでは「岩手大会2025 Day1」等、2025・2026の実データ計測で既存の17件を失う。
+  // 【トレードオフ】同日の別レース（例: 霧ヶ峰のミドル ↔ ナイト練習会）の誤当たりは増えうる。
+  // LC に結果が出ないと判明した大会は MANUAL_LC_NO_MATCH で自動突合を抑止する。
+  if (core1.length >= 2 && core2.length >= 2) {
     if (core1 === core2) return true;
     const cShorter = core1.length <= core2.length ? core1 : core2;
     const cLonger = core1.length <= core2.length ? core2 : core1;
-    if (cShorter.length >= 3 && cLonger.includes(cShorter)) return true;
+    if (cShorter.length >= 2 && cLonger.includes(cShorter)) return true;
   }
 
   const tokens1 = extractSignificantTokens(norm1);
@@ -301,7 +312,11 @@ export const MANUAL_LC_OVERRIDES: Record<number, number> = {
   2411: 9878, // 2026年度関東・北東・北信越ロングセレ (2026-06-28) — JOY 正式名「2026年度日本学生オリエンテーリング選手権大会 ロングディスタンス競技部門 関東・北東・北信越地区代表選考会」、LC は同名＋「兼全国中学校高等学校オリエンテーリング選手権大会東日本地域選考会」。JOY 側の一覧名が略称のため不成立だった。
 };
 
-/** 突合漏れ検知の恒久ミュート。joe_event_id → 除外理由。LapCenter に結果が出ない大会をここに載せる。 */
+/**
+ * 突合漏れ検知の恒久ミュート＋自動突合の抑止。joe_event_id → 除外理由。
+ * LapCenter に結果が出ない大会を載せ、検知の再通知と同日の別レースへの誤突合を防ぐ。
+ * 正しい LC id を指定できる MANUAL_LC_OVERRIDES がある場合はそちらを優先する。
+ */
 export const MANUAL_LC_NO_MATCH: Record<number, string> = {
   2583: "コーチ資格更新研修会（オンライン）— 研修でありレース結果は出ない",
   2592: "コーチ資格更新研修会（集合2日目）— 同上",
@@ -380,6 +395,10 @@ export async function matchLapCenterEvents<
       matched++;
       continue;
     }
+
+    // override と既存リンクは保持したまま、LC に結果が出ない大会の新規の自動突合だけを止める。
+    // core の下限緩和で同日の別レースに当たっても結び付けず、未突合として扱う。
+    if (MANUAL_LC_NO_MATCH[joe.joe_event_id] !== undefined) continue;
 
     const candidates = lcByDate.get(joe.date) || [];
     if (candidates.length === 0) continue;
