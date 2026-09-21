@@ -191,6 +191,39 @@ describe("judge: 区分 A2", () => {
       result.summaries.find((summary) => summary.includes("job=sync-events")),
     ).toContain("runs_7d=7 max_gap_h=24.000");
   });
+
+  it("gap の新しい側が48時間より古ければ7日窓内でも報告しない", () => {
+    // 103h 前と 73h 前の間に30時間の欠測。7日窓内だが新しい側が48hより古いので黙る。
+    const input = replaceJob(
+      healthyInput(),
+      "sync-events",
+      rowsResource([row(1), row(25), row(49), row(73), row(103)]),
+    );
+    const result = judge(input, NOW_MS);
+
+    expect(result.ok).toBe(true);
+    expect(diagnosticsFor(input, "A2")).toEqual([]);
+    // サマリの max_gap_h は従来どおり7日窓で集計するため、黙っていても値には出る。
+    expect(
+      result.summaries.find((summary) => summary.includes("job=sync-events")),
+    ).toContain("max_gap_h=30.000");
+  });
+
+  it("報告打ち切りの境界は48時間ちょうど", () => {
+    const detected = replaceJob(
+      healthyInput(),
+      "sync-events",
+      rowsResource([row(1), row(25), row(47.9), row(77.9)]),
+    );
+    const silent = replaceJob(
+      healthyInput(),
+      "sync-events",
+      rowsResource([row(1), row(25), row(48.1), row(78.1)]),
+    );
+
+    expect(diagnosticsFor(detected, "A2")).toHaveLength(1);
+    expect(diagnosticsFor(silent, "A2")).toEqual([]);
+  });
 });
 
 describe("judge: 区分 B", () => {

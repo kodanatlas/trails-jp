@@ -22,6 +22,9 @@ export async function GET(request: Request) {
     source: "github-actions",
     run_id: truncateQueryParam(searchParams.get("run_id")),
     repo: truncateQueryParam(searchParams.get("repo")),
+    // watchdog の判定結果。heartbeat は判定が異常でも記録するため（= 鮮度は「動いたか」だけを表す）、
+    // 何を見て動いたのかはこの値で追う。status は ping 自体の成否であり判定結果ではない。
+    healthy: truncateQueryParam(searchParams.get("healthy")),
   };
 
   const logged = await logCron("gh-watchdog", "success", result, Date.now() - start);

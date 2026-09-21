@@ -19,10 +19,13 @@ vi.mock("@/lib/cron-notifier", () => ({
 import { logCron } from "@/lib/cron-logger";
 import { GET } from "./route";
 
-const makeRequest = () =>
-  new Request("https://example.com/api/cron/watchdog-ping?run_id=123&repo=owner%2Frepo", {
-    headers: { authorization: "Bearer test-secret" },
-  });
+const makeRequest = (healthy?: string) =>
+  new Request(
+    `https://example.com/api/cron/watchdog-ping?run_id=123&repo=owner%2Frepo${
+      healthy === undefined ? "" : `&healthy=${healthy}`
+    }`,
+    { headers: { authorization: "Bearer test-secret" } },
+  );
 
 beforeEach(() => {
   vi.stubEnv("CRON_SECRET", "test-secret");
@@ -69,6 +72,34 @@ describe("GET", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ success: true });
+  });
+
+  it("判定が異常でも heartbeat を記録し、healthy=false を残す", async () => {
+    mocks.insert.mockResolvedValue({ error: null });
+
+    const response = await GET(makeRequest("false"));
+
+    expect(response.status).toBe(200);
+    expect(mocks.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        job_name: "gh-watchdog",
+        status: "success",
+        result: expect.objectContaining({ healthy: "false" }),
+      }),
+    );
+  });
+
+  it("healthy が付かない ping でも記録する", async () => {
+    mocks.insert.mockResolvedValue({ error: null });
+
+    const response = await GET(makeRequest());
+
+    expect(response.status).toBe(200);
+    expect(mocks.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        result: expect.objectContaining({ healthy: null }),
+      }),
+    );
   });
 
   it("heartbeat の記録に失敗したとき 500 を返す", async () => {

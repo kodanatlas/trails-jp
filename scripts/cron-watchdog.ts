@@ -9,6 +9,11 @@ import { pathToFileURL } from "node:url";
 
 export const MAX_AGE_H = 26;
 export const MAX_GAP_H = 26;
+// 同じ欠測を何日報告し続けるかの上限。gap の新しい側がこれより古ければ黙る。
+// 欠測日そのものは区分 A（age>26h）が拾い、復旧後の2日を A2 が拾って収束する（赤は計3日）。
+// watchdog 自身が1日 drop しても翌々日までに拾えるだけの余裕を残した値。
+// 3日以上 watchdog が落ちた場合は Vercel 側の watchdog_silent（36h）が拾う。
+export const MAX_GAP_REPORT_AGE_H = 48;
 export const HISTORY_DAYS = 7;
 export const ROW_LIMIT = 20;
 export const FAIL_COUNT_7D = 3;
@@ -246,11 +251,13 @@ function judgeJob(
         ]
       : [];
 
+  const gapReportStartMs = nowMs - MAX_GAP_REPORT_AGE_H * HOUR_MS;
   const gapDiagnostics: readonly Diagnostic[] = gapRows
     .slice(0, -1)
     .flatMap((newer, index) => {
-      // 過去の欠測を無期限に報告しないよう、新しい側が7日窓内の gap だけを評価する。
-      if (newer.createdAtMs < historyStartMs) return [];
+      // 同じ欠測を毎日蒸し返さないよう、新しい側が直近 MAX_GAP_REPORT_AGE_H 以内の gap だけを評価する。
+      // 7日窓で評価していた頃は、1日の欠測1回で赤が8日続き、その間に起きた別の異常が埋もれた。
+      if (newer.createdAtMs < gapReportStartMs) return [];
       const older = gapRows[index + 1];
       const gapHours = (newer.createdAtMs - older.createdAtMs) / HOUR_MS;
       return gapHours > MAX_GAP_H
