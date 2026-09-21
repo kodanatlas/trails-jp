@@ -82,12 +82,16 @@ Supabase `cron_log` を anon REST で直接確認（2026-09-21）。3ジョブ�
 
 既存の A2 テスト3件は newer 側が 1h / 25h なのでいずれも48h以内。変更なしで通ることを実行して確認した。
 
-## 4. マージ後の確認（残タスク）
+## 4. マージ後の実測（2026-09-21・PR #74 マージ後）
 
-1. `gh workflow run cron-watchdog -R kodanatlas/trails-jp` で手動実行
-   - 09-22 以降なら exit 0（sync-events の gap が窓から外れる）
-2. Supabase `cron_log` に `job_name=gh-watchdog` の新しい行が入り、`result.healthy` が記録されていることを anon REST で**実データ確認**
-3. 翌朝の sync-lapcenter（12:41 UTC）以降、`watchdog_silent` メールが止まっていること
+| 実測 | 結果 |
+|---|---|
+| 手動実行 07:08 UTC（run 35571508375） | **success** — 13日連続の失敗が止まった。修正2 により旧 gap（newer=09-15）は48h超で報告されない |
+| 同 07:08 の heartbeat | `cron_log` に記録（09-07 以来の1件目）。`result.healthy` は**無し**＝この時点では本番デプロイ未完了だった |
+| 手動実行 07:22 UTC（run 35572678625・デプロイ後） | success／`result={"repo":…,"run_id":…,"source":"github-actions","healthy":"true"}` |
+| `force_fail=true` 07:24 UTC（run 35572793626） | workflow は**失敗**したが heartbeat は記録された（`healthy:"true"` のまま）。`if: !cancelled()` が効いていること、force_fail が健全性判定を汚さないことを同時に実証 |
+
+残: 翌朝の sync-lapcenter（12:41 UTC）以降、`watchdog_silent` メールが止まっていることの確認のみ。heartbeat は 09-21 07:24 に更新済みなので36h閾値には当たらない。
 
 ## 5. やらなかったこと
 
