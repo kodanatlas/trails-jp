@@ -78,8 +78,10 @@ export async function GET(request: Request) {
 
   // ---- GitHub watchdog heartbeat 鮮度チェック (非致命・隔離) ----
   // 重いマッチング／スクレイプが maxDuration を使い切っても相互監視を開始できるよう、本処理より先に確認する。
-  // GitHub の scheduled workflow 自体が未実行・自動無効化・失敗しても heartbeat は更新されないため、
-  // 最後に正常判定できた時刻を Vercel 側から監視する。本処理への影響を避けるため完全隔離する。
+  // GitHub の scheduled workflow 自体が未実行・自動無効化になると heartbeat は更新されないため、
+  // 最後に watchdog が動いた時刻を Vercel 側から監視する。本処理への影響を避けるため完全隔離する。
+  // 判定が異常でも heartbeat は記録される（workflow 側の Record watchdog heartbeat 参照）。
+  // 監視対象ジョブの異常をここで二重に鳴らすと、watchdog 自身の死がその警告に埋もれる。
   try {
     const now = Date.now();
     const { data, error } = await supabaseAdmin
@@ -112,7 +114,7 @@ export async function GET(request: Request) {
             latestPingAt,
             ageHours,
             threshold_hours: SILENT_WATCHDOG_WARN_HOURS,
-            hint: "GitHub Actions の cron-watchdog が未実行・自動無効化・workflow 失敗のいずれかにより heartbeat を記録していない可能性。",
+            hint: "GitHub Actions の cron-watchdog が未実行・自動無効化・判定に着手する前の失敗のいずれかにより heartbeat を記録していない可能性。監視対象ジョブの異常はこの警告では鳴らず GitHub の workflow 失敗通知が担当する。",
           },
           0,
         );

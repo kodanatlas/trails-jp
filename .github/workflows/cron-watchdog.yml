@@ -40,6 +40,7 @@ jobs:
       # アプリ依存は不要で、lockfile の optional dependency ドリフトも持ち込まないため npm ci は使わない。
       # スクリプトの終了コードを一度受け、force_fail=true なら元の判定に関わらず通知用の明示的な失敗にする。
       - name: Check cron health
+        id: check
         run: |
           if [ -z "$SUPABASE_ANON_KEY" ]; then
             echo "::error::SUPABASE_ANON_KEY secret が未設定です（リポジトリ Secrets に登録してください）"
@@ -51,6 +52,14 @@ jobs:
           watchdog_rc=$?
           set -e
 
+          # 判定結果は force_fail より先に確定させる。force_fail は通知経路の検証用であり、
+          # 監視対象の健全性とは無関係なので heartbeat の healthy を汚さない。
+          if [ "$watchdog_rc" -eq 0 ]; then
+            echo "healthy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "healthy=false" >> "$GITHUB_OUTPUT"
+          fi
+
           if [ "$FORCE_FAIL" = "true" ]; then
             echo "::error::force_fail=true: GitHub Actions の失敗通知経路を検証するため意図的に失敗しました"
             exit 1
@@ -58,17 +67,23 @@ jobs:
 
           exit "$watchdog_rc"
 
-      # 既定の if: success() により前段の判定が異常なら実行しない。不健全なのに heartbeat を更新しないための意図的な挙動。
+      # 判定が異常でも heartbeat は記録する。heartbeat の鮮度は「watchdog が動いたか」だけを表し、
+      # 監視対象の健全性は GitHub の workflow 失敗通知が担当する（判定結果は healthy として残す）。
+      # 両者を heartbeat 1本で兼ねていた頃は、判定が赤の間 Vercel 側が watchdog_silent を誤って鳴らし、
+      # かつ watchdog 自身の死を検知できなくなっていた（2026-09-08〜09-20 に実際に13日間そうなった）。
       - name: Record watchdog heartbeat
+        if: ${{ !cancelled() }}
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          HEALTHY: ${{ steps.check.outputs.healthy }}
         run: |
           if [ -z "$CRON_SECRET" ]; then
             echo "::error::CRON_SECRET secret が未設定です（リポジトリ Secrets に登録してください）"
             exit 1
           fi
 
-          url="https://trailsjp.vercel.app/api/cron/watchdog-ping?run_id=${{ github.run_id }}&repo=${{ github.repository }}"
+          # secret 未設定などで判定に着手する前に落ちた場合は healthy が空になる。
+          url="https://trailsjp.vercel.app/api/cron/watchdog-ping?run_id=${{ github.run_id }}&repo=${{ github.repository }}&healthy=${HEALTHY:-unknown}"
           for attempt in 1 2 3; do
             if ! code=$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" \
               --max-time 30 \
