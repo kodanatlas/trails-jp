@@ -110,13 +110,11 @@ export async function UpdatesNews() {
       date: new Date("2026-07-07T00:00:00+09:00"),
       label: "新機能『ミスの傾向』を追加 — どの局面・どの長さのレッグでミスが出やすいかを全キャリアから分析",
       href: "/analysis",
-      isNew: true,
     },
     {
       date: new Date("2026-07-06T00:00:00+09:00"),
       label: "結果分析に『順位が動いたレッグ』を追加・選手ページに固定URL（/a/選手名）を導入",
       href: "/results",
-      isNew: true,
     },
     {
       date: new Date("2026-06-29T00:00:00+09:00"),
