@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Swords, Search, X, Loader2, ExternalLink, ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { Swords, Search, X, Loader2, ExternalLink, ChevronDown, ArrowUpRight } from "lucide-react";
 import type { AthleteIndex, AthleteSummary, AthleteProfile } from "@/lib/analysis/types";
 import type { AthleteEntryRef } from "@/lib/entries/index-types";
 import { loadAthleteDetail } from "@/lib/analysis/utils";
@@ -272,7 +273,14 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
                 <p className="text-[9px] text-muted">全 {h2h.records.length} 戦</p>
               </div>
               <div className="min-w-0 flex-1 text-right">
-                <p className="truncate text-sm font-bold text-accent">{oppProfile.name}</p>
+                {/* 相手名 → 相手の選手ページ（正規 URL /a/<空白除去名>・同一タブ） */}
+                <Link
+                  href={`/a/${encodeURIComponent(oppProfile.name.replace(/\s+/g, ""))}`}
+                  className="inline-flex max-w-full items-center justify-end gap-0.5 text-sm font-bold text-accent underline decoration-accent/40 underline-offset-2 transition-colors hover:decoration-accent"
+                >
+                  <span className="truncate">{oppProfile.name}</span>
+                  <ArrowUpRight className="h-3.5 w-3.5 flex-shrink-0" />
+                </Link>
                 <p className="truncate text-[10px] text-muted">{oppProfile.clubs[0] ?? ""}</p>
               </div>
             </div>
