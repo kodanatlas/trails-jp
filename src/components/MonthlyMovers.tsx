@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TrendingUp, ArrowRight } from "lucide-react";
+import { FullText } from "@/components/FullText";
 import moversJson from "@/data/movers.json";
 
 /** movers.json のスキーマ（basis=wow なら先週比・mom なら前月比の順位上昇 top） */
@@ -70,7 +71,7 @@ export function MonthlyMovers() {
                     {item.className}
                   </span>
                 </div>
-                <p className="mt-0.5 truncate text-xs text-muted">{item.club}</p>
+                <FullText as="p" className="mt-0.5 truncate text-xs text-muted">{item.club}</FullText>
               </div>
 
               {/* 順位上昇 */}

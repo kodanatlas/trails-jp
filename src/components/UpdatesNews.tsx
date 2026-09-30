@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Newspaper } from "lucide-react";
+import { FullText } from "@/components/FullText";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import rankingsMeta from "@/data/rankings-meta.json";
 
@@ -152,9 +153,11 @@ export async function UpdatesNews() {
               </span>
               {e.href ? (
                 <span className="flex min-w-0 flex-1 items-center gap-2 text-sm">
-                  <Link href={e.href} className="truncate text-primary hover:underline">
-                    {e.label}
-                  </Link>
+                  <FullText className="min-w-0 truncate">
+                    <Link href={e.href} className="text-primary hover:underline">
+                      {e.label}
+                    </Link>
+                  </FullText>
                   {e.isNew && (
                     <span className="flex-shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">
                       NEW
@@ -162,7 +165,7 @@ export async function UpdatesNews() {
                   )}
                 </span>
               ) : (
-                <span className="min-w-0 flex-1 truncate text-sm text-foreground">{e.label}</span>
+                <FullText className="min-w-0 flex-1 truncate text-sm text-foreground">{e.label}</FullText>
               )}
             </li>
           ))}

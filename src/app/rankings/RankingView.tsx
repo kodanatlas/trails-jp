@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { ChevronDown, ChevronUp, Search, ExternalLink, BarChart3, Loader2, User } from "lucide-react";
 import Link from "next/link";
 import type { JOERankingEntry } from "@/lib/scraper/rankings";
+import { FullText } from "@/components/FullText";
 
 interface RankingConfig {
   type: string;
@@ -217,13 +218,15 @@ export function RankingView({ rankingConfigs }: RankingViewProps) {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <Link
-                        href={`/a/${encodeURIComponent(entry.athlete_name.replace(/\s+/g, ""))}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="truncate text-sm font-semibold hover:text-primary hover:underline"
-                      >
-                        {entry.athlete_name}
-                      </Link>
+                      <FullText className="min-w-0 truncate text-sm font-semibold">
+                        <Link
+                          href={`/a/${encodeURIComponent(entry.athlete_name.replace(/\s+/g, ""))}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="hover:text-primary hover:underline"
+                        >
+                          {entry.athlete_name}
+                        </Link>
+                      </FullText>
                       {!entry.is_active && (
                         <span className="flex-shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[9px] text-muted">対象外</span>
                       )}
@@ -264,9 +267,9 @@ export function RankingView({ rankingConfigs }: RankingViewProps) {
                           const isTop3 = i < 3;
                           return (
                             <div key={`${score.event_name}-${i}`} className="flex items-center gap-2">
-                              <span className={`w-36 truncate text-xs ${isTop3 ? "font-medium" : "text-muted"}`}>
+                              <FullText className={`w-36 truncate text-xs ${isTop3 ? "font-medium" : "text-muted"}`}>
                                 {score.event_name}
-                              </span>
+                              </FullText>
                               <div className="h-4 flex-1 overflow-hidden rounded bg-white/5">
                                 <div
                                   className={`h-full rounded ${isTop3 ? "bg-primary/60" : "bg-white/10"}`}

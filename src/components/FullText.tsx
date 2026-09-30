@@ -1,6 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { FULLTEXT_ON_LONG_PRESS } from "@/lib/ui-flags";
 import { createLongPress, placePopover, type LongPress } from "@/lib/ui/long-press";
@@ -12,21 +21,28 @@ import { createLongPress, placePopover, type LongPress } from "@/lib/ui/long-pre
  * docs/plans/2026-09-30_fulltext-long-press.md
  */
 
-type Tag = "span" | "p" | "div";
+type Tag = "span" | "p" | "div" | "h2";
 
 interface Props {
   as?: Tag;
   className?: string;
+  style?: CSSProperties;
+  /** 吹き出し・ツールチップに出す文字（既定は要素の文字そのもの）。例: 「名前（クラブ）」 */
+  fullText?: string;
   children: ReactNode;
 }
 
-export function FullText({ as = "span", className, children }: Props) {
+export function FullText({ as = "span", className, style, fullText, children }: Props) {
   if (!FULLTEXT_ON_LONG_PRESS) {
     const Plain = as;
-    return <Plain className={className}>{children}</Plain>;
+    return (
+      <Plain className={className} style={style} title={fullText}>
+        {children}
+      </Plain>
+    );
   }
   return (
-    <FullTextActive as={as} className={className}>
+    <FullTextActive as={as} className={className} style={style} fullText={fullText}>
       {children}
     </FullTextActive>
   );
@@ -38,7 +54,7 @@ const INTERACTIVE = "a, button, [role='button'], label, summary, select, input, 
 
 const isTruncated = (el: HTMLElement) => el.scrollWidth > el.clientWidth + 1;
 
-function FullTextActive({ as: Element, className, children }: Required<Pick<Props, "as">> & Props) {
+function FullTextActive({ as: Element, className, style, fullText, children }: Required<Pick<Props, "as">> & Props) {
   const ref = useRef<HTMLElement | null>(null);
   const [open, setOpen] = useState<{ text: string; anchor: DOMRect } | null>(null);
   const suppressClick = useRef(false);
@@ -47,8 +63,8 @@ function FullTextActive({ as: Element, className, children }: Required<Pick<Prop
   const show = useCallback(() => {
     const el = ref.current;
     if (!el || !isTruncated(el)) return;
-    setOpen({ text: el.textContent ?? "", anchor: el.getBoundingClientRect() });
-  }, []);
+    setOpen({ text: fullText ?? el.textContent ?? "", anchor: el.getBoundingClientRect() });
+  }, [fullText]);
   // 長押し判定は部品ごとに1つ。描画中に ref を触らないよう、マウント後に作ってイベントからだけ使う
   const longPressRef = useRef<LongPress | null>(null);
   useEffect(() => {
@@ -92,7 +108,9 @@ function FullTextActive({ as: Element, className, children }: Required<Pick<Prop
   const onMouseEnter = () => {
     const el = ref.current;
     if (!el) return;
-    if (isTruncated(el)) el.title = el.textContent ?? "";
+    // fullText 指定時は常に出す（元の title の代わり）。無ければ省略されているときだけ全文
+    if (fullText) el.title = fullText;
+    else if (isTruncated(el)) el.title = el.textContent ?? "";
     else el.removeAttribute("title");
   };
 
@@ -104,7 +122,7 @@ function FullTextActive({ as: Element, className, children }: Required<Pick<Prop
         }}
         // 長押しで文字選択が始まらないようにする（タッチ端末のみ。PC では選択・コピーできるまま）
         className={`${className ?? ""} [@media(hover:none)]:select-none`}
-        style={{ WebkitTouchCallout: "none" }}
+        style={{ ...style, WebkitTouchCallout: "none" }}
         onPointerDown={onPointerDown}
         onPointerMove={(e: PointerEvent<HTMLElement>) => longPressRef.current?.move(e.clientX, e.clientY)}
         onPointerUp={() => {

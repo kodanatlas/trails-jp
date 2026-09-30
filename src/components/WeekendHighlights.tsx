@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TrendingUp, Gauge, Target, ArrowRight } from "lucide-react";
+import { FullText } from "@/components/FullText";
 import wpJson from "@/data/weekend-points.json";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import athleteIndex from "../../public/data/athlete-index.json";
@@ -94,9 +95,9 @@ function PointRow({ item, rank }: { item: WeekendPointItem; rank: number }) {
             {disciplineLabel(item.discipline)}
           </span>
         </div>
-        <p className="mt-0.5 truncate text-xs text-muted">{item.club}</p>
+        <FullText as="p" className="mt-0.5 truncate text-xs text-muted">{item.club}</FullText>
         {item.eventName && (
-          <p className="mt-0.5 truncate text-[10px] text-muted">{item.eventName}</p>
+          <FullText as="p" className="mt-0.5 truncate text-[10px] text-muted">{item.eventName}</FullText>
         )}
       </div>
       {/* 指標: モバイルは名前の下に全幅で回り込み（崩れ防止）。常に右寄せ。 */}
@@ -129,9 +130,9 @@ function StandoutRowItem({ row, rank }: { row: StandoutRow; rank: number }) {
             {row.class_name}・{disciplineLabel(row.race_type)}
           </span>
         </div>
-        <p className="mt-0.5 truncate text-xs text-muted">{clubFor(key)}</p>
+        <FullText as="p" className="mt-0.5 truncate text-xs text-muted">{clubFor(key)}</FullText>
         {row.event_name && (
-          <p className="mt-0.5 truncate text-[10px] text-muted">{row.event_name}</p>
+          <FullText as="p" className="mt-0.5 truncate text-[10px] text-muted">{row.event_name}</FullText>
         )}
       </div>
       {/* 指標: モバイルは名前の下に全幅で回り込み（崩れ防止）。常に右寄せ。 */}

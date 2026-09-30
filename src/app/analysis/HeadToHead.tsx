@@ -13,6 +13,7 @@ import {
   type Tally,
 } from "@/lib/analysis/head-to-head";
 import type { LegH2HResult } from "@/lib/analysis/leg-h2h";
+import { FullText } from "@/components/FullText";
 
 interface Props {
   /** 自分（AthleteDetail がロード済みのプロフィール） */
@@ -292,8 +293,8 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
           <div className="rounded bg-surface p-3">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-primary">{profile.name}</p>
-                <p className="truncate text-[10px] text-muted">{profile.clubs[0] ?? ""}</p>
+                <FullText as="p" className="truncate text-sm font-bold text-primary">{profile.name}</FullText>
+                <FullText as="p" className="truncate text-[10px] text-muted">{profile.clubs[0] ?? ""}</FullText>
               </div>
               <div className="flex-shrink-0 text-center">
                 <p className="text-xl font-bold">{tallyText(h2h.total)}</p>
@@ -305,10 +306,10 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
                   href={`/a/${encodeURIComponent(toKey(oppProfile.name))}`}
                   className="inline-flex max-w-full items-center justify-end gap-0.5 text-sm font-bold text-accent underline decoration-accent/40 underline-offset-2 transition-colors hover:decoration-accent"
                 >
-                  <span className="truncate">{oppProfile.name}</span>
+                  <FullText className="truncate">{oppProfile.name}</FullText>
                   <ArrowUpRight className="h-3.5 w-3.5 flex-shrink-0" />
                 </Link>
-                <p className="truncate text-[10px] text-muted">{oppProfile.clubs[0] ?? ""}</p>
+                <FullText as="p" className="truncate text-[10px] text-muted">{oppProfile.clubs[0] ?? ""}</FullText>
               </div>
             </div>
             {h2h.records.length > 0 && (
@@ -374,7 +375,7 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
                 {legH2H.races.slice(0, 5).map((r, i) => (
                   <div key={`${r.date}-${i}`} className="flex items-center gap-2 text-[10px]">
                     <span className="w-16 flex-shrink-0 font-mono text-muted">{formatDate(r.date)}</span>
-                    <span className="min-w-0 flex-1 truncate text-muted">{r.eventName}</span>
+                    <FullText className="min-w-0 flex-1 truncate text-muted">{r.eventName}</FullText>
                     <span className="flex-shrink-0 font-mono">
                       <span className="font-bold text-primary">{r.wonA}</span>
                       <span className="text-muted/60">-</span>
@@ -401,13 +402,13 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
                 <span className="w-20 flex-shrink-0" />
                 <span className="w-4 flex-shrink-0" />
                 <span className="min-w-0 flex-1" />
-                <span className="w-14 flex-shrink-0 truncate text-right text-primary">
+                <FullText className="w-14 flex-shrink-0 truncate text-right text-primary">
                   {profile.name}
-                </span>
+                </FullText>
                 <span className="w-4 flex-shrink-0" />
-                <span className="w-14 flex-shrink-0 truncate text-right text-accent">
+                <FullText className="w-14 flex-shrink-0 truncate text-right text-accent">
                   {oppProfile.name}
-                </span>
+                </FullText>
               </div>
               <div className="space-y-1">
                 {(showAllHistory ? h2h.records : h2h.records.slice(0, 10)).map((r, i) => (
@@ -427,7 +428,7 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
                     >
                       {r.discipline === "sprint" ? "S" : "F"}
                     </span>
-                    <span className="min-w-0 flex-1 truncate">{r.eventName}</span>
+                    <FullText className="min-w-0 flex-1 truncate">{r.eventName}</FullText>
                     <span
                       className={`w-14 flex-shrink-0 text-right font-mono font-bold ${
                         r.result === "win" ? "text-primary" : "text-muted"
@@ -480,7 +481,7 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
                     <span className="w-20 flex-shrink-0 text-xs font-medium text-muted">
                       {formatDate(m.date)}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-xs">{m.eventName}</span>
+                    <FullText className="min-w-0 flex-1 truncate text-xs">{m.eventName}</FullText>
                     {m.sameClass && m.classNames.length > 0 && (
                       <span className="flex-shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-muted">
                         {m.classNames.join(" / ")}

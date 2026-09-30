@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { CalendarCheck, ExternalLink, Loader2 } from "lucide-react";
 import type { AthleteEntryRef } from "@/lib/entries/index-types";
+import { FullText } from "@/components/FullText";
 
 interface Props {
   /** null = 読み込み中。読み込み完了後は entries 配列（空可）。 */
@@ -114,11 +115,11 @@ export function UpcomingEntries({ data }: Props) {
 
                 {/* 大会名 + 所属 */}
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-xs">{e.eventName}</div>
-                  <div className="truncate text-[10px] text-muted">
+                  <FullText as="div" className="truncate text-xs">{e.eventName}</FullText>
+                  <FullText as="div" className="truncate text-[10px] text-muted">
                     {e.prefecture}
                     {e.affiliation ? ` · ${e.affiliation}` : ""}
-                  </div>
+                  </FullText>
                 </div>
 
                 {/* 受付ステータス（none=判定不能はバッジ非表示） */}

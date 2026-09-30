@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CalendarDays, MapPin, ChevronLeft, ChevronRight, ChevronDown, ExternalLink, Search, Bell, BarChart3, ListChecks, Users, Loader2, Route } from "lucide-react";
 import type { JOEEvent } from "@/lib/scraper/events";
 import type { EntryListResult } from "@/lib/scraper/entries";
+import { FullText } from "@/components/FullText";
 
 /** ページから渡すイベントのスリム型。RSC ペイロード削減のため UI が参照するフィールドに限定する。 */
 export type EventListItem = Pick<
@@ -418,7 +419,7 @@ export function EventList({ events }: EventListProps) {
                           }`}
                         >
                           {e.recently_updated && <Bell className="h-2 w-2 flex-shrink-0 text-amber-400" />}
-                          <span className="truncate">{e.name}</span>
+                          <FullText className="truncate">{e.name}</FullText>
                         </a>
                       ))}
                     </>
@@ -442,7 +443,7 @@ export function EventList({ events }: EventListProps) {
                       {e.update_label || "更新"}
                     </span>
                   )}
-                  <span className="flex-1 truncate">{e.name}</span>
+                  <FullText className="flex-1 truncate">{e.name}</FullText>
                   <span className="text-xs text-muted">{e.prefecture}</span>
                   <ExternalLink className="h-3 w-3 flex-shrink-0 text-muted" />
                 </a>
@@ -512,7 +513,7 @@ function EventEntries({ eventId, isOpen, state, openTeams, onToggle, onToggleTea
                       <span className="flex min-w-0 items-center gap-1.5">
                         <ChevronRight className={`h-3 w-3 flex-shrink-0 text-muted transition-transform ${teamOpen ? "rotate-90" : ""}`} />
                         <Users className="h-3 w-3 flex-shrink-0 text-muted" />
-                        <span className="truncate font-medium">{team.affiliation}</span>
+                        <FullText className="truncate font-medium">{team.affiliation}</FullText>
                       </span>
                       <span className="flex-shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-muted">
                         {team.count}人
@@ -527,10 +528,10 @@ function EventEntries({ eventId, isOpen, state, openTeams, onToggle, onToggleTea
                             </span>
                             <span className="flex-shrink-0">{entry.name}</span>
                             {entry.affiliation && (
-                              <span className="min-w-0 truncate text-[10px] text-muted">{entry.affiliation}</span>
+                              <FullText className="min-w-0 truncate text-[10px] text-muted">{entry.affiliation}</FullText>
                             )}
                             {entry.members && (
-                              <span className="flex-shrink-0 truncate text-[10px] text-muted">（{entry.members}）</span>
+                              <FullText className="flex-shrink-0 truncate text-[10px] text-muted">（{entry.members}）</FullText>
                             )}
                           </li>
                         ))}

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, ChevronRight } from "lucide-react";
+import { FullText } from "@/components/FullText";
 
 interface EventItem {
   eventId: number;
@@ -49,7 +50,7 @@ export function ResultsBrowse({ events }: { events: EventItem[] }) {
             className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/30 hover:bg-card-hover"
           >
             <span className="w-[5.5rem] flex-shrink-0 font-mono text-xs text-muted">{e.date}</span>
-            <span className="min-w-0 flex-1 truncate text-sm font-medium">{e.name}</span>
+            <FullText className="min-w-0 flex-1 truncate text-sm font-medium">{e.name}</FullText>
             <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted" />
           </Link>
         ))}

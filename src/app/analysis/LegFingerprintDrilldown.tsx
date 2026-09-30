@@ -15,6 +15,7 @@ import {
   type DrilldownRow,
   type DrilldownSelection,
 } from "@/lib/analysis/leg-fingerprint-drilldown";
+import { FullText } from "@/components/FullText";
 
 /**
  * ミスの傾向カードのセル（または規模バー）を開いたときの根拠レッグ一覧（インラインパネル）。
@@ -231,7 +232,7 @@ function RaceMeta({ row }: { row: DrilldownRow }) {
   return (
     <p className="mt-1.5 flex min-w-0 gap-1.5 text-[10px] text-muted">
       <span className="flex-shrink-0 font-mono">{row.date.replace(/-/g, "/")}</span>
-      <span className="min-w-0 truncate">{row.event}</span>
+      <FullText className="min-w-0 truncate">{row.event}</FullText>
       {row.className && <span className="flex-shrink-0">{row.className}</span>}
     </p>
   );
@@ -249,7 +250,7 @@ function LegLink({ row, href, showSev }: { row: DrilldownRow; href: string; show
     >
       <span className="w-12 flex-shrink-0 rounded bg-tag py-0.5 text-center font-mono text-[10px] text-muted">{row.legLabel}</span>
       <span className="w-10 flex-shrink-0 text-right font-mono tabular-nums">{formatLap(row.lapSec)}</span>
-      <span className={`min-w-0 flex-1 truncate ${tone}`}>{formatDelta(row.deltaSec, row.deltaPct)}</span>
+      <FullText className={`min-w-0 flex-1 truncate ${tone}`}>{formatDelta(row.deltaSec, row.deltaPct)}</FullText>
       {showSev && row.sevBin != null && (
         <span className="flex-shrink-0 rounded bg-negative/15 px-1 text-[9px] text-negative">{SEV_TEXT[row.sevBin]}</span>
       )}
@@ -273,7 +274,7 @@ function ExcludedNote({ detail }: { detail: DisciplineDetail }) {
             <div key={i}>
               <p className="flex min-w-0 gap-1.5">
                 <span className="flex-shrink-0 font-mono">{race.date.replace(/-/g, "/")}</span>
-                <span className="min-w-0 truncate">{race.event}</span>
+                <FullText className="min-w-0 truncate">{race.event}</FullText>
                 {race.className && <span className="flex-shrink-0">{race.className}</span>}
               </p>
               <p className="pl-2 text-muted/80">{REASON_LABEL[race.reason]}、レース全体を除外</p>
