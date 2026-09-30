@@ -6,7 +6,7 @@
  * 並べ替え・文言化する。明細は集計と一致検証済み（ビルド時）なので、ここでは数え直さない。
  * UI 文言では「ロス」を使わない（界隈で使わない表現・feedback_orienteering_no_loss_wording）。
  */
-import { legLabel } from "@/lib/results/leg-analysis";
+import { fmtSignedSeconds, legLabel } from "@/lib/results/leg-analysis";
 import type { DetailRace, DisciplineDetail } from "./leg-fingerprint-details";
 
 /** 何を開いたか: 3×3 セル（局面*3+レッグ長）か、ミスの規模ビン（0小/1中/2大） */
@@ -105,16 +105,16 @@ export function sortDrilldownRows(rows: readonly DrilldownRow[], order: Drilldow
   return [...rows].sort(order === "delta" ? (a, b) => b.deltaSec - a.deltaSec || byDate(a, b) : byDate);
 }
 
-function formatSeconds(sec: number): string {
-  const s = Math.round(Math.abs(sec));
-  return s >= 60 ? `${Math.floor(s / 60)}分${s % 60}秒` : `${s}秒`;
-}
-
-/** 想定タイムとの差の文言。速いレッグは「+-6秒」でなく「6秒速い」と書き分ける */
+/**
+ * 想定タイムとの差の文言（一覧の行用）。スマホ幅で数字が切れないよう、結果分析ページと同じ m:ss 表記
+ * （fmtSignedSeconds: "+1:34" / "-0:08" / "0:00"）にし、「想定より」は付けない（パネル上部に明記）。
+ * 遅れたレッグだけ想定比（%）を添える
+ */
 export function formatDelta(deltaSec: number, deltaPct: number): string {
-  if (Math.round(deltaSec) === 0) return "想定どおり";
-  if (deltaSec < 0) return `想定より ${formatSeconds(deltaSec)}速い`;
-  return `想定より +${formatSeconds(deltaSec)}（+${deltaPct}%）`;
+  const sec = Math.round(deltaSec);
+  const signed = fmtSignedSeconds(sec);
+  // 括弧は半角（全角だと 3 桁の % で iPhone 幅に収まらない）
+  return sec > 0 ? `${signed} (+${deltaPct}%)` : signed;
 }
 
 /** ラップ秒 → m:ss */

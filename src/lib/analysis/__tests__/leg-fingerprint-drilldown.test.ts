@@ -97,13 +97,15 @@ describe("sortDrilldownRows", () => {
 });
 
 describe("formatDelta / formatLap", () => {
-  it("遅れは「想定より +45秒（+38%）」・1分以上は分秒", () => {
-    expect(formatDelta(45, 38)).toBe("想定より +45秒（+38%）");
-    expect(formatDelta(75, 84)).toBe("想定より +1分15秒（+84%）");
+  // 一覧の行はスマホで数字が切れないよう、結果分析ページと同じ m:ss 表記（fmtSignedSeconds）にする。
+  // 「想定より」はパネル上部に「想定タイムとの差」と明記して省く
+  it("遅れは「+0:45 (+38%)」「+1:15 (+84%)」（半角括弧＝3 桁の % でも iPhone 幅に収まる）", () => {
+    expect(formatDelta(45, 38)).toBe("+0:45 (+38%)");
+    expect(formatDelta(75, 84)).toBe("+1:15 (+84%)");
   });
-  it("速いときは「想定より 6秒速い」（+-6 と書かない）・0 は想定どおり", () => {
-    expect(formatDelta(-6, -6)).toBe("想定より 6秒速い");
-    expect(formatDelta(0, 0)).toBe("想定どおり");
+  it("速いときは「-0:06」（+-6 と書かない）・0 は 0:00", () => {
+    expect(formatDelta(-6, -6)).toBe("-0:06");
+    expect(formatDelta(0, 0)).toBe("0:00");
   });
   it("ラップは m:ss", () => {
     expect(formatLap(164)).toBe("2:44");
