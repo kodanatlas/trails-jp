@@ -37,15 +37,19 @@ interface Props {
  */
 function DeferUntilVisible({
   minHeight,
+  eager = false,
   children,
 }: {
   minHeight: number;
+  /** true なら遅延せず即マウント（URL で状態を復元する等、最初から中身が要るとき） */
+  eager?: boolean;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [shown, setShown] = useState(false);
+  const [shown, setShown] = useState(eager);
 
   useEffect(() => {
+    if (eager) return;
     const el = ref.current;
     if (!el) return;
     // 非対応環境（IntersectionObserver なし）は遅延せず即マウント
@@ -64,7 +68,7 @@ function DeferUntilVisible({
     );
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [eager]);
 
   return (
     <div ref={ref} style={shown ? undefined : { minHeight }}>
@@ -80,6 +84,10 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
     { entries: AthleteEntryRef[]; generatedAt: string | null } | null
   >(null);
   const [loading, setLoading] = useState(true);
+  // ミスの傾向の一覧を開いた状態（?fp=）で来たか。AthleteDetail はクライアントでのみ描画される
+  const [fpInUrl] = useState(
+    () => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("fp"),
+  );
 
   useEffect(() => {
     // 選手切替時の stale レスポンス混入を防ぐガード（前選手の応答が後勝ちで上書きするのを防止）
@@ -177,7 +185,8 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
         </DeferUntilVisible>
       )}
       <CrossRaceCard name={profile.name} />
-      <DeferUntilVisible minHeight={280}>
+      {/* ?fp=（ミスの傾向の一覧を開いていた）付きで来たら即マウント＝結果分析から「戻る」で一覧を復元できる */}
+      <DeferUntilVisible minHeight={280} eager={fpInUrl}>
         {/* key: 選手切替でドリルダウンの開閉・読み込んだ明細をリセット */}
         <LegFingerprintCard key={profile.name} name={profile.name} />
       </DeferUntilVisible>

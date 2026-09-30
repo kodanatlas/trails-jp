@@ -14,6 +14,27 @@ export type DrilldownSelection = { kind: "cell"; cell: number } | { kind: "sev";
 
 export type DrilldownOrder = "date" | "delta";
 
+/** 開いている一覧（種目＋セル/規模）。URL の ?fp= に残し、結果分析ページから「戻る」で復元する */
+export interface DrilldownOpen {
+  disc: "f" | "s";
+  sel: DrilldownSelection;
+}
+
+/** ?fp= の値: "f-c3"（フォレストのセル3）/ "s-s2"（スプリントの規模「大」） */
+export function encodeFpParam(open: DrilldownOpen): string {
+  return `${open.disc}-${open.sel.kind === "cell" ? `c${open.sel.cell}` : `s${open.sel.bin}`}`;
+}
+
+/** ?fp= を読み戻す。範囲外・不正な値は null（手で書き換えられた URL でも落とさない） */
+export function parseFpParam(value: string | null | undefined): DrilldownOpen | null {
+  const m = value?.match(/^([fs])-([cs])(\d)$/);
+  if (!m) return null;
+  const disc = m[1] as "f" | "s";
+  const n = Number(m[3]);
+  if (m[2] === "c") return n <= 8 ? { disc, sel: { kind: "cell", cell: n } } : null;
+  return n <= 2 ? { disc, sel: { kind: "sev", bin: n as 0 | 1 | 2 } } : null;
+}
+
 export interface DrilldownRow {
   raceIdx: number;
   legIdx: number;          // コース上のレッグ番号（0始まり）

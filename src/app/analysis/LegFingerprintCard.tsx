@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type {
   LegFingerprintIndex,
   DisciplineFingerprint,
@@ -8,7 +8,12 @@ import type {
   PeriodStat,
 } from "@/lib/analysis/leg-fingerprint";
 import { legFpShardUrl, type AthleteDetailShard } from "@/lib/analysis/leg-fingerprint-details";
-import type { DrilldownSelection } from "@/lib/analysis/leg-fingerprint-drilldown";
+import {
+  encodeFpParam,
+  parseFpParam,
+  type DrilldownOpen,
+  type DrilldownSelection,
+} from "@/lib/analysis/leg-fingerprint-drilldown";
 import { LegFingerprintDrilldown, type DrilldownLoadState } from "./LegFingerprintDrilldown";
 
 /** 期間別ミス率を 5pt 刻みに丸める（小標本の見かけの精度を出さない） */
@@ -41,6 +46,30 @@ function loadLegFpShard(gen: string, key: string): Promise<AthleteDetailShard | 
     });
   shardCache.set(cacheKey, p);
   return p;
+}
+
+type ShardState = { state: DrilldownLoadState | "idle"; data: AthleteDetailShard | null };
+
+function toShardState(data: AthleteDetailShard | null, gen: string): ShardState {
+  if (!data) return { state: "error", data: null };
+  return { state: data.gen === gen ? "ok" : "stale", data };
+}
+
+/** URL の ?fp= から開いていたパネルを読む（サーバー描画時・不正値は null） */
+function readFpFromUrl(): DrilldownOpen | null {
+  if (typeof window === "undefined") return null;
+  return parseFpParam(new URLSearchParams(window.location.search).get("fp"));
+}
+
+/**
+ * 開いているパネルを URL の ?fp= に同期する（閉じたら削除）。他のクエリ（?vs= 等）は残す。
+ * 第1引数に history.state を渡して Next の履歴状態を壊さない（AnalysisHub の syncAthleteUrl と同じ作法）。
+ */
+function syncFpParam(open: DrilldownOpen | null) {
+  const url = new URL(window.location.href);
+  if (open) url.searchParams.set("fp", encodeFpParam(open));
+  else url.searchParams.delete("fp");
+  history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
 const sameSelection = (a: DrilldownSelection, b: DrilldownSelection): boolean =>
@@ -298,31 +327,52 @@ export function LegFingerprintCard({ name }: { name: string }) {
     };
   }, []);
 
-  // ドリルダウン: 開いているパネル（種目＋セル/規模）と、選手別明細の読み込み状態
-  const [open, setOpen] = useState<{ disc: "f" | "s"; sel: DrilldownSelection } | null>(null);
-  const [shard, setShard] = useState<{ state: DrilldownLoadState | "idle"; data: AthleteDetailShard | null }>({
-    state: "idle",
-    data: null,
-  });
+  // ドリルダウン: 開いているパネル（種目＋セル/規模）と、選手別明細の読み込み状態。
+  // 開いているパネルは URL の ?fp= に残す（結果分析ページへ移動して「戻る」で、一覧を開いた画面に戻すため）
+  const [initialOpen] = useState(readFpFromUrl);
+  const [open, setOpen] = useState<DrilldownOpen | null>(initialOpen);
+  const [shard, setShard] = useState<ShardState>({ state: initialOpen ? "loading" : "idle", data: null });
+  const gen = index?.gen; // 明細と一致検証済みのビルドだけが付ける。無ければ（git の旧版）ドリルダウンなし
+
+  // URL から復元したパネルがあれば、集計（gen）が届いた時点で明細を読み込む
+  useEffect(() => {
+    if (!initialOpen || !gen) return;
+    let cancelled = false;
+    loadLegFpShard(gen, name).then((data) => {
+      if (!cancelled) setShard(toShardState(data, gen));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [initialOpen, gen, name]);
+
+  // 復元した一覧が表示されたら1回だけ画面に入れる（戻った直後はページ先頭＝一覧が見えないため）
+  const rootRef = useRef<HTMLDivElement>(null);
+  const scrolledRef = useRef(false);
+  useEffect(() => {
+    if (!initialOpen || shard.state !== "ok" || scrolledRef.current) return;
+    scrolledRef.current = true;
+    rootRef.current?.querySelector('[role="region"]')?.scrollIntoView({ block: "start" });
+  }, [initialOpen, shard.state]);
 
   const athlete = index?.athletes[name];
   if (!index || !athlete || (!athlete.f && !athlete.s)) return null;
-  const gen = index.gen; // 明細と一致検証済みのビルドだけが付ける。無ければ（git の旧版）ドリルダウンなし
 
   const fetchShard = () => {
     if (!gen) return;
     setShard({ state: "loading", data: null });
-    loadLegFpShard(gen, name).then((data) => {
-      if (!data) setShard({ state: "error", data: null });
-      else setShard({ state: data.gen === gen ? "ok" : "stale", data });
-    });
+    loadLegFpShard(gen, name).then((data) => setShard(toShardState(data, gen)));
+  };
+  const openPanel = (next: DrilldownOpen | null) => {
+    setOpen(next);
+    syncFpParam(next);
   };
   const select = (disc: "f" | "s", sel: DrilldownSelection) => {
     if (open && open.disc === disc && sameSelection(open.sel, sel)) {
-      setOpen(null); // 同じものをもう一度タップで閉じる
+      openPanel(null); // 同じものをもう一度タップで閉じる
       return;
     }
-    setOpen({ disc, sel });
+    openPanel({ disc, sel });
     if (shard.state === "idle" || shard.state === "error") fetchShard();
   };
   const drillFor = (disc: "f" | "s", sevLabels: [string, string, string]): Drill | undefined => {
@@ -339,7 +389,7 @@ export function LegFingerprintCard({ name }: { name: string }) {
           detail={shard.data?.[disc] ?? null}
           state={shard.state === "idle" ? "loading" : shard.state}
           onRetry={fetchShard}
-          onClose={() => setOpen(null)}
+          onClose={() => openPanel(null)}
           athleteKey={name}
           discipline={kind}
           sevBins={index.params.sevBins[kind]}
@@ -352,7 +402,7 @@ export function LegFingerprintCard({ name }: { name: string }) {
   const sSev: [string, string, string] = ["小 (5-15s)", "中 (15-45s)", "大 (45s+)"];
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div ref={rootRef} className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-sm font-bold">ミスの傾向（クロスレース）</h3>
         <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[9px] font-medium text-accent">β</span>

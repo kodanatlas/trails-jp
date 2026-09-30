@@ -7,6 +7,8 @@ import {
   formatLap,
   excludedSummary,
   drilldownHref,
+  encodeFpParam,
+  parseFpParam,
 } from "../leg-fingerprint-drilldown";
 
 // ミスの傾向ドリルダウン（docs/plans/2026-09-30_miss-trend-drilldown.md §4.2）の表示用純関数
@@ -119,6 +121,20 @@ describe("excludedSummary: 集計対象外の内訳", () => {
     ]);
     expect(s.packLegs).toBe(4);
     expect(s.packUnchecked).toBe(1);
+  });
+});
+
+describe("encodeFpParam / parseFpParam（開いている一覧を URL の ?fp= に残す）", () => {
+  it("種目＋セル／規模を短い文字列にし、読み戻せる", () => {
+    expect(encodeFpParam({ disc: "f", sel: { kind: "cell", cell: 3 } })).toBe("f-c3");
+    expect(encodeFpParam({ disc: "s", sel: { kind: "sev", bin: 2 } })).toBe("s-s2");
+    expect(parseFpParam("f-c3")).toEqual({ disc: "f", sel: { kind: "cell", cell: 3 } });
+    expect(parseFpParam("s-s2")).toEqual({ disc: "s", sel: { kind: "sev", bin: 2 } });
+  });
+  it("範囲外・不正な値は null（手で書き換えられた URL でも落ちない）", () => {
+    for (const bad of [null, "", "f-c9", "f-s3", "x-c1", "f-c", "f-c-1", "f-c1x", "fc3"]) {
+      expect(parseFpParam(bad)).toBeNull();
+    }
   });
 });
 
