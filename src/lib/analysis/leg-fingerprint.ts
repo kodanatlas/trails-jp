@@ -14,6 +14,8 @@
  * パック除染（方法論 line 161）: 時計時刻の境界近接が連続する区間を集団走とみなし
  * 両者のレッグを除外する（リーダー/フォロワー識別なし・除外は標本減のみで偏りを作らない）。
  */
+// 明細の型のみ（実行時の循環 import を作らない。検証関数は leg-fingerprint-details.ts 側）
+import type { DetailLegs, DetailRace, DisciplineDetail, FingerprintDetails } from "./leg-fingerprint-details";
 
 export interface FingerprintParams {
   missRatio: number;
@@ -90,6 +92,8 @@ export interface TrackedLegRow {
   elapsed_sec: (number | null)[];
   lc_event_id: number;
   lc_class_id: number;
+  /** クラス内の走者番号（同クラス再走の区別・明細のリンク用）。旧データ/テストでは未設定 */
+  runner_index?: number | null;
 }
 
 /** fetch②（companion 行）の形（tracked 行も companion を兼ねる） */
@@ -167,6 +171,8 @@ export interface CohortNorms {
 export interface LegFingerprintIndex {
   v: 1;
   generatedAt: string | null;
+  /** 明細（public/data/leg-fp/<gen>/）の世代番号。明細と一致検証済みのビルドだけが付ける */
+  gen?: string;
   params: FingerprintParams;
   athletes: Record<string, AthleteFingerprint>;
   /** Stage 2c: 種目別コホート帯基準（記述比較用・検定なし） */
@@ -402,6 +408,33 @@ interface RacePool {
   adjNext: boolean[]; // 次のコースレッグも連続してプールされているか（lag-1 ペア判定）
   losses: number[];   // ミスレッグの Δ（表示用）
   rhos: number[];     // ミスレッグの ρ
+  // ---- 明細（ドリルダウン）用: cells/miss と同じ並びの出所 ----
+  raceIdx: number;    // DisciplineDetail.races の添字
+  legIdx: number[];   // コース上のレッグ番号（0始まり）
+  laps: number[];
+  lossAll: number[];
+}
+
+/** 明細の組み立て途中の状態（選手×種目） */
+interface DetailDraft {
+  races: DetailRace[];
+  pack: { r: number[]; l: number[] };
+}
+
+/** 集計に採用したレースのプールから明細のレッグ列を作る（集計と同じ並び・同じ値） */
+function legsFromPools(races: RacePool[]): DetailLegs {
+  const legs: DetailLegs = { r: [], l: [], c: [], lap: [], loss: [], m: [] };
+  for (const race of races) {
+    for (let i = 0; i < race.miss.length; i++) {
+      legs.r.push(race.raceIdx);
+      legs.l.push(race.legIdx[i]);
+      legs.c.push(race.cells[i]);
+      legs.lap.push(race.laps[i]);
+      legs.loss.push(race.lossAll[i]);
+      legs.m.push(race.miss[i] ? 1 : 0);
+    }
+  }
+  return legs;
 }
 
 /** ミス列と隣接情報から lag-1 層（a=ミス→ミス, n1=ミス→次あり, b=クリーン→ミス, n0） */
@@ -420,12 +453,30 @@ function lagStratum(miss: boolean[], adjNext: boolean[]): { a: number; n1: numbe
   return s;
 }
 
-/** lc_leg_splits の行群から指紋 index を構築する */
+export interface LegFingerprintArtifacts {
+  index: LegFingerprintIndex;
+  /** 掲載選手×種目の明細（index に指紋がある組だけ） */
+  details: FingerprintDetails;
+}
+
+/** lc_leg_splits の行群から指紋 index を構築する（カード用の集計のみ） */
 export function buildLegFingerprintIndex(
   tracked: TrackedLegRow[],
   companions: CompanionRow[],
   opts: Partial<FingerprintParams> & { periodCutoff?: string } = {}
 ): LegFingerprintIndex {
+  return buildLegFingerprintArtifacts(tracked, companions, opts).index;
+}
+
+/**
+ * 指紋 index と、その根拠となる明細を同じループから構築する。
+ * 明細と集計の一致は verifyFingerprintDetails（leg-fingerprint-details.ts）で検証する。
+ */
+export function buildLegFingerprintArtifacts(
+  tracked: TrackedLegRow[],
+  companions: CompanionRow[],
+  opts: Partial<FingerprintParams> & { periodCutoff?: string } = {}
+): LegFingerprintArtifacts {
   const { periodCutoff, ...paramOverrides } = opts;
   const P: FingerprintParams = { ...DEFAULT_PARAMS, ...paramOverrides };
 
@@ -455,6 +506,7 @@ export function buildLegFingerprintIndex(
   const weights = new Map<string, RaceWeight[]>();
   const meta = new Map<string, { races: number; legsPack: number; packUnchecked: number }>();
   const speedsByKey = new Map<string, number[]>(); // コホート帯用（レース巡航速度）
+  const drafts = new Map<string, DetailDraft>();   // 明細（ドリルダウン）用
 
   for (const r of tracked) {
     if (r.rank == null || r.speed == null) continue;
@@ -470,6 +522,18 @@ export function buildLegFingerprintIndex(
 
     const m = meta.get(key) ?? { races: 0, legsPack: 0, packUnchecked: 0 };
     m.races++;
+    const draft = drafts.get(key) ?? { races: [], pack: { r: [], l: [] } };
+    drafts.set(key, draft);
+    const raceIdx = draft.races.length; // このレースが明細で得る添字（下のどちらの出口でも必ず push する）
+    const detailRace: DetailRace = {
+      d: r.event_date,
+      e: r.event_name,
+      c: r.class_name,
+      ev: r.lc_event_id,
+      cl: r.lc_class_id,
+      ri: r.runner_index ?? null,
+      L,
+    };
     const spd = speedsByKey.get(key) ?? [];
     spd.push(r.speed);
     speedsByKey.set(key, spd);
@@ -499,6 +563,11 @@ export function buildLegFingerprintIndex(
     }
     const packCount = packed.filter(Boolean).length;
     m.legsPack += packCount;
+    packed.forEach((p, l) => {
+      if (!p) return;
+      draft.pack.r.push(raceIdx);
+      draft.pack.l.push(l);
+    });
 
     // レッグ長ターシル（レース内・有効レッグの Ave3 分位）
     const ave3: (number | null)[] = r.lap_sec.map((lap, l) =>
@@ -518,6 +587,10 @@ export function buildLegFingerprintIndex(
       adjNext: [],
       losses: [],
       rhos: [],
+      raceIdx,
+      legIdx: [],
+      laps: [],
+      lossAll: [],
     };
     let cleanLegs = 0;
     let prevPooledLeg = -2;
@@ -536,6 +609,9 @@ export function buildLegFingerprintIndex(
       pool.cells.push(phase * 3 + len);
       pool.miss.push(isMiss);
       pool.adjNext.push(false);
+      pool.legIdx.push(l);
+      pool.laps.push(lap);
+      pool.lossAll.push(loss);
       prevPooledLeg = l;
       if (isMiss) {
         pool.losses.push(loss);
@@ -552,10 +628,13 @@ export function buildLegFingerprintIndex(
     weights.set(key, wl);
 
     // レースゲート: パック過半 or 除染後クリーン < gate はプール不採用
-    if (packCount > P.packMaxShare * L || cleanLegs < P.raceCleanGate || pool.miss.length === 0) {
+    const packGate = packCount > P.packMaxShare * L;
+    if (packGate || cleanLegs < P.raceCleanGate || pool.miss.length === 0) {
+      draft.races.push({ ...detailRace, x: packGate ? "pack" : "clean", ...(myStart == null ? { pu: 1 as const } : {}) });
       meta.set(key, m);
       continue;
     }
+    draft.races.push({ ...detailRace, ...(myStart == null ? { pu: 1 as const } : {}) });
     const list = pools.get(key) ?? [];
     list.push(pool);
     pools.set(key, list);
@@ -565,6 +644,7 @@ export function buildLegFingerprintIndex(
   // 集計
   const athletes: Record<string, AthleteFingerprint> = {};
   const ensure = (name: string): AthleteFingerprint => (athletes[name] ??= {});
+  const details: FingerprintDetails = {};
 
   for (const [key, wl] of weights) {
     const [name, disc] = key.split("|");
@@ -704,6 +784,9 @@ export function buildLegFingerprintIndex(
     };
     if (disc === "f") ensure(name).f = fp;
     else ensure(name).s = fp;
+    const draft = drafts.get(key)!;
+    const detail: DisciplineDetail = { races: draft.races, legs: legsFromPools(races), pack: draft.pack };
+    details[name] = disc === "f" ? { ...details[name], f: detail } : { ...details[name], s: detail };
     const spds = speedsByKey.get(key);
     if (spds && spds.length > 0) {
       const s = [...spds].sort((a, b) => a - b);
@@ -742,7 +825,7 @@ export function buildLegFingerprintIndex(
     cohorts[disc] = { cuts, bands };
   }
 
-  return {
+  const index: LegFingerprintIndex = {
     v: 1,
     generatedAt: null,
     params: P,
@@ -751,4 +834,5 @@ export function buildLegFingerprintIndex(
     homonymExcluded: homonyms.size,
     ...(periodCutoff ? { periodCutoff } : {}),
   };
+  return { index, details };
 }
