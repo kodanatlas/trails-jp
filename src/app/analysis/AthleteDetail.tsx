@@ -178,7 +178,8 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
       )}
       <CrossRaceCard name={profile.name} />
       <DeferUntilVisible minHeight={280}>
-        <LegFingerprintCard name={profile.name} />
+        {/* key: 選手切替でドリルダウンの開閉・読み込んだ明細をリセット */}
+        <LegFingerprintCard key={profile.name} name={profile.name} />
       </DeferUntilVisible>
       <RecentEvents profile={profile} lcData={lcData} />
       {/* key で選手切替時に相手選択をリセット */}
