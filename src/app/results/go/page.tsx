@@ -1,15 +1,12 @@
 import { redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { readEvents } from "@/lib/events-store";
-import { fetchEventClasses } from "@/lib/scraper/lapcenter";
+import { getEventClassesCached } from "@/lib/results/event-classes-cache";
 
 // 遷移高速化: 解決に使う2つの取得をデータキャッシュに載せる。
 // events ストア(マッチ済 lapcenter_event_id 含む)は日次cronでしか変わらない → 5分キャッシュ。
+// クラス一覧は結果の再掲載で ID が振り直されうるため 1 時間（event-classes-cache.ts）。
 const getEventsCached = unstable_cache(() => readEvents(), ["results-go-events"], { revalidate: 300 });
-// イベント内クラス一覧は不変 → 1日キャッシュ（解決の最遅部＝mulka2取得を温め、再クリックを即時化）。
-const getEventClassesCached = unstable_cache((eventId: number) => fetchEventClasses(eventId), ["results-go-classes"], {
-  revalidate: 86400,
-});
 
 /**
  * 入口①の解決ルート。選手ページのリンクから渡された
