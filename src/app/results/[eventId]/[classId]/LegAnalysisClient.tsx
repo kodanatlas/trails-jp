@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Loader2, X } from "lucide-react";
 import type { LapCenterRunnerDetail } from "@/lib/scraper/lapcenter-detail";
 import { FullText } from "@/components/FullText";
+import { FieldComparisonCard } from "./FieldComparisonCard";
 import { lapStrToSeconds } from "@/lib/scraper/lapcenter-detail";
 import type { LapCenterPerformance } from "@/lib/analysis/types";
 import { resolveAliasNameForLc } from "@/lib/identity/athlete-alias";
@@ -730,79 +731,8 @@ function SingleView({
         </div>
       )}
 
-      {view.n >= 5 &&
-        (() => {
-          // 罠レッグ判定: 自分の各ロスを「コース起因(フィールド中央値) + 自分の超過」に分解。
-          // フロアは種目別、n<8 はフィールド中央値が不安定なためラベル判定せず生値のみ提示
-          // （docs/plans/2026-06-29_results-analysis-methodology.md の n連動抑制ゲート）。
-          const FLOOR = raceDiscipline === "sprint" ? 5 : 10; // これ未満の小ロスは対象外（秒）
-          const judge = view.n >= 8;
-          const rows = view.legs
-            .flatMap((l, i) => {
-              const your = l.lossSec;
-              const fieldMed = l.fieldMedianLossSec;
-              if (your <= FLOOR || fieldMed == null) return [];
-              const course = Math.max(0, Math.min(fieldMed, your)); // コース起因はフィールド中央値（自分のロスで頭打ち）
-              const own = your - course; // 自分の超過
-              const ratio = your > 0 ? course / your : 0;
-              const verdict = ratio >= 0.5 ? "trap" : ratio <= 0.2 ? "own" : "mixed";
-              return [{ i, label: l.label, your, course, own, verdict }];
-            })
-            .sort((a, b) => b.your - a.your)
-            .slice(0, 6);
-          if (rows.length === 0) return null;
-          const totCourse = rows.reduce((s, r) => s + r.course, 0);
-          const totOwn = rows.reduce((s, r) => s + r.own, 0);
-          return (
-            <div className="mt-5 rounded-2xl border border-border bg-card p-4">
-              <p className="text-[11px] tracking-wider text-muted">
-                {judge ? "罠レッグ vs 自分のミス" : "ロスの内訳（フィールド中央値との比較・参考）"}
-              </p>
-              {judge ? (
-                <p className="mb-2 text-[10px] text-muted/80">
-                  各ロスをフィールド全体と比較。フィールドも遅い＝<span className="text-warning">罠レッグ（コース要因）</span>／フィールドは速いのに自分だけ＝<span className="text-red-400">自分のミス</span>。
-                </p>
-              ) : (
-                <p className="mb-2 text-[10px] text-muted/80">
-                  完走 {view.n} 名ではフィールド中央値が不安定なため、罠レッグ／自分のミスのラベル判定は行いません（判定は8名以上のクラスのみ）。内訳は参考値です。
-                </p>
-              )}
-              <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px]">
-                <span className="text-muted">上位ロスの内訳:</span>
-                <span className="text-warning">コース起因 {fmtSignedSeconds(totCourse)}</span>
-                <span className="text-red-400">自分の超過 {fmtSignedSeconds(totOwn)}</span>
-              </div>
-              <div className="space-y-1.5">
-                {rows.map((r) => {
-                  const cw = r.your > 0 ? (r.course / r.your) * 100 : 0;
-                  return (
-                    <div key={r.i} className="flex items-center gap-2 text-xs">
-                      <span className="w-12 flex-shrink-0 font-mono text-muted">{r.label}</span>
-                      <span className="w-12 flex-shrink-0 text-right font-mono font-bold text-red-400">{fmtSignedSeconds(r.your)}</span>
-                      <div className="flex h-2 flex-1 overflow-hidden rounded-full bg-border" title={`コース起因 ${fmtSignedSeconds(r.course)} / 自分の超過 ${fmtSignedSeconds(r.own)}`}>
-                        <div className="h-full bg-warning/70" style={{ width: `${cw}%` }} />
-                        <div className="h-full bg-red-400/80" style={{ width: `${100 - cw}%` }} />
-                      </div>
-                      {judge && (
-                        <span className={`w-16 flex-shrink-0 text-right text-[10px] font-bold ${
-                          r.verdict === "trap" ? "text-warning" : r.verdict === "own" ? "text-red-400" : "text-muted"
-                        }`}>
-                          {r.verdict === "trap" ? "罠レッグ" : r.verdict === "own" ? "自分のミス" : "半々"}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="mt-1.5 text-[9px] text-muted/70">
-                コース起因 ≈ フィールドのロス中央値（n={view.n}）、自分の超過 = 自分のロス − コース起因。
-                対象はロスが{FLOOR}秒（{raceDiscipline === "sprint" ? "スプリント" : "フォレスト"}のフロア）を超えるレッグ。
-                {judge && "判定: コース起因の割合が5割以上=罠レッグ / 2割以下=自分のミス / 中間=半々。"}
-                LapCenter/WinSplits はフィールド分布を出さないため trails.jp 独自の分解。
-              </p>
-            </div>
-          );
-        })()}
+      {/* 罠レッグ vs 自分のミス（判定は leg-field-judge.ts の共有関数＝ミスの傾向の一覧と同じルール） */}
+      <FieldComparisonCard view={view} discipline={raceDiscipline} focusLeg={validFocus} />
 
       <p className="mb-2 mt-5 px-1 text-[11px] tracking-wider text-muted">
         レッグ別 ロス（基準＝上位平均 / 緑=基準より速い）

@@ -151,14 +151,17 @@ describe("buildLegView: 罠レッグ判定（フィールドのロス中央値�
     const m = Math.floor(s.length / 2);
     return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
   };
-  it("各レッグに fieldMedianLossSec = 全完走者 legLossTime の中央値", () => {
+  it("各レッグに fieldMedianLossSec = 本人を除く完走者 legLossTime の中央値・fieldN = その人数", () => {
+    const self = runners.find((r) => r.name === "白知穎")!;
     v.legs.forEach((leg, l) => {
       const vals = finishers
+        .filter((r) => r.index !== self.index)
         .map((r) => lapStrToSeconds(r.legLossTime[l]))
         .filter((x): x is number => x != null);
       const expected = vals.length ? med(vals) : null;
       if (expected == null) expect(leg.fieldMedianLossSec).toBeNull();
       else expect(leg.fieldMedianLossSec!).toBeCloseTo(expected, 5);
+      expect(leg.fieldN).toBe(vals.length);
     });
   });
 });
