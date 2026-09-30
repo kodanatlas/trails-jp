@@ -103,11 +103,12 @@ function checkDrilldown(
   index: LegFingerprintIndex,
   details: FingerprintDetails,
   tracked: TrackedLegRow[],
+  companions: CompanionRow[],
   tBuild: number
 ) {
   const t0 = Date.now();
   verifyFingerprintDetails(index, details); // 食い違えば例外で終了
-  verifyDetailsAgainstSource(details, tracked);
+  verifyDetailsAgainstSource(details, tracked, companions);
   const tVerify = Date.now() - t0;
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "legfp-smoke-"));
   const t1 = Date.now();
@@ -165,7 +166,7 @@ async function main() {
     console.log("companion 行を取得中...");
     companions = await fetchAll<CompanionRow>(
       token,
-      "lc_event_id,lc_class_id,runner_index,start_time,elapsed_sec",
+      "lc_event_id,lc_class_id,runner_index,start_time,elapsed_sec,rank,leg_loss_sec",
       "tracked = false"
     );
     fs.writeFileSync(CACHE_TRACKED, JSON.stringify(tracked));
@@ -185,7 +186,7 @@ async function main() {
   const tBuild = Date.now() - t0;
   const idx = { ...artifacts.index, generatedAt: new Date().toISOString() };
   summarize(idx, "本番設定");
-  checkDrilldown(artifacts.index, artifacts.details, tracked, tBuild);
+  checkDrilldown(artifacts.index, artifacts.details, tracked, companions, tBuild);
 
   // 感度分析: パック除染 OFF（ε=0 で無効化）
   const noPack = buildLegFingerprintIndex(tracked, companions, { packEps: { forest: 0, sprint: 0 } });

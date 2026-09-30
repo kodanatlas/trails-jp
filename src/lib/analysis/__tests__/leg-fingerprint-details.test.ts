@@ -152,6 +152,8 @@ describe("集計対象外の記録", () => {
       runner_index: 99,
       start_time: "10:00:05",
       elapsed_sec: packed.elapsed_sec,
+      rank: 5,
+      leg_loss_sec: packed.leg_loss_sec,
     };
     const tracked = [packed, ...sixRaces("除外選手", [3, 13]).slice(0, 5)];
     const { index, details } = buildLegFingerprintArtifacts(tracked, [companion]);
@@ -236,19 +238,19 @@ describe("verifyDetailsAgainstSource: 元データ（lc_leg_splits の行）と�
 
   it("正常なら通る", () => {
     const { tracked, details } = setup();
-    expect(() => verifyDetailsAgainstSource(details, tracked)).not.toThrow();
+    expect(() => verifyDetailsAgainstSource(details, tracked, [])).not.toThrow();
   });
 
   it("走者番号を書き換えると検知する（別の出走行を指してしまう）", () => {
     const { tracked, details } = setup();
     details["出所選手"]!.f!.races[0].ri = 99;
-    expect(() => verifyDetailsAgainstSource(details, tracked)).toThrow(FingerprintInvariantError);
+    expect(() => verifyDetailsAgainstSource(details, tracked, [])).toThrow(FingerprintInvariantError);
   });
 
   it("大会名・日付の取り違えを検知する", () => {
     const { tracked, details } = setup();
     details["出所選手"]!.f!.races[1].d = "1999-01-01";
-    expect(() => verifyDetailsAgainstSource(details, tracked)).toThrow(FingerprintInvariantError);
+    expect(() => verifyDetailsAgainstSource(details, tracked, [])).toThrow(FingerprintInvariantError);
   });
 
   it("同じ局面の別レッグへの差し替え（ラップが元データと違う）を検知する", () => {
@@ -256,7 +258,7 @@ describe("verifyDetailsAgainstSource: 元データ（lc_leg_splits の行）と�
     const d = details["出所選手"]!.f!;
     const i = d.legs.l.findIndex((l, k) => l === 0 && d.legs.r[k] === 0);
     d.legs.l[i] = 1; // 同じ序盤の第1レッグ（ラップ 101 秒台）を指すが lap は第0レッグの値のまま
-    expect(() => verifyDetailsAgainstSource(details, tracked)).toThrow(FingerprintInvariantError);
+    expect(() => verifyDetailsAgainstSource(details, tracked, [])).toThrow(FingerprintInvariantError);
   });
 
   it("レッグ長の区分（短/中/長）の取り違えを検知する", () => {
@@ -264,14 +266,90 @@ describe("verifyDetailsAgainstSource: 元データ（lc_leg_splits の行）と�
     const d = details["出所選手"]!.f!;
     const i = d.legs.c.findIndex((c) => c === 0); // 序盤×短
     d.legs.c[i] = 2; // 序盤×長（局面は同じ）
-    expect(() => verifyDetailsAgainstSource(details, tracked)).toThrow(FingerprintInvariantError);
+    expect(() => verifyDetailsAgainstSource(details, tracked, [])).toThrow(FingerprintInvariantError);
   });
 
   it("同じ出走行が元データに2行あると、どちらか決められないので検知する", () => {
     const { tracked, details } = setup();
     const dup = { ...tracked[0] };
-    expect(() => verifyDetailsAgainstSource(details, [...tracked, dup])).toThrow(
+    expect(() => verifyDetailsAgainstSource(details, [...tracked, dup], [])).toThrow(
       FingerprintInvariantError
     );
+  });
+});
+
+describe("明細のフィールド中央値（難レッグ判定用・docs/plans/2026-09-30_miss-trend-field-comparison.md）", () => {
+  /** 1レース目のクラスに、完走の companion 2人・途中棄権の companion 1人・別の追跡選手 1人を入れる */
+  const setup = () => {
+    const own = sixRaces("場選手", [2, 12]);
+    const race0 = own[0];
+    const comp = (ri: number, rank: number | null, loss: (number | null)[]): CompanionRow => ({
+      lc_event_id: race0.lc_event_id,
+      lc_class_id: 0,
+      runner_index: ri,
+      start_time: null, // 集団走の判定に関わらせない
+      elapsed_sec: race0.elapsed_sec.map(() => null),
+      rank,
+      leg_loss_sec: loss,
+    });
+    const L = race0.lap_sec.length;
+    const companions = [
+      comp(10, 1, Array(L).fill(10)),
+      comp(11, 2, [null, ...Array(L - 1).fill(20)]), // 第0レッグだけ値なし
+      comp(12, null, Array(L).fill(999)), // 途中棄権は相手にしない
+    ];
+    const mate = mkRace("同組選手", race0.event_date, legsWithMisses([]), {
+      eventId: race0.lc_event_id,
+      runnerIndex: 5,
+      start: "11:00:00",
+    });
+    const tracked = [...own, mate];
+    return { tracked, companions, ...buildLegFingerprintArtifacts(tracked, companions) };
+  };
+  const legOf = (d: DisciplineDetail, race: number, leg: number) =>
+    d.legs.r.findIndex((r, i) => r === race && d.legs.l[i] === leg);
+
+  it("本人を除く完走者（追跡選手＋companion）の中央値と、レッグ別の人数を持つ", () => {
+    const { details } = setup();
+    const d = details["場選手"]!.f!;
+    const i1 = legOf(d, 0, 1); // 相手 = 10, 20, 同組選手の 2 → 中央値 10・3 人
+    expect([d.legs.fm[i1], d.legs.fn[i1]]).toEqual([10, 3]);
+    const i0 = legOf(d, 0, 0); // 相手 = 10, 2（20 の人は値なし）→ 中央値 6・2 人
+    expect([d.legs.fm[i0], d.legs.fn[i0]]).toEqual([6, 2]);
+  });
+
+  it("相手のいないレースは中央値 null・人数 0", () => {
+    const { details } = setup();
+    const d = details["場選手"]!.f!;
+    const i = legOf(d, 1, 1);
+    expect([d.legs.fm[i], d.legs.fn[i]]).toEqual([null, 0]);
+  });
+
+  it("カードの数字（index）は相手の想定との差に左右されない", () => {
+    const { tracked, companions, index } = setup();
+    const blank = companions.map((c) => ({ ...c, rank: null, leg_loss_sec: c.leg_loss_sec.map(() => null) }));
+    expect(JSON.stringify(buildLegFingerprintArtifacts(tracked, blank).index)).toBe(JSON.stringify(index));
+  });
+
+  it("元データ（tracked＋companion）からの再計算と一致すれば通る", () => {
+    const { tracked, companions, index, details } = setup();
+    expect(() => verifyFingerprintDetails(index, details)).not.toThrow();
+    expect(() => verifyDetailsAgainstSource(details, tracked, companions)).not.toThrow();
+  });
+
+  it("中央値の書き換え・companion の取りこぼしを検知する", () => {
+    const { tracked, companions, details } = setup();
+    const d = details["場選手"]!.f!;
+    const i = legOf(d, 0, 1);
+    expect(() => verifyDetailsAgainstSource(details, tracked, [])).toThrow(FingerprintInvariantError);
+    d.legs.fm[i] = 11;
+    expect(() => verifyDetailsAgainstSource(details, tracked, companions)).toThrow(FingerprintInvariantError);
+  });
+
+  it("人数 0 なのに中央値がある（またはその逆）明細は不変条件違反", () => {
+    const { index, details } = setup();
+    const d = details["場選手"]!.f!;
+    d.legs.fn[legOf(d, 0, 1)] = 0;
+    expect(() => verifyFingerprintDetails(index, details)).toThrow(FingerprintInvariantError);
   });
 });

@@ -8,6 +8,7 @@
  */
 import {
   classifyMiss,
+  type CompanionRow,
   type DisciplineFingerprint,
   type FingerprintParams,
   type LegFingerprintIndex,
@@ -28,7 +29,11 @@ export interface DetailRace {
   pu?: 1;
 }
 
-/** 集計に使ったレッグ（列指向）。r=races の添字・l=レッグ番号(0始まり)・c=セル(局面*3+レッグ長)・m=ミス判定 */
+/**
+ * 集計に使ったレッグ（列指向）。r=races の添字・l=レッグ番号(0始まり)・c=セル(局面*3+レッグ長)・m=ミス判定・
+ * fm=本人を除く同じクラスの完走者の想定との差の中央値（相手なしは null）・fn=その人数（難レッグ判定用。
+ * docs/plans/2026-09-30_miss-trend-field-comparison.md）
+ */
 export interface DetailLegs {
   r: number[];
   l: number[];
@@ -36,6 +41,8 @@ export interface DetailLegs {
   lap: number[];
   loss: number[];
   m: (0 | 1)[];
+  fm: (number | null)[];
+  fn: number[];
 }
 
 export interface DisciplineDetail {
@@ -109,9 +116,9 @@ function verifyRaces(who: string, fp: DisciplineFingerprint, d: DisciplineDetail
 
 /** レッグ1本ずつの整合（参照先・番号・局面・ミス判定の再計算・重複なし） */
 function verifyLegs(who: string, d: DisciplineDetail, floor: number, ratio: number): void {
-  const { r, l, c, lap, loss, m } = d.legs;
+  const { r, l, c, lap, loss, m, fm, fn } = d.legs;
   const n = r.length;
-  if ([l, c, lap, loss, m].some((col) => col.length !== n)) fail(who, "legs 列の長さが不揃い");
+  if ([l, c, lap, loss, m, fm, fn].some((col) => col.length !== n)) fail(who, "legs 列の長さが不揃い");
   const seen = new Set<string>();
   for (let i = 0; i < n; i++) {
     const race = d.races[r[i]];
@@ -122,6 +129,9 @@ function verifyLegs(who: string, d: DisciplineDetail, floor: number, ratio: numb
       fail(who, `legs[${i}] の局面とセルが矛盾`);
     }
     if (m[i] !== (classifyMiss(lap[i], loss[i], floor, ratio) ? 1 : 0)) fail(who, `legs[${i}] のミス判定が再計算と不一致`);
+    if (!Number.isInteger(fn[i]) || fn[i] < 0 || (fn[i] === 0) !== (fm[i] == null)) {
+      fail(who, `legs[${i}] のフィールド中央値と人数が矛盾`);
+    }
     const k = `${r[i]}:${l[i]}`;
     if (seen.has(k)) fail(who, `legs[${i}] が重複`);
     seen.add(k);
@@ -247,15 +257,61 @@ function verifyLegSource(who: string, d: DisciplineDetail, rows: TrackedLegRow[]
   }
 }
 
+interface SourceFinisher {
+  row: unknown;
+  loss: (number | null)[];
+}
+
+/** 本人を除く完走者の第 l レッグの値から中央値と人数を数え直す（集計側の関数は使わない） */
+function recountField(finishers: SourceFinisher[], self: unknown, l: number): { med: number | null; n: number } {
+  const vals = finishers
+    .filter((f) => f.row !== self)
+    .map((f) => f.loss[l])
+    .filter((v): v is number => v != null)
+    .sort((a, b) => a - b);
+  if (vals.length === 0) return { med: null, n: 0 };
+  const h = vals.length >> 1;
+  return { med: vals.length % 2 === 1 ? vals[h] : (vals[h - 1] + vals[h]) / 2, n: vals.length };
+}
+
+/** 明細のフィールド中央値・人数が、同じクラスの元の行（tracked＋companion の完走者）からの再計算と一致するか */
+function verifyFieldSource(
+  who: string,
+  d: DisciplineDetail,
+  rows: TrackedLegRow[],
+  byClass: Map<string, SourceFinisher[]>
+): void {
+  const { r, l, fm, fn } = d.legs;
+  for (let i = 0; i < r.length; i++) {
+    const race = d.races[r[i]];
+    const got = recountField(byClass.get(`${race.ev}:${race.cl}`) ?? [], rows[r[i]], l[i]);
+    if (got.med !== fm[i] || got.n !== fn[i]) {
+      fail(who, `legs[${i}] のフィールド中央値/人数が元データからの再計算と不一致（明細 ${fm[i]}/${fn[i]}・再計算 ${got.med}/${got.n}）`);
+    }
+  }
+}
+
 /**
- * 明細の各レース・各レッグを元データ（tracked 行）と突き合わせる。
+ * 明細の各レース・各レッグを元データ（tracked 行＋companion 行）と突き合わせる。
  * 出走行は (選手キー, 大会ID, クラスID, 走者番号) で1行に特定できなければ不一致とする。
  */
-export function verifyDetailsAgainstSource(details: FingerprintDetails, tracked: TrackedLegRow[]): void {
+export function verifyDetailsAgainstSource(
+  details: FingerprintDetails,
+  tracked: TrackedLegRow[],
+  companions: CompanionRow[]
+): void {
   const byKey = new Map<string, TrackedLegRow[]>();
   for (const row of tracked) {
     const k = sourceKey(row.runner_key, row.lc_event_id, row.lc_class_id, row.runner_index ?? null);
     byKey.set(k, [...(byKey.get(k) ?? []), row]);
+  }
+  const byClass = new Map<string, SourceFinisher[]>();
+  for (const row of [...tracked, ...companions]) {
+    if (row.rank == null) continue;
+    const k = `${row.lc_event_id}:${row.lc_class_id}`;
+    const list = byClass.get(k) ?? [];
+    list.push({ row, loss: row.leg_loss_sec });
+    byClass.set(k, list);
   }
   for (const [name, athlete] of Object.entries(details)) {
     for (const disc of ["f", "s"] as const) {
@@ -269,6 +325,7 @@ export function verifyDetailsAgainstSource(details: FingerprintDetails, tracked:
         return found[0];
       });
       verifyLegSource(who, d, rows);
+      verifyFieldSource(who, d, rows, byClass);
     }
   }
 }

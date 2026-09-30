@@ -1566,7 +1566,7 @@ async function buildLegFingerprintStep(): Promise<Set<string> | null> {
   let companionsRaw: (CompanionRow & { id: number })[] | null;
   try {
     companionsRaw = await pageAll<CompanionRow & { id: number }>(
-      "lc_leg_splits?tracked=is.false&select=id,lc_event_id,lc_class_id,runner_index,start_time,elapsed_sec"
+      "lc_leg_splits?tracked=is.false&select=id,lc_event_id,lc_class_id,runner_index,start_time,elapsed_sec,rank,leg_loss_sec"
     );
   } catch (e) {
     keepOrSkeleton(`companion 行の取得例外: ${(e as Error).message}`);
@@ -1601,7 +1601,7 @@ function publishLegFingerprint(tracked: TrackedLegRow[], companions: CompanionRo
     const periodCutoff = cut.toISOString().slice(0, 10);
     const artifacts = buildLegFingerprintArtifacts(tracked, companions, { periodCutoff });
     verifyFingerprintDetails(artifacts.index, artifacts.details);
-    verifyDetailsAgainstSource(artifacts.details, tracked);
+    verifyDetailsAgainstSource(artifacts.details, tracked, companions);
     const generatedAt = new Date().toISOString();
     const gen = fingerprintGen(generatedAt);
     const shardStats = writeLegFpShards(OUTPUT_DIR, gen, artifacts.details);
