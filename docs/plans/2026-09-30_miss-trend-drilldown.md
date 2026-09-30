@@ -87,6 +87,14 @@
 - 実データ: 既知の選手（児玉健・宮本樹）で、1セルの行を結果分析ページの実データと3件以上、手で突合する
 - 実描画: スマホ幅で導線を通す（`feedback_ux_walkthrough_gate`）。`/a/` 直開きとハブ経由の両方で確認する（`reference_trails_analysis_hub_url_trap`）
 
+## 6.5 インシデント: PR 1 マージ後の本番ビルドで指紋が 7 月版に戻った（2026-09-30）
+
+- 症状: PR #75 マージ後の本番ビルドで `⚠ pageAll 失敗: status=500 range=47000-56999 … canceling statement due to statement timeout` → `keepOrSkeleton` で git の 2026-07-08 版に戻り、全選手の「ミスの傾向」カードが 7 月の数字になった（ビルド自体は成功扱い）
+- 原因（EXPLAIN ANALYZE で実測）: 取得が `ORDER BY lc_event_id, lc_class_id, runner_index` ＋ Range（OFFSET）で、**毎ページ全行 seq scan＋ディスク外部ソート（約 38MB）＝1 ページ約 9.1 秒**。OFFSET の深さに関係なく statement timeout の境目にあり、以前から「たまたま通っていた」。PR 1 で増やしたのは取得列 `runner_index` 1 つで、影響はほぼ無い
+- 応急: 同一ソースで本番を再デプロイ
+- 恒久（PR `fix/leg-fp-keyset-fetch`）: id カーソル（`id=gt.<last>&order=id.asc&limit=10000`）に変更＝主キー索引走査で **1 ページ約 0.9 秒**。取得後に `sortLegRowsCanonical` で従来と同じ並び（大会ID→クラスID→走者番号・NULLS LAST）に揃え、permutation 乱数の消費順＝赤フラグを不変に保つ（実データで (大会,クラス,走者番号) の重複 0・null 0＝並びは一意。一意制約 `lc_leg_splits_lc_event_id_lc_class_id_runner_index_key` もある）。上限リクエスト到達時は不完全データとして扱う（従来は黙って途中までで集計していた）
+- 残課題は §5-4（取得失敗時に git の古い版に戻ること自体）
+
 ## 7. ユーザー判断（2026-09-30 決定）
 1. **決定**: 行の語は「ミス判定」（「ロス」は界隈で使わないため UI から外す。既存ページの「ロス」は別件）
 2. **決定**: 分母の行（ミス判定なしのレッグ）も折りたたみで出す

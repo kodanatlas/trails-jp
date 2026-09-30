@@ -183,6 +183,25 @@ export interface LegFingerprintIndex {
   periodCutoff?: string;
 }
 
+/**
+ * 入力行を DB の並び（大会ID→クラスID→走者番号・走者番号 null は最後）に揃えた新しい配列を返す。
+ * 指紋のセル検定・lag-1 の permutation 乱数は入力順に沿って消費されるため、取得方式（OFFSET / id カーソル）
+ * が変わっても同じ順で渡し、カードの数字（赤フラグ含む）を不変に保つ。
+ */
+export function sortLegRowsCanonical<
+  T extends { lc_event_id: number; lc_class_id: number; runner_index?: number | null },
+>(rows: readonly T[]): T[] {
+  const byRunnerIndex = (a: T, b: T): number => {
+    const x = a.runner_index ?? null;
+    const y = b.runner_index ?? null;
+    if (x == null || y == null) return x == null ? (y == null ? 0 : 1) : -1; // null は最後
+    return x - y;
+  };
+  return [...rows].sort(
+    (a, b) => a.lc_event_id - b.lc_event_id || a.lc_class_id - b.lc_class_id || byRunnerIndex(a, b)
+  );
+}
+
 /** "HH:MM:SS" / "HH:MM" → 秒。不正・空は null */
 export function parseStartSec(s: string | null | undefined): number | null {
   if (s == null) return null;

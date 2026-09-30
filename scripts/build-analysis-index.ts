@@ -10,7 +10,14 @@ import { computeWeekendPoints } from "../src/lib/weekend-points";
 import { jstNowLabel, jstToday } from "../src/lib/weekend-window";
 import { eventFuzzyMatch } from "../src/lib/analysis/event-match";
 import { buildCrossRaceIndex, type LcRaceRow } from "../src/lib/analysis/cross-race";
-import { buildLegFingerprintArtifacts, buildLegFingerprintIndex, detectHomonymKeys, type TrackedLegRow, type CompanionRow } from "../src/lib/analysis/leg-fingerprint";
+import {
+  buildLegFingerprintArtifacts,
+  buildLegFingerprintIndex,
+  detectHomonymKeys,
+  sortLegRowsCanonical,
+  type TrackedLegRow,
+  type CompanionRow,
+} from "../src/lib/analysis/leg-fingerprint";
 import {
   FingerprintInvariantError,
   fingerprintGen,
@@ -1482,35 +1489,34 @@ async function buildLegFingerprintStep(): Promise<Set<string> | null> {
     return null;
   }
 
-  // #33 イディオム: 空ページのみ終了・前進幅=実返却行数（PostgREST max-rows キャップ耐性）
-  const pageAll = async <T>(pathAndQuery: string): Promise<T[] | null> => {
+  // id カーソル（keyset）で全行取得。空ページのみ終了・カーソル=実返却の最終 id（PostgREST max-rows キャップ耐性）。
+  // 旧方式の Range（OFFSET）は行数増で後半ページが深い OFFSET になり statement timeout（57014）で落ちた
+  // （2026-09-30 本番ビルド・range=47000-）。並びは呼び出し側で sortLegRowsCanonical により従来と同じ順に揃える。
+  const pageAll = async <T extends { id: number }>(pathAndQuery: string): Promise<T[] | null> => {
     const rows: T[] = [];
     const PAGE = 10000;
     const MAX_REQUESTS = 300;
     const RETRY_DELAYS_MS = [1000, 3000] as const;
-    const warnFailure = (status: number | "fetch-error", range: string, body: string) => {
+    const warnFailure = (status: number | "fetch-error", cursor: number, body: string) => {
       console.warn(
-        `⚠ pageAll 失敗: status=${status} range=${range} rows=${rows.length} body=${JSON.stringify(body.slice(0, 200))}`,
+        `⚠ pageAll 失敗: status=${status} cursor=id>${cursor} rows=${rows.length} body=${JSON.stringify(body.slice(0, 200))}`,
       );
     };
-    const fetchPage = async (range: string): Promise<T[] | null> => {
+    const fetchPage = async (cursor: number): Promise<T[] | null> => {
       for (let attempt = 0; attempt < 3; attempt++) {
         let res: Response;
         try {
-          res = await fetch(`${supabaseUrl}/rest/v1/${pathAndQuery}`, {
-            headers: {
-              apikey: supabaseKey!,
-              Authorization: `Bearer ${supabaseKey}`,
-              Range: range,
-            },
-          });
+          res = await fetch(
+            `${supabaseUrl}/rest/v1/${pathAndQuery}&id=gt.${cursor}&order=id.asc&limit=${PAGE}`,
+            { headers: { apikey: supabaseKey!, Authorization: `Bearer ${supabaseKey}` } },
+          );
         } catch (e) {
           const message = e instanceof Error ? e.message : String(e);
           if (attempt < RETRY_DELAYS_MS.length) {
             await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
             continue;
           }
-          warnFailure("fetch-error", range, message);
+          warnFailure("fetch-error", cursor, message);
           return null;
         }
 
@@ -1528,47 +1534,49 @@ async function buildLegFingerprintStep(): Promise<Set<string> | null> {
           await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
           continue;
         }
-        warnFailure(res.status, range, body);
+        warnFailure(res.status, cursor, body);
         return null;
       }
       return null;
     };
 
-    let from = 0;
+    let cursor = 0;
     for (let i = 0; i < MAX_REQUESTS; i++) {
-      const page = await fetchPage(`${from}-${from + PAGE - 1}`);
+      const page = await fetchPage(cursor);
       if (!page) return null;
-      if (page.length === 0) break;
+      if (page.length === 0) return rows;
       rows.push(...page);
-      from += page.length;
+      cursor = page[page.length - 1].id;
     }
-    return rows;
+    console.warn(`⚠ pageAll: ${MAX_REQUESTS} リクエストで打ち切り（rows=${rows.length}）— 不完全データとして扱う`);
+    return null;
   };
 
-  const order = "&order=lc_event_id.asc,lc_class_id.asc,runner_index.asc";
-  const tracked = await pageAll<TrackedLegRow>(
-    "lc_leg_splits?tracked=is.true&select=runner_key,event_date,event_name,class_name,club,race_type,rank,speed,start_time,lap_sec,leg_loss_sec,leg_speed,elapsed_sec,lc_event_id,lc_class_id,runner_index" + order
+  const trackedRaw = await pageAll<TrackedLegRow & { id: number }>(
+    "lc_leg_splits?tracked=is.true&select=id,runner_key,event_date,event_name,class_name,club,race_type,rank,speed,start_time,lap_sec,leg_loss_sec,leg_speed,elapsed_sec,lc_event_id,lc_class_id,runner_index"
   );
-  if (!tracked) {
+  if (!trackedRaw) {
     keepOrSkeleton("tracked 行の取得失敗");
     return null;
   }
+  const tracked = sortLegRowsCanonical(trackedRaw);
   // cross-race の除外キーは tracked だけで算出できるため、以降の artifact 生成処理から分離する
   const homonymKeys = detectHomonymKeys(tracked);
 
-  let companions: CompanionRow[] | null;
+  let companionsRaw: (CompanionRow & { id: number })[] | null;
   try {
-    companions = await pageAll<CompanionRow>(
-      "lc_leg_splits?tracked=is.false&select=lc_event_id,lc_class_id,runner_index,start_time,elapsed_sec" + order
+    companionsRaw = await pageAll<CompanionRow & { id: number }>(
+      "lc_leg_splits?tracked=is.false&select=id,lc_event_id,lc_class_id,runner_index,start_time,elapsed_sec"
     );
   } catch (e) {
     keepOrSkeleton(`companion 行の取得例外: ${(e as Error).message}`);
     return homonymKeys;
   }
-  if (!companions) {
+  if (!companionsRaw) {
     keepOrSkeleton("companion 行の取得失敗");
     return homonymKeys;
   }
+  const companions = sortLegRowsCanonical(companionsRaw);
   // 健全性ガード: 明らかな不足（キャップ1枚分等）で良品を上書きしない
   if (tracked.length < 40000) {
     keepOrSkeleton(`tracked 行数が異常に少ない (${tracked.length}) — 不完全データでの上書きを回避`);

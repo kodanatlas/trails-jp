@@ -18,6 +18,7 @@ import {
   buildLegFingerprintArtifacts,
   buildLegFingerprintIndex,
   detectHomonymKeys,
+  sortLegRowsCanonical,
   type TrackedLegRow,
   type CompanionRow,
   type LegFingerprintIndex,
@@ -170,6 +171,9 @@ async function main() {
     fs.writeFileSync(CACHE_TRACKED, JSON.stringify(tracked));
     fs.writeFileSync(CACHE_COMP, JSON.stringify(companions));
   }
+  // ビルドと同じ並び（大会ID→クラスID→走者番号）に揃える（permutation 乱数の消費順＝赤フラグを一致させる）
+  tracked = sortLegRowsCanonical(tracked);
+  companions = sortLegRowsCanonical(companions);
   console.log(`入力: tracked=${tracked.length} companions=${companions.length}`);
 
   // 本番設定
