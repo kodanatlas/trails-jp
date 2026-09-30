@@ -143,7 +143,7 @@ describe("buildLegView: relay-first 健全性ガード", () => {
   });
 });
 
-describe("buildLegView: 罠レッグ判定（フィールドのロス中央値）", () => {
+describe("buildLegView: 難レッグ判定（フィールドのロス中央値）", () => {
   const v = buildLegView(runners, "白知穎")!;
   const finishers = runners.filter((r) => r.rank != null);
   const med = (xs: number[]) => {

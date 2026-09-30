@@ -216,7 +216,7 @@ export function LegAnalysisClient({
 
   const ordered = orderByRank(selected);
   const nFin = runners.filter((r) => r.rank != null).length;
-  // 罠レッグのフロア用の種目推定: athlete経由の disc を優先、無ければ大会名/クラス名のキーワード（sync-lapcenter と同基準）
+  // 難レッグ判定の下限用の種目推定: athlete経由の disc を優先、無ければ大会名/クラス名のキーワード（sync-lapcenter と同基準）
   const raceDiscipline: "forest" | "sprint" =
     discipline ??
     (/スプリント|sprint|パークO|パーク・オリエンテーリング/i.test(`${eventName ?? ""} ${className ?? ""}`)
@@ -480,7 +480,7 @@ function Glossary() {
     ["比較相手とのタイム差", "各CPでの自分と比較相手の実経過タイム差。上=遅れ・下=リード。段差が大きいレッグで差がついた。"],
     ["区間順位", "そのレッグ単独での順位（完走者中）。"],
     ["平均比", "自分の同種目(Forest/Sprint別)平均との差。負＝平均より良い。"],
-    ["罠レッグ vs 自分のミス", "自分のロスをフィールド全体と比較。フィールド中央値も大きい＝罠レッグ(コースが難しく皆ロス)、フィールドは速いのに自分だけ＝自分のミス。コース起因(フィールド中央値)と自分の超過に分解。"],
+    ["難レッグ vs 自分のミス", "自分のロスを、本人を除く完走者と比較。フィールドの中央値も大きい＝難レッグ(コースが難しく皆ロス)、フィールドは速いのに自分だけ＝自分のミス。コース起因(フィールド中央値)と自分の超過に分解。比べられる完走者が8名以上のレッグのみ判定。"],
     ["区間賞", "そのレッグの最速タイム（区間1位）。獲得数が多いほど多くの区間でトップ。"],
     ["順位が動いたレッグ", "各レッグで通過順位（elapsedRank）が1人あたり平均何順位入れ替わったか。大きい＝順位表がよく動いたレッグ。"],
   ];
@@ -731,7 +731,7 @@ function SingleView({
         </div>
       )}
 
-      {/* 罠レッグ vs 自分のミス（判定は leg-field-judge.ts の共有関数＝ミスの傾向の一覧と同じルール） */}
+      {/* 難レッグ vs 自分のミス（判定は leg-field-judge.ts の共有関数＝ミスの傾向の一覧と同じルール） */}
       <FieldComparisonCard view={view} discipline={raceDiscipline} focusLeg={validFocus} />
 
       <p className="mb-2 mt-5 px-1 text-[11px] tracking-wider text-muted">

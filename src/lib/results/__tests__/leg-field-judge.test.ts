@@ -3,7 +3,7 @@ import { judgeLegAgainstField, medianOf, FIELD_JUDGE_MIN_N } from "../leg-field-
 import { buildFieldRows } from "../../../app/results/[eventId]/[classId]/FieldComparisonCard";
 import type { LegView, LegCell } from "../leg-analysis";
 
-// 罠レッグ vs 自分のミス（フィールド比較）の共有判定。結果分析ページとミスの傾向の一覧が同じ関数を使う。
+// 難レッグ vs 自分のミス（フィールド比較）の共有判定。結果分析ページとミスの傾向の一覧が同じ関数を使う。
 // docs/plans/2026-09-30_miss-trend-field-comparison.md
 
 const eight = (v: number) => Array.from({ length: FIELD_JUDGE_MIN_N }, () => v);
@@ -37,7 +37,7 @@ describe("judgeLegAgainstField", () => {
     expect(judgeLegAgainstField(40, eight(90), "forest")).toMatchObject({ course: 40, own: 0 });
   });
 
-  it("ラベル: コース起因の割合 0.5 以上＝罠レッグ・0.2 以下＝自分のミス・中間＝半々（境界ちょうどを含む）", () => {
+  it("ラベル: コース起因の割合 0.5 以上＝難レッグ・0.2 以下＝自分のミス・中間＝半々（境界ちょうどを含む）", () => {
     expect(judgeLegAgainstField(40, eight(20), "forest")).toMatchObject({ verdict: "trap" }); // 0.5
     expect(judgeLegAgainstField(40, eight(8), "forest")).toMatchObject({ verdict: "own" }); // 0.2
     expect(judgeLegAgainstField(40, eight(12), "forest")).toMatchObject({ verdict: "mixed" }); // 0.3

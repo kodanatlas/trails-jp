@@ -24,7 +24,7 @@ export interface LegCell {
   lapRank: number | null;   // そのレッグの区間順位
   legSpeed: number | null;  // 相対ペース（100=Ave3, 小さいほど速い）
   isTopMiss: boolean;       // ロス上位3レッグ
-  fieldMedianLossSec: number | null; // 本人を除く完走者のロス中央値（罠レッグ判定用・高い=コースが難しい）
+  fieldMedianLossSec: number | null; // 本人を除く完走者のロス中央値（難レッグ判定用・高い=コースが難しい）
   fieldN: number;                    // その中央値に使った人数（そのレッグの値がある、本人を除く完走者）
 }
 
@@ -237,8 +237,8 @@ export function buildLegView(
     }));
   const topMissSet = new Set(topMistakes.map((x) => x.index));
 
-  // 罠レッグ判定: 各レッグの「本人を除く完走者」の legLossTime[l] の中央値とその人数（レッグ別の有効数）。
-  // 高い=多くの走者が自分のペース基準で遅れた=コースが難しい(罠)。≈0=易しい→自分のロスは自分のミス。
+  // 難レッグ判定: 各レッグの「本人を除く完走者」の legLossTime[l] の中央値とその人数（レッグ別の有効数）。
+  // 高い=多くの走者が自分のペース基準で遅れた=コースが難しい(難レッグ)。≈0=易しい→自分のロスは自分のミス。
   // 判定そのものは leg-field-judge.ts の共有関数（ミスの傾向の一覧と同じルール）。
   const others = finishers.filter((r) => r.index !== subject.index);
   const fieldLossesByLeg: number[][] = [];
