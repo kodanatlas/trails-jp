@@ -11,6 +11,7 @@ import {
   deriveAve3Seconds,
 } from "../scraper/lapcenter-detail";
 import type { LapCenterPerformance } from "../analysis/types";
+import { medianOf } from "./leg-field-judge";
 
 export interface LegCell {
   label: string;            // "S→1", "12→13", "22→F"
@@ -23,7 +24,8 @@ export interface LegCell {
   lapRank: number | null;   // そのレッグの区間順位
   legSpeed: number | null;  // 相対ペース（100=Ave3, 小さいほど速い）
   isTopMiss: boolean;       // ロス上位3レッグ
-  fieldMedianLossSec: number | null; // フィールド全体のロス中央値（罠レッグ判定用・高い=コースが難しい）
+  fieldMedianLossSec: number | null; // 本人を除く完走者のロス中央値（難レッグ判定用・高い=コースが難しい）
+  fieldN: number;                    // その中央値に使った人数（そのレッグの値がある、本人を除く完走者）
 }
 
 export interface LegViewSubject {
@@ -145,12 +147,6 @@ function round1(x: number | null): number | null {
   return x == null ? null : Math.round(x * 10) / 10;
 }
 
-function median(xs: number[]): number | null {
-  if (xs.length === 0) return null;
-  const s = [...xs].sort((a, b) => a - b);
-  const mid = Math.floor(s.length / 2);
-  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
-}
 
 /** "S→1" / "i→i+1" / "(L-1)→F" のレッグ表記。 */
 export function legLabel(index: number, legCount: number): string {
@@ -241,14 +237,17 @@ export function buildLegView(
     }));
   const topMissSet = new Set(topMistakes.map((x) => x.index));
 
-  // 罠レッグ判定: 各レッグのフィールド全体のロス中央値（全完走者の legLossTime[l]）。
-  // 高い=多くの走者が自分のペース基準で遅れた=コースが難しい(罠)。≈0=易しい→自分のロスは自分のミス。
-  const fieldMedianLossByLeg: (number | null)[] = [];
+  // 難レッグ判定: 各レッグの「本人を除く完走者」の legLossTime[l] の中央値とその人数（レッグ別の有効数）。
+  // 高い=多くの走者が自分のペース基準で遅れた=コースが難しい(難レッグ)。≈0=易しい→自分のロスは自分のミス。
+  // 判定そのものは leg-field-judge.ts の共有関数（ミスの傾向の一覧と同じルール）。
+  const others = finishers.filter((r) => r.index !== subject.index);
+  const fieldLossesByLeg: number[][] = [];
   for (let l = 0; l < legCount; l++) {
-    const vals = finishers
-      .map((r) => (r.legLossTime[l] != null ? lapStrToSeconds(r.legLossTime[l]) : null))
-      .filter((v): v is number => v != null);
-    fieldMedianLossByLeg.push(median(vals));
+    fieldLossesByLeg.push(
+      others
+        .map((r) => (r.legLossTime[l] != null ? lapStrToSeconds(r.legLossTime[l]) : null))
+        .filter((v): v is number => v != null),
+    );
   }
 
   const legs: LegCell[] = subject.lapTime.map((lap, i) => {
@@ -264,7 +263,8 @@ export function buildLegView(
       lapRank: subject.lapRank[i] ?? null,
       legSpeed: subject.legSpeed[i] ?? null,
       isTopMiss: topMissSet.has(i),
-      fieldMedianLossSec: fieldMedianLossByLeg[i],
+      fieldMedianLossSec: medianOf(fieldLossesByLeg[i] ?? []),
+      fieldN: fieldLossesByLeg[i]?.length ?? 0,
     };
   });
 

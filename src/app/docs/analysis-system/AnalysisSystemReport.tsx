@@ -557,7 +557,7 @@ function CrossRaceDiagram() {
 function LegDecompDiagram() {
   const x0 = 150;
   const rows = [
-    { y: 54, label: "レッグ1", course: 118, excess: 26, tag: "コースの罠", tagCol: "var(--violet)" },
+    { y: 54, label: "レッグ1", course: 118, excess: 26, tag: "難レッグ", tagCol: "var(--violet)" },
     { y: 122, label: "レッグ2", course: 70, excess: 128, tag: "自分のミス", tagCol: "var(--pink)" },
   ];
   return (
@@ -872,7 +872,7 @@ export function AnalysisSystemReport({
               <h3>結果分析（レッグ）</h3>
               <p>LapCenter のスプリットから、レッグ単位でタイムを分解。</p>
               <ul>
-                <li>ロスを<b>コース起因／自分のミス</b>に分解（罠レッグ判定）</li>
+                <li>ロスを<b>コース起因／自分のミス</b>に分解（難レッグ判定）</li>
                 <li><b>区間賞</b>・<b>順位が動いたレッグ</b>・ノーミス推定順位</li>
               </ul>
               <span className="file mono">/results</span>
@@ -1124,7 +1124,7 @@ export function AnalysisSystemReport({
               <div className="k">LEG ｜ レッグ分解（結果分析）</div>
               <LegDecompDiagram />
               <div className="cap">
-                各レッグのロスを <b>コース起因（フィールド中央値ロス）</b>と <b>自分の超過</b>に分け、罠レッグと自分のミスを区別。
+                各レッグのロスを <b>コース起因（フィールド中央値ロス）</b>と <b>自分の超過</b>に分け、難レッグ（フィールドの多くも遅れた）と自分のミスを区別。
                 ノーミス推定タイム（記録 − 総ロス）で実フィールドに対する想定順位も出す。
               </div>
             </div>
