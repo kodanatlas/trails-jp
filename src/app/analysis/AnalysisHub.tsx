@@ -31,6 +31,7 @@ function syncAthleteUrl(key: string | null) {
   url.pathname = "/analysis";
   url.searchParams.delete("athlete");
   url.searchParams.delete("tab");
+  url.searchParams.delete("vs");
   history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
@@ -102,6 +103,20 @@ export function AnalysisHub() {
           }
           setSearchQuery(qParam);
           setActiveTab("athlete");
+        }
+        // アドレスバーが /a/<key> のまま本ハブが描画された場合（ハブで選手を開いた後に別ページへ
+        // 移動し「戻る」で帰ってきた等。syncAthleteUrl が URL だけ /a/<key> に書き換えているため）は
+        // その選手を開き直す。URL はそのまま（?vs= 等の対戦成績の状態を保持するため正規化しない）。
+        const pathMatch = window.location.pathname.match(/^\/a\/([^/]+)\/?$/);
+        if (!athleteOpened && pathMatch && ai?.athletes) {
+          const key = decodeURIComponent(pathMatch[1]).replace(/\s+/g, "");
+          const summary = ai.athletes[key];
+          if (summary) {
+            setSelectedAthlete(summary);
+            setSearchQuery(key);
+            setActiveTab("athlete");
+            athleteOpened = true;
+          }
         }
         // ?tab= 深リンク（トップ「今週の応援」→応援タブ等）。?athlete= が優先
         const tabParam = params.get("tab");

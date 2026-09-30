@@ -37,12 +37,38 @@ function todayJst(): string {
   return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
+/** athlete-index のキー（空白除去名） */
+const toKey = (name: string) => name.replace(/\s+/g, "");
+
+/**
+ * 選択中の相手を URL の ?vs=<key> に同期する。相手名リンクで相手の選手ページへ移動した後、
+ * ブラウザの「戻る」で相手選択済みの画面を復元するため（履歴エントリの URL に状態を残す）。
+ * 第1引数に history.state を渡し、Next の履歴状態を壊さない（AnalysisHub の syncAthleteUrl と同じ作法）。
+ */
+function syncVsParam(key: string | null) {
+  const url = new URL(window.location.href);
+  if (key) url.searchParams.set("vs", key);
+  else url.searchParams.delete("vs");
+  history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+/** URL の ?vs= から復元する相手（索引に無い・自分自身なら null） */
+function readVsOpponent(athleteIndex: AthleteIndex, selfName: string): AthleteSummary | null {
+  if (typeof window === "undefined") return null;
+  const vs = new URLSearchParams(window.location.search).get("vs");
+  if (!vs) return null;
+  const a = athleteIndex.athletes[toKey(vs)];
+  return a && a.name !== selfName ? a : null;
+}
+
 /** 選手詳細の Head-to-Head 対戦成績セクション */
 export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
-  const [opponent, setOpponent] = useState<AthleteSummary | null>(null);
+  // 初期相手は URL の ?vs= から復元（「戻る」で相手選択済みの画面に戻す）
+  const [initialOpponent] = useState(() => readVsOpponent(athleteIndex, profile.name));
+  const [opponent, setOpponent] = useState<AthleteSummary | null>(initialOpponent);
   const [oppProfile, setOppProfile] = useState<AthleteProfile | null>(null);
   const [oppEntries, setOppEntries] = useState<AthleteEntryRef[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(initialOpponent !== null);
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [showAllHistory, setShowAllHistory] = useState(false);
@@ -60,6 +86,7 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
     setLegH2H(null);
     setShowAllHistory(false);
     setLoading(a !== null);
+    syncVsParam(a ? toKey(a.name) : null);
   };
 
   // 相手選択時にプロフィール＋エントリーをロード（stale レスポンスの後勝ち上書き防止ガード付き）
@@ -275,7 +302,7 @@ export function HeadToHead({ profile, athleteIndex, myEntries }: Props) {
               <div className="min-w-0 flex-1 text-right">
                 {/* 相手名 → 相手の選手ページ（正規 URL /a/<空白除去名>・同一タブ） */}
                 <Link
-                  href={`/a/${encodeURIComponent(oppProfile.name.replace(/\s+/g, ""))}`}
+                  href={`/a/${encodeURIComponent(toKey(oppProfile.name))}`}
                   className="inline-flex max-w-full items-center justify-end gap-0.5 text-sm font-bold text-accent underline decoration-accent/40 underline-offset-2 transition-colors hover:decoration-accent"
                 >
                   <span className="truncate">{oppProfile.name}</span>
