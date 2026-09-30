@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Newspaper } from "lucide-react";
+import { FullText } from "@/components/FullText";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import rankingsMeta from "@/data/rankings-meta.json";
 
@@ -107,6 +108,12 @@ export async function UpdatesNews() {
   // 新機能アナウンス（静的）。データ更新フィードに新機能のお知らせを加える。
   entries.push(
     {
+      date: new Date("2026-09-30T00:00:00+09:00"),
+      label: "『ミスの傾向』のセルから根拠のレッグを表示 — 割合の元になったレースとレッグを確認し、結果分析の該当レッグへ移動",
+      href: "/analysis",
+      isNew: true,
+    },
+    {
       date: new Date("2026-07-07T00:00:00+09:00"),
       label: "新機能『ミスの傾向』を追加 — どの局面・どの長さのレッグでミスが出やすいかを全キャリアから分析",
       href: "/analysis",
@@ -146,9 +153,11 @@ export async function UpdatesNews() {
               </span>
               {e.href ? (
                 <span className="flex min-w-0 flex-1 items-center gap-2 text-sm">
-                  <Link href={e.href} className="truncate text-primary hover:underline">
-                    {e.label}
-                  </Link>
+                  <FullText className="min-w-0 truncate">
+                    <Link href={e.href} className="text-primary hover:underline">
+                      {e.label}
+                    </Link>
+                  </FullText>
                   {e.isNew && (
                     <span className="flex-shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">
                       NEW
@@ -156,7 +165,7 @@ export async function UpdatesNews() {
                   )}
                 </span>
               ) : (
-                <span className="min-w-0 flex-1 truncate text-sm text-foreground">{e.label}</span>
+                <FullText className="min-w-0 flex-1 truncate text-sm text-foreground">{e.label}</FullText>
               )}
             </li>
           ))}

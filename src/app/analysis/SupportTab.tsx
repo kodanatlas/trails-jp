@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { TrendingUp, TrendingDown, TreePine, Zap } from "lucide-react";
 import type { AthleteIndex, AthleteSummary } from "@/lib/analysis/types";
 import { LikeDisplay, GroupCheerButton } from "./LikeButton";
+import { FullText } from "@/components/FullText";
 
 interface SupportTabProps {
   athleteIndex: AthleteIndex;
@@ -179,9 +180,9 @@ function AthleteCheerCard({
           <DisciplineBadge type={athlete.type} />
           <LikeDisplay count={likeCount} />
         </div>
-        <p className="truncate text-[10px] text-muted">
+        <FullText as="p" className="truncate text-[10px] text-muted">
           {athlete.clubs.join(" / ")}
-        </p>
+        </FullText>
       </div>
 
       {/* recentForm */}

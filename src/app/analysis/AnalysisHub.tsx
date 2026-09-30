@@ -9,6 +9,7 @@ import { CompareAthletes, COMPARE_COLORS } from "./CompareAthletes";
 import type { CompareEntry } from "./CompareAthletes";
 import { AthleteDistribution } from "./DistributionCharts";
 import { SupportTab } from "./SupportTab";
+import { FullText } from "@/components/FullText";
 
 type Tab = "athlete" | "clubs" | "compare" | "support";
 
@@ -279,7 +280,7 @@ export function AnalysisHub() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold">{a.name}</p>
-                    <p className="truncate text-xs text-muted">{a.clubs.join(" / ")}</p>
+                    <FullText as="p" className="truncate text-xs text-muted">{a.clubs.join(" / ")}</FullText>
                   </div>
                   <div className="text-right">
                     <p className="font-mono text-sm font-bold text-primary">

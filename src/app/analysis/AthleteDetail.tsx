@@ -23,6 +23,7 @@ import { UpcomingEntries } from "./UpcomingEntries";
 import { HeadToHead } from "./HeadToHead";
 import { CrossRaceCard } from "./CrossRaceCard";
 import { LegFingerprintCard, loadLegFingerprint } from "./LegFingerprintCard";
+import { FullText } from "@/components/FullText";
 
 interface Props {
   summary: AthleteSummary;
@@ -287,7 +288,7 @@ function ProfileHeader({ profile, perEventGap }: { profile: AthleteProfile; perE
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
         <div className="min-w-0">
-          <h2 className="truncate text-lg font-bold">{profile.name}</h2>
+          <FullText as="h2" className="truncate text-lg font-bold">{profile.name}</FullText>
           <p className="break-words text-xs text-muted">{profile.clubs.join(" / ")}</p>
         </div>
         <div className="flex items-start gap-3 sm:shrink-0">
@@ -382,7 +383,7 @@ function ProfileHeader({ profile, perEventGap }: { profile: AthleteProfile; perE
                     <div key={i} className={`flex items-center gap-2 rounded px-2 py-1.5 text-[10px] ${bg}`}>
                       <span className={`w-4 flex-shrink-0 text-center font-bold ${cc}`}>{isS ? "S" : "F"}</span>
                       <span className="w-[4.5rem] flex-shrink-0 font-mono text-muted">{e.date}</span>
-                      <span className="min-w-0 flex-1 truncate">{e.eventName}</span>
+                      <FullText className="min-w-0 flex-1 truncate">{e.eventName}</FullText>
                       <span className={`flex-shrink-0 font-mono font-bold ${cc}`}>
                         {isS && (
                           <span className="mr-1 font-normal text-muted/60">{e.points.toLocaleString()}→</span>
@@ -533,7 +534,7 @@ function PointBreakdownTable({
               {i + 1}
             </span>
             <span className="w-[4.5rem] flex-shrink-0 font-mono text-muted">{e.date}</span>
-            <span className="min-w-0 flex-1 truncate">{e.eventName}</span>
+            <FullText className="min-w-0 flex-1 truncate">{e.eventName}</FullText>
             <span className={`flex-shrink-0 font-mono font-bold ${colorClass}`}>
               {e.points.toLocaleString()}
             </span>
@@ -550,7 +551,7 @@ function PointBreakdownTable({
                   {i + 4}
                 </span>
                 <span className="w-[4.5rem] flex-shrink-0 font-mono text-muted/60">{e.date}</span>
-                <span className="min-w-0 flex-1 truncate text-muted/80">{e.eventName}</span>
+                <FullText className="min-w-0 flex-1 truncate text-muted/80">{e.eventName}</FullText>
                 <span className="flex-shrink-0 font-mono text-muted/60">
                   {e.points.toLocaleString()}
                 </span>
@@ -694,9 +695,9 @@ function StatsCards({ profile }: { profile: AthleteProfile }) {
         <p className="mt-1 text-2xl font-bold text-primary">
           {best ? best.points.toLocaleString() : "—"}
         </p>
-        <p className="truncate text-[10px] text-muted">
+        <FullText as="p" className="truncate text-[10px] text-muted">
           {best ? `${best.date} ${best.eventName}` : "—"}
-        </p>
+        </FullText>
       </div>
     </div>
   );
@@ -1552,7 +1553,7 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
               }`}>
                 {isSprint ? "S" : "F"}
               </span>
-              <span className="min-w-0 flex-1 truncate text-xs">{e.eventName}</span>
+              <FullText className="min-w-0 flex-1 truncate text-xs">{e.eventName}</FullText>
               {lcMatch?.c && (
                 <span className="hidden flex-shrink-0 items-center gap-1 text-[10px] text-muted sm:flex">
                   <span className="rounded bg-white/5 px-1 py-0.5">{lcMatch.c}</span>

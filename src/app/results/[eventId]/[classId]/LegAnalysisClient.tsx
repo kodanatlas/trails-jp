@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Loader2, X } from "lucide-react";
 import type { LapCenterRunnerDetail } from "@/lib/scraper/lapcenter-detail";
+import { FullText } from "@/components/FullText";
 import { lapStrToSeconds } from "@/lib/scraper/lapcenter-detail";
 import type { LapCenterPerformance } from "@/lib/analysis/types";
 import { resolveAliasNameForLc } from "@/lib/identity/athlete-alias";
@@ -303,12 +304,12 @@ function LegPrizeBoardView({ runners, athleteName }: { runners: LapCenterRunnerD
           return (
             <div key={`${t.name}-${i}`} className="flex items-center gap-2 text-xs">
               <span className="w-4 flex-shrink-0 text-right font-mono text-[10px] text-muted">{i + 1}</span>
-              <span
+              <FullText
                 className={`w-24 flex-shrink-0 truncate sm:w-32 ${isSubj ? "font-bold text-primary" : "text-foreground"}`}
-                title={t.club ? `${t.name}（${t.club}）` : t.name}
+                fullText={t.club ? `${t.name}（${t.club}）` : t.name}
               >
                 {t.name}
-              </span>
+              </FullText>
               <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-border">
                 <div className={`h-full rounded-full ${isSubj ? "bg-primary" : "bg-primary/45"}`} style={{ width: `${w}%` }} />
               </div>
@@ -336,9 +337,9 @@ function LegPrizeBoardView({ runners, athleteName }: { runners: LapCenterRunnerD
                 className={`flex items-center gap-3 px-2.5 py-1.5 text-xs ${i % 2 ? "bg-surface/50" : ""}`}
               >
                 <span className="w-12 flex-shrink-0 font-mono text-muted">{p.label}</span>
-                <span className={`min-w-0 flex-1 truncate ${isSubj ? "font-bold text-primary" : "text-foreground"}`}>
+                <FullText className={`min-w-0 flex-1 truncate ${isSubj ? "font-bold text-primary" : "text-foreground"}`}>
                   {p.winner ?? "—"}
-                </span>
+                </FullText>
                 <span className="flex-shrink-0 font-mono text-muted">{p.time}</span>
               </div>
             );
@@ -947,13 +948,15 @@ function CompareGrid({
               >
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="text-[10px] font-bold text-primary">{r.rank ?? "—"}位</span>
-                  <Link
-                    href={`/a/${encodeURIComponent(norm(athletePageNameForLc(r, eventId, classId)))}`}
-                    className="max-w-[78px] truncate text-[11px] font-bold transition-colors hover:text-primary hover:underline"
-                    title={`${r.name}（選手ページへ）`}
-                  >
-                    {r.name}
-                  </Link>
+                  <FullText className="max-w-[78px] truncate text-[11px] font-bold">
+                    <Link
+                      href={`/a/${encodeURIComponent(norm(athletePageNameForLc(r, eventId, classId)))}`}
+                      className="transition-colors hover:text-primary hover:underline"
+                      title={`${r.name}（選手ページへ）`}
+                    >
+                      {r.name}
+                    </Link>
+                  </FullText>
                   <button
                     onClick={() => onRemove(r.name)}
                     title="この列を消す"

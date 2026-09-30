@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { FullText } from "@/components/FullText";
 
 interface LikeEntry {
   athlete_name: string; // 空白除去名（athlete-index のキーと同形式）
@@ -120,13 +121,14 @@ export function WeeklyCheerPodium() {
                 </span>
                 <div className="mt-2 flex flex-col items-center gap-0.5 pb-2">
                   {tier.shown.map((name) => (
-                    <Link
-                      key={name}
-                      href={`/a/${encodeURIComponent(name)}`}
-                      className="max-w-full truncate text-center text-sm font-semibold transition-colors hover:text-primary hover:underline"
-                    >
-                      {name}
-                    </Link>
+                    <FullText key={name} className="max-w-full truncate text-center text-sm font-semibold">
+                      <Link
+                        href={`/a/${encodeURIComponent(name)}`}
+                        className="transition-colors hover:text-primary hover:underline"
+                      >
+                        {name}
+                      </Link>
+                    </FullText>
                   ))}
                   {tier.overflow > 0 && (
                     <span className="text-xs text-muted">+{tier.overflow}人</span>

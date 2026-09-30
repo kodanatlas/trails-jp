@@ -5,6 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
 import { Search, X, Loader2, Plus, Trash2, TreePine, Zap } from "lucide-react";
+import { FullText } from "@/components/FullText";
 import type { AthleteIndex, AthleteSummary, AthleteProfile, LapCenterPerformance } from "@/lib/analysis/types";
 import {
   loadAthleteDetail,
@@ -131,8 +132,8 @@ function AthleteSearchSlot({
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-medium" style={{ color }}>{label}</p>
-            <p className="truncate text-sm font-bold">{selected.name}</p>
-            <p className="truncate text-[10px] text-muted">{selected.clubs.join(" / ")}</p>
+            <FullText as="p" className="truncate text-sm font-bold">{selected.name}</FullText>
+            <FullText as="p" className="truncate text-[10px] text-muted">{selected.clubs.join(" / ")}</FullText>
           </div>
           <div className="flex items-center gap-0.5">
             <button
@@ -317,13 +318,13 @@ function CompareView({
               <span className="w-20 shrink-0" />
               <div className="flex flex-1 gap-1">
                 {athleteStats.map((s) => (
-                  <span
+                  <FullText
                     key={s.entry.id}
                     className="flex-1 truncate text-center text-[10px] font-semibold"
                     style={{ color: s.entry.color }}
                   >
                     {s.profile.name}
-                  </span>
+                  </FullText>
                 ))}
               </div>
             </div>

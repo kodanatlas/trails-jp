@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { Search, ChevronDown, ChevronUp, Users, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { AthleteIndex, ClubIndex, ClubProfile, ClubMember, ClubDelta } from "@/lib/analysis/types";
 import { typeLabel } from "@/lib/analysis/utils";
+import { FullText } from "@/components/FullText";
 import { ClubDistribution } from "./DistributionCharts";
 
 type SortKey = "members" | "avgPoints" | "active";
@@ -199,7 +200,7 @@ function ClubCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{club.name}</p>
+          <FullText as="p" className="truncate text-sm font-semibold">{club.name}</FullText>
           <p className="text-[10px] text-muted">
             {club.memberCount}名<DeltaInline delta={club.delta?.memberCount} />
             {" · アクティブ "}
