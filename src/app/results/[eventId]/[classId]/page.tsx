@@ -4,8 +4,13 @@ import { LegAnalysisClient } from "./LegAnalysisClient";
 
 type Props = {
   params: Promise<{ eventId: string; classId: string }>;
-  searchParams: Promise<{ athlete?: string; disc?: string; d?: string; cn?: string }>;
+  searchParams: Promise<{ athlete?: string; disc?: string; d?: string; cn?: string; ri?: string; leg?: string }>;
 };
+
+/** 非負整数のクエリだけ通す（ri=走者番号・leg=レッグ番号。ミスの傾向の明細からのリンク用） */
+function parseIndexParam(v: string | undefined): number | null {
+  return typeof v === "string" && /^\d{1,4}$/.test(v) ? Number(v) : null;
+}
 
 /** lapcenter_event_id から大会名・日付を解決（events ストア。mulka2 は叩かない）。 */
 async function resolveEvent(eventId: number): Promise<{ name: string; date: string } | null> {
@@ -48,6 +53,8 @@ export default async function ResultLegPage({ params, searchParams }: Props) {
         eventName={ev?.name ?? null}
         eventDate={ev?.date ?? excludeDate}
         className={className}
+        runnerIndex={parseIndexParam(sp.ri)}
+        focusLeg={parseIndexParam(sp.leg)}
       />
     </div>
   );

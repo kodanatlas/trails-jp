@@ -27,6 +27,7 @@ export interface LegCell {
 }
 
 export interface LegViewSubject {
+  index: number; // LapCenter のクラス内の登場順（= lc_leg_splits.runner_index）
   name: string;
   club: string;
   rank: number | null;
@@ -190,19 +191,22 @@ export function normalizeName(s: string): string {
 /**
  * ビューモデル生成。subjectName 未指定なら優勝者（rank=1, 無ければ先頭）を主役にする。
  * self を渡すと「自分の同種目平均との差」（Forest/Sprint 別）を併記できる。
+ * subjectIndex（走者番号）を渡すと氏名より優先する＝同クラスの再走（同名2行）を区別できる。
  */
 export function buildLegView(
   runners: LapCenterRunnerDetail[],
   subjectName?: string,
   self?: { discipline: "forest" | "sprint"; history: LapCenterPerformance[]; excludeDate?: string },
+  subjectIndex?: number,
 ): LegView | null {
   if (runners.length === 0) return null;
 
   const finishers = runners.filter((r) => r.rank != null);
   const n = finishers.length;
 
-  let subject: LapCenterRunnerDetail | undefined;
-  if (subjectName) {
+  let subject: LapCenterRunnerDetail | undefined =
+    subjectIndex != null ? runners.find((r) => r.index === subjectIndex) : undefined;
+  if (!subject && subjectName) {
     const key = normalizeName(subjectName);
     subject = runners.find((r) => normalizeName(r.name) === key);
   }
@@ -290,6 +294,7 @@ export function buildLegView(
 
   return {
     subject: {
+      index: subject.index,
       name: subject.name,
       club: subject.club,
       rank: subject.rank,

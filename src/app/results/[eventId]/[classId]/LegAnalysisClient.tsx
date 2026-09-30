@@ -28,6 +28,8 @@ interface Props {
   eventName: string | null; // 文脈ヘッダー用（events から解決）
   eventDate: string | null;
   className: string | null; // クラス名（resolver から cn で受領）
+  runnerIndex: number | null; // 主役の走者番号（ミスの傾向の明細から・再走の区別）
+  focusLeg: number | null; // 開いたら強調するレッグ番号（0始まり）。指定時は主役1人の表示で開く
 }
 
 const norm = normalizeName; // 名前正規化は leg-analysis に集約（レビュー H: 二重定義解消）
@@ -64,6 +66,30 @@ export function findLcRunnerForAthlete<T extends LapCenterRunnerIdentity>(
   });
 }
 
+/**
+ * 主役の出走行を特定する純関数。runnerIndex（lc_leg_splits.runner_index = LapCenter の登場順）が
+ * 渡され、その走者が指定選手と同一人物ならその行を使う（同クラスの再走＝同名2行を区別できる）。
+ * 別人・範囲外なら LapCenter 側の並びが取込後に変わったとみなし、氏名で特定し直して indexMismatch を立てる。
+ */
+export function resolveLegFocusSubject<T extends LapCenterRunnerIdentity>(
+  runners: readonly T[],
+  athlete: string | null,
+  runnerIndex: number | null,
+  eventId: number,
+  classId: number,
+): { runner: T | undefined; indexMismatch: boolean } {
+  if (!athlete) return { runner: undefined, indexMismatch: false };
+  if (runnerIndex != null) {
+    const byIndex = runners.find((r) => r.index === runnerIndex);
+    const resolved = byIndex ? resolveLcRunnerName(byIndex, eventId, classId) : null;
+    if (resolved != null && norm(resolved) === norm(athlete)) return { runner: byIndex, indexMismatch: false };
+  }
+  return {
+    runner: findLcRunnerForAthlete(runners, athlete, eventId, classId),
+    indexMismatch: runnerIndex != null,
+  };
+}
+
 /** 選手ページへのリンクは解決後の表示名を使い、未解決なら生氏名へ戻す。 */
 function athletePageNameForLc(
   runner: LapCenterRunnerIdentity,
@@ -87,6 +113,8 @@ export function LegAnalysisClient({
   eventName,
   eventDate,
   className,
+  runnerIndex,
+  focusLeg,
 }: Props) {
   const [runners, setRunners] = useState<LapCenterRunnerDetail[] | null>(null);
   const [history, setHistory] = useState<LapCenterPerformance[] | null>(null);
@@ -109,11 +137,14 @@ export function LegAnalysisClient({
         setRunners(d.runners);
         setStatus("ok");
         // 既定列: 上位3名。選手ページ経由ならその選手を先頭に加える。
+        // ミスの傾向の明細から来た（focusLeg 指定）ときは、その選手1人の深掘り表示で開く。
         const finishers = [...d.runners].filter((r) => r.rank != null).sort((a, b) => a.rank! - b.rank!);
         const top = finishers.slice(0, 3).map((r) => r.name);
-        const aName = athlete
-          ? findLcRunnerForAthlete(d.runners, athlete, eventId, classId)?.name
-          : undefined;
+        const aName = resolveLegFocusSubject(d.runners, athlete, runnerIndex, eventId, classId).runner?.name;
+        if (aName && focusLeg != null) {
+          setSelected([aName]);
+          return;
+        }
         const def = aName && !top.includes(aName) ? [aName, ...top].slice(0, 4) : top;
         setSelected(def.length ? def : d.runners.slice(0, 1).map((r) => r.name));
       })
@@ -136,12 +167,13 @@ export function LegAnalysisClient({
     return () => {
       cancelled = true;
     };
-  }, [eventId, classId, athlete]);
+  }, [eventId, classId, athlete, runnerIndex, focusLeg]);
 
-  const athleteName = useMemo(
-    () => (athlete && runners ? findLcRunnerForAthlete(runners, athlete, eventId, classId)?.name ?? null : null),
-    [athlete, runners, eventId, classId],
+  const subject = useMemo(
+    () => (runners ? resolveLegFocusSubject(runners, athlete, runnerIndex, eventId, classId) : null),
+    [athlete, runners, runnerIndex, eventId, classId],
   );
+  const athleteName = subject?.runner?.name ?? null;
 
   if (status === "loading") {
     return (
@@ -212,11 +244,18 @@ export function LegAnalysisClient({
           このレースに「{athlete}」の記録が見つかりませんでした（氏名の表記揺れ等の可能性）。代わりに上位選手を表示しています。
         </div>
       )}
+      {athleteName !== null && subject?.indexMismatch && (
+        <div className="mb-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-2.5 text-[11px] leading-relaxed text-yellow-200/90">
+          LapCenter の掲載内容が取り込み時から変わったため、氏名で記録を特定しました（同じクラスを複数回走っている場合は、別の回の記録が表示されている可能性があります）。
+        </div>
+      )}
       <AddPicker runners={runners} selected={ordered} onAdd={add} />
       {ordered.length === 1 ? (
         <SingleView
           runners={runners}
           name={ordered[0]}
+          subjectIndex={ordered[0] === athleteName ? subject?.runner?.index : undefined}
+          focusLeg={ordered[0] === athleteName ? focusLeg : null}
           isAthlete={ordered[0] === athleteName}
           discipline={discipline}
           raceDiscipline={raceDiscipline}
@@ -502,6 +541,8 @@ function AddPicker({
 function SingleView({
   runners,
   name,
+  subjectIndex,
+  focusLeg,
   isAthlete,
   discipline,
   raceDiscipline,
@@ -512,6 +553,8 @@ function SingleView({
 }: {
   runners: LapCenterRunnerDetail[];
   name: string;
+  subjectIndex?: number; // 走者番号（同名の再走を区別）。無ければ氏名で特定
+  focusLeg: number | null; // スクロールして一時強調するレッグ（0始まり）
   isAthlete: boolean;
   discipline: "forest" | "sprint" | null;
   raceDiscipline: "forest" | "sprint";
@@ -526,11 +569,24 @@ function SingleView({
       runners,
       name,
       useSelf ? { discipline, history: history!, excludeDate: excludeDate ?? undefined } : undefined,
+      subjectIndex,
     );
-  }, [runners, name, isAthlete, discipline, history, excludeDate]);
+  }, [runners, name, subjectIndex, isAthlete, discipline, history, excludeDate]);
 
   // 累積カーブの比較相手（既定=1位、自分が1位なら2位）。ユーザーが切替可能。
   const [overlayName, setOverlayName] = useState<string | null>(null);
+
+  // ミスの傾向の明細から来たとき: 該当レッグまでスクロールし、数秒だけ強調する
+  const legCount = view?.legs.length ?? 0;
+  const validFocus = focusLeg != null && focusLeg >= 0 && focusLeg < legCount ? focusLeg : null;
+  const [flashEnded, setFlashEnded] = useState(false);
+  const flashLeg = flashEnded ? null : validFocus;
+  useEffect(() => {
+    if (validFocus == null) return;
+    document.getElementById(`leg-${validFocus}`)?.scrollIntoView({ block: "center" });
+    const timer = setTimeout(() => setFlashEnded(true), 3000);
+    return () => clearTimeout(timer);
+  }, [validFocus]);
 
   if (!view) return null;
   const s = view.subject;
@@ -546,7 +602,7 @@ function SingleView({
   const overlayRunner = picked && picked.name !== view.subject.name ? picked : defaultOverlay;
   // 累積タイム差: 各CPでの「自分 − 比較相手」の実経過タイム差（秒）。＋=比較相手より後ろ（遅い）。
   // legLossTime（各自の巡航ペース基準）を重ねると基準が別々で比較にならないため、共通の実経過タイムで差を取る。
-  const subjRunner = runners.find((r) => norm(r.name) === norm(view.subject.name)) ?? null;
+  const subjRunner = runners.find((r) => r.index === view.subject.index) ?? null;
   const gapSeries = (() => {
     if (!overlayRunner || !subjRunner) return null;
     const n = Math.min(subjRunner.elapsedTime.length, overlayRunner.elapsedTime.length);
@@ -752,7 +808,7 @@ function SingleView({
       </p>
       <div className="space-y-[7px]">
         {view.legs.map((leg, i) => (
-          <LegRow key={i} leg={leg} n={view.n} maxAbs={maxAbs} />
+          <LegRow key={i} id={`leg-${i}`} leg={leg} n={view.n} maxAbs={maxAbs} flash={flashLeg === i} />
         ))}
       </div>
 
@@ -793,14 +849,27 @@ function Chip({
   );
 }
 
-function LegRow({ leg, n, maxAbs }: { leg: LegCell; n: number; maxAbs: number }) {
+function LegRow({
+  id,
+  leg,
+  n,
+  maxAbs,
+  flash,
+}: {
+  id: string;
+  leg: LegCell;
+  n: number;
+  maxAbs: number;
+  flash: boolean;
+}) {
   const w = Math.min(48, (Math.abs(leg.lossSec) / maxAbs) * 48);
   const rankColor = rankToColor(leg.lapRank, n);
   return (
     <div
-      className={`flex items-center gap-2.5 rounded-xl border bg-card px-3 py-2.5 ${
+      id={id}
+      className={`flex scroll-mt-20 items-center gap-2.5 rounded-xl border bg-card px-3 py-2.5 transition-shadow duration-700 ${
         leg.isTopMiss ? "border-red-400/45" : "border-border"
-      }`}
+      } ${flash ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
       style={leg.isTopMiss ? { background: "linear-gradient(0deg,rgba(248,113,113,.07),rgba(248,113,113,.07)),var(--card)" } : undefined}
     >
       <div className="w-[46px] flex-shrink-0 rounded-md bg-border py-2 text-center font-mono text-xs font-bold text-muted">
