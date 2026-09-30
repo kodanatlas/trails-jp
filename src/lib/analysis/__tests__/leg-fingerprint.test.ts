@@ -251,6 +251,8 @@ describe("buildLegFingerprintIndex", () => {
       runner_index: 99,
       start_time: "10:00:05",
       elapsed_sec: race.elapsed_sec, // ほぼ同時刻で全行程随伴
+      rank: 5,
+      leg_loss_sec: race.leg_loss_sec,
     };
     const clean = Array.from({ length: 5 }, (_, r) =>
       mkRace("パック選手", `2026-02-0${r + 1}`, "forest", legsWithMisses([3, 13]))

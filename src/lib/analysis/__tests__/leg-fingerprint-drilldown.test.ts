@@ -28,6 +28,8 @@ const detail: DisciplineDetail = {
     lap: [164, 66, 100, 88, 200],
     loss: [75, 38, 2, -6, 100],
     m: [1, 1, 0, 0, 1],
+    fm: [60, 5, 1, null, 20],
+    fn: [9, 9, 9, 0, 6],
   },
   pack: { r: [2, 2, 2, 0], l: [3, 4, 5, 15] },
 };
@@ -68,7 +70,7 @@ describe("buildDrilldown: 選んだセル・規模の行を集める", () => {
     const rows = buildDrilldown(detail, { kind: "cell", cell: 0 }, SEV_BINS).clean;
     expect(rows[0].legLabel).toBe("S→1");
     const last = buildDrilldown(
-      { ...detail, legs: { r: [0], l: [19], c: [8], lap: [100], loss: [50], m: [1] } },
+      { ...detail, legs: { r: [0], l: [19], c: [8], lap: [100], loss: [50], m: [1], fm: [10], fn: [9] } },
       { kind: "cell", cell: 8 },
       SEV_BINS
     ).miss[0];

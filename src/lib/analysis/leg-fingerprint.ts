@@ -16,6 +16,7 @@
  */
 // 明細の型のみ（実行時の循環 import を作らない。検証関数は leg-fingerprint-details.ts 側）
 import type { DetailLegs, DetailRace, DisciplineDetail, FingerprintDetails } from "./leg-fingerprint-details";
+import { medianOf } from "../results/leg-field-judge";
 
 export interface FingerprintParams {
   missRatio: number;
@@ -103,6 +104,9 @@ export interface CompanionRow {
   runner_index: number;
   start_time: string | null;
   elapsed_sec: (number | null)[];
+  /** 完走者（rank あり）だけがフィールド比較の相手になる */
+  rank: number | null;
+  leg_loss_sec: (number | null)[];
 }
 
 /** レース重み（信頼度加重トレンド用）。d=日付, w=cleanLegs×min(fieldN,cap), r=reliable */
@@ -432,6 +436,8 @@ interface RacePool {
   legIdx: number[];   // コース上のレッグ番号（0始まり）
   laps: number[];
   lossAll: number[];
+  fieldMed: (number | null)[]; // 本人を除く完走者の想定との差の中央値（難レッグ判定用）
+  fieldN: number[];            // その中央値に使った人数（レッグ別の有効数）
 }
 
 /** 明細の組み立て途中の状態（選手×種目） */
@@ -442,7 +448,7 @@ interface DetailDraft {
 
 /** 集計に採用したレースのプールから明細のレッグ列を作る（集計と同じ並び・同じ値） */
 function legsFromPools(races: RacePool[]): DetailLegs {
-  const legs: DetailLegs = { r: [], l: [], c: [], lap: [], loss: [], m: [] };
+  const legs: DetailLegs = { r: [], l: [], c: [], lap: [], loss: [], m: [], fm: [], fn: [] };
   for (const race of races) {
     for (let i = 0; i < race.miss.length; i++) {
       legs.r.push(race.raceIdx);
@@ -451,6 +457,8 @@ function legsFromPools(races: RacePool[]): DetailLegs {
       legs.lap.push(race.laps[i]);
       legs.loss.push(race.lossAll[i]);
       legs.m.push(race.miss[i] ? 1 : 0);
+      legs.fm.push(race.fieldMed[i]);
+      legs.fn.push(race.fieldN[i]);
     }
   }
   return legs;
@@ -516,6 +524,26 @@ export function buildLegFingerprintArtifacts(
   };
   for (const r of tracked) addClock(`${r.lc_event_id}:${r.lc_class_id}`, r, r.start_time, r.elapsed_sec);
   for (const c of companions) addClock(`${c.lc_event_id}:${c.lc_class_id}`, c, c.start_time, c.elapsed_sec);
+
+  // クラス → 完走者の想定との差（難レッグ判定の比べる相手・明細のみに使いカードの数字には影響しない）。
+  // 本人は参照で除外する（結果分析ページの「本人を除く完走者」と同じ）
+  const classFinishers = new Map<string, { ref: unknown; loss: (number | null)[] }[]>();
+  const addFinisher = (key: string, ref: unknown, rank: number | null, loss: (number | null)[]) => {
+    if (rank == null) return;
+    const list = classFinishers.get(key) ?? [];
+    list.push({ ref, loss });
+    classFinishers.set(key, list);
+  };
+  for (const r of tracked) addFinisher(`${r.lc_event_id}:${r.lc_class_id}`, r, r.rank, r.leg_loss_sec);
+  for (const c of companions) addFinisher(`${c.lc_event_id}:${c.lc_class_id}`, c, c.rank, c.leg_loss_sec);
+  const fieldOf = (classKey: string, self: unknown, l: number): { med: number | null; n: number } => {
+    const vals: number[] = [];
+    for (const f of classFinishers.get(classKey) ?? []) {
+      const v = f.ref === self ? null : f.loss[l];
+      if (v != null) vals.push(v);
+    }
+    return { med: medianOf(vals), n: vals.length };
+  };
 
   // 同姓同名（物理的重複）の検出 → 該当名は重み・指紋とも集計から除外
   const homonyms = detectHomonymKeys(tracked, P.homonymOverlapSec);
@@ -610,6 +638,8 @@ export function buildLegFingerprintArtifacts(
       legIdx: [],
       laps: [],
       lossAll: [],
+      fieldMed: [],
+      fieldN: [],
     };
     let cleanLegs = 0;
     let prevPooledLeg = -2;
@@ -631,6 +661,9 @@ export function buildLegFingerprintArtifacts(
       pool.legIdx.push(l);
       pool.laps.push(lap);
       pool.lossAll.push(loss);
+      const field = fieldOf(classKey, r, l);
+      pool.fieldMed.push(field.med);
+      pool.fieldN.push(field.n);
       prevPooledLeg = l;
       if (isMiss) {
         pool.losses.push(loss);

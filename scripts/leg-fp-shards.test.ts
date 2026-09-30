@@ -13,7 +13,7 @@ import type { DisciplineDetail } from "../src/lib/analysis/leg-fingerprint-detai
 
 const detail: DisciplineDetail = {
   races: [{ d: "2026-09-20", e: "大会", c: "ME", ev: 1, cl: 2, ri: 3, L: 5 }],
-  legs: { r: [0], l: [1], c: [0], lap: [120], loss: [40], m: [1] },
+  legs: { r: [0], l: [1], c: [0], lap: [120], loss: [40], m: [1], fm: [12], fn: [9] },
   pack: { r: [], l: [] },
 };
 
