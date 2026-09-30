@@ -32,6 +32,7 @@ function syncAthleteUrl(key: string | null) {
   url.searchParams.delete("athlete");
   url.searchParams.delete("tab");
   url.searchParams.delete("vs");
+  url.searchParams.delete("fp");
   history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
 }
 

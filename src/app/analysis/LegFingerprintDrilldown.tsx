@@ -71,7 +71,11 @@ export function LegFingerprintDrilldown(props: Props) {
   const { selection, detail, state, onRetry, onClose, sevLabels } = props;
   const panelTitle = title(selection, sevLabels);
   return (
-    <div className="mt-2 rounded-lg border border-primary/40 bg-card p-3" role="region" aria-label={`${panelTitle}の根拠レッグ`}>
+    <div
+      className="mt-2 scroll-mt-20 rounded-lg border border-primary/40 bg-card p-3"
+      role="region"
+      aria-label={`${panelTitle}の根拠レッグ`}
+    >
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-bold">{panelTitle}</p>
         <button
