@@ -10,7 +10,14 @@ import { computeWeekendPoints } from "../src/lib/weekend-points";
 import { jstNowLabel, jstToday } from "../src/lib/weekend-window";
 import { eventFuzzyMatch } from "../src/lib/analysis/event-match";
 import { buildCrossRaceIndex, type LcRaceRow } from "../src/lib/analysis/cross-race";
-import { buildLegFingerprintIndex, detectHomonymKeys, type TrackedLegRow, type CompanionRow } from "../src/lib/analysis/leg-fingerprint";
+import { buildLegFingerprintArtifacts, buildLegFingerprintIndex, detectHomonymKeys, type TrackedLegRow, type CompanionRow } from "../src/lib/analysis/leg-fingerprint";
+import {
+  FingerprintInvariantError,
+  fingerprintGen,
+  verifyDetailsAgainstSource,
+  verifyFingerprintDetails,
+} from "../src/lib/analysis/leg-fingerprint-details";
+import { LegFpPublishError, writeFileAtomic, writeLegFpShards } from "./leg-fp-shards";
 import { findDuplicateNames, makeScoreMergeKey } from "../src/lib/analysis/score-merge";
 import { resolveAliasName, resolveEntryAliases } from "../src/lib/identity/athlete-alias";
 
@@ -1540,7 +1547,7 @@ async function buildLegFingerprintStep(): Promise<Set<string> | null> {
 
   const order = "&order=lc_event_id.asc,lc_class_id.asc,runner_index.asc";
   const tracked = await pageAll<TrackedLegRow>(
-    "lc_leg_splits?tracked=is.true&select=runner_key,event_date,event_name,class_name,club,race_type,rank,speed,start_time,lap_sec,leg_loss_sec,leg_speed,elapsed_sec,lc_event_id,lc_class_id" + order
+    "lc_leg_splits?tracked=is.true&select=runner_key,event_date,event_name,class_name,club,race_type,rank,speed,start_time,lap_sec,leg_loss_sec,leg_speed,elapsed_sec,lc_event_id,lc_class_id,runner_index" + order
   );
   if (!tracked) {
     keepOrSkeleton("tracked 行の取得失敗");
@@ -1549,45 +1556,70 @@ async function buildLegFingerprintStep(): Promise<Set<string> | null> {
   // cross-race の除外キーは tracked だけで算出できるため、以降の artifact 生成処理から分離する
   const homonymKeys = detectHomonymKeys(tracked);
 
+  let companions: CompanionRow[] | null;
   try {
-    const companions = await pageAll<CompanionRow>(
+    companions = await pageAll<CompanionRow>(
       "lc_leg_splits?tracked=is.false&select=lc_event_id,lc_class_id,runner_index,start_time,elapsed_sec" + order
     );
-    if (!companions) {
-      keepOrSkeleton("companion 行の取得失敗");
-      return homonymKeys;
-    }
-    // 健全性ガード: 明らかな不足（キャップ1枚分等）で良品を上書きしない
-    if (tracked.length < 40000) {
-      keepOrSkeleton(`tracked 行数が異常に少ない (${tracked.length}) — 不完全データでの上書きを回避`);
-      return homonymKeys;
-    }
+  } catch (e) {
+    keepOrSkeleton(`companion 行の取得例外: ${(e as Error).message}`);
+    return homonymKeys;
+  }
+  if (!companions) {
+    keepOrSkeleton("companion 行の取得失敗");
+    return homonymKeys;
+  }
+  // 健全性ガード: 明らかな不足（キャップ1枚分等）で良品を上書きしない
+  if (tracked.length < 40000) {
+    keepOrSkeleton(`tracked 行数が異常に少ない (${tracked.length}) — 不完全データでの上書きを回避`);
+    return homonymKeys;
+  }
+  // ここから先（集計・検証・書き出し）の失敗は DB の一時障害ではなく実装かディスクの問題 → ビルドを落とす
+  publishLegFingerprint(tracked, companions, outPath);
+  return homonymKeys;
+}
 
+/**
+ * 集計と明細を作り、一致と出所を検証してから公開する（docs/plans/2026-09-30_miss-trend-drilldown.md）。
+ * 検証は書き出しより前なので、食い違った組は一切ディスクに出ない。明細を先に・集計（gen 付き）を最後に書くため、
+ * 途中で失敗しても集計は git の旧版（gen なし）のまま＝UI は明細を出さない。失敗はすべてビルド失敗
+ * （本番は前回成功デプロイのまま）。
+ */
+function publishLegFingerprint(tracked: TrackedLegRow[], companions: CompanionRow[], outPath: string): void {
+  try {
     // 期間比較の境界＝ビルド時点の12ヶ月前（"recent" = event_date ≥ これ）
     const cut = new Date();
     cut.setFullYear(cut.getFullYear() - 1);
     const periodCutoff = cut.toISOString().slice(0, 10);
-    const index = {
-      ...buildLegFingerprintIndex(tracked, companions, { periodCutoff }),
-      generatedAt: new Date().toISOString(),
-    };
+    const artifacts = buildLegFingerprintArtifacts(tracked, companions, { periodCutoff });
+    verifyFingerprintDetails(artifacts.index, artifacts.details);
+    verifyDetailsAgainstSource(artifacts.details, tracked);
+    const generatedAt = new Date().toISOString();
+    const gen = fingerprintGen(generatedAt);
+    const shardStats = writeLegFpShards(OUTPUT_DIR, gen, artifacts.details);
+    const index = { ...artifacts.index, generatedAt, gen };
     const json = JSON.stringify(index);
-    fs.writeFileSync(outPath, json);
-    const nAth = Object.keys(index.athletes).length;
+    writeFileAtomic(outPath, json);
     console.log(
-      `✓ leg-fingerprint.json: 選手 ${nAth}・同姓同名除外 ${index.homonymExcluded ?? 0} 名・` +
+      `✓ leg-fingerprint.json: 選手 ${Object.keys(index.athletes).length}・同姓同名除外 ${index.homonymExcluded ?? 0} 名・` +
         `入力 tracked=${tracked.length}/companion=${companions.length} 行 (${(json.length / 1024).toFixed(0)} KB)`
     );
-    return homonymKeys;
+    console.log(
+      `✓ leg-fp/${gen}: ${shardStats.files} ファイル・計 ${(shardStats.totalBytes / 1024).toFixed(0)} KB・` +
+        `最大 ${(shardStats.maxBytes / 1024).toFixed(0)} KB (${shardStats.maxKey})`
+    );
   } catch (e) {
-    console.warn("⚠ leg-fingerprint 生成例外（ビルドは継続）:", (e as Error).message);
-    return homonymKeys;
+    if (e instanceof FingerprintInvariantError) throw e;
+    throw new LegFpPublishError((e as Error).message, { cause: e });
   }
 }
+
 let homonymKeys: Set<string> | null = null;
 try {
   homonymKeys = await buildLegFingerprintStep();
 } catch (e) {
+  // 明細の食い違い・DB 取得後の生成/書き出し失敗はビルドを落とす（本番は前回成功デプロイのまま）
+  if (e instanceof FingerprintInvariantError || e instanceof LegFpPublishError) throw e;
   console.warn("⚠ leg-fingerprint 生成例外（ビルドは継続）:", (e as Error).message);
 }
 try {

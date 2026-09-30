@@ -36,3 +36,6 @@ supabase/.temp/
 
 # Claude 検証用一時ファイル
 .tmp_*
+
+# ミスの傾向ドリルダウンの選手別明細（ビルド生成物・約1,600ファイル）
+public/data/leg-fp/

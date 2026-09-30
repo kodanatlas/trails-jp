@@ -6,17 +6,28 @@
  * - face validity（既知選手）
  * - 検証済み artifact を public/data/leg-fingerprint.json に書き出し
  *
- * 実行: npx tsx scripts/leg-fingerprint-smoke.ts [--skip-fetch]（/tmp キャッシュ再利用）
+ * - ドリルダウン明細: 集計との一致検証・容量計測・既知選手の1セル目視（2026-09-30）
+ *
+ * 実行: npx tsx scripts/leg-fingerprint-smoke.ts [--skip-fetch]（/tmp キャッシュ再利用）[--no-write]（artifact を書き換えない）
  */
 import * as fs from "fs";
 import * as path from "path";
+import * as os from "os";
+import * as zlib from "zlib";
 import {
+  buildLegFingerprintArtifacts,
   buildLegFingerprintIndex,
   detectHomonymKeys,
   type TrackedLegRow,
   type CompanionRow,
   type LegFingerprintIndex,
 } from "../src/lib/analysis/leg-fingerprint";
+import {
+  verifyDetailsAgainstSource,
+  verifyFingerprintDetails,
+  type FingerprintDetails,
+} from "../src/lib/analysis/leg-fingerprint-details";
+import { writeLegFpShards } from "./leg-fp-shards";
 
 const PROJECT_REF = "mlbyohpbembeoutaakkr";
 const CACHE_TRACKED = "/tmp/lf_tracked.json";
@@ -83,6 +94,57 @@ function summarize(idx: LegFingerprintIndex, label: string) {
   }
 }
 
+/**
+ * ドリルダウン明細（2026-09-30）: 集計との一致検証・一時ディレクトリへの書き出しで容量計測・目視用の1セル表示。
+ * public/ には書かない（本番の明細はビルドが生成する）。
+ */
+function checkDrilldown(
+  index: LegFingerprintIndex,
+  details: FingerprintDetails,
+  tracked: TrackedLegRow[],
+  tBuild: number
+) {
+  const t0 = Date.now();
+  verifyFingerprintDetails(index, details); // 食い違えば例外で終了
+  verifyDetailsAgainstSource(details, tracked);
+  const tVerify = Date.now() - t0;
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "legfp-smoke-"));
+  const t1 = Date.now();
+  const stats = writeLegFpShards(dir, "SMOKE", details);
+  const tWrite = Date.now() - t1;
+  const sizes = fs
+    .readdirSync(path.join(dir, "leg-fp", "SMOKE"))
+    .map((f) => fs.statSync(path.join(dir, "leg-fp", "SMOKE", f)).size)
+    .sort((a, b) => a - b);
+  const pct = (p: number) => sizes[Math.min(sizes.length - 1, Math.floor(p * sizes.length))];
+  console.log(
+    `\n[drilldown] 一致検証 OK・生成 ${tBuild}ms・検証 ${tVerify}ms・書き出し ${tWrite}ms\n` +
+      `[drilldown] ${stats.files} ファイル・計 ${(stats.totalBytes / 1024 / 1024).toFixed(1)} MB・` +
+      `p50 ${(pct(0.5) / 1024).toFixed(1)} KB / p90 ${(pct(0.9) / 1024).toFixed(1)} KB / 最大 ${(stats.maxBytes / 1024).toFixed(0)} KB (${stats.maxKey})`
+  );
+  // gzip 後の目安（最大ファイル）
+  if (stats.maxKey) {
+    const raw = fs.readFileSync(path.join(dir, "leg-fp", "SMOKE", `${stats.maxKey}.json`));
+    console.log(`[drilldown] 最大ファイルの gzip 後: ${(zlib.gzipSync(raw).length / 1024).toFixed(0)} KB`);
+  }
+  fs.rmSync(dir, { recursive: true, force: true });
+
+  // 目視用: 既知選手の中盤×短レッグ（セル3）の明細を5件
+  const name = "児玉健";
+  const d = details[name]?.f;
+  if (!d) return;
+  const rows = d.legs.c
+    .map((c, i) => ({ c, i }))
+    .filter((x) => x.c === 3)
+    .slice(0, 5)
+    .map(({ i }) => {
+      const race = d.races[d.legs.r[i]];
+      const base = d.legs.lap[i] - d.legs.loss[i];
+      return `${race.d} ${race.e} [${race.c}] ev=${race.ev}/cl=${race.cl}/ri=${race.ri} 第${d.legs.l[i] + 1}レッグ/${race.L} lap=${d.legs.lap[i]} 想定より+${d.legs.loss[i]}s(${Math.round((d.legs.loss[i] / base) * 100)}%) ${d.legs.m[i] ? "ミス判定" : "-"}`;
+    });
+  console.log(`[drilldown] ${name} 中盤×短レッグ n=${index.athletes[name]!.f!.cells[3].n} の先頭5件:\n  ${rows.join("\n  ")}`);
+}
+
 async function main() {
   const skipFetch = process.argv.includes("--skip-fetch");
   let tracked: TrackedLegRow[];
@@ -96,7 +158,7 @@ async function main() {
     console.log("tracked 行を取得中...");
     tracked = await fetchAll<TrackedLegRow>(
       token,
-      "runner_key,event_date,event_name,class_name,club,race_type,rank,speed,start_time,lap_sec,leg_loss_sec,leg_speed,elapsed_sec,lc_event_id,lc_class_id",
+      "runner_key,event_date,event_name,class_name,club,race_type,rank,speed,start_time,lap_sec,leg_loss_sec,leg_speed,elapsed_sec,lc_event_id,lc_class_id,runner_index",
       "tracked = true"
     );
     console.log("companion 行を取得中...");
@@ -114,11 +176,12 @@ async function main() {
   const cut = new Date();
   cut.setFullYear(cut.getFullYear() - 1);
   const periodCutoff = cut.toISOString().slice(0, 10);
-  const idx = {
-    ...buildLegFingerprintIndex(tracked, companions, { periodCutoff }),
-    generatedAt: new Date().toISOString(),
-  };
+  const t0 = Date.now();
+  const artifacts = buildLegFingerprintArtifacts(tracked, companions, { periodCutoff });
+  const tBuild = Date.now() - t0;
+  const idx = { ...artifacts.index, generatedAt: new Date().toISOString() };
   summarize(idx, "本番設定");
+  checkDrilldown(artifacts.index, artifacts.details, tracked, tBuild);
 
   // 感度分析: パック除染 OFF（ε=0 で無効化）
   const noPack = buildLegFingerprintIndex(tracked, companions, { packEps: { forest: 0, sprint: 0 } });
@@ -193,7 +256,11 @@ async function main() {
     console.log(`\n${name}: band(f)=${a?.f?.band ?? "-"} band(s)=${a?.s?.band ?? "-"}`, JSON.stringify(a?.f?.cells ?? "（未掲載）").slice(0, 300));
   }
 
-  // artifact
+  // artifact（--no-write なら書き出さない＝検証だけ回す）
+  if (process.argv.includes("--no-write")) {
+    console.log("\n--no-write: public/data/leg-fingerprint.json は書き換えない");
+    return;
+  }
   const outPath = path.resolve(__dirname, "../public/data/leg-fingerprint.json");
   const json = JSON.stringify(idx);
   fs.writeFileSync(outPath, json);
