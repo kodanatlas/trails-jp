@@ -8,6 +8,7 @@ import {
   mhLag1,
   mulberry32,
   buildLegFingerprintIndex,
+  sortLegRowsCanonical,
   DEFAULT_PARAMS,
   type TrackedLegRow,
   type CompanionRow,
@@ -31,6 +32,28 @@ describe("parseStartSec / classifyMiss", () => {
     expect(classifyMiss(30, 10, 10, 0.3)).toBe(true);
     // 負ロス=クリーン
     expect(classifyMiss(95, -5, 10, 0.3)).toBe(false);
+  });
+});
+
+describe("sortLegRowsCanonical（取得方式に関わらず集計への入力順を固定する）", () => {
+  const row = (ev: number, cl: number, ri: number | null) => ({ lc_event_id: ev, lc_class_id: cl, runner_index: ri });
+  it("大会ID→クラスID→走者番号の昇順に並べる（DB の order 句と同じ）", () => {
+    const rows = [row(2, 0, 1), row(1, 1, 0), row(1, 0, 5), row(1, 0, 2)];
+    expect(sortLegRowsCanonical(rows)).toEqual([row(1, 0, 2), row(1, 0, 5), row(1, 1, 0), row(2, 0, 1)]);
+  });
+  it("走者番号が空の行は最後（PostgreSQL の ASC 既定 NULLS LAST と同じ）・空同士でも順序が壊れない", () => {
+    expect(sortLegRowsCanonical([row(1, 0, null), row(1, 0, 3)])).toEqual([row(1, 0, 3), row(1, 0, null)]);
+    expect(sortLegRowsCanonical([row(1, 0, null), row(1, 0, null), row(1, 0, 0)])).toEqual([
+      row(1, 0, 0),
+      row(1, 0, null),
+      row(1, 0, null),
+    ]);
+  });
+  it("元の配列を書き換えない", () => {
+    const rows = [row(2, 0, 0), row(1, 0, 0)];
+    const copy = [...rows];
+    sortLegRowsCanonical(rows);
+    expect(rows).toEqual(copy);
   });
 });
 
