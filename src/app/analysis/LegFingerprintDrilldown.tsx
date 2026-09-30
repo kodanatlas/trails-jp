@@ -8,13 +8,16 @@ import {
   buildDrilldown,
   drilldownHref,
   excludedSummary,
+  fieldSummary,
   formatDelta,
   formatLap,
   sortDrilldownRows,
   type DrilldownOrder,
   type DrilldownRow,
   type DrilldownSelection,
+  type FieldSummary,
 } from "@/lib/analysis/leg-fingerprint-drilldown";
+import { FIELD_JUDGE_MIN_N, type FieldVerdict } from "@/lib/results/leg-field-judge";
 import { FullText } from "@/components/FullText";
 
 /**
@@ -109,15 +112,17 @@ function PanelBody({ selection, detail, athleteKey, discipline, sevBins }: Props
   const [order, setOrder] = useState<DrilldownOrder>("date");
   const [shown, setShown] = useState(PAGE);
   const [showClean, setShowClean] = useState(false);
-  const dd = buildDrilldown(detail, selection, sevBins);
+  const dd = buildDrilldown(detail, selection, sevBins, discipline);
   const defs = definitions(selection);
   const missRows = sortDrilldownRows(dd.miss, order);
+  const summary = fieldSummary(dd.miss);
   // 規模バーから開いたときは全行が同じ規模なのでタグを出さない
   const rowProps = { athleteKey, discipline, showSev: selection.kind === "cell" };
 
   return (
     <div className="mt-1.5 space-y-2">
       <p className="text-[11px] text-foreground/85">{countLine(selection, dd.n, dd.m)}</p>
+      {summary && <FieldSummaryLine summary={summary} />}
       {defs.length > 0 && (
         <ul className="space-y-0.5 text-[10px] leading-relaxed text-muted">
           {defs.map((d) => (
@@ -175,6 +180,12 @@ function PanelBody({ selection, detail, athleteKey, discipline, sevBins }: Props
       <p className="text-[9px] leading-relaxed text-muted/80">
         ミス判定は、想定タイムを30%以上上回ったレッグの機械判定で、ナビゲーションのミスとは限りません（地形・集団走・ルート選択を含みえます）。コースの難所かどうかは各レースのレッグ分析で確認できます。
       </p>
+      {summary && (
+        <p className="text-[9px] leading-relaxed text-muted/80">
+          <span className="text-warning">難レッグ</span>＝同じクラスの完走者（本人を除く）の多くも遅れたレッグ、
+          <span className="text-red-400">自分のミス</span>＝完走者の多くは遅れていないレッグ。完走者の中央値による目安で、原因の断定ではありません。比べられる完走者が{FIELD_JUDGE_MIN_N}名未満のレッグには付けません。値は取込時点のデータで、レッグ分析の表示と異なることがあります。
+        </p>
+      )}
     </div>
   );
 }
@@ -244,18 +255,52 @@ function RaceMeta({ row }: { row: DrilldownRow }) {
 // 「中」だけだと「中レッグ」と読まれるため「中ミス」（結果分析ページの「大ミス」と同じ語）
 const SEV_TEXT = ["小ミス", "中ミス", "大ミス"] as const;
 
+// 結果分析ページの「難レッグ vs 自分のミス」と同じ語・同じ色（FieldComparisonCard）
+const FIELD_TEXT: Record<FieldVerdict, string> = { trap: "難レッグ", own: "自分のミス", mixed: "半々" };
+const FIELD_TONE: Record<FieldVerdict, string> = { trap: "text-warning", own: "text-red-400", mixed: "text-muted" };
+
+/** ミス判定の内訳（件数 0 の区分は出さない。判定なしは理由別） */
+function FieldSummaryLine({ summary }: { summary: FieldSummary }) {
+  const parts: { key: string; text: string; tone: string }[] = [
+    { key: "own", text: `自分のミス ${summary.own}`, tone: FIELD_TONE.own },
+    { key: "mixed", text: `半々 ${summary.mixed}`, tone: FIELD_TONE.mixed },
+    { key: "trap", text: `難レッグ ${summary.trap}`, tone: FIELD_TONE.trap },
+    { key: "few", text: `判定なし（少人数） ${summary.few}`, tone: "text-muted" },
+    { key: "none", text: `判定なし（比較データなし） ${summary.none}`, tone: "text-muted" },
+  ].filter((p) => summary[p.key as keyof FieldSummary] > 0);
+  return (
+    <p className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px]">
+      <span className="text-muted">うち</span>
+      {parts.map((p) => (
+        <span key={p.key} className={`whitespace-nowrap ${p.tone}`}>
+          {p.text}
+        </span>
+      ))}
+    </p>
+  );
+}
+
 function LegLink({ row, href, showSev }: { row: DrilldownRow; href: string; showSev: boolean }) {
   const tone = row.miss ? "text-negative" : row.deltaSec < 0 ? "text-green-400" : "text-muted";
+  // 少人数・比較データなしの行には何も出さない（要約で件数だけ示す）
+  const verdict: FieldVerdict | null =
+    row.field === "trap" || row.field === "own" || row.field === "mixed" ? row.field : null;
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 rounded bg-surface px-2 py-1.5 text-[11px] transition-colors hover:bg-card-hover"
+      className="flex items-center gap-1.5 rounded bg-surface px-1.5 py-1.5 text-[11px] transition-colors hover:bg-card-hover"
     >
-      <span className="w-12 flex-shrink-0 rounded bg-tag py-0.5 text-center font-mono text-[10px] text-muted">{row.legLabel}</span>
+      <span className="w-11 flex-shrink-0 rounded bg-tag py-0.5 text-center font-mono text-[10px] text-muted">{row.legLabel}</span>
       <span className="w-10 flex-shrink-0 text-right font-mono tabular-nums">{formatLap(row.lapSec)}</span>
       <FullText className={`min-w-0 flex-1 truncate ${tone}`}>{formatDelta(row.deltaSec, row.deltaPct)}</FullText>
-      {showSev && row.sevBin != null && (
-        <span className="flex-shrink-0 rounded bg-negative/15 px-1 text-[9px] text-negative">{SEV_TEXT[row.sevBin]}</span>
+      {/* 規模とフィールド比較は縦に積む（横に並べると iPhone 幅で差の数字が切れる） */}
+      {((showSev && row.sevBin != null) || verdict) && (
+        <span className="flex flex-shrink-0 flex-col items-end gap-0.5 leading-none">
+          {showSev && row.sevBin != null && (
+            <span className="rounded bg-negative/15 px-1 py-px text-[9px] text-negative">{SEV_TEXT[row.sevBin]}</span>
+          )}
+          {verdict && <span className={`text-[9px] font-bold ${FIELD_TONE[verdict]}`}>{FIELD_TEXT[verdict]}</span>}
+        </span>
       )}
       <ChevronRight className="h-3 w-3 flex-shrink-0 text-muted/60" />
     </Link>

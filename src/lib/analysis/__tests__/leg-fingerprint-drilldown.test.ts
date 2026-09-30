@@ -6,6 +6,7 @@ import {
   formatDelta,
   formatLap,
   excludedSummary,
+  fieldSummary,
   drilldownHref,
   encodeFpParam,
   parseFpParam,
@@ -37,21 +38,21 @@ const SEV_BINS: [number, number] = [30, 90];
 
 describe("buildDrilldown: 選んだセル・規模の行を集める", () => {
   it("セル: そのセルのレッグをミス判定あり/なしに分け、件数 n・m を返す", () => {
-    const dd = buildDrilldown(detail, { kind: "cell", cell: 3 }, SEV_BINS);
+    const dd = buildDrilldown(detail, { kind: "cell", cell: 3 }, SEV_BINS, "forest");
     expect(dd.n).toBe(3);
     expect(dd.m).toBe(2);
     expect(dd.miss.map((r) => [r.raceIdx, r.legIdx])).toEqual([[0, 8], [0, 11]]);
     expect(dd.clean.map((r) => [r.raceIdx, r.legIdx])).toEqual([[1, 7]]);
   });
   it("規模: そのビンのミス判定レッグだけ（ミス判定なしは出さない）", () => {
-    const mid = buildDrilldown(detail, { kind: "sev", bin: 1 }, SEV_BINS); // 30〜90 秒
+    const mid = buildDrilldown(detail, { kind: "sev", bin: 1 }, SEV_BINS, "forest"); // 30〜90 秒
     expect(mid.miss.map((r) => r.deltaSec)).toEqual([75, 38]);
     expect(mid.clean).toEqual([]);
-    const big = buildDrilldown(detail, { kind: "sev", bin: 2 }, SEV_BINS); // 90 秒以上
+    const big = buildDrilldown(detail, { kind: "sev", bin: 2 }, SEV_BINS, "forest"); // 90 秒以上
     expect(big.miss.map((r) => r.deltaSec)).toEqual([100]);
   });
   it("行にはレース情報・レッグ表記・想定比・規模が載る", () => {
-    const [row] = buildDrilldown(detail, { kind: "cell", cell: 3 }, SEV_BINS).miss;
+    const [row] = buildDrilldown(detail, { kind: "cell", cell: 3 }, SEV_BINS, "forest").miss;
     expect(row).toMatchObject({
       date: "2026-02-22",
       event: "京葉OLクラブ大会",
@@ -67,19 +68,20 @@ describe("buildDrilldown: 選んだセル・規模の行を集める", () => {
     });
   });
   it("レッグ表記は結果分析ページと同じ（S→1・最終は →F）", () => {
-    const rows = buildDrilldown(detail, { kind: "cell", cell: 0 }, SEV_BINS).clean;
+    const rows = buildDrilldown(detail, { kind: "cell", cell: 0 }, SEV_BINS, "forest").clean;
     expect(rows[0].legLabel).toBe("S→1");
     const last = buildDrilldown(
       { ...detail, legs: { r: [0], l: [19], c: [8], lap: [100], loss: [50], m: [1], fm: [10], fn: [9] } },
       { kind: "cell", cell: 8 },
-      SEV_BINS
+      SEV_BINS,
+      "forest"
     ).miss[0];
     expect(last.legLabel).toBe("19→F");
   });
 });
 
 describe("sortDrilldownRows", () => {
-  const rows = buildDrilldown(detail, { kind: "cell", cell: 3 }, SEV_BINS);
+  const rows = buildDrilldown(detail, { kind: "cell", cell: 3 }, SEV_BINS, "forest");
   const all = [...rows.miss, ...rows.clean];
   it("日付の新しい順・同じレースはレッグ順", () => {
     expect(sortDrilldownRows(all, "date").map((r) => [r.date, r.legIdx])).toEqual([
@@ -144,7 +146,7 @@ describe("encodeFpParam / parseFpParam（開いている一覧を URL の ?fp= �
 
 describe("drilldownHref: 結果分析ページへのリンク", () => {
   it("大会ID/クラスIDと、選手・走者番号・レッグ番号・種目・日付・クラスを渡す", () => {
-    const [row] = buildDrilldown(detail, { kind: "cell", cell: 3 }, SEV_BINS).miss;
+    const [row] = buildDrilldown(detail, { kind: "cell", cell: 3 }, SEV_BINS, "forest").miss;
     const href = drilldownHref(row, "児玉健", "forest");
     const url = new URL(href, "https://example.test");
     expect(url.pathname).toBe("/results/9601/1");
@@ -161,8 +163,45 @@ describe("drilldownHref: 結果分析ページへのリンク", () => {
     const [row] = buildDrilldown(
       { ...detail, races: [{ ...detail.races[0], ri: null }, ...detail.races.slice(1)] },
       { kind: "cell", cell: 3 },
-      SEV_BINS
+      SEV_BINS,
+      "forest"
     ).miss;
     expect(new URL(drilldownHref(row, "児玉健", "forest"), "https://example.test").searchParams.has("ri")).toBe(false);
+  });
+});
+
+describe("フィールド比較のラベル（結果分析ページと同じ共有判定）", () => {
+  const all = (d: DisciplineDetail) => buildDrilldown(d, { kind: "cell", cell: 3 }, SEV_BINS, "forest");
+
+  it("ミス判定の行だけに付く: 相手の中央値が大きい=難レッグ・小さい=自分のミス", () => {
+    const dd = all(detail);
+    // 第8レッグ: +75 秒・相手の中央値 60 秒（9 人）→ コース起因 0.8 → 難レッグ
+    // 第11レッグ: +38 秒・相手の中央値 5 秒（9 人）→ 0.13 → 自分のミス
+    expect(dd.miss.map((r) => [r.legIdx, r.field])).toEqual([[8, "trap"], [11, "own"]]);
+    expect(dd.clean.map((r) => r.field)).toEqual([null]);
+  });
+
+  it("中間=半々・相手 8 人未満=few・相手の値なし=none", () => {
+    const legs = { ...detail.legs, fm: [30, null, 1, null, 20], fn: [9, 0, 9, 0, 6] };
+    const rows = buildDrilldown({ ...detail, legs }, { kind: "sev", bin: 1 }, SEV_BINS, "forest").miss;
+    expect(rows.map((r) => r.field)).toEqual(["mixed", "none"]); // +75 に中央値 30（0.4）／+38 に相手なし
+    const big = buildDrilldown({ ...detail, legs }, { kind: "sev", bin: 2 }, SEV_BINS, "forest").miss;
+    expect(big.map((r) => r.field)).toEqual(["few"]); // 相手 6 人
+  });
+
+  it("要約はラベル別の件数（判定なしは理由別）", () => {
+    const legs = { ...detail.legs, fm: [60, null, 1, null, 20], fn: [9, 0, 9, 0, 6] };
+    const dd = buildDrilldown({ ...detail, legs }, { kind: "sev", bin: 1 }, SEV_BINS, "forest");
+    expect(fieldSummary(dd.miss)).toEqual({ own: 0, mixed: 0, trap: 1, few: 0, none: 1 });
+  });
+
+  it("比較データの無い旧形式の明細ではラベルも要約も出さない", () => {
+    const legs: Partial<DisciplineDetail["legs"]> = { ...detail.legs };
+    delete legs.fm;
+    delete legs.fn;
+    const old = { ...detail, legs } as DisciplineDetail;
+    const dd = all(old);
+    expect(dd.miss.map((r) => r.field)).toEqual([null, null]);
+    expect(fieldSummary(dd.miss)).toBeNull();
   });
 });

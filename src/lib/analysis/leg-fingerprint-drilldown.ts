@@ -7,7 +7,14 @@
  * UI 文言では「ロス」を使わない（界隈で使わない表現・feedback_orienteering_no_loss_wording）。
  */
 import { fmtSignedSeconds, legLabel } from "@/lib/results/leg-analysis";
+import { judgeFromMedian, type FieldVerdict } from "@/lib/results/leg-field-judge";
 import type { DetailRace, DisciplineDetail } from "./leg-fingerprint-details";
+
+/**
+ * ミス判定レッグのフィールド比較（docs/plans/2026-09-30_miss-trend-field-comparison.md）。
+ * trap=難レッグ / own=自分のミス / mixed=半々 / few=比べる相手が8人未満 / none=比べる相手の値なし
+ */
+export type FieldLabel = FieldVerdict | "few" | "none";
 
 /** 何を開いたか: 3×3 セル（局面*3+レッグ長）か、ミスの規模ビン（0小/1中/2大） */
 export type DrilldownSelection = { kind: "cell"; cell: number } | { kind: "sev"; bin: 0 | 1 | 2 };
@@ -50,6 +57,8 @@ export interface DrilldownRow {
   deltaPct: number;        // 想定タイム比（%・四捨五入）
   miss: boolean;
   sevBin: 0 | 1 | 2 | null; // ミス判定レッグの規模（小/中/大）。ミス判定なしは null
+  /** ミス判定レッグのフィールド比較。ミス判定なし・明細に比較データが無い（旧形式）ときは null */
+  field: FieldLabel | null;
 }
 
 export interface Drilldown {
@@ -59,7 +68,21 @@ export interface Drilldown {
   clean: DrilldownRow[];
 }
 
-function toRow(detail: DisciplineDetail, i: number, sevBins: [number, number]): DrilldownRow {
+/** 共有判定（結果分析ページと同じルール）で、ミス判定レッグにラベルを付ける */
+function fieldLabel(detail: DisciplineDetail, i: number, discipline: "forest" | "sprint"): FieldLabel | null {
+  const { m, loss, fm, fn } = detail.legs;
+  if (m[i] !== 1 || fm === undefined || fn === undefined) return null;
+  const j = judgeFromMedian(loss[i], fm[i], fn[i], discipline);
+  if (j.kind !== "judged") return "none"; // ミス判定は下限以上なので below-floor は来ない
+  return j.verdict ?? "few";
+}
+
+function toRow(
+  detail: DisciplineDetail,
+  i: number,
+  sevBins: [number, number],
+  discipline: "forest" | "sprint"
+): DrilldownRow {
   const { r, l, lap, loss, m } = detail.legs;
   const race = detail.races[r[i]];
   const miss = m[i] === 1;
@@ -79,6 +102,7 @@ function toRow(detail: DisciplineDetail, i: number, sevBins: [number, number]): 
     deltaPct: base > 0 ? Math.round((loss[i] / base) * 100) : 0,
     miss,
     sevBin: miss ? (loss[i] < sevBins[0] ? 0 : loss[i] < sevBins[1] ? 1 : 2) : null,
+    field: fieldLabel(detail, i, discipline),
   };
 }
 
@@ -86,9 +110,10 @@ function toRow(detail: DisciplineDetail, i: number, sevBins: [number, number]): 
 export function buildDrilldown(
   detail: DisciplineDetail,
   selection: DrilldownSelection,
-  sevBins: [number, number]
+  sevBins: [number, number],
+  discipline: "forest" | "sprint"
 ): Drilldown {
-  const rows = detail.legs.r.map((_, i) => toRow(detail, i, sevBins));
+  const rows = detail.legs.r.map((_, i) => toRow(detail, i, sevBins, discipline));
   const picked =
     selection.kind === "cell"
       ? rows.filter((_, i) => detail.legs.c[i] === selection.cell)
@@ -96,6 +121,22 @@ export function buildDrilldown(
   const miss = picked.filter((row) => row.miss);
   const clean = picked.filter((row) => !row.miss);
   return { n: picked.length, m: miss.length, miss, clean };
+}
+
+export interface FieldSummary {
+  own: number;
+  mixed: number;
+  trap: number;
+  few: number;
+  none: number;
+}
+
+/** ミス判定の行のラベル内訳。比較データの無い明細（旧形式）なら null＝要約を出さない */
+export function fieldSummary(missRows: readonly DrilldownRow[]): FieldSummary | null {
+  if (missRows.length === 0 || missRows.some((row) => row.field == null)) return null;
+  const s: FieldSummary = { own: 0, mixed: 0, trap: 0, few: 0, none: 0 };
+  for (const row of missRows) s[row.field!]++;
+  return s;
 }
 
 /** 並べ替えた新しい配列を返す。date=日付の新しい順（同じレースはレッグ順）/ delta=想定との差が大きい順 */
