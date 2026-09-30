@@ -217,7 +217,9 @@ function DisciplineBlock({
     }
   }
   return (
-    <div className="rounded-lg bg-surface p-3">
+    // min-w-0: カードの grid の項目は既定で中身の最小幅（…省略する行の全文の長さ）より縮まない。
+    // 一覧を開くとブロックがカードからはみ出していた（2026-09-30 iPhone で報告・Chromium でも再現）
+    <div className="min-w-0 rounded-lg bg-surface p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p className="text-sm font-semibold">{label}</p>
         <p className="text-[10px] text-muted">

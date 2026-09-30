@@ -130,6 +130,9 @@ function PanelBody({ selection, detail, athleteKey, discipline, sevBins }: Props
           赤いセルは、このセル全体が自分の平均より偏って多いという判定です。個々のレッグに統計的な判定はありません。
         </p>
       )}
+      <p className="text-[10px] leading-relaxed text-muted">
+        各行の数字は、想定タイム（自分の巡航ペースで走った場合）との差です。
+      </p>
 
       {dd.miss.length > 0 && (
         <div className="flex gap-1 text-[10px]" role="group" aria-label="並び順">
