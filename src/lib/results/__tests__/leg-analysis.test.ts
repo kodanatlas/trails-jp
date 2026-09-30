@@ -42,6 +42,25 @@ describe("buildLegView: 主役の選択", () => {
   });
 });
 
+describe("buildLegView: 走者番号で主役を指定（同クラス再走の区別）", () => {
+  // 白知穎の再走（同名・別の出走行）を末尾に足す
+  const orig = runners.find((r) => r.name === "白知穎")!;
+  const twin = { ...orig, index: 999, club: "再走クラブ" };
+  const withTwin = [...runners, twin];
+
+  it("主役に走者番号が載る", () => {
+    expect(buildLegView(runners, "白知穎")!.subject.index).toBe(orig.index);
+  });
+  it("同名が2人いても走者番号の方を主役にする", () => {
+    const v = buildLegView(withTwin, "白知穎", undefined, 999)!;
+    expect(v.subject.index).toBe(999);
+    expect(v.subject.club).toBe("再走クラブ");
+  });
+  it("走者番号が見つからなければ氏名で特定する", () => {
+    expect(buildLegView(withTwin, "白知穎", undefined, 12345)!.subject.index).toBe(orig.index);
+  });
+});
+
 describe("buildLegView: レッグ・ミス", () => {
   const v = buildLegView(runners, "白知穎")!;
   it("各レッグに基準・ロス・区間順位", () => {
