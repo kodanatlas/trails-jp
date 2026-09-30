@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type {
   LegFingerprintIndex,
   DisciplineFingerprint,
   CohortBand,
   PeriodStat,
 } from "@/lib/analysis/leg-fingerprint";
+import { legFpShardUrl, type AthleteDetailShard } from "@/lib/analysis/leg-fingerprint-details";
+import type { DrilldownSelection } from "@/lib/analysis/leg-fingerprint-drilldown";
+import { LegFingerprintDrilldown, type DrilldownLoadState } from "./LegFingerprintDrilldown";
 
 /** 期間別ミス率を 5pt 刻みに丸める（小標本の見かけの精度を出さない） */
 function pct5(s: PeriodStat): number {
@@ -23,6 +26,35 @@ export function loadLegFingerprint(): Promise<LegFingerprintIndex | null> {
   return fpPromise;
 }
 
+// 選手別の明細（ドリルダウン）。成功した取得だけキャッシュする（失敗は次に開いたとき再試行）
+const shardCache = new Map<string, Promise<AthleteDetailShard | null>>();
+function loadLegFpShard(gen: string, key: string): Promise<AthleteDetailShard | null> {
+  const cacheKey = `${gen}/${key}`;
+  const cached = shardCache.get(cacheKey);
+  if (cached) return cached;
+  const p = fetch(legFpShardUrl(gen, key))
+    .then((r) => (r.ok ? (r.json() as Promise<AthleteDetailShard>) : null))
+    .catch(() => null)
+    .then((shard) => {
+      if (!shard) shardCache.delete(cacheKey);
+      return shard;
+    });
+  shardCache.set(cacheKey, p);
+  return p;
+}
+
+const sameSelection = (a: DrilldownSelection, b: DrilldownSelection): boolean =>
+  a.kind === "cell" ? b.kind === "cell" && a.cell === b.cell : b.kind === "sev" && a.bin === b.bin;
+
+const selectionKey = (s: DrilldownSelection): string => (s.kind === "cell" ? `c${s.cell}` : `s${s.bin}`);
+
+/** ドリルダウン対応（明細の世代が付いた集計のときだけ）。未対応ならセル・バーは押せない従来表示 */
+interface Drill {
+  selected: DrilldownSelection | null;
+  onSelect: (sel: DrilldownSelection) => void;
+  panel: ReactNode;
+}
+
 const PHASE_LABELS = ["序盤", "中盤", "終盤"];
 const LEN_LABELS = ["短", "中", "長"];
 
@@ -31,16 +63,105 @@ const BAND_CELL_MIN_N = 2000; // 帯セルの基準率を出す最小レッグ�
 const OWN_CELL_MIN_N = 15;    // 差分比較に使う自分セルの最小レッグ数
 const BAND_DIFF_MIN_PT = 5;   // これ未満の差は言及しない（帯境界誤差より小さい）
 
+/** 3×3 グリッドの1セル。ドリルダウン対応時はボタン（選択中は枠） */
+function FpCell({
+  index,
+  c,
+  bandRate,
+  drill,
+}: {
+  index: number;
+  c: DisciplineFingerprint["cells"][number];
+  bandRate: number | null;
+  drill?: Drill;
+}) {
+  const rate = c.n > 0 ? c.m / c.n : null;
+  const selected = drill?.selected?.kind === "cell" && drill.selected.cell === index;
+  const cls = `rounded px-1 py-1 leading-none ${
+    c.flag ? "bg-negative/25 font-bold text-negative" : "bg-tag text-foreground/85"
+  } ${selected ? "ring-1 ring-primary" : ""}`;
+  const body =
+    rate == null || c.n < 5 ? (
+      <span className="text-muted">—</span>
+    ) : (
+      <>
+        {(rate * 100).toFixed(0)}%
+        <span className="ml-0.5 text-[8px] font-normal text-muted">({c.n})</span>
+      </>
+    );
+  const title = `n=${c.n} ミス${c.m}${bandRate != null ? `｜参考: 近い巡航速度帯の平均 約${Math.round(bandRate * 100)}%` : ""}`;
+  if (!drill) {
+    return (
+      <div className={cls} title={title}>
+        {body}
+      </div>
+    );
+  }
+  const cellName = `${PHASE_LABELS[Math.floor(index / 3)]}×${LEN_LABELS[index % 3]}レッグ`;
+  return (
+    <button
+      type="button"
+      className={`${cls} transition-colors hover:brightness-125`}
+      title={title}
+      aria-pressed={selected}
+      aria-label={`${cellName}の根拠レッグを表示（ミス判定 ${c.m} / ${c.n}）`}
+      onClick={() => drill.onSelect({ kind: "cell", cell: index })}
+    >
+      {body}
+    </button>
+  );
+}
+
+/** ミスの規模の1行。ドリルダウン対応時はボタン */
+function SevRow({
+  bin,
+  label,
+  count,
+  max,
+  drill,
+}: {
+  bin: 0 | 1 | 2;
+  label: string;
+  count: number;
+  max: number;
+  drill?: Drill;
+}) {
+  const selected = drill?.selected?.kind === "sev" && drill.selected.bin === bin;
+  const inner = (
+    <>
+      <span className="w-20 flex-shrink-0 text-left text-muted">{label}</span>
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+        <div className="h-full rounded-full bg-primary/50" style={{ width: `${(count / max) * 100}%` }} />
+      </div>
+      <span className="w-8 flex-shrink-0 text-right font-mono tabular-nums">{count}</span>
+    </>
+  );
+  if (!drill) return <div className="flex items-center gap-2 text-[10px]">{inner}</div>;
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      aria-label={`ミスの規模「${label}」の根拠レッグを表示（${count} 件）`}
+      onClick={() => drill.onSelect({ kind: "sev", bin })}
+      className={`flex w-full items-center gap-2 rounded text-[10px] transition-colors hover:bg-white/5 ${selected ? "ring-1 ring-primary" : ""}`}
+    >
+      {inner}
+    </button>
+  );
+}
+
 function DisciplineBlock({
   label,
   fp,
   sevLabels,
   norm,
+  drill,
 }: {
   label: string;
   fp: DisciplineFingerprint;
   sevLabels: [string, string, string];
   norm?: CohortBand;
+  drill?: Drill;
 }) {
   const base = fp.missRate;
   const sevMax = Math.max(...fp.sev, 1);
@@ -86,46 +207,31 @@ function DisciplineBlock({
         {PHASE_LABELS.map((phase, p) => (
           <div key={phase} className="contents">
             <span className="pr-1 text-right leading-6 text-muted">{phase}</span>
-            {LEN_LABELS.map((_, len) => {
-              const c = fp.cells[p * 3 + len];
-              const rate = c.n > 0 ? c.m / c.n : null;
-              const b = bandRate(p * 3 + len);
-              return (
-                <div
-                  key={len}
-                  className={`rounded px-1 py-1 leading-none ${
-                    c.flag ? "bg-negative/25 font-bold text-negative" : "bg-tag text-foreground/85"
-                  }`}
-                  title={`n=${c.n} ミス${c.m}${b != null ? `｜参考: 近い巡航速度帯の平均 約${Math.round(b * 100)}%` : ""}`}
-                >
-                  {rate == null || c.n < 5 ? (
-                    <span className="text-muted">—</span>
-                  ) : (
-                    <>
-                      {(rate * 100).toFixed(0)}%
-                      <span className="ml-0.5 text-[8px] font-normal text-muted">({c.n})</span>
-                    </>
-                  )}
-                </div>
-              );
-            })}
+            {LEN_LABELS.map((_, len) => (
+              <FpCell
+                key={len}
+                index={p * 3 + len}
+                c={fp.cells[p * 3 + len]}
+                bandRate={bandRate(p * 3 + len)}
+                drill={drill}
+              />
+            ))}
           </div>
         ))}
       </div>
+      {drill && drill.selected?.kind !== "sev" && drill.panel}
+      {drill && !drill.selected && (
+        <p className="mt-1 text-[9px] text-muted/70">セルや規模のバーをタップすると、根拠のレッグが見られます。</p>
+      )}
 
       {/* 重大度ヒストグラム */}
       <p className="mt-2 text-[9px] text-muted/70">ミスの規模別 件数</p>
       <div className="mt-1 space-y-0.5">
         {fp.sev.map((count, i) => (
-          <div key={i} className="flex items-center gap-2 text-[10px]">
-            <span className="w-20 flex-shrink-0 text-muted">{sevLabels[i]}</span>
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-primary/50" style={{ width: `${(count / sevMax) * 100}%` }} />
-            </div>
-            <span className="w-8 flex-shrink-0 text-right font-mono tabular-nums">{count}</span>
-          </div>
+          <SevRow key={i} bin={i as 0 | 1 | 2} label={sevLabels[i]} count={count} max={sevMax} drill={drill} />
         ))}
       </div>
+      {drill && drill.selected?.kind === "sev" && drill.panel}
 
       {/* lag-1（ゲート通過時のみ） */}
       {fp.lag1 && (
@@ -192,8 +298,58 @@ export function LegFingerprintCard({ name }: { name: string }) {
     };
   }, []);
 
+  // ドリルダウン: 開いているパネル（種目＋セル/規模）と、選手別明細の読み込み状態
+  const [open, setOpen] = useState<{ disc: "f" | "s"; sel: DrilldownSelection } | null>(null);
+  const [shard, setShard] = useState<{ state: DrilldownLoadState | "idle"; data: AthleteDetailShard | null }>({
+    state: "idle",
+    data: null,
+  });
+
   const athlete = index?.athletes[name];
   if (!index || !athlete || (!athlete.f && !athlete.s)) return null;
+  const gen = index.gen; // 明細と一致検証済みのビルドだけが付ける。無ければ（git の旧版）ドリルダウンなし
+
+  const fetchShard = () => {
+    if (!gen) return;
+    setShard({ state: "loading", data: null });
+    loadLegFpShard(gen, name).then((data) => {
+      if (!data) setShard({ state: "error", data: null });
+      else setShard({ state: data.gen === gen ? "ok" : "stale", data });
+    });
+  };
+  const select = (disc: "f" | "s", sel: DrilldownSelection) => {
+    if (open && open.disc === disc && sameSelection(open.sel, sel)) {
+      setOpen(null); // 同じものをもう一度タップで閉じる
+      return;
+    }
+    setOpen({ disc, sel });
+    if (shard.state === "idle" || shard.state === "error") fetchShard();
+  };
+  const drillFor = (disc: "f" | "s", sevLabels: [string, string, string]): Drill | undefined => {
+    if (!gen) return undefined;
+    const isOpen = open?.disc === disc;
+    const kind = disc === "f" ? "forest" : "sprint";
+    return {
+      selected: isOpen ? open.sel : null,
+      onSelect: (sel) => select(disc, sel),
+      panel: isOpen ? (
+        <LegFingerprintDrilldown
+          key={selectionKey(open.sel)}
+          selection={open.sel}
+          detail={shard.data?.[disc] ?? null}
+          state={shard.state === "idle" ? "loading" : shard.state}
+          onRetry={fetchShard}
+          onClose={() => setOpen(null)}
+          athleteKey={name}
+          discipline={kind}
+          sevBins={index.params.sevBins[kind]}
+          sevLabels={sevLabels}
+        />
+      ) : null,
+    };
+  };
+  const fSev: [string, string, string] = ["小 (10-30s)", "中 (30-90s)", "大 (90s+)"];
+  const sSev: [string, string, string] = ["小 (5-15s)", "中 (15-45s)", "大 (45s+)"];
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
@@ -209,22 +365,24 @@ export function LegFingerprintCard({ name }: { name: string }) {
           <DisciplineBlock
             label="フォレスト"
             fp={athlete.f}
-            sevLabels={["小 (10-30s)", "中 (30-90s)", "大 (90s+)"]}
+            sevLabels={fSev}
             norm={athlete.f.band != null ? index.cohorts?.f?.bands[athlete.f.band] : undefined}
+            drill={drillFor("f", fSev)}
           />
         )}
         {athlete.s && (
           <DisciplineBlock
             label="スプリント"
             fp={athlete.s}
-            sevLabels={["小 (5-15s)", "中 (15-45s)", "大 (45s+)"]}
+            sevLabels={sSev}
             norm={athlete.s.band != null ? index.cohorts?.s?.bands[athlete.s.band] : undefined}
+            drill={drillFor("s", sSev)}
           />
         )}
       </div>
       <p className="mt-3 text-[10px] leading-relaxed text-muted">
-        「ミス」はレッグのロスが自分の想定タイムの30%を超えた場合の機械判定で、ナビミスとは限りません
-        （パック・地形・慎重な安全ルートのロスも含まれえます。「もっと攻めるべき」という意味ではありません）。
+        「ミス」はレッグのタイムが自分の想定タイムを30%以上上回った場合の機械判定で、ナビミスとは限りません
+        （集団走・地形・慎重な安全ルートで時間がかかった場合も含まれえます。「もっと攻めるべき」という意味ではありません）。
         赤フラグは統計的な偏りの判定で、1割程度は偶然でも生じえます。
         集団走の疑いレッグは除外済み・リレー系クラスは対象外。対象レース数は取込状況により他のカードと異なることがあります。
         <a href="/docs/analysis-system#miss-trend" className="underline hover:text-foreground">判定方法の詳細</a>
