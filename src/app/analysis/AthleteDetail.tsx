@@ -856,12 +856,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
               />
             )}
             <Tooltip
-              contentStyle={{
-                backgroundColor: "#1a2332",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: "8px",
-                fontSize: 12,
-              }}
+              contentStyle={TOOLTIP_STYLE}
               labelFormatter={(_, payload) => {
                 const p = payload?.[0]?.payload;
                 if (!p) return "";
@@ -953,6 +948,18 @@ function valOpacity(value: number, min: number, max: number): number {
   const t = Math.max(0, Math.min(1, (value - min) / range)); // 0=min(good), 1=max(bad)
   return 1 - t * 0.7; // 1.0(濃) → 0.3(薄)
 }
+
+/** チャート tooltip — テーマ変数で背景・文字色を揃える（ダーク固定色だとライトモードで文字が埋もれる） */
+const TOOLTIP_STYLE = {
+  backgroundColor: "var(--card)",
+  border: "1px solid var(--border-strong)",
+  borderRadius: "8px",
+  color: "var(--foreground)",
+  fontSize: 12,
+};
+
+/** 系列色がグラデーション（url(#…)）の線は item 色が無効になるため文字色を明示 */
+const TOOLTIP_ITEM_STYLE = { color: "var(--foreground)" };
 
 /** LapCenter 巡航速度・ミス率推移チャート */
 function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profile: AthleteProfile }) {
@@ -1116,13 +1123,6 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
   );
 
-  const tooltipStyle = {
-    backgroundColor: "#1a2332",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "8px",
-    fontSize: 12,
-  };
-
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -1186,7 +1186,8 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
               domain={["auto", "auto"]}
             />
             <Tooltip
-              contentStyle={tooltipStyle}
+              contentStyle={TOOLTIP_STYLE}
+              itemStyle={TOOLTIP_ITEM_STYLE}
               labelFormatter={(_, payload) => {
                 const p = payload?.[0]?.payload;
                 if (!p) return "";
@@ -1293,7 +1294,8 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
               domain={[0, "auto"]}
             />
             <Tooltip
-              contentStyle={tooltipStyle}
+              contentStyle={TOOLTIP_STYLE}
+              itemStyle={TOOLTIP_ITEM_STYLE}
               labelFormatter={(_, payload) => {
                 const p = payload?.[0]?.payload;
                 if (!p) return "";

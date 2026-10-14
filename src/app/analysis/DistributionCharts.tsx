@@ -135,17 +135,11 @@ export function AthleteDistribution({
             />
             <ZAxis range={[15, 15]} />
             <Tooltip
-              contentStyle={{
-                backgroundColor: "#1a2332",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: "8px",
-                fontSize: 12,
-              }}
               content={({ payload }) => {
                 if (!payload?.[0]?.payload) return null;
                 const d = payload[0].payload;
                 return (
-                  <div className="rounded-lg border border-white/10 bg-[#1a2332] px-3 py-2 text-xs shadow-xl">
+                  <div className="rounded-lg border border-border-strong bg-card px-3 py-2 text-xs text-foreground shadow-xl">
                     <p className="font-bold">{d.name}</p>
                     <p className="text-green-400">Forest: {d.forest.toLocaleString()}</p>
                     <p className="text-blue-400">Sprint: {d.sprint.toLocaleString()}</p>
