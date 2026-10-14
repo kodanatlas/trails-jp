@@ -91,9 +91,10 @@ export function CronKpiCharts({ dataByJob }: Props) {
               <YAxis tick={{ fill: "#8a9bb0", fontSize: 10 }} />
               <Tooltip
                 contentStyle={{
-                  background: "#1a2332",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "var(--card)",
+                  border: "1px solid var(--border-strong)",
                   borderRadius: 8,
+                  color: "var(--foreground)",
                   fontSize: 12,
                 }}
               />
@@ -131,9 +132,10 @@ export function CronKpiCharts({ dataByJob }: Props) {
               <YAxis tick={{ fill: "#8a9bb0", fontSize: 10 }} />
               <Tooltip
                 contentStyle={{
-                  background: "#1a2332",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "var(--card)",
+                  border: "1px solid var(--border-strong)",
                   borderRadius: 8,
+                  color: "var(--foreground)",
                   fontSize: 12,
                 }}
               />

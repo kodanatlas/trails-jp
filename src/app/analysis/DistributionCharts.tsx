@@ -283,7 +283,7 @@ export function ClubDistribution({
                 if (!payload?.[0]?.payload) return null;
                 const d = payload[0].payload;
                 return (
-                  <div className="rounded-lg border border-white/10 bg-[#1a2332] px-3 py-2 text-xs shadow-xl">
+                  <div className="rounded-lg border border-border-strong bg-card px-3 py-2 text-xs text-foreground shadow-xl">
                     <p className="font-bold">{d.name}</p>
                     <p className="text-muted">{d.members}名 (アクティブ {d.active}名)</p>
                     <p className="text-primary">平均: {d.avgPoints.toLocaleString()} pts</p>
@@ -325,7 +325,7 @@ export function ClubDistribution({
                 <Label
                   value={c.name}
                   position="top"
-                  fill={c.isSelected ? "#fff" : "rgba(255,255,255,0.55)"}
+                  fill={c.isSelected ? "var(--foreground)" : "var(--muted)"}
                   fontSize={9}
                   fontWeight={c.isSelected ? "bold" : "normal"}
                   offset={6}

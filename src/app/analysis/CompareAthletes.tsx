@@ -657,7 +657,7 @@ function CompareCharts({
     );
     if (!active.length) return null;
     return (
-      <div className="rounded-lg border border-white/10 bg-[#1a2332] px-3 py-2 text-xs shadow-xl">
+      <div className="rounded-lg border border-border-strong bg-card px-3 py-2 text-xs text-foreground shadow-xl">
         <p className="mb-1 text-muted">{label}</p>
         {active.map((p) => (
           <p key={p.dataKey as string} style={{ color: p.color as string }}>
@@ -740,7 +740,7 @@ function CompareCharts({
                     );
                     if (!active.length) return null;
                     return (
-                      <div className="rounded-lg border border-white/10 bg-[#1a2332] px-3 py-2 text-xs shadow-xl">
+                      <div className="rounded-lg border border-border-strong bg-card px-3 py-2 text-xs text-foreground shadow-xl">
                         <p className="mb-1 text-muted">{label as string}</p>
                         {active.map((p) => (
                           <p key={p.dataKey as string} style={{ color: p.color as string }}>
