@@ -8,7 +8,15 @@ import {
   RELAY_RE,
   type LapCenterEvent,
 } from "@/lib/scraper/lapcenter";
-import { buildClassIngest, isSprint, type AthleteLookupEntry, type LegSplitRow, type ScalarRecord } from "@/lib/analysis/leg-ingest";
+import {
+  buildClassIngest,
+  isSprint,
+  shouldMarkLegIngested,
+  todayJst,
+  type AthleteLookupEntry,
+  type LegSplitRow,
+  type ScalarRecord,
+} from "@/lib/analysis/leg-ingest";
 import {
   DEFAULT_WINDOW_DAYS,
   findMatchGaps,
@@ -319,8 +327,11 @@ async function scrapeRunners(
   // 新しい順だと永遠にキュー後方で届かないため、明示的に優先して必ず取得させる。
   const isPriority = (e: { lapcenter_event_id?: number }) =>
     e.lapcenter_event_id != null && MANUAL_LC_OVERRIDE_EVENT_IDS.has(e.lapcenter_event_id);
+  // 開催日前の大会は mulka2 にスタートリストしか無いので取得自体を見送る（予算節約＋誤記帳防止）。
+  const today = todayJst();
   const lcEvents = events
     .filter((e) => e.lapcenter_event_id && !processedLcIds.has(e.lapcenter_event_id))
+    .filter((e) => e.date <= today)
     .sort((a, b) => {
       const pa = isPriority(a) ? 1 : 0;
       const pb = isPriority(b) ? 1 : 0;
@@ -371,10 +382,12 @@ async function scrapeRunners(
     const eventRecords: ScalarRecord[] = [];
     const eventLegRows: LegSplitRow[] = [];
     let keptClasses = 0;
+    let rankedRunnerCount = 0;
 
     for (const cls of classes) {
       await new Promise((r) => setTimeout(r, DELAY_MS));
       const detailed = await fetchSplitListDetailed(eventId, cls.classId);
+      rankedRunnerCount += detailed.filter((runner) => runner.rank != null).length;
       // LC側も buildClassIngest 内で同じ別名へ解決し、lookup・lc_performances・runner_key を揃える。
       const { scalarRecords, legRows } = buildClassIngest({
         detailed,
@@ -423,8 +436,10 @@ async function scrapeRunners(
       }
     }
 
-    // 取込台帳への記帳は leg upsert が全て成功したときのみ（失敗イベントは翌日自動リトライ）
-    if (!legUpsertFailed) {
+    // 取込台帳への記帳は leg upsert が全て成功したときのみ（失敗イベントは翌日自動リトライ）。
+    // 記録がまだ無い（スタートリストのみ）大会も記帳せず、結果掲載後に取り込む。
+    const markIngested = shouldMarkLegIngested({ eventDate: event.date, today, rankedRunnerCount });
+    if (!legUpsertFailed && markIngested) {
       const { error: ledgerError } = await supabaseAdmin.from("lc_leg_events").upsert(
         {
           lc_event_id: eventId,

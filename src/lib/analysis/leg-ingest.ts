@@ -244,3 +244,32 @@ export function buildClassIngest(args: ClassIngestArgs): {
 
   return { scalarRecords, legRows };
 }
+
+/** 結果がまだ揃っていない可能性がある期間。これを過ぎた大会は結果ゼロでも記帳する（永久リトライ防止）。 */
+export const RESULT_GRACE_DAYS = 14;
+
+/** JST の今日を YYYY-MM-DD で返す。 */
+export function todayJst(nowMs: number = Date.now()): string {
+  return new Date(nowMs + 9 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+function daysBetween(fromDate: string, toDate: string): number {
+  return (Date.parse(`${toDate}T00:00:00Z`) - Date.parse(`${fromDate}T00:00:00Z`)) / 86_400_000;
+}
+
+/**
+ * 取込台帳 lc_leg_events に記帳してよいか（記帳すると以後スキップされる）。
+ * - 開催日前の大会は記帳しない。mulka2 は開催前からスタートリストだけ掲載し、
+ *   クラス一覧は取れるが記録が無いため、記帳すると結果掲載後も取り込まれない。
+ * - 直近 RESULT_GRACE_DAYS 日以内で順位付きの走者が全クラス0人なら、結果未掲載とみなし記帳しない。
+ */
+export function shouldMarkLegIngested(params: {
+  eventDate: string;
+  today: string;
+  rankedRunnerCount: number;
+}): boolean {
+  const { eventDate, today, rankedRunnerCount } = params;
+  if (eventDate > today) return false;
+  if (rankedRunnerCount > 0) return true;
+  return daysBetween(eventDate, today) > RESULT_GRACE_DAYS;
+}

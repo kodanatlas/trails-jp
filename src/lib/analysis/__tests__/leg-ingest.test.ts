@@ -2,7 +2,14 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseSplitListDetailed } from "../../scraper/lapcenter-detail";
-import { buildClassIngest, normalizeClub, isSprint, type AthleteLookupEntry } from "../leg-ingest";
+import {
+  buildClassIngest,
+  normalizeClub,
+  isSprint,
+  shouldMarkLegIngested,
+  todayJst,
+  type AthleteLookupEntry,
+} from "../leg-ingest";
 
 const html = readFileSync(
   fileURLToPath(
@@ -264,5 +271,29 @@ describe("isSprint / normalizeClub（leg-ingest へ移設後の回帰）", () =>
     expect(normalizeClub("京大")).toBe("京都大学");
     expect(normalizeClub("東京ＯＬクラブ")).toBe("東京");
     expect(normalizeClub("練馬")).toBe("練馬OLC");
+  });
+});
+
+describe("shouldMarkLegIngested（取込台帳の記帳判定）", () => {
+  it("開催日前の大会は記帳しない（トータス Day2 を前夜に記帳した事故の回帰）", () => {
+    expect(shouldMarkLegIngested({ eventDate: "2026-10-11", today: "2026-10-10", rankedRunnerCount: 0 })).toBe(false);
+    expect(shouldMarkLegIngested({ eventDate: "2026-10-11", today: "2026-10-10", rankedRunnerCount: 5 })).toBe(false);
+  });
+  it("当日以降で順位付き走者がいれば記帳する（追跡選手ゼロでも）", () => {
+    expect(shouldMarkLegIngested({ eventDate: "2026-10-11", today: "2026-10-11", rankedRunnerCount: 1 })).toBe(true);
+  });
+  it("直近で結果ゼロなら記帳しない＝翌日リトライ", () => {
+    expect(shouldMarkLegIngested({ eventDate: "2026-10-11", today: "2026-10-11", rankedRunnerCount: 0 })).toBe(false);
+    expect(shouldMarkLegIngested({ eventDate: "2026-10-11", today: "2026-10-25", rankedRunnerCount: 0 })).toBe(false);
+  });
+  it("猶予期間を過ぎた結果ゼロ大会は記帳する（永久リトライ防止）", () => {
+    expect(shouldMarkLegIngested({ eventDate: "2026-10-11", today: "2026-10-26", rankedRunnerCount: 0 })).toBe(true);
+  });
+});
+
+describe("todayJst", () => {
+  it("UTC 15:00 以降は JST の翌日になる", () => {
+    expect(todayJst(Date.parse("2026-10-10T14:59:00Z"))).toBe("2026-10-10");
+    expect(todayJst(Date.parse("2026-10-10T15:00:00Z"))).toBe("2026-10-11");
   });
 });
