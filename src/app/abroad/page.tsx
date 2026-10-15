@@ -50,7 +50,7 @@ export default async function AbroadIndex() {
             <span
               className={
                 status.live
-                  ? "rounded bg-accent/20 px-2 py-0.5 text-[10px] font-medium text-[#00e5ff]"
+                  ? "rounded bg-accent/20 px-2 py-0.5 text-[10px] font-medium text-accent"
                   : "rounded bg-card-hover px-2 py-0.5 text-[10px] font-medium text-muted"
               }
             >

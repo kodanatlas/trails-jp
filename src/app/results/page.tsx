@@ -28,7 +28,7 @@ export default async function ResultsLanding() {
     <div className="mx-auto max-w-3xl px-4 py-6">
       <div className="mb-1 flex items-center gap-2">
         <h1 className="text-2xl font-bold">結果分析</h1>
-        <span className="rounded bg-accent/20 px-2 py-0.5 text-[10px] font-medium text-[#00e5ff]">LapCenter</span>
+        <span className="rounded bg-accent/20 px-2 py-0.5 text-[10px] font-medium text-accent">LapCenter</span>
       </div>
       <p className="mb-5 text-xs text-muted">
         スプリットを元にしたレッグ別のレース分析。大会を選ぶ → クラス → レース。選手ページの参加大会からも開けます。

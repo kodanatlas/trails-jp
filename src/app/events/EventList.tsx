@@ -50,8 +50,8 @@ interface EventListProps {
 }
 
 const ENTRY_STYLES = {
-  open: { bg: "bg-green-500/15", text: "text-green-400", label: "受付中" },
-  closed: { bg: "bg-white/5", text: "text-muted", label: "締切済" },
+  open: { bg: "bg-positive/15", text: "text-positive", label: "受付中" },
+  closed: { bg: "bg-tag", text: "text-muted", label: "締切済" },
   none: { bg: "", text: "", label: "" },
 };
 
@@ -292,13 +292,13 @@ export function EventList({ events }: EventListProps) {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
                     {event.recently_updated && (
-                      <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                      <span className="inline-flex items-center gap-0.5 rounded bg-warning/15 px-2 py-0.5 text-[10px] font-medium text-warning">
                         <Bell className="h-2.5 w-2.5" />
                         {event.update_label || "更新"}
                       </span>
                     )}
                     {event.tags.map((tag) => (
-                      <span key={tag} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-muted">
+                      <span key={tag} className="rounded bg-tag px-2 py-0.5 text-[10px] text-muted">
                         {tag}
                       </span>
                     ))}
@@ -338,7 +338,7 @@ export function EventList({ events }: EventListProps) {
                       href={event.lapcenter_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs text-muted transition-colors hover:border-[#00e5ff]/30 hover:text-[#00e5ff]"
+                      className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs text-muted transition-colors hover:border-accent/30 hover:text-accent"
                     >
                       <BarChart3 className="h-3 w-3" />
                       <span className="hidden sm:inline">Lap Center</span>
@@ -414,11 +414,11 @@ export function EventList({ events }: EventListProps) {
                           href={e.joe_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`mt-0.5 flex items-center gap-0.5 truncate rounded px-1 py-0.5 text-[9px] font-medium text-white hover:bg-primary/25 ${
-                            e.recently_updated ? "bg-amber-500/20" : "bg-primary/15"
+                          className={`mt-0.5 flex items-center gap-0.5 truncate rounded px-1 py-0.5 text-[9px] font-medium text-foreground hover:bg-primary/25 ${
+                            e.recently_updated ? "bg-warning/20" : "bg-primary/15"
                           }`}
                         >
-                          {e.recently_updated && <Bell className="h-2 w-2 flex-shrink-0 text-amber-400" />}
+                          {e.recently_updated && <Bell className="h-2 w-2 flex-shrink-0 text-warning" />}
                           <FullText className="truncate">{e.name}</FullText>
                         </a>
                       ))}
@@ -436,9 +436,9 @@ export function EventList({ events }: EventListProps) {
                 <a key={e.joe_event_id} href={e.joe_url} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 rounded-lg border border-border bg-card p-2.5 text-sm transition-all hover:border-primary/30 hover:bg-card-hover">
                   <span className="font-medium text-primary">{formatDate(e.date)}</span>
-                  <span className="text-white/20">|</span>
+                  <span className="text-border-strong">|</span>
                   {e.recently_updated && (
-                    <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium text-amber-400">
+                    <span className="inline-flex items-center gap-0.5 rounded bg-warning/15 px-1.5 py-0.5 text-[9px] font-medium text-warning">
                       <Bell className="h-2.5 w-2.5" />
                       {e.update_label || "更新"}
                     </span>
@@ -479,7 +479,7 @@ function EventEntries({ eventId, isOpen, state, openTeams, onToggle, onToggleTea
         <span className="flex items-center gap-1.5">
           <ListChecks className="h-3.5 w-3.5" />
           エントリーリスト
-          {loaded && <span className="font-semibold text-[#00e5ff]">{loaded.total}人</span>}
+          {loaded && <span className="font-semibold text-accent">{loaded.total}人</span>}
         </span>
         <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
@@ -493,7 +493,7 @@ function EventEntries({ eventId, isOpen, state, openTeams, onToggle, onToggleTea
             </p>
           )}
           {state === "error" && (
-            <p className="py-3 text-xs text-red-400">エントリーリストを取得できませんでした</p>
+            <p className="py-3 text-xs text-negative">エントリーリストを取得できませんでした</p>
           )}
           {loaded && loaded.teams.length === 0 && (
             <p className="py-3 text-xs text-muted">エントリーはまだありません</p>
@@ -515,7 +515,7 @@ function EventEntries({ eventId, isOpen, state, openTeams, onToggle, onToggleTea
                         <Users className="h-3 w-3 flex-shrink-0 text-muted" />
                         <FullText className="truncate font-medium">{team.affiliation}</FullText>
                       </span>
-                      <span className="flex-shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-muted">
+                      <span className="flex-shrink-0 rounded bg-tag px-1.5 py-0.5 text-[10px] text-muted">
                         {team.count}人
                       </span>
                     </button>

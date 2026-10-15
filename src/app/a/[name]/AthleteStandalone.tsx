@@ -48,7 +48,7 @@ export function AthleteStandalone({ summary }: { summary: AthleteSummary }) {
       {/* 常設ヘッダー: 選手名・クラブ */}
       <div className="mb-1 flex items-center gap-2">
         <h1 className="text-2xl font-bold">{summary.name}</h1>
-        <span className="rounded bg-accent/20 px-2 py-0.5 text-[10px] font-medium text-[#00e5ff]">
+        <span className="rounded bg-accent/20 px-2 py-0.5 text-[10px] font-medium text-accent">
           選手分析
         </span>
       </div>
@@ -56,7 +56,7 @@ export function AthleteStandalone({ summary }: { summary: AthleteSummary }) {
         <p className="text-xs text-muted">{summary.clubs.join(" / ")}</p>
       )}
       {hasMergedNamesakes(summary) && (
-        <p className="mt-2 rounded bg-amber-500/10 px-2 py-1 text-[10px] text-amber-300/90">
+        <p className="mt-2 rounded bg-warning/10 px-2 py-1 text-[10px] text-warning">
           ※ このページには同姓同名の別人の成績が混在している可能性があります（複数の所属が表示されている場合は特にご注意ください）
         </p>
       )}
@@ -69,7 +69,7 @@ export function AthleteStandalone({ summary }: { summary: AthleteSummary }) {
             {/* index 到着までのサマリカード（SSR されるため初期 HTML・クローラにも載る） */}
             <div className="rounded-lg border border-border bg-card p-6">
               <p className="text-[10px] text-muted">オリエンタイプ</p>
-              <p className="mt-1 text-xl font-bold text-[#00e5ff] sm:text-2xl">
+              <p className="mt-1 text-xl font-bold text-accent sm:text-2xl">
                 {typeLabel(summary.type)}
               </p>
 
@@ -83,9 +83,9 @@ export function AthleteStandalone({ summary }: { summary: AthleteSummary }) {
                   <p
                     className={`mt-1 text-xl font-bold ${
                       summary.recentForm > 0
-                        ? "text-green-400"
+                        ? "text-positive"
                         : summary.recentForm < 0
-                          ? "text-red-400"
+                          ? "text-negative"
                           : ""
                     }`}
                   >
@@ -106,7 +106,7 @@ export function AthleteStandalone({ summary }: { summary: AthleteSummary }) {
                   </div>
                   <div className="mt-1 flex h-2 overflow-hidden rounded-full bg-surface">
                     <div className="bg-primary" style={{ width: `${forestPct}%` }} />
-                    <div className="bg-[#00e5ff]" style={{ width: `${100 - forestPct}%` }} />
+                    <div className="bg-accent" style={{ width: `${100 - forestPct}%` }} />
                   </div>
                 </div>
               )}

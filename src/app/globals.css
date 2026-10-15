@@ -56,6 +56,19 @@
   --medal-gold: #b45309;
   --medal-silver: #64748b;
   --medal-bronze: #c2410c;
+
+  /* 暗色前提で直書きされた Tailwind パレット（text-green-400 等）を明色では 700 番に読み替え。
+     白地で高輝度色が不可読になるのを一括で防ぐ（semantic トークンと同じ濃度帯） */
+  --color-green-400: oklch(52.7% 0.154 150.069);
+  --color-emerald-400: oklch(50.8% 0.118 165.612);
+  --color-blue-400: oklch(48.8% 0.243 264.376);
+  --color-red-400: oklch(50.5% 0.213 27.518);
+  --color-amber-300: oklch(55.5% 0.163 48.998);
+  --color-amber-400: oklch(55.5% 0.163 48.998);
+  --color-yellow-400: oklch(55.4% 0.135 66.442);
+  --color-cyan-400: oklch(52% 0.105 223.128);
+  --color-orange-400: oklch(55.3% 0.195 38.402);
+  --color-purple-400: oklch(49.6% 0.265 301.924);
 }
 
 @theme inline {

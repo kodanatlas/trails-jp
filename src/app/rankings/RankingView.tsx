@@ -40,7 +40,7 @@ function PointsBar({ points, maxPoints }: { points: number; maxPoints: number })
     <div className="flex items-center gap-2">
       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/5">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-primary to-[#00e5ff]"
+          className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
           style={{ width: `${width}%` }}
         />
       </div>
@@ -144,7 +144,7 @@ export function RankingView({ rankingConfigs }: RankingViewProps) {
               onClick={() => { setSelectedClass(cls.name); setExpandedRank(null); }}
               className={`rounded px-2.5 py-1 text-[11px] font-medium transition-colors ${
                 selectedClass === cls.name
-                  ? "bg-[#00e5ff]/20 text-[#00e5ff]"
+                  ? "bg-accent/20 text-accent"
                   : "text-muted hover:text-foreground"
               }`}
             >

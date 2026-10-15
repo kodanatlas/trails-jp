@@ -120,7 +120,7 @@ export function CrossRaceCard({ name }: { name: string }) {
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-sm font-bold">クロスレース分析 — ミス率の相対評価</h3>
-        <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[9px] font-medium text-[#00e5ff]">
+        <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[9px] font-medium text-accent">
           β
         </span>
       </div>
