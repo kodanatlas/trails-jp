@@ -402,7 +402,7 @@ export async function fetchOsrmTable(
   opts?.signal?.addEventListener("abort", onAbort, { once: true });
   try {
     const res = await fetchImpl(url, {
-      headers: { "User-Agent": "trails.jp/1.0 (carpool travel-times; +https://trails.jp)" },
+      headers: { "User-Agent": "trails.jp/1.0 (carpool travel-times; +https://trailsjp.vercel.app)" },
       signal: controller.signal,
     });
     if (!res.ok) return [];

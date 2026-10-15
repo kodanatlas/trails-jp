@@ -405,7 +405,7 @@ export async function geocodeAddressDetailed(
     opts?.signal?.addEventListener("abort", onAbort, { once: true });
     try {
       const res = await fetchImpl(url, {
-        headers: { "User-Agent": "trails.jp/1.0 (carpool geocode; +https://trails.jp)" },
+        headers: { "User-Agent": "trails.jp/1.0 (carpool geocode; +https://trailsjp.vercel.app)" },
         signal: controller.signal,
       });
       if (!res.ok) continue;
@@ -481,7 +481,7 @@ export async function geocodeStation(
 
   try {
     const res = await fetchImpl(url, {
-      headers: { "User-Agent": "trails.jp/1.0 (carpool geocode; +https://trails.jp)" },
+      headers: { "User-Agent": "trails.jp/1.0 (carpool geocode; +https://trailsjp.vercel.app)" },
       signal: controller.signal,
     });
     if (!res.ok) return null;
