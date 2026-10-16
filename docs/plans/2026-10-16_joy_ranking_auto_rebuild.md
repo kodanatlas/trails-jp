@@ -1,6 +1,6 @@
 # JOY ランキング更新の自動検知→再ビルド
 
-ステータス: 実装済（Codex 設計・コード両レビュー反映）・本番反映待ち
+ステータス: 完了（2026-10-16 `debcb63` 本番反映。manifest 配信・監視4カテゴリ fetched を確認。初回の自動判定は同日 19:07 の cron）
 
 > 実装時の変更: manifest は `public/data/rankings/` ではなく **`public/data/ranking-headers.json`**（rankings/ 配下は build 後段で全 .json がランキングとして読まれるため）。比較先は `SITE_URL`（本番ドメイン）。
 
