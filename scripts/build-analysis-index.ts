@@ -27,6 +27,7 @@ import {
 import { LegFpPublishError, writeFileAtomic, writeLegFpShards } from "./leg-fp-shards";
 import { findDuplicateNames, makeScoreMergeKey } from "../src/lib/analysis/score-merge";
 import { resolveAliasName, resolveEntryAliases } from "../src/lib/identity/athlete-alias";
+import { extractEventHeaders } from "../src/lib/rankings/event-headers";
 
 // --- Types ---
 interface RawEntry {
@@ -403,6 +404,8 @@ interface FetchCategoryResult {
   renamed: number;
   passthrough: number;
   eventScoreLoss: EventScoreLossStats;
+  /** 1ページ目で観測した大会列（ranking-headers.json 用）。既存ファイル保持時は null。 */
+  eventHeaders: string[] | null;
 }
 
 /**
@@ -417,10 +420,13 @@ async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult>
   let consecutiveFailures = 0;
   let renamed = 0;
   let passthrough = 0;
+  let eventHeaders: string[] = [];
   for (let page = 0; page < MAX_PAGES; page++) {
     let html: string;
     try {
       html = await fetchRankingPage(cls.typeId, cls.classId, page);
+      // 大会列ヘッダは全ページ共通なので1ページ目だけ記録（JOY 更新検知の比較元）
+      if (page === 0) eventHeaders = extractEventHeaders(html);
     } catch (e) {
       // 先頭ページの失敗はカテゴリ全体を中断（既存ファイル保持。途中順位から始まる不完全データを出さない）
       if (page === 0) throw e;
@@ -469,6 +475,7 @@ async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult>
         lostTwoPlusAthletes: 0,
         leftRankingAthletes: 0,
       },
+      eventHeaders: null,
     };
   }
 
@@ -546,7 +553,26 @@ async function fetchCategory(cls: RankingClassRef): Promise<FetchCategoryResult>
     renamed,
     passthrough,
     eventScoreLoss,
+    // 抽出0件は比較元として公開しない（kept 扱い）
+    eventHeaders: eventHeaders.length > 0 ? eventHeaders : null,
   };
+}
+
+/**
+ * JOY 更新検知用 manifest（public/data/ranking-headers.json）を書く。
+ * rankings/ 配下はランキング JSON として全件読まれるため、その外に置く。
+ */
+function writeRankingHeadersManifest(observed: ReadonlyMap<string, string[] | null>): void {
+  const categories = Object.fromEntries(
+    ALL_CLASSES.map((cls) => {
+      const headers = observed.get(cls.file) ?? null;
+      return [cls.file, headers ? { status: "fetched", headers } : { status: "kept", headers: [] }];
+    }),
+  );
+  const manifest = { generatedAt: new Date().toISOString(), categories };
+  writeFileAtomic(path.join(OUTPUT_DIR, "ranking-headers.json"), JSON.stringify(manifest));
+  const fetched = [...observed.values()].filter(Boolean).length;
+  console.log(`✓ ranking-headers.json: ${fetched}/${ALL_CLASSES.length} categories fetched`);
 }
 
 /** 全カテゴリを並列度を絞って取得。失敗カテゴリは既存ファイルを保持する。 */
@@ -562,6 +588,7 @@ async function fetchFreshRankings(): Promise<AliasStats> {
     lostTwoPlusAthletes: 0,
     leftRankingAthletes: 0,
   };
+  const observedHeaders = new Map<string, string[] | null>();
 
   async function worker() {
     for (;;) {
@@ -569,6 +596,7 @@ async function fetchFreshRankings(): Promise<AliasStats> {
       if (!cls) return;
       try {
         const result = await fetchCategory(cls);
+        observedHeaders.set(cls.file, result.eventHeaders);
         if (result.message.includes("kept existing")) kept++; else updated++;
         renamed += result.renamed;
         passthrough += result.passthrough;
@@ -594,6 +622,7 @@ async function fetchFreshRankings(): Promise<AliasStats> {
   }
 
   await Promise.all(Array.from({ length: FETCH_CONCURRENCY }, () => worker()));
+  writeRankingHeadersManifest(observedHeaders);
   const elapsedSec = ((Date.now() - t0) / 1000).toFixed(1);
   console.log(`Rankings fetch done in ${elapsedSec}s (concurrency=${FETCH_CONCURRENCY}): ${updated} updated, ${kept} kept(empty), ${failed} failed(kept existing).`);
   const lossMessage =
@@ -617,6 +646,8 @@ let aliasStats: AliasStats;
 if (process.env.SKIP_FETCH === "1") {
   console.log("⚠ SKIP_FETCH=1: JOY 再取得をスキップし、ローカル既存 JSON を使用します");
   aliasStats = rewriteAllExistingRankingAliases();
+  // 今回は取得していないので、古い fetched ヘッダを持ち越さず全件 kept にする
+  writeRankingHeadersManifest(new Map());
 } else {
   console.log(`Fetching fresh rankings from JOY (all ${ALL_CLASSES.length} categories, concurrency=${FETCH_CONCURRENCY})...`);
   try {
@@ -624,6 +655,7 @@ if (process.env.SKIP_FETCH === "1") {
   } catch (e) {
     console.warn("Ranking fetch failed, using local files:", e);
     aliasStats = rewriteAllExistingRankingAliases();
+    writeRankingHeadersManifest(new Map());
   }
 }
 console.log(`Athlete aliases: ${aliasStats.renamed} renamed, ${aliasStats.passthrough} passthrough (unresolved).`);

@@ -49,10 +49,10 @@ const LAYERS: {
     stroke: "rgba(167,139,250,.4)",
     title: "AUTOMATION ｜ Vercel Cron（日次）",
     chips: [
-      { x: 48, w: 200, t: "sync-events 03:00" },
-      { x: 276, w: 200, t: "sync-entries 04:00" },
-      { x: 504, w: 200, t: "sync-lapcenter 12:00" },
-      { x: 732, w: 200, t: "水曜 自動再デプロイ" },
+      { x: 48, w: 200, t: "sync-events 19:07" },
+      { x: 276, w: 200, t: "sync-entries 20:23" },
+      { x: 504, w: 200, t: "sync-lapcenter 21:41" },
+      { x: 732, w: 200, t: "自動再デプロイ" },
     ],
   },
   {
@@ -862,7 +862,8 @@ export function AnalysisSystemReport({
               <ul>
                 <li><b>オリエンタイプ</b>分類（forester/sprinter/all）</li>
                 <li>安定性・最近の調子・<b>対戦履歴</b></li>
-                <li>クロスレースの<b>ミスの傾向</b>（局面×レッグ長）と相対評価</li>
+                <li>クロスレースの<b>ミスの傾向</b>（局面×レッグ長）と相対評価。セルから<b>根拠のレッグ</b>を確認</li>
+                <li>同姓同名の別人は<b>生成元で分離</b>し、混在の疑いは警告表示</li>
               </ul>
               <span className="file mono">/analysis・/a/選手名</span>
             </div>
@@ -983,35 +984,43 @@ export function AnalysisSystemReport({
             <h2>
               日次<span className="grad">パイプライン</span>
             </h2>
-            <span className="sec-sub">3つの Cron ＋ 水曜ビルドで、PC 起動なしに完全自動で鮮度を保つ。</span>
+            <span className="sec-sub">
+              3つの Cron ＋ 再デプロイ時のビルドで、PC 起動なしに完全自動で鮮度を保つ。Cron の沈黙は GitHub Actions の watchdog が検知する。
+            </span>
           </div>
           <div className="waves">
             <div className="wave">
-              <div className="w">03:00 JST</div>
+              <div className="w">19:07 JST</div>
               <div className="t">sync-events</div>
-              <div className="d">JOY イベント同期＋どこオリ手動取込分の反映＋LapCenter マッチング。<b>水曜は再デプロイを起動</b>。</div>
+              <div className="d">
+                JOY イベント同期＋どこオリ手動取込分の反映＋LapCenter マッチング。<b>水曜と、JOY ランキングに大会が追加された日は再デプロイを起動</b>
+                （自動検知分は<span style={{ whiteSpace: "nowrap" }}>20 時間に1回</span>・
+                <span style={{ whiteSpace: "nowrap" }}>7日に2回まで</span>）。
+              </div>
             </div>
             <div className="wave">
-              <div className="w">04:00 JST</div>
+              <div className="w">20:23 JST</div>
               <div className="t">sync-entries</div>
               <div className="d">未開催大会のエントリーを並列スクレイプし、<b>選手別インデックス</b>を生成。</div>
             </div>
             <div className="wave">
-              <div className="w">12:00 JST</div>
+              <div className="w">21:41 JST</div>
               <div className="t">sync-lapcenter</div>
               <div className="d">巡航速度・ミス率に加え<b>レッグ別スプリット</b>を収集して DB へ <code>upsert</code>（取込台帳で管理）。</div>
             </div>
             <div className="wave">
-              <div className="w">水曜 ビルド時</div>
+              <div className="w">再デプロイ時</div>
               <div className="t">build-analysis-index</div>
-              <div className="d">ランキング最新取得 → <b>athlete-index / club-stats / クロスレース統計（cross-race・leg-fingerprint）</b> を再生成。</div>
+              <div className="d">
+                ランキング最新取得 → <b>athlete-index / club-stats / クロスレース統計（cross-race・leg-fingerprint）</b> を再生成。
+                次回の更新検知に使う大会列の一覧も書き出す。
+              </div>
             </div>
           </div>
           <div className="invariant">
             <span className="badge">不変条件</span>
             <span className="txt">
-              Vercel Hobby は <code>Cron 1日1回</code>・<code>関数10秒</code>。重い処理はビルド時実行と{" "}
-              <code>maxDuration</code> 拡張で制約内に収める。
+              Vercel Hobby は <code>Cron 1日1回</code>。重い処理はビルド時実行と、関数ごとの <code>maxDuration</code> 指定（sync-lapcenter は 180 秒）で制約内に収める。
             </span>
           </div>
         </section>
@@ -1049,7 +1058,7 @@ export function AnalysisSystemReport({
               <div className="h">C｜運用監視</div>
               <ul>
                 <li><code>cron_log</code>（実行ログ）</li>
-                <li><code>club_stats_snapshot</code> / <code>ranking_snapshot</code></li>
+                <li><code>club_stats_snapshot</code> / <code>ranking_snapshot</code> / <code>ranking_snapshot_weekly</code></li>
               </ul>
             </div>
             <div className="topic d">
@@ -1158,6 +1167,9 @@ export function AnalysisSystemReport({
               <div className="cap">
                 上の 3×3 セル（ミス判定・集団走除外済み）のミス数を、<b>レース内のミス総数を固定した並べ替え帰無分布</b>（日次調子・レース内相関を保存）と比べ、
                 裾にあるセルだけを <b>BH-FDR（q=0.10）</b>で「偏って多い」とフラグ。巡航速度が近い帯の平均との記述比較も併記する。
+                各セルからは<b>根拠のレッグ一覧</b>を開ける。<span style={{ whiteSpace: "nowrap" }}>各レッグ</span>には本人を除く同クラス完走者の中央値から{" "}
+                <b>難レッグ（コース起因の割合 50% 以上）／自分のミス（20% 以下）／半々</b>のラベルを付ける
+                （<span style={{ whiteSpace: "nowrap" }}>相手 8 人未満</span>はラベルなし。結果分析と同じ判定関数）。
               </div>
             </div>
             <div className="dec fig" id="leg-impact" style={{ scrollMarginTop: "80px" }}>
@@ -1289,11 +1301,11 @@ export function AnalysisSystemReport({
                 <span className="chip b">統計</span>
               </div>
             </div>
-            <div className="ph now">
+            <div className="ph">
               <div className="p">P3</div>
-              <div className="w">次の焦点</div>
+              <div className="w">完了</div>
               <div className="d">
-                堅牢性と精緻化 — API 障害時の縮退表示・検定の過分散対応・データ鮮度の監視。
+                堅牢性 — API 障害時の縮退表示・Cron 死活監視（watchdog）・JOY ランキング更新の自動検知。
               </div>
               <div className="chips">
                 <span className="chip c">運用</span>
@@ -1305,7 +1317,7 @@ export function AnalysisSystemReport({
               <div className="no">1</div>
               <div>
                 <div className="t">Hobby Cron は 1日1回</div>
-                <div className="d">3つのジョブを1日1パスずつに分け、制限内に収める設計。</div>
+                <div className="d">3つのジョブを1日1パスずつに分け、制限内に収める設計。JOY ランキングの更新も日次で検知するため、反映は最大1日遅れ。</div>
               </div>
             </div>
             <div className="act">

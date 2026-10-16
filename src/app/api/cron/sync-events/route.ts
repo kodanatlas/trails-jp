@@ -6,6 +6,8 @@ import { readEvents, writeEvents } from "@/lib/events-store";
 import { matchLapCenterEvents } from "@/lib/scraper/lapcenter";
 import { logCron } from "@/lib/cron-logger";
 import { notifyCronWarning } from "@/lib/cron-notifier";
+import { runRankingDeploy } from "@/lib/rankings/deploy-trigger";
+import { SITE_URL } from "@/lib/site";
 
 // トップページ取得分のうち日付が空の件数がこの値以上なら警告（JOY のフォーマット変更検知）。
 // 正常時はほぼ 0。年なし表記の補完が効かなくなる等の異常を無音にしないためのカナリア。
@@ -13,10 +15,15 @@ const EMPTY_DATE_WARN_THRESHOLD = 5;
 
 // Vercel Cron: 日次 19:07 JST (10:07 UTC)
 // イベント同期 + LapCenterマッチング
-// 水曜のみ: Vercel再デプロイをトリガー（ビルド時にランキング最新取得）
+// 再デプロイ: 水曜は定期、他の日は JOY ランキングの大会列追加を検知したときのみ（ビルド時にランキング最新取得）
 // 実行時刻はDBデータ面が健全な夜帯に配置（2026-07-13。旧 03:00 JST は不達の窓 00-12 JST に
 // 当たっていた）。分は minute 0 を避けプラットフォームの herd を回避。
 // vercel.json: { "path": "/api/cron/sync-events", "schedule": "7 10 * * *" }
+
+// 実測は同期本体 8〜16秒（2026-09-26〜10-15）＋再デプロイ判定 最大約23秒。余白込みで明示する。
+export const maxDuration = 60;
+// 同期本体がこれを超えて長引いた日は再デプロイ判定をスキップ（ログ保存の時間を残す）。
+const DEPLOY_CHECK_START_BUDGET_MS = 30_000;
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -128,23 +135,13 @@ export async function GET(request: Request) {
     // Supabaseに保存
     await writeEvents(freshEvents);
 
-    // ---- 水曜のみ: 再デプロイトリガー（火曜のJOYランキング更新を反映） ----
-    let deployResult = null;
-    const jstDay = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })
-    ).getDay();
-    if (jstDay === 3 && process.env.VERCEL_DEPLOY_HOOK) {
-      try {
-        const deployRes = await fetch(process.env.VERCEL_DEPLOY_HOOK, {
-          method: "POST",
-        });
-        const deployData = await deployRes.json();
-        deployResult = { triggered: true, job: deployData.job?.id };
-      } catch (deployErr) {
-        console.error("Deploy trigger failed:", deployErr);
-        deployResult = { triggered: false, error: String(deployErr) };
-      }
-    }
+    // ---- 再デプロイトリガー: 水曜の定期 + JOY ランキングの大会列追加を検知した日 ----
+    // 失敗しても同期本体は成功として記録する（検査・送信の例外は内部で隔離）。
+    // 比較先は本番ドメインの配信物（デプロイ固有 URL は Deployment Protection で読めないことがある）。
+    const deployResult =
+      Date.now() - start > DEPLOY_CHECK_START_BUDGET_MS
+        ? { reason: null, skipped: "time_budget" }
+        : await runRankingDeploy(SITE_URL);
 
     const payload = {
       success: true,
