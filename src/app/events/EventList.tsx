@@ -6,6 +6,7 @@ import { CalendarDays, MapPin, ChevronLeft, ChevronRight, ChevronDown, ExternalL
 import type { JOEEvent } from "@/lib/scraper/events";
 import type { EntryListResult } from "@/lib/scraper/entries";
 import { FullText } from "@/components/FullText";
+import { fetchEntryList } from "./fetch-entry-list";
 
 /** ページから渡すイベントのスリム型。RSC ペイロード削減のため UI が参照するフィールドに限定する。 */
 export type EventListItem = Pick<
@@ -96,6 +97,18 @@ export function EventList({ events }: EventListProps) {
   const [entryCache, setEntryCache] = useState<Record<number, EntryState>>({});
   const [openTeams, setOpenTeams] = useState<Set<string>>(new Set());
 
+  /** 未取得か前回失敗のときだけ取得する。失敗は記憶するが、開き直し・再読み込みで取り直せる。 */
+  const loadEntries = useCallback((eventId: number) => {
+    setEntryCache((cache) => {
+      const current = cache[eventId];
+      if (current !== undefined && current !== "error") return cache;
+      fetchEntryList(eventId)
+        .then((data) => setEntryCache((c) => ({ ...c, [eventId]: data })))
+        .catch(() => setEntryCache((c) => ({ ...c, [eventId]: "error" })));
+      return { ...cache, [eventId]: "loading" };
+    });
+  }, []);
+
   const toggleEntry = useCallback(
     (eventId: number) => {
       setOpenEntryEvents((prev) => {
@@ -104,22 +117,13 @@ export function EventList({ events }: EventListProps) {
           next.delete(eventId);
         } else {
           next.add(eventId);
-          // 未取得ならオンデマンドで取得
-          setEntryCache((cache) => {
-            if (cache[eventId] !== undefined) return cache;
-            fetch(`/api/events/${eventId}/entries`)
-              .then((r) => r.json())
-              .then((data: EntryListResult) =>
-                setEntryCache((c) => ({ ...c, [eventId]: data }))
-              )
-              .catch(() => setEntryCache((c) => ({ ...c, [eventId]: "error" })));
-            return { ...cache, [eventId]: "loading" };
-          });
+          // 未取得（または前回失敗）ならオンデマンドで取得
+          loadEntries(eventId);
         }
         return next;
       });
     },
-    []
+    [loadEntries]
   );
 
   const toggleTeam = useCallback((eventId: number, affiliation: string) => {
@@ -362,6 +366,7 @@ export function EventList({ events }: EventListProps) {
                     state={entryCache[event.joe_event_id]}
                     openTeams={openTeams}
                     onToggle={toggleEntry}
+                    onRetry={loadEntries}
                     onToggleTeam={toggleTeam}
                   />
                 )}
@@ -462,11 +467,12 @@ interface EventEntriesProps {
   state: EntryState;
   openTeams: Set<string>;
   onToggle: (eventId: number) => void;
+  onRetry: (eventId: number) => void;
   onToggleTeam: (eventId: number, affiliation: string) => void;
 }
 
 /** イベントカードに付随するエントリーリスト（所属一覧 → エントリー者の2段アコーディオン） */
-function EventEntries({ eventId, isOpen, state, openTeams, onToggle, onToggleTeam }: EventEntriesProps) {
+function EventEntries({ eventId, isOpen, state, openTeams, onToggle, onRetry, onToggleTeam }: EventEntriesProps) {
   const loaded = state && state !== "loading" && state !== "error" ? state : null;
 
   return (
@@ -493,7 +499,15 @@ function EventEntries({ eventId, isOpen, state, openTeams, onToggle, onToggleTea
             </p>
           )}
           {state === "error" && (
-            <p className="py-3 text-xs text-negative">エントリーリストを取得できませんでした</p>
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3 text-xs text-negative">
+              エントリーリストを取得できませんでした
+              <button
+                onClick={() => onRetry(eventId)}
+                className="rounded-md border border-border px-2 py-1 font-medium text-foreground transition-colors hover:bg-card-hover"
+              >
+                再読み込み
+              </button>
+            </p>
           )}
           {loaded && loaded.teams.length === 0 && (
             <p className="py-3 text-xs text-muted">エントリーはまだありません</p>

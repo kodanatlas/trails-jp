@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { scrapeEntryListByEventId } from "@/lib/scraper/entry-source";
 
 /**
+ * 上流取得の打ち切り（ms）。Hobby の Function 上限（10秒）より手前で止め、
+ * 504（非JSON）ではなく `error: "fetch_failed"` の JSON を返してクライアントの再試行に乗せる。
+ */
+const UPSTREAM_TIMEOUT_MS = 8000;
+
+/**
  * GET /api/events/[id]/entries
  * エントリーリストを所属（クラブ）単位でグループ化して返す。
  * eventId のレンジで JOY / どこオリ を自動振り分け。
@@ -18,7 +24,9 @@ export async function GET(
   }
 
   try {
-    const result = await scrapeEntryListByEventId(eventId);
+    const result = await scrapeEntryListByEventId(eventId, {
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+    });
     return NextResponse.json(result, {
       headers: {
         "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
