@@ -97,33 +97,36 @@ export function EventList({ events }: EventListProps) {
   const [entryCache, setEntryCache] = useState<Record<number, EntryState>>({});
   const [openTeams, setOpenTeams] = useState<Set<string>>(new Set());
 
+  // 取得済み・取得中の eventId。state updater の外で判定し、重複取得と結果の上書き競合を防ぐ
+  const loadedEntryIds = useRef<Set<number>>(new Set());
+  const inflightEntryIds = useRef<Set<number>>(new Set());
+
   /** 未取得か前回失敗のときだけ取得する。失敗は記憶するが、開き直し・再読み込みで取り直せる。 */
   const loadEntries = useCallback((eventId: number) => {
-    setEntryCache((cache) => {
-      const current = cache[eventId];
-      if (current !== undefined && current !== "error") return cache;
-      fetchEntryList(eventId)
-        .then((data) => setEntryCache((c) => ({ ...c, [eventId]: data })))
-        .catch(() => setEntryCache((c) => ({ ...c, [eventId]: "error" })));
-      return { ...cache, [eventId]: "loading" };
-    });
+    if (loadedEntryIds.current.has(eventId) || inflightEntryIds.current.has(eventId)) return;
+    inflightEntryIds.current.add(eventId);
+    setEntryCache((c) => ({ ...c, [eventId]: "loading" }));
+    fetchEntryList(eventId)
+      .then((data) => {
+        loadedEntryIds.current.add(eventId);
+        setEntryCache((c) => ({ ...c, [eventId]: data }));
+      })
+      .catch(() => setEntryCache((c) => ({ ...c, [eventId]: "error" })))
+      .finally(() => inflightEntryIds.current.delete(eventId));
   }, []);
 
   const toggleEntry = useCallback(
     (eventId: number) => {
+      const opening = !openEntryEvents.has(eventId);
       setOpenEntryEvents((prev) => {
         const next = new Set(prev);
-        if (next.has(eventId)) {
-          next.delete(eventId);
-        } else {
-          next.add(eventId);
-          // 未取得（または前回失敗）ならオンデマンドで取得
-          loadEntries(eventId);
-        }
+        if (next.has(eventId)) next.delete(eventId);
+        else next.add(eventId);
         return next;
       });
+      if (opening) loadEntries(eventId);
     },
-    [loadEntries]
+    [openEntryEvents, loadEntries]
   );
 
   const toggleTeam = useCallback((eventId: number, affiliation: string) => {

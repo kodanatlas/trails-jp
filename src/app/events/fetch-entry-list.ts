@@ -14,6 +14,13 @@ async function fetchOnce(eventId: number, fetcher: Fetcher): Promise<EntryListRe
   if (!res.ok) throw new Error(`entries API ${res.status} (event ${eventId})`);
   const data = (await res.json()) as EntryListResult & { error?: string };
   if (data.error) throw new Error(`entries API error: ${data.error} (event ${eventId})`);
+  const wellFormed =
+    typeof data.total === "number" &&
+    Array.isArray(data.teams) &&
+    data.teams.every((t) => t !== null && typeof t === "object" && Array.isArray(t.entries));
+  if (!wellFormed) {
+    throw new Error(`entries API malformed response (event ${eventId})`);
+  }
   return data;
 }
 

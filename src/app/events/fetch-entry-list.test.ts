@@ -34,6 +34,20 @@ describe("fetchEntryList", () => {
     await expect(fetchEntryList(2437, { fetcher, retryDelayMs: 0 })).resolves.toEqual(okBody);
   });
 
+  it("必要なフィールドが欠けた 200 応答は失敗として扱う", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(json({})).mockResolvedValueOnce(json(okBody));
+    await expect(fetchEntryList(2437, { fetcher, retryDelayMs: 0 })).resolves.toEqual(okBody);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it("teams の要素が壊れている 200 応答は失敗として扱う", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(json({ ...okBody, teams: [null] }))
+      .mockResolvedValueOnce(json({ ...okBody, teams: [{ affiliation: "x", count: 1 }] }));
+    await expect(fetchEntryList(2437, { fetcher, retryDelayMs: 0 })).rejects.toThrow("malformed");
+  });
+
   it("2回とも失敗したら throw する", async () => {
     const fetcher = vi.fn().mockImplementation(async () => html504());
     await expect(fetchEntryList(2437, { fetcher, retryDelayMs: 0 })).rejects.toThrow("504");

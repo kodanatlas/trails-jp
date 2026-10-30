@@ -26,6 +26,8 @@ export async function GET(
   try {
     const result = await scrapeEntryListByEventId(eventId, {
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      // 上流の非2xxを「空の成功」として1時間CDNキャッシュしないよう、失敗は throw させて下の catch へ
+      throwOnError: true,
     });
     return NextResponse.json(result, {
       headers: {
@@ -42,7 +44,7 @@ export async function GET(
         fetchedAt: new Date().toISOString(),
         error: "fetch_failed",
       },
-      { status: 200 }
+      { status: 200, headers: { "Cache-Control": "no-store" } }
     );
   }
 }
