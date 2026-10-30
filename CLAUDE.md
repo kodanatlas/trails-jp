@@ -90,7 +90,7 @@ trails_jp/
 - Cron: 日次 19:07 JST (sync-events), 20:23 JST (sync-entries), 21:41 JST (sync-lapcenter)
 - 水曜 Cron で Deploy Hook による自動再デプロイ → ビルド時に Proxy API 経由で JOY ランキング最新取得
 - Cron 実行ログ: Supabase `cron_log` テーブルに記録
-- Hobby プラン（Cron 1日1回制限、Function 10秒制限）
+- Hobby プラン（Cron 1日1回制限）。Function は Fluid Compute で既定上限300秒（2026-10-30 API で確認。旧記載の「10秒制限」は誤り）。重い API は route ごとに `maxDuration` を指定
 
 ## データフロー
 

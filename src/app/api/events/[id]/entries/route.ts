@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { scrapeEntryListByEventId } from "@/lib/scraper/entry-source";
 
+export const maxDuration = 30;
+
 /**
- * 上流取得の打ち切り（ms）。Hobby の Function 上限（10秒）より手前で止め、
- * 504（非JSON）ではなく `error: "fetch_failed"` の JSON を返してクライアントの再試行に乗せる。
+ * 上流取得の打ち切り（ms）。JOY の show_detail は平時4〜5秒・約480KBだが10秒前後まで遅れることがある。
+ * maxDuration より手前で止め、504（非JSON）ではなく `error: "fetch_failed"` の JSON を返してクライアントの再試行に乗せる。
  */
-const UPSTREAM_TIMEOUT_MS = 8000;
+const UPSTREAM_TIMEOUT_MS = 25000;
 
 /**
  * GET /api/events/[id]/entries
