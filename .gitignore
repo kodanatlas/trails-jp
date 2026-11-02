@@ -42,3 +42,6 @@ public/data/leg-fp/
 
 # JOY 更新検知用の大会列 manifest（ビルド生成物）
 public/data/ranking-headers.json
+
+# kc run 用の参照ファイル（値は入らない）
+.env.kc
