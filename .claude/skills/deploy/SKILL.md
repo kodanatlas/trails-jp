@@ -22,10 +22,10 @@ npx vercel --prod
 
 ```bash
 cd ~/projects/trails_jp
-op run --env-file=<(echo 'SUPABASE_ACCESS_TOKEN=op://Agent-MacMini/supabase-trails/credential') -- npx supabase db push
+~/bin/kc run --env-file=<(echo 'SUPABASE_ACCESS_TOKEN=kc:agent-supabase-trails') -- npx supabase db push
 ```
 
-トークンは 1Password のスコープ付き PAT（trails-jp・Database read-write のみ。2026-11-02〜）。`db push` がこの権限で 403 になる場合は、マイグレーション SQL を `~/bin/sbq < migration.sql` で流す（未検証）。
+トークンは login キーチェーン（`agent-supabase-trails`）のスコープ付き PAT（trails-jp・Database read-write のみ。2026-11-02〜）。`db push` がこの権限で 403 になる場合は、マイグレーション SQL を `~/bin/sbq < migration.sql` で流す（未検証）。
 
 マイグレーションファイルは `supabase/migrations/` に配置。
 
