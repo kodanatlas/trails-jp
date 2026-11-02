@@ -21,10 +21,11 @@ npx vercel --prod
 ## DBマイグレーション適用
 
 ```bash
-cd /mnt/c/Users/user/Downloads/trails_jp
-export SUPABASE_ACCESS_TOKEN=$(grep SUPABASE_ACCESS_TOKEN .env.local | cut -d= -f2)
-npx supabase db push
+cd ~/projects/trails_jp
+op run --env-file=<(echo 'SUPABASE_ACCESS_TOKEN=op://Agent-MacMini/supabase-trails/credential') -- npx supabase db push
 ```
+
+トークンは 1Password のスコープ付き PAT（trails-jp・Database read-write のみ。2026-11-02〜）。`db push` がこの権限で 403 になる場合は、マイグレーション SQL を `~/bin/sbq < migration.sql` で流す（未検証）。
 
 マイグレーションファイルは `supabase/migrations/` に配置。
 
