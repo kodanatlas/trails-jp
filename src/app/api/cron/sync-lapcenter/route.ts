@@ -23,6 +23,7 @@ import {
   type MatchGapCandidate,
 } from "@/lib/analysis/match-gaps";
 import { readEvents, writeEvents } from "@/lib/events-store";
+import { withRetry } from "@/lib/scraper/retry";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { readFileSync } from "fs";
 import { logCron } from "@/lib/cron-logger";
@@ -351,6 +352,7 @@ async function scrapeRunners(
   let legRowsUpserted = 0;
   let legEventsMarked = 0;
   let stoppedForBudget = false;
+  const failedEvents: Array<{ lc_event_id: number; error: string }> = [];
 
   for (const event of lcEvents) {
     // 予算超過後は新しいイベントに着手しない（着手済みイベントは完走させ、イベント単位で保存）
@@ -362,19 +364,6 @@ async function scrapeRunners(
     const eventId = event.lapcenter_event_id!;
     const eventType: "sprint" | "forest" = isSprint(event.name) ? "sprint" : "forest";
 
-    const classes = await fetchEventClasses(eventId);
-    if (classes.length === 0) {
-      // 結果未掲載 → 台帳に記帳しない＝次回リトライされる
-      eventsProcessed++;
-      continue;
-    }
-
-    const isRelay = RELAY_RE.test(`${event.name} ${classes.map((cls) => cls.className).join(" ")}`);
-    // 新規イベントへの着手期限を過ぎていれば追加取得を省き、従来どおり空所属で続行する。
-    const relayTeams = isRelay && Date.now() - requestStart <= START_EVENT_BEFORE_MS
-      ? await fetchRelayTeams(eventId)
-      : undefined;
-
     // このイベント分のレコードを集め、イベント単位で即upsert。
     // 途中で関数がタイムアウトしても、完了済みイベントの行は保全される（全損防止）。
     // scalar 版と detailed 版は同一 URL のため、detailed 1回のフェッチから
@@ -383,29 +372,52 @@ async function scrapeRunners(
     const eventLegRows: LegSplitRow[] = [];
     let keptClasses = 0;
     let rankedRunnerCount = 0;
+    let classes: Awaited<ReturnType<typeof fetchEventClasses>>;
 
-    for (const cls of classes) {
-      await new Promise((r) => setTimeout(r, DELAY_MS));
-      const detailed = await fetchSplitListDetailed(eventId, cls.classId);
-      rankedRunnerCount += detailed.filter((runner) => runner.rank != null).length;
-      // LC側も buildClassIngest 内で同じ別名へ解決し、lookup・lc_performances・runner_key を揃える。
-      const { scalarRecords, legRows } = buildClassIngest({
-        detailed,
-        athleteLookup,
-        relayTeams,
-        lcEventId: eventId,
-        lcClassId: cls.classId,
-        eventDate: event.date,
-        eventName: event.name,
-        className: cls.className,
-        raceType: eventType,
-      });
-      eventRecords.push(...scalarRecords);
-      if (legRows.length > 0) {
-        eventLegRows.push(...legRows);
-        keptClasses++;
+    // 取得は通信失敗を1回だけ取り直し、それでも落ちたらこのイベントだけ飛ばして次へ進む。
+    // 旧実装は1クラスの "fetch failed" で scrapeRunners 全体が throw し、後続イベントを全て取りこぼしていた
+    // （2026-11-02 全日本ロングで発生）。飛ばしたイベントは台帳に記帳しないので翌日自動リトライされる。
+    try {
+      classes = await withRetry(() => fetchEventClasses(eventId));
+      if (classes.length === 0) {
+        // 結果未掲載 → 台帳に記帳しない＝次回リトライされる
+        eventsProcessed++;
+        continue;
       }
-      totalClasses++;
+
+      const isRelay = RELAY_RE.test(`${event.name} ${classes.map((cls) => cls.className).join(" ")}`);
+      // 新規イベントへの着手期限を過ぎていれば追加取得を省き、従来どおり空所属で続行する。
+      const relayTeams = isRelay && Date.now() - requestStart <= START_EVENT_BEFORE_MS
+        ? await withRetry(() => fetchRelayTeams(eventId))
+        : undefined;
+
+      for (const cls of classes) {
+        await new Promise((r) => setTimeout(r, DELAY_MS));
+        const detailed = await withRetry(() => fetchSplitListDetailed(eventId, cls.classId));
+        rankedRunnerCount += detailed.filter((runner) => runner.rank != null).length;
+        // LC側も buildClassIngest 内で同じ別名へ解決し、lookup・lc_performances・runner_key を揃える。
+        const { scalarRecords, legRows } = buildClassIngest({
+          detailed,
+          athleteLookup,
+          relayTeams,
+          lcEventId: eventId,
+          lcClassId: cls.classId,
+          eventDate: event.date,
+          eventName: event.name,
+          className: cls.className,
+          raceType: eventType,
+        });
+        eventRecords.push(...scalarRecords);
+        if (legRows.length > 0) {
+          eventLegRows.push(...legRows);
+          keptClasses++;
+        }
+        totalClasses++;
+      }
+    } catch (err) {
+      console.error(`LC runner scrape failed for event ${eventId} (skipped):`, err);
+      failedEvents.push({ lc_event_id: eventId, error: String(err).slice(0, 200) });
+      continue;
     }
 
     // イベント単位でバッチ upsert（冪等: athlete_name,event_date,event_name,class_name）
@@ -472,5 +484,6 @@ async function scrapeRunners(
     leg_rows_upserted: legRowsUpserted,
     leg_events_marked: legEventsMarked,
     stopped_for_budget: stoppedForBudget,
+    failed_events: failedEvents,
   };
 }
