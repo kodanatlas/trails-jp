@@ -168,11 +168,12 @@ export async function GET(request: Request) {
       4_000,
       Math.min(35_000, HANDLER_DEADLINE - Date.now() - WRITE_RESERVE_MS),
     );
-    const index = await buildEntryIndex(targets, {
-      concurrency: 12,
-      perEventTimeoutMs: 9000,
-      overallBudgetMs: scrapeBudget,
-    });
+    // prevIndex を渡す: JOY でエントリーリストが非公開化され表が取れなくなった大会は、前回のエントリーを持ち越す
+    const index = await buildEntryIndex(
+      targets,
+      { concurrency: 12, perEventTimeoutMs: 9000, overallBudgetMs: scrapeBudget },
+      prevIndex,
+    );
 
     // 全件失敗（JOYのburst遮断・障害など）のときは既存の良いインデックスを空で上書きしない。
     // 部分成功（scraped < targets）は許容して書き込む（成功分は鮮度を保ち、欠落は scraped で可視化）。
@@ -274,6 +275,7 @@ export async function GET(request: Request) {
       targets: targets.length,
       scraped: index.scrapedEventCount,
       athletes: Object.keys(index.athletes).length,
+      carried_events: index.carriedEventIds ?? [],
       deferred,
       startlist_filled: startlistFilled,
       generated_at: index.generatedAt,

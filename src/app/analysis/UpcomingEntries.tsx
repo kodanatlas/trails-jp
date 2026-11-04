@@ -120,6 +120,12 @@ export function UpcomingEntries({ data }: Props) {
                     {e.prefecture}
                     {e.affiliation ? ` · ${e.affiliation}` : ""}
                   </FullText>
+                  {/* JOY のエントリーリストが非公開になった大会は、非公開前（または主催者リスト）の情報を出している */}
+                  {e.carriedOver && (
+                    <div className="truncate text-[10px] text-amber-500/70">
+                      JOY のリスト非公開前の情報
+                    </div>
+                  )}
                 </div>
 
                 {/* 受付ステータス（none=判定不能はバッジ非表示） */}

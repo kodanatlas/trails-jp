@@ -10,6 +10,7 @@ import { scrapeEntryListByEventId } from "@/lib/scraper/entry-source";
 import { normalizeNameKey, expandAliasKeys } from "@/lib/name-key";
 import { resolveAliasName } from "@/lib/identity/athlete-alias";
 import type { AthleteEntryRef, EntryIndex } from "./index-types";
+import entrySeedsJson from "@/data/entry-seeds.json";
 
 /**
  * リレー等の「メンバー」欄から個人名を抽出する。
@@ -41,6 +42,8 @@ interface BuildOpts {
   perEventTimeoutMs?: number;
   /** スクレイプ全体のウォールクロック予算(ms)。超過後は新規開始も in-flight も打ち切る。 */
   overallBudgetMs?: number;
+  /** 持ち越し用の seed（既定は src/data/entry-seeds.json）。テストで差し替える */
+  seeds?: EntrySeeds;
 }
 
 interface ScrapedEvent {
@@ -111,6 +114,8 @@ async function scrapeOne(ev: JOEEvent, timeoutMs: number): Promise<ScrapedEvent 
 export async function buildEntryIndex(
   targetEvents: JOEEvent[],
   opts: BuildOpts = {},
+  /** 前回の索引。エントリー表が取れなくなった大会の持ち越しに使う（無ければ持ち越さない） */
+  prevIndex?: EntryIndex | null,
 ): Promise<EntryIndex> {
   const concurrency = opts.concurrency ?? 8;
   const perEventTimeoutMs = opts.perEventTimeoutMs ?? 3500;
@@ -121,6 +126,7 @@ export async function buildEntryIndex(
 
   const athletes: Record<string, AthleteEntryRef[]> = {};
   const scrapedEventIds: number[] = [];
+  const emptyEvents: EmptyEvent[] = [];
   let scraped = 0;
   let nextIdx = 0;
 
@@ -128,6 +134,7 @@ export async function buildEntryIndex(
     scraped++;
     const { ev, total, rows } = s;
     scrapedEventIds.push(ev.joe_event_id); // エントリー0件(ロゲイニング/講習等)もフェッチ成功として記録
+    if (rows.length === 0) emptyEvents.push({ ev, announced: total });
     const entryStatus = ev.entry_status; // "open" | "closed" | "none"（そのまま保持）
     for (const row of rows) {
       const alias = resolveAliasName(row.name, [row.affiliation]);
@@ -179,6 +186,13 @@ export async function buildEntryIndex(
   );
   await Promise.all(workers);
 
+  const carriedEventIds = carryOverHiddenEvents(
+    athletes,
+    emptyEvents,
+    prevIndex ?? null,
+    opts.seeds ?? (entrySeedsJson as unknown as EntrySeeds),
+  );
+
   // 各選手のエントリーを date 昇順（同日は大会名）でソート
   for (const key of Object.keys(athletes)) {
     athletes[key].sort(
@@ -191,6 +205,87 @@ export async function buildEntryIndex(
     targetEventCount: targetEvents.length,
     scrapedEventCount: scraped,
     scrapedEventIds,
+    carriedEventIds,
     athletes,
   };
 }
+
+/** フェッチには成功したがエントリー行が0件だった大会（ev と公称人数） */
+interface EmptyEvent {
+  ev: JOEEvent;
+  announced: number;
+}
+
+/**
+ * エントリー表が取れなかった大会について、前回索引のエントリーを引き継ぐ（athletes を更新する）。
+ *
+ * JOY は主催者がエントリーリストを非公開にすると show_detail から表が消え、「N 人が申込済」だけになる
+ * （2026-10-28 伊豆大島大会2026 で実測）。そのまま作り直すと、その大会のエントリーが全選手から消える。
+ * → 今回0行・前回1件以上の大会は、前回のエントリーを carriedOver 付きで残す。
+ * 大会名・日付・受付状態・公称人数は今回の大会情報で更新する。大会が期間外・中止になれば targets から
+ * 外れて emptyEvents に入らないので、自然に消える。取得失敗（null）の大会は従来どおり対象外。
+ * 前回索引は別名キーに展開済みなので、キーごとにそのまま写せば別名の重複も増えない。
+ */
+function carryOverHiddenEvents(
+  athletes: Record<string, AthleteEntryRef[]>,
+  emptyEvents: EmptyEvent[],
+  prevIndex: EntryIndex | null,
+  seeds: EntrySeeds,
+): number[] {
+  if (emptyEvents.length === 0) return [];
+  const byId = new Map(emptyEvents.map((e) => [e.ev.joe_event_id, e]));
+  const carried = new Set<number>();
+  for (const [key, refs] of Object.entries(prevIndex?.athletes ?? {})) {
+    for (const ref of refs) {
+      const empty = byId.get(ref.joe_event_id);
+      if (!empty) continue;
+      const { ev, announced } = empty;
+      (athletes[key] ??= []).push({
+        ...ref,
+        eventName: ev.name,
+        date: ev.date,
+        prefecture: ev.prefecture,
+        entryStatus: ev.entry_status,
+        joeUrl: ev.joe_url,
+        totalEntries: announced > 0 ? announced : ref.totalEntries,
+        carriedOver: true,
+      });
+      carried.add(ref.joe_event_id);
+    }
+  }
+  // 前回索引にも無い（非公開化より前に索引が上書きされてしまった）大会は、主催者リストの seed で補う
+  for (const { ev, announced } of emptyEvents) {
+    if (carried.has(ev.joe_event_id)) continue;
+    const seed = seeds[String(ev.joe_event_id)];
+    if (!seed || seed.rows.length === 0) continue;
+    const seen = new Set<string>();
+    for (const row of seed.rows) {
+      const alias = resolveAliasName(row.name, [row.affiliation]);
+      const name = alias.kind === "renamed" ? alias.name : row.name;
+      const baseKey = normalizeNameKey(name);
+      if (!baseKey || !row.className || seen.has(`${baseKey}|${row.className}`)) continue;
+      seen.add(`${baseKey}|${row.className}`);
+      const ref: AthleteEntryRef = {
+        joe_event_id: ev.joe_event_id,
+        eventName: ev.name,
+        date: ev.date,
+        prefecture: ev.prefecture,
+        className: row.className,
+        affiliation: row.affiliation,
+        entryStatus: ev.entry_status,
+        joeUrl: ev.joe_url,
+        totalEntries: announced > 0 ? announced : seed.rows.length,
+        carriedOver: true,
+      };
+      for (const key of expandAliasKeys(baseKey)) (athletes[key] ??= []).push(ref);
+    }
+    carried.add(ev.joe_event_id);
+  }
+  return [...carried].sort((a, b) => a - b);
+}
+
+/** 主催者サイト等から手で取り込んだエントリー（JOY で取れなくなった大会の補い）。キーは joe_event_id */
+export type EntrySeeds = Record<
+  string,
+  { rows: { name: string; className: string; affiliation: string }[] }
+>;

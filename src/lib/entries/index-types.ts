@@ -24,6 +24,11 @@ export interface AthleteEntryRef {
   joeUrl: string;
   /** その大会の総エントリー数（表示用） */
   totalEntries: number;
+  /**
+   * true = 今回のスクレイプではエントリー表が取れなかった（JOY でリストが非公開化された等）ため、
+   * 前回の索引から引き継いだ（または主催者リストの seed から補った）エントリー。選手ページで注記を出す。
+   */
+  carriedOver?: boolean;
 }
 
 /** 氏名(スペース除去)キー → エントリー配列（date 昇順） */
@@ -40,5 +45,7 @@ export interface EntryIndex {
    * 区別するために使う。旧 index には存在しない（undefined）ため optional。
    */
   scrapedEventIds?: number[];
+  /** 前回索引（または seed）からエントリーを引き継いだ大会の joe_event_id 一覧（ログ用） */
+  carriedEventIds?: number[];
   athletes: Record<string, AthleteEntryRef[]>;
 }
