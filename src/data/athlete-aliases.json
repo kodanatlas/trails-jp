@@ -5,14 +5,244 @@
       "sourceName": "鈴木健太",
       "note": "金沢大学と筑波大学の同姓同名。2026-08-31 の問い合わせで判明。同一ランキング(M21E)に2行・M20とM21に分離・全日本ミドルで2クラス出走で別人と確認済み。",
       "identities": [
-        { "displayName": "鈴木健太（筑波大学）", "clubs": ["筑波大学", "筑波大", "筑波大学51期A", "筑波大学51期B"] },
-        { "displayName": "鈴木健太（金沢大学）", "clubs": ["金沢大学", "金大", "金大OLC"] }
+        {
+          "displayName": "鈴木健太（筑波大学）",
+          "clubs": [
+            "筑波大学",
+            "筑波大",
+            "筑波大学51期A",
+            "筑波大学51期B"
+          ]
+        },
+        {
+          "displayName": "鈴木健太（金沢大学）",
+          "clubs": [
+            "金沢大学",
+            "金大",
+            "金大OLC"
+          ]
+        }
       ],
       "lcOverrides": [
-        { "lcEventId": 9435, "lcClassId": 11, "runnerIndex": 54, "displayName": "鈴木健太（筑波大学）", "note": "CC7 2025 7F 筑波大学51期A 7走" },
-        { "lcEventId": 9435, "lcClassId": 7, "runnerIndex": 65, "displayName": "鈴木健太（筑波大学）", "note": "CC7 2025 4G 筑波大学51期B 4走" },
-        { "lcEventId": 9983, "lcClassId": 29, "runnerIndex": 36, "displayName": "鈴木健太（金沢大学）", "note": "CC7 2026 3G 金大チームベテラン 3走" },
-        { "lcEventId": 9983, "lcClassId": 16, "runnerIndex": 27, "displayName": "鈴木健太（金沢大学）", "note": "CC7 2026 3走オープン・3G と同一走(start 10:25:45)" }
+        {
+          "lcEventId": 9435,
+          "lcClassId": 11,
+          "runnerIndex": 54,
+          "displayName": "鈴木健太（筑波大学）",
+          "note": "CC7 2025 7F 筑波大学51期A 7走"
+        },
+        {
+          "lcEventId": 9435,
+          "lcClassId": 7,
+          "runnerIndex": 65,
+          "displayName": "鈴木健太（筑波大学）",
+          "note": "CC7 2025 4G 筑波大学51期B 4走"
+        },
+        {
+          "lcEventId": 9983,
+          "lcClassId": 29,
+          "runnerIndex": 36,
+          "displayName": "鈴木健太（金沢大学）",
+          "note": "CC7 2026 3G 金大チームベテラン 3走"
+        },
+        {
+          "lcEventId": 9983,
+          "lcClassId": 16,
+          "runnerIndex": 27,
+          "displayName": "鈴木健太（金沢大学）",
+          "note": "CC7 2026 3走オープン・3G と同一走(start 10:25:45)"
+        }
+      ]
+    },
+    {
+      "sourceName": "山田和輝",
+      "note": "KOLC（学連大会では横浜国立大学）・神戸大学・東北大学の同姓同名。2026-11-04 判明（同一ランキング F無差別に2行・トータス50周年で別得点）。所属が空の LapCenter 行は出走時刻の重なり・リレーのチーム名・前後の出走から振り分け（docs/plans/2026-11-04_homonym-yamada-kazuki.md）。CC7 2023・阪神奈2025・東慶工対抗戦2024・東京科学大スプリント2026 は判定不能のため旧名のまま。",
+      "identities": [
+        {
+          "displayName": "山田和輝（KOLC）",
+          "clubs": [
+            "KOLC",
+            "kolc",
+            "横浜国立大学"
+          ]
+        },
+        {
+          "displayName": "山田和輝（神戸大学）",
+          "clubs": [
+            "神戸大学",
+            "神大OLK",
+            "神大olk"
+          ]
+        },
+        {
+          "displayName": "山田和輝（東北大学）",
+          "clubs": [
+            "東北大学"
+          ]
+        }
+      ],
+      "lcOverrides": [
+        {
+          "lcEventId": 5202,
+          "lcClassId": 9,
+          "runnerIndex": 4,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2019-04-21 愛知県民大会 M15（所属空欄）"
+        },
+        {
+          "lcEventId": 5525,
+          "lcClassId": 7,
+          "runnerIndex": 27,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2019-09-08 第13回名椙大会(2日目) MAx（所属空欄）"
+        },
+        {
+          "lcEventId": 7998,
+          "lcClassId": 7,
+          "runnerIndex": 1,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2023-10-29 早慶戦リレー MF2走（所属空欄）"
+        },
+        {
+          "lcEventId": 7998,
+          "lcClassId": 27,
+          "runnerIndex": 0,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2023-10-29 早慶戦リレー MFY（所属空欄）"
+        },
+        {
+          "lcEventId": 8504,
+          "lcClassId": 4,
+          "runnerIndex": 9,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2024-07-07 第115回上尾OLC大会in内牧公園 Tanabata（所属空欄）"
+        },
+        {
+          "lcEventId": 8613,
+          "lcClassId": 2,
+          "runnerIndex": 22,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2024-08-18 第18回名椙大会(2日目) ME-Z（所属空欄）"
+        },
+        {
+          "lcEventId": 8664,
+          "lcClassId": 1,
+          "runnerIndex": 40,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2024-09-29 クラブカップ7人リレー2024 12AC（所属空欄）"
+        },
+        {
+          "lcEventId": 8664,
+          "lcClassId": 5,
+          "runnerIndex": 50,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2024-09-29 クラブカップ7人リレー2024 3E（所属空欄）"
+        },
+        {
+          "lcEventId": 8690,
+          "lcClassId": 0,
+          "runnerIndex": 38,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2024-10-06 第117回上尾OLC大会inしらこばと L（所属空欄）"
+        },
+        {
+          "lcEventId": 9435,
+          "lcClassId": 3,
+          "runnerIndex": 17,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2025-11-02 クラブカップ7人リレー2025 12BD（所属空欄）"
+        },
+        {
+          "lcEventId": 9435,
+          "lcClassId": 4,
+          "runnerIndex": 66,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2025-11-02 クラブカップ7人リレー2025 3E（所属空欄）"
+        },
+        {
+          "lcEventId": 9435,
+          "lcClassId": 10,
+          "runnerIndex": 26,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2025-11-02 クラブカップ7人リレー2025 6（所属空欄）"
+        },
+        {
+          "lcEventId": 9983,
+          "lcClassId": 1,
+          "runnerIndex": 43,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2026-08-30 クラブカップ7人リレー2026 2走男（所属空欄）"
+        },
+        {
+          "lcEventId": 9983,
+          "lcClassId": 16,
+          "runnerIndex": 69,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2026-08-30 クラブカップ7人リレー2026 3走オープン（所属空欄）"
+        },
+        {
+          "lcEventId": 9983,
+          "lcClassId": 18,
+          "runnerIndex": 49,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2026-08-30 クラブカップ7人リレー2026 5走オープン（所属空欄）"
+        },
+        {
+          "lcEventId": 9983,
+          "lcClassId": 19,
+          "runnerIndex": 241,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2026-08-30 クラブカップ7人リレー2026 6走オープン（所属空欄）"
+        },
+        {
+          "lcEventId": 9983,
+          "lcClassId": 23,
+          "runnerIndex": 327,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2026-08-30 クラブカップ7人リレー2026 6（所属空欄）"
+        },
+        {
+          "lcEventId": 9983,
+          "lcClassId": 27,
+          "runnerIndex": 50,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2026-08-30 クラブカップ7人リレー2026 12BD（所属空欄）"
+        },
+        {
+          "lcEventId": 9983,
+          "lcClassId": 29,
+          "runnerIndex": 56,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2026-08-30 クラブカップ7人リレー2026 3G（所属空欄）"
+        },
+        {
+          "lcEventId": 9983,
+          "lcClassId": 32,
+          "runnerIndex": 36,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2026-08-30 クラブカップ7人リレー2026 5F（所属空欄）"
+        },
+        {
+          "lcEventId": 10015,
+          "lcClassId": 0,
+          "runnerIndex": 12,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2026-09-18 屋敷一門練 L（所属空欄）"
+        },
+        {
+          "lcEventId": 10015,
+          "lcClassId": 1,
+          "runnerIndex": 1,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2026-09-18 屋敷一門練 M（所属空欄）"
+        },
+        {
+          "lcEventId": 10015,
+          "lcClassId": 3,
+          "runnerIndex": 7,
+          "displayName": "山田和輝（KOLC）",
+          "note": "2026-09-18 屋敷一門練 long_leg（所属空欄）"
+        }
       ]
     }
   ]

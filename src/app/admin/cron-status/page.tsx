@@ -14,6 +14,8 @@ import {
   type JobAssessment,
 } from "@/lib/cron-status";
 import { CronKpiCharts } from "./CronKpiCharts";
+import homonymData from "@/data/homonym-candidates.json";
+import type { HomonymCandidate } from "@/lib/identity/homonym-detect";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -102,6 +104,12 @@ export default async function CronStatusPage() {
       {/* ---- JOY↔LapCenter 突合漏れ候補 ---- */}
       <MatchGapSection summary={matchGapSummary} />
 
+      {/* ---- 同姓同名の候補（ビルド時に検出） ---- */}
+      <HomonymSection
+        generatedAt={homonymData.generatedAt}
+        candidates={homonymData.candidates as HomonymCandidate[]}
+      />
+
       {/* ---- KPI 時系列 ---- */}
       <section className="mt-10">
         <h2 className="mb-4 text-lg font-semibold">KPI推移（直近{HISTORY_LIMIT}件）</h2>
@@ -118,6 +126,47 @@ export default async function CronStatusPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+function HomonymSection({
+  generatedAt,
+  candidates,
+}: {
+  generatedAt: string;
+  candidates: HomonymCandidate[];
+}) {
+  return (
+    <section className="mt-10">
+      <div className="mb-1 flex items-baseline justify-between gap-3">
+        <h2 className="text-lg font-semibold">同姓同名の候補</h2>
+        <span className="text-xs text-muted">検出: {formatJst(generatedAt)} JST（ビルド時）</span>
+      </div>
+      <p className="mb-4 text-xs text-muted">
+        別人が同じ氏名で1人に合算されている疑い。確認して src/data/athlete-aliases.json に登録すると分離される（自動では分離しない）。
+      </p>
+      <div className="rounded-lg border border-border">
+        {candidates.length === 0 ? (
+          <p className="px-4 py-6 text-center text-xs text-muted">候補なし</p>
+        ) : (
+          candidates.map((c) => (
+            <article key={c.name} className="border-t border-border px-4 py-3 text-xs first:border-t-0">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span className="font-semibold text-foreground">{c.name}</span>
+                <span className="text-muted">{c.clubs.join(" / ")}</span>
+              </div>
+              <ul className="mt-2 space-y-1 text-muted">
+                {c.reasons.map((r) => (
+                  <li key={r} className="break-words">
+                    {r}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
   );
 }
 

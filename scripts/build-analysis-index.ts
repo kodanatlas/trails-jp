@@ -28,6 +28,7 @@ import { LegFpPublishError, writeFileAtomic, writeLegFpShards } from "./leg-fp-s
 import { findDuplicateNames, makeScoreMergeKey } from "../src/lib/analysis/score-merge";
 import { resolveAliasName, resolveEntryAliases } from "../src/lib/identity/athlete-alias";
 import { extractEventHeaders } from "../src/lib/rankings/event-headers";
+import { detectHomonymCandidates, type RankingFileForDetect } from "../src/lib/identity/homonym-detect";
 import {
   computeAdjustedTop3,
   estimateSprintGapModel,
@@ -721,6 +722,8 @@ function parseEventName(raw: string): { date: string; eventName: string } {
   return { date: "", eventName: trimmed };
 }
 
+const homonymInput: RankingFileForDetect[] = [];
+
 for (const file of files) {
   const parsed = parseFilename(file);
   if (!parsed) {
@@ -733,6 +736,7 @@ for (const file of files) {
     fs.readFileSync(path.join(RANKINGS_DIR, file), "utf-8")
   );
   const raw = resolveEntryAliases(rawEntries).entries;
+  homonymInput.push({ file: file.replace(/\.json$/, ""), entries: raw });
 
   for (const entry of raw) {
     // スペース有無の表記ゆれを統一（例: "佐藤 遼平" → "佐藤遼平"）
@@ -774,6 +778,19 @@ for (const file of files) {
         data.openEvents.push({ className, discipline, date, eventName, points: es.points });
       }
     }
+  }
+}
+
+// 同姓同名の候補（別人が同じ氏名で合算されている疑い）を検出し、/admin/cron-status 用に書き出す。
+// 自動分離はしない（人が確認して src/data/athlete-aliases.json に登録する）。
+{
+  const candidates = detectHomonymCandidates(homonymInput);
+  const outPath = path.resolve(__dirname, "../src/data/homonym-candidates.json");
+  fs.writeFileSync(outPath, JSON.stringify({ generatedAt: new Date().toISOString(), candidates }, null, 2) + "\n");
+  if (candidates.length > 0) {
+    console.warn(`⚠ 同姓同名の候補 ${candidates.length} 件: ${candidates.map((c) => c.name).join(", ")}（/admin/cron-status 参照）`);
+  } else {
+    console.log("✓ 同姓同名の候補: 0 件");
   }
 }
 
