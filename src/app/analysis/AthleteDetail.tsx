@@ -24,6 +24,7 @@ import { HeadToHead } from "./HeadToHead";
 import { CrossRaceCard } from "./CrossRaceCard";
 import { LegFingerprintCard, loadLegFingerprint } from "./LegFingerprintCard";
 import { FullText } from "@/components/FullText";
+import { computeAdjustedTop3, fillPoint, poolEvents } from "@/lib/analysis/adjusted-points";
 
 interface Props {
   summary: AthleteSummary;
@@ -173,7 +174,11 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
 
   return (
     <div className="space-y-5">
-      <ProfileHeader profile={profile} perEventGap={athleteIndex.perEventGap ?? 0} />
+      <ProfileHeader
+        profile={profile}
+        perEventGap={athleteIndex.perEventGap ?? 0}
+        windowStart={athleteIndex.adjustment?.windowStart ?? null}
+      />
       <TypeBadge profile={profile} />
       <RecentMovement profile={profile} />
       <StatsCards profile={profile} />
@@ -252,7 +257,15 @@ function RecentMovement({ profile }: { profile: AthleteProfile }) {
 }
 
 /** ヘッダー: 名前・クラブ・カテゴリ数 */
-function ProfileHeader({ profile, perEventGap }: { profile: AthleteProfile; perEventGap: number }) {
+function ProfileHeader({
+  profile,
+  perEventGap,
+  windowStart,
+}: {
+  profile: AthleteProfile;
+  perEventGap: number;
+  windowStart: string | null;
+}) {
   const [showBreakdown, setShowBreakdown] = useState(false);
 
   // 無差別クラスのランキングを特定（ビルドスクリプトと同一ロジック）
@@ -277,12 +290,18 @@ function ProfileHeader({ profile, perEventGap }: { profile: AthleteProfile; perE
   const adjPoints = profile.adjustedPoints ?? profile.avgTotalPoints;
 
   // 補正済みポイントを構成する上位3大会（無差別イベントをフォレスト基準に補正→混在で上位3）
-  const adjustedTop3 = [
-    ...(forestRanking?.events ?? []).map((e) => ({ ...e, disc: "forest" as const, corrected: e.points })),
-    ...(sprintRanking?.events ?? []).map((e) => ({ ...e, disc: "sprint" as const, corrected: e.points - perEventGap })),
-  ]
-    .sort((a, b) => b.corrected - a.corrected)
-    .slice(0, 3);
+  // 新 index（adjustment あり）は窓内の実大会＋選手ごとの水準別 gap。旧 index は従来の一律 gap
+  const sprintGap = windowStart ? (profile.sprintGap ?? 0) : perEventGap;
+  const pool = (events: { date: string; eventName: string; points: number }[]) =>
+    windowStart ? poolEvents(events, windowStart) : events;
+  const adjustedTop3 = computeAdjustedTop3(
+    pool(forestRanking?.events ?? []),
+    pool(sprintRanking?.events ?? []),
+    sprintGap,
+    windowStart
+      ? { forest: fillPoint(forestRanking?.events ?? []), sprint: fillPoint(sprintRanking?.events ?? []) }
+      : undefined,
+  ).top3.map((e) => ({ ...e, disc: e.discipline }));
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
@@ -335,7 +354,17 @@ function ProfileHeader({ profile, perEventGap }: { profile: AthleteProfile; perE
           {/* 計算式 */}
           <div className="rounded bg-surface p-2.5 text-xs text-muted">
             <p className="mb-1 text-[9px] text-muted/60">
-              各大会の得点をフォレスト基準に補正（スプリントの大会は水準差 約0.4σ/3 を差し引く）し、フォレスト／スプリント混在で上位3大会を合計。下段は無補正の無差別総合（参考）。
+              直近1年の各大会の得点をフォレスト基準に補正し、フォレスト／スプリント混在で上位3大会を合計。
+              {windowStart && profile.sprintGap != null && (
+                <>
+                  この選手のスプリント大会は 1 大会あたり{" "}
+                  <span className="font-mono text-foreground">{Math.round(profile.sprintGap)}</span> 点を差し引き（水準によって変わる）。
+                </>
+              )}{" "}
+              下段は無補正の無差別総合（参考）。{" "}
+              <a href="/docs/analysis-system#adjusted" className="underline hover:text-foreground">
+                補正の考え方
+              </a>
             </p>
             <div className="font-mono">
               {hasBoth ? (

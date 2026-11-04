@@ -42,6 +42,7 @@ export interface AthleteSummary {
   adjustedPoints?: number | null; // 補正済みポイント（各大会をフォレスト基準に補正→混在で上位3大会合計）。旧インデックスには無い
   openForest?: { pts: number; rank: number } | null; // 無補正の実点＋順位（Forest無差別）
   openSprint?: { pts: number; rank: number } | null; // 無補正の実点＋順位（Sprint無差別）
+  sprintGap?: number | null; // この選手のスプリント大会から差し引く1大会あたりの水準差（水準依存）。旧indexには無い
   recentForm: number; // 直近3大会 vs 全体平均 (%), 種目別算出
   raceCount?: number; // 重複排除済みの出場大会数（種目合算）。旧インデックスには無い
 }
@@ -105,6 +106,12 @@ export interface LapCenterIndex {
 export interface AthleteIndex {
   athletes: Record<string, AthleteSummary>;
   perEventGap?: number; // 補正済みポイントの1大会あたり種目間水準差（スプリント大会から差引く）。旧indexには無い
+  /** 補正済みポイントの窓（ランキング日の1年前）と水準別 gap の節点。2026-11 以降の index のみ */
+  adjustment?: {
+    windowStart: string;
+    nodes: { pct: number; gap: number }[];
+    pairedCount: number;
+  };
   generatedAt: string;
 }
 

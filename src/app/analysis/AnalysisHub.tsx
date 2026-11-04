@@ -236,11 +236,13 @@ export function AnalysisHub() {
           <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs leading-relaxed text-muted">
             ポイントは
             <span className="font-semibold text-foreground">「補正済みポイント」</span>
-            に変わりました。各大会の得点をフォレスト基準に補正（スプリントは全体に高得点が出やすいため水準差を差し引く）した上で、フォレスト／スプリント混在で
+            です。直近1年の各大会をフォレスト基準に補正し、フォレスト／スプリント混在で
             <span className="font-semibold text-foreground">上位3大会を合計</span>
-            しています。強い種目1つに限定せず、両種目のベスト回を拾えます。
+            しています。
+            <span className="font-semibold text-foreground">2026年11月にスプリントの補正を見直しました</span>
+            （同じ選手でのフォレストとの差を実測し、水準ごとに約190〜340点を差し引く。女子の大会二重計上も修正）。
             <a href="/docs/analysis-system#adjusted" className="ml-1 underline hover:text-foreground">
-              算出方法
+              補正の考え方
             </a>
           </div>
           {/* Search */}
