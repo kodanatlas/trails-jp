@@ -8,8 +8,9 @@ export const metadata: Metadata = {
 };
 
 // events ストアは日次 cron（sync-events 19:07 JST / sync-lapcenter 21:41 JST・vercel.json が正）
-// でしか変わらない → 10分 ISR で十分
-export const revalidate = 600;
+// でしか変わらない。cron が書いた直後に revalidateEventPages() で作り直す（on-demand）。時間ベースは 1 日の保険
+// （10分 ISR は ISR Writes 無料枠を食っていた・2026-11-05）
+export const revalidate = 86400;
 
 export default async function ResultsLanding() {
   let events: { eventId: number; name: string; date: string }[] = [];

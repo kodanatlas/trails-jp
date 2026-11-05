@@ -23,6 +23,7 @@ import {
   type MatchGapCandidate,
 } from "@/lib/analysis/match-gaps";
 import { readEvents, writeEvents } from "@/lib/events-store";
+import { revalidateEventPages } from "@/lib/revalidate-event-pages";
 import { withRetry } from "@/lib/scraper/retry";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { readFileSync } from "fs";
@@ -155,6 +156,7 @@ export async function GET(request: Request) {
       // result.changed は新規＋再マッチの両方を数える。no-op 日は 0 なので余分な書込みは増えない。
       if (result.changed > 0) {
         await writeEvents(events);
+        revalidateEventPages();
       }
       matchingResult = {
         new_matches: newMatches,

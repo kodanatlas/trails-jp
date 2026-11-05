@@ -3,8 +3,9 @@ import { EventList, type EventListItem } from "./EventList";
 import { readEvents, getEventsLastSync } from "@/lib/events-store";
 import type { JOEEvent } from "@/lib/scraper/events";
 
-// events.json は日次 cron（sync-events 03:00 JST / sync-lapcenter 12:00 JST）でしか変わらない → 10分 ISR で十分
-export const revalidate = 600;
+// events ストアは日次 cron でしか変わらない。cron が書いた直後に revalidateEventPages() で作り直す（on-demand）。
+// 時間ベースは 1 日の保険だけ（10分 ISR は ISR Writes 無料枠の約 8 割を食っていた・2026-11-05）
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: "イベント",

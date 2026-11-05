@@ -3,6 +3,7 @@ import { scrapeEvents, scrapeArchive } from "@/lib/scraper/events";
 import type { JOEEvent } from "@/lib/scraper/events";
 import { scrapeDokoriEvents } from "@/lib/scraper/dokori";
 import { readEvents, writeEvents } from "@/lib/events-store";
+import { revalidateEventPages } from "@/lib/revalidate-event-pages";
 import { matchLapCenterEvents } from "@/lib/scraper/lapcenter";
 import { logCron } from "@/lib/cron-logger";
 import { notifyCronWarning } from "@/lib/cron-notifier";
@@ -134,6 +135,7 @@ export async function GET(request: Request) {
 
     // Supabaseに保存
     await writeEvents(freshEvents);
+    const revalidation = revalidateEventPages();
 
     // ---- 再デプロイトリガー: 水曜の定期 + JOY ランキングの大会列追加を検知した日 ----
     // 失敗しても同期本体は成功として記録する（検査・送信の例外は内部で隔離）。
@@ -153,6 +155,7 @@ export async function GET(request: Request) {
       },
       lapcenter: lapcenterResult,
       deploy: deployResult,
+      revalidation,
       synced_at: new Date().toISOString(),
     };
     await logCron("sync-events", "success", payload, Date.now() - start);

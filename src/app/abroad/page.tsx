@@ -16,7 +16,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export const revalidate = 600;
+// 開催状況は日付で変わるだけ（O-Ringen 2026 は終了・同期停止済み）→ 1 日（ISR Writes 節約・2026-11-05）
+export const revalidate = 86400;
 
 /** 大会の開催状況。JST 基準で判定する（読み手が日本にいるため）。 */
 function statusOf(from: string, to: string): { label: string; live: boolean } | null {

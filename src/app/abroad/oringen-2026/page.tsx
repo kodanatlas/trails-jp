@@ -33,8 +33,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// GitHub Actions が開催期間中1日2回更新する → 10分 ISR
-export const revalidate = 600;
+// 開催期間中は GitHub Actions が1日2回更新していた（2026 は終了・同期停止済み）→ 1 日（ISR Writes 節約・2026-11-05）
+export const revalidate = 86400;
 
 /** ISO8601 → "M/D H:mm"（JST） */
 function toJst(iso: string): string {
