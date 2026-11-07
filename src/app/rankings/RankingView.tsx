@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { ChevronDown, ChevronUp, Search, ExternalLink, BarChart3, Loader2, User } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import type { JOERankingEntry } from "@/lib/scraper/rankings";
 import { FullText } from "@/components/FullText";
 

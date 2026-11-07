@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { CalendarDays, MapPin, ChevronLeft, ChevronRight, ChevronDown, ExternalLink, Search, Bell, BarChart3, ListChecks, Users, Loader2, Route } from "lucide-react";
 import type { JOEEvent } from "@/lib/scraper/events";
 import type { EntryListResult } from "@/lib/scraper/entries";

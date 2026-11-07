@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { ArrowLeft, CalendarDays, BarChart3 } from "lucide-react";
 
 export const metadata: Metadata = {

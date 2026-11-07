@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { Radio, MapPin, Users, Calendar, ChevronRight, Plus } from "lucide-react";
 import { sampleTrackingEvents } from "@/lib/tracking/sample-data";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { fetchCarpool, postCarpool, patchCarpool, buildUrl } from "./carpoolFetch";
 import { useToast } from "./Toast";

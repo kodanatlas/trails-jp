@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { cn } from "@/lib/utils";
 import { missingStartReason } from "@/lib/oringen/start-type";
 import { difficultyOf, type DifficultyLevel } from "@/lib/oringen/difficulty";

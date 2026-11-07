@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { buildPlanInput, type PlanInputData } from "@/lib/carpool/plan-input";
 import type { SolveResult } from "@/lib/carpool/solver/types";
 import type { PlanWorkerMessage } from "./plan.worker";

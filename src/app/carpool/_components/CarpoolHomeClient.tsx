@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { fetchCarpool, postCarpool } from "./carpoolFetch";
 import { useToast } from "./Toast";
 import AddMemberModal from "./AddMemberModal";

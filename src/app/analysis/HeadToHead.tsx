@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { Swords, Search, X, Loader2, ExternalLink, ChevronDown, ArrowUpRight } from "lucide-react";
 import type { AthleteIndex, AthleteSummary, AthleteProfile } from "@/lib/analysis/types";
 import type { AthleteEntryRef } from "@/lib/entries/index-types";

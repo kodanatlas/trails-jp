@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { Search, X, Layers, Eye, ExternalLink, List, MapPlus } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { OrienteeringMap, TerrainType } from "@/types/map";

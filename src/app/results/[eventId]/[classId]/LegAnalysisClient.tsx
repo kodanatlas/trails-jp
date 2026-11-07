@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { Loader2, X } from "lucide-react";
 import type { LapCenterRunnerDetail } from "@/lib/scraper/lapcenter-detail";
 import { FullText } from "@/components/FullText";

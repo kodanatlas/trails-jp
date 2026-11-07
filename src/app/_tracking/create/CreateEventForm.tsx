@@ -6,7 +6,7 @@ import {
   Radio, Users, Settings, Image, GripVertical, AlertCircle,
   Wand2, Eye, Loader2,
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import {
   detectControls,
   pixelToGeo,

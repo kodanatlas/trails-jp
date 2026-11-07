@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { TrendingUp, Gauge, Target, ArrowRight } from "lucide-react";
 import { FullText } from "@/components/FullText";
 import wpJson from "@/data/weekend-points.json";

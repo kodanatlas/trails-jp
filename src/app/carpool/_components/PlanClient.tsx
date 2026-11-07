@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { fetchCarpool, postCarpool, patchCarpool, CarpoolApiError } from "./carpoolFetch";
 import { useToast } from "./Toast";
 import { minToTime, minToDuration } from "./planFormat";

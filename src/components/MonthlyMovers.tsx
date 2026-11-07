@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { TrendingUp, ArrowRight } from "lucide-react";
 import { FullText } from "@/components/FullText";
 import moversJson from "@/data/movers.json";

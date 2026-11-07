@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { Newspaper } from "lucide-react";
 import { FullText } from "@/components/FullText";
 import { supabaseAdmin } from "@/lib/supabase-admin";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { CalendarDays, Trophy, ExternalLink, BarChart3, TrendingUp, ChevronDown, Route } from "lucide-react";
 import { readEvents } from "@/lib/events-store";
 import weekendPointsJson from "@/data/weekend-points.json";

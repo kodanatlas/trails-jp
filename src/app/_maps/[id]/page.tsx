@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { ArrowLeft, MapPin, Ruler, Mountain, Calendar, Users, ExternalLink } from "lucide-react";
 import { sampleMaps } from "@/lib/sample-data";
 import { TERRAIN_LABELS } from "@/lib/utils";

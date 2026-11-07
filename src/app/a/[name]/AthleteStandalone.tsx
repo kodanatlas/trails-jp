@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { Loader2 } from "lucide-react";
 import type { AthleteIndex, AthleteSummary } from "@/lib/analysis/types";
 import { hasMergedNamesakes } from "@/lib/analysis/head-to-head";
