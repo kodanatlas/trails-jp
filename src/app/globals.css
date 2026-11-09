@@ -92,8 +92,8 @@
   --color-medal-gold: var(--medal-gold);
   --color-medal-silver: var(--medal-silver);
   --color-medal-bronze: var(--medal-bronze);
-  /* 本文・UI・和文 = IBM Plex Sans JP / 数値 = IBM Plex Mono */
-  --font-sans: var(--font-plex-jp);
+  /* 本文・UI = IBM Plex Sans（英数字）＋端末の和文ゴシック / 数値 = IBM Plex Mono */
+  --font-sans: var(--font-plex-sans);
   --font-mono: var(--font-plex-mono);
 }
 
