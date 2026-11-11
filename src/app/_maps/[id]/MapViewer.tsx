@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Layers } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { OrienteeringMap } from "@/types/map";
+import { loadMaplibre } from "@/lib/maplibre";
 
 interface MapViewerProps {
   map: OrienteeringMap;
@@ -27,9 +28,9 @@ export function MapViewer({ map }: MapViewerProps) {
     if (!containerRef.current) return;
     let cancelled = false;
 
-    import("maplibre-gl").then((mod) => {
+    loadMaplibre().then((mod) => {
       if (cancelled || !containerRef.current) return;
-      const maplibregl = mod.default;
+      const maplibregl = mod;
       const base = BASE_MAPS.find((b) => b.key === baseMap) ?? BASE_MAPS[0];
 
       const mlMap = new maplibregl.Map({

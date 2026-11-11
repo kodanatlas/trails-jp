@@ -17,7 +17,7 @@
     "clsx": "^2.1.1",
     "highs": "^1.14.2",
     "lucide-react": "^0.575.0",
-    "maplibre-gl": "^5.19.0",
+    "maplibre-gl": "^6.17.0",
     "next": "16.4.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",

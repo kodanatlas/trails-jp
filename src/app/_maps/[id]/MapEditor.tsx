@@ -5,6 +5,7 @@ import { Save, X, Image, Move, RotateCw } from "lucide-react";
 import type { OrienteeringMap, TerrainType } from "@/types/map";
 import { TERRAIN_LABELS } from "@/lib/utils";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { loadMaplibre } from "@/lib/maplibre";
 
 interface MapEditorProps {
   map: OrienteeringMap;
@@ -56,9 +57,9 @@ export function MapEditor({ map, onClose }: MapEditorProps) {
     if (!mapContainerRef.current) return;
     let cancelled = false;
 
-    import("maplibre-gl").then((mod) => {
+    loadMaplibre().then((mod) => {
       if (cancelled || !mapContainerRef.current) return;
-      const maplibregl = mod.default;
+      const maplibregl = mod;
 
       const mlMap = new maplibregl.Map({
         container: mapContainerRef.current,

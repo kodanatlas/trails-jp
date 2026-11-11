@@ -6,6 +6,7 @@ import { Search, X, Layers, Eye, ExternalLink, List, MapPlus } from "lucide-reac
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { OrienteeringMap, TerrainType } from "@/types/map";
 import { TERRAIN_LABELS } from "@/lib/utils";
+import { loadMaplibre } from "@/lib/maplibre";
 
 interface MapBrowserProps {
   maps: OrienteeringMap[];
@@ -102,9 +103,9 @@ export function MapBrowser({ maps }: MapBrowserProps) {
     if (!mapContainerRef.current) return;
     let cancelled = false;
 
-    import("maplibre-gl").then((mod) => {
+    loadMaplibre().then((mod) => {
       if (cancelled || !mapContainerRef.current) return;
-      const maplibregl = mod.default;
+      const maplibregl = mod;
       const currentBase = BASE_MAPS.find((b) => b.key === baseMap) ?? BASE_MAPS[0];
 
       const mlMap = new maplibregl.Map({

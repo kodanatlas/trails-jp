@@ -9,6 +9,7 @@ import {
 import type { TrackingEvent, TrackPoint } from "@/lib/tracking/types";
 import { parseGpx } from "@/lib/tracking/gpx-parser";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { loadMaplibre } from "@/lib/maplibre";
 
 const SPEEDS = [1, 2, 3, 5, 10, 20, 50, 100, 200];
 
@@ -114,9 +115,9 @@ export function TrackingView({ event }: Props) {
     if (!mapContainerRef.current) return;
     let cancelled = false;
 
-    import("maplibre-gl").then((mod) => {
+    loadMaplibre().then((mod) => {
       if (cancelled || !mapContainerRef.current) return;
-      const maplibregl = mod.default;
+      const maplibregl = mod;
 
       const mlMap = new maplibregl.Map({
         container: mapContainerRef.current,
@@ -420,7 +421,7 @@ export function TrackingView({ event }: Props) {
           paint: { "line-color": newParticipant.color, "line-width": 2.5, "line-opacity": showFullTrail ? 0.7 : 0, "line-dasharray": [4, 2] },
         });
 
-        const mod = await import("maplibre-gl");
+        const mod = await loadMaplibre();
         const gpxDotEl = document.createElement("div");
         gpxDotEl.style.cssText = `display:flex;flex-direction:column;align-items:center;pointer-events:none;`;
         const gpxCircle = document.createElement("div");
@@ -431,7 +432,7 @@ export function TrackingView({ event }: Props) {
         gpxLabel.textContent = newParticipant.name.split(" ")[0];
         gpxDotEl.appendChild(gpxCircle);
         gpxDotEl.appendChild(gpxLabel);
-        const marker = new mod.default.Marker({ element: gpxDotEl, anchor: "center" })
+        const marker = new mod.Marker({ element: gpxDotEl, anchor: "center" })
           .setLngLat([event.center[1], event.center[0]])
           .addTo(mlMap);
         markersRef.current.set(newParticipant.id, marker);

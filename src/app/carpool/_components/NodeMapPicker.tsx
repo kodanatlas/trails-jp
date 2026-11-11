@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { loadMaplibre } from "@/lib/maplibre";
 
 interface NodeMapPickerProps {
   /** フォームの緯度（文字列・空可） */
@@ -56,9 +57,9 @@ export default function NodeMapPicker({ lat, lng, onPick, fallbackCenter }: Node
     const center = initial ?? fallbackCenter ?? TOKYO_STATION;
     const zoom = initial ? 14 : 11;
 
-    import("maplibre-gl").then((mod) => {
+    loadMaplibre().then((mod) => {
       if (cancelled || !containerRef.current) return;
-      const maplibregl = mod.default;
+      const maplibregl = mod;
       mlRef.current = maplibregl;
 
       const mlMap = new maplibregl.Map({

@@ -13,6 +13,7 @@ import {
   type DetectedControl,
   type ImageBounds,
 } from "@/lib/tracking/detect-controls";
+import { loadMaplibre } from "@/lib/maplibre";
 
 // ─── Types ─────────────────────────────────────────────────────
 
@@ -99,9 +100,9 @@ export function CreateEventForm() {
     if (!mapContainerRef.current) return;
     let cancelled = false;
 
-    import("maplibre-gl").then((mod) => {
+    loadMaplibre().then((mod) => {
       if (cancelled || !mapContainerRef.current) return;
-      const maplibregl = mod.default;
+      const maplibregl = mod;
 
       const mlMap = new maplibregl.Map({
         container: mapContainerRef.current,
@@ -169,8 +170,8 @@ export function CreateEventForm() {
     const mlMap = mapRef.current;
     if (!mlMap) return;
 
-    import("maplibre-gl").then((mod) => {
-      const maplibregl = mod.default;
+    loadMaplibre().then((mod) => {
+      const maplibregl = mod;
       controlMarkersRef.current.forEach((m) => m.remove());
       controlMarkersRef.current.clear();
 
