@@ -45,3 +45,6 @@ public/data/ranking-headers.json
 
 # kc run 用の参照ファイル（値は入らない）
 .env.kc
+
+# TypeScript の増分ビルド情報（ビルドの副産物）
+*.tsbuildinfo
