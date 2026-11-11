@@ -8,7 +8,7 @@ const athleteIndex = athleteIndexJson as unknown as AthleteIndex;
 /**
  * 静的ページ＋全選手ページ（/a/<key>）のサイトマップ。
  * athlete-index はビルド時に凍結されるためビルド時静的生成でよい（毎週水曜の再デプロイで更新）。
- * 除外: `_` プレフィックス（非ルーティング）・admin・carpool（ツール）・results/go（リダイレクタ）・動的 results/events 配下。
+ * 除外: `_` プレフィックス（非ルーティング。停止中の配車割 `_carpool` を含む）・admin・results/go（リダイレクタ）・動的 results/events 配下。
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date(athleteIndex.generatedAt);

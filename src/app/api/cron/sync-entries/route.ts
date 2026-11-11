@@ -13,6 +13,8 @@ const JOE_BASE_URL = "https://japan-o-entry.com";
 // 配車割 Phase 4 相乗りステップの予算・上限。本体を侵さない範囲でだけ働く。
 // 本体 overallBudget=35s を使い切る前提で、全体 maxDuration=60s に安全余白(>10s)を残して数秒だけ割く。
 const STARTLIST_STEP_BUDGET_MS = 4000;
+// 配車割ツールは 2026-11-11 に停止した。再開するときは true に戻す（CLAUDE.md の復活手順）。
+const CARPOOL_ENABLED: boolean = false;
 // 1 リクエストで処理する carpool_events の上限（予算超過の保険）。
 const STARTLIST_MAX_EVENTS = 8;
 // title にこのいずれかを含む発行書類をスタートリストとみなす。
@@ -262,7 +264,7 @@ export async function GET(request: Request) {
     let startlistFilled = 0;
     try {
       const remaining = start + 60_000 - Date.now() - 6_000;
-      if (remaining > 1000) {
+      if (CARPOOL_ENABLED && remaining > 1000) {
         const budget = Math.min(STARTLIST_STEP_BUDGET_MS, remaining);
         startlistFilled = await fillStartlistUrls(Date.now() + budget);
       }

@@ -37,6 +37,7 @@ trails_jp/
 │   │   ├── rankings/      ← ランキング
 │   │   ├── _tracking/     ← [停止] GPS追跡（2026-06-08廃止）
 │   │   ├── _upload/       ← [停止] O-map登録（2026-06-08廃止）
+│   │   ├── _carpool/      ← [停止] 配車割ツール（2026-11-11停止・API は api/_carpool）
 │   │   └── api/
 │   │       ├── cron/      ← 日次バッチ（sync-events, sync-lapcenter）
 │   │       └── events/[id]/entries ← エントリーリスト取得（オンデマンド+1hキャッシュ）
@@ -134,6 +135,7 @@ trails_jp/
 ## 注意事項
 
 - **[機能停止] 地図DB(/maps)・GPS追跡(/tracking)・O-map登録(/upload) は 2026-06-08 に廃止**（ユーザー判断・将来再開の可能性あり）。ナビ・トップページ・about・メタ(layout/manifest)から関連文言を除去済み。コードは `src/app/_maps`・`_tracking`・`_upload` に退避（Next.js `_`プレフィックス＝ルーティング除外、ビルドには含まれ型チェックは通る）。依存(`lib/map-event-matcher`・`lib/tracking/*`・`lib/sample-data`・`components/AuthGuard`・`public/maps/*`)も温存。**復活手順**: 各フォルダ名から`_`を外し、`Header.tsx`(navItems+O-map登録ボタン)・`page.tsx`(ヒーロー/stats/features/最新の地図)・`about/page.tsx`・`layout.tsx`・`manifest.json` の文言・メタを git 履歴から戻す。
+- **[機能停止] 配車割ツール(/carpool) は 2026-11-11 に停止**（ユーザー判断・使っていないため）。画面は `src/app/_carpool`、API は `src/app/api/_carpool` に退避（`_`プレフィックス＝ルーティング除外。ビルドと型チェックには含まれる）。`sync-entries` cron 内のスタートリスト URL 補完は `CARPOOL_ENABLED = false` で止めてある。`src/lib/carpool/*`（テスト含む）・`public/solver/*`・DB の `carpool_*` テーブルとデータは温存。**復活手順**: 2つのフォルダ名から`_`を外し、`sync-entries/route.ts` の `CARPOOL_ENABLED` を true に戻す。地図は `src/lib/maplibre.ts` 経由で maplibre-gl 6 を読み込む（停止前に更新・地点選択の動作確認済み）。
 - 地図データベースの8件はサンプルデータ（`isSample: true`）
 - O-map登録にはSupabase Auth認証が必要
 - O-mapアップロード時は画像の長辺2000px以上が必須（写真撮影のO-map排除）
