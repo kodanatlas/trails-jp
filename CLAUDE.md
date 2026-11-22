@@ -153,3 +153,6 @@ trails_jp/
 1. **Claude Code (Opus 4.6)** でコードレビュー → `review_report.md` に出力
 2. **Cursor Agent (GPT-5.4)** で `review_report.md` をクロスチェック
 3. 指摘の誤り修正・見落とし追加を反映
+
+## 常駐セッション `trails` と窓口（2026-11-22）
+Mac mini の常駐セッション `trails` がこのフォルダで動き、窓口（_desk）から依頼を受ける。終わったら窓口に `完了／要確認／失敗` と 3〜5 行で返す。窓口への返信は、届いた依頼の from（`uds:` のアドレス）ではなく名前 `desk` に送る。`desk` が 2 つ出たら `ListAgents` でいちばん新しく始まったものに `desk [ref]` で送る（2026-11-22 本人 OK。窓口は開くたびに `/rename desk` で名前を揃え、古い窓口は watchdog が止める）。
