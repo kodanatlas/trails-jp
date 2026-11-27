@@ -851,6 +851,7 @@ export function AnalysisSystemReport({
               スレート：永続化 ／ 緑：API ／ ピンク：フロント。上から下へデータが流れる。
             </span>
           </div>
+          <p className="map-hint">→ 横にスクロールできます</p>
           <div className="map-frame">
             <SystemMap />
           </div>

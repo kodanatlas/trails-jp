@@ -140,7 +140,8 @@ export function EventList({ events }: EventListProps) {
   }, []);
 
   const allTags = useMemo(
-    () => [...new Set(events.flatMap((e) => e.tags))].sort(),
+    // 空のタグは「全てのタグ」（value=""）と同じ値になり、選択表示が空欄になるため除く
+    () => [...new Set(events.flatMap((e) => e.tags).filter((t): t is string => typeof t === "string" && t.trim() !== ""))].sort(),
     [events]
   );
 

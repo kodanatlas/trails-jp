@@ -625,11 +625,13 @@ function TypeBadge({ profile }: { profile: AthleteProfile }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <span className={`rounded-full px-3 py-1 text-xs font-bold ${typeColors[profile.type]}`}>
+        <span className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold ${typeColors[profile.type]}`}>
           {typeLabel(profile.type)}
         </span>
         <span className="text-xs text-muted">
-          ランキング掲載: Forest {profile.forestCount}区分 / Sprint {profile.sprintCount}区分
+          <span className="whitespace-nowrap">ランキング掲載:</span>{" "}
+          <span className="whitespace-nowrap">Forest {profile.forestCount}区分</span>{" "}
+          <span className="whitespace-nowrap">/ Sprint {profile.sprintCount}区分</span>
         </span>
       </div>
 

@@ -124,7 +124,7 @@ export function CrossRaceCard({ name }: { name: string }) {
           β
         </span>
       </div>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className={`mt-3 grid gap-3 ${forest && athlete.f && sprint && athlete.s ? "sm:grid-cols-2" : "max-w-2xl"}`}>
         {forest && athlete.f && (
           <DisciplineRow
             label="フォレスト"

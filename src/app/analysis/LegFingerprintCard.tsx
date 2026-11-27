@@ -412,7 +412,7 @@ export function LegFingerprintCard({ name }: { name: string }) {
       <p className="mt-1 text-xs text-foreground/80">
         どの局面・どの所要時間のレッグでミスが出やすいか。赤いセルは自分の平均より統計的に偏って多い場所。
       </p>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className={`mt-3 grid gap-3 ${athlete.f && athlete.s ? "sm:grid-cols-2" : "max-w-2xl"}`}>
         {athlete.f && (
           <DisciplineBlock
             label="フォレスト"

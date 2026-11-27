@@ -236,3 +236,14 @@
   .report-root{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .report-root .theme-toggle{display:none;}
 }
+/* スマホ幅では全体マップを縮めすぎない（枠の中だけ横スクロール。文字 11px 前後を保つ） */
+@media (max-width:640px){
+  .report-root .map-frame{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .report-root .map-frame svg{width:680px;max-width:none;}
+}
+.report-root .map-hint{display:none;}
+@media (max-width:640px){
+  .report-root .map-hint{display:block;margin:0 0 8px;font-size:13px;color:var(--ink);text-align:right;}
+  /* 切り替えボタンは画面に固定せず、ページと一緒に流す（本文・図に重ねない） */
+  .report-root .theme-toggle{position:absolute;}
+}

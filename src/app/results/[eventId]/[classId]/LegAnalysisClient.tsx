@@ -519,11 +519,11 @@ function AddPicker({
   if (eligible.length === 0) return null;
   return (
     <div className="mb-3 flex items-center gap-2">
-      <label className="text-[11px] text-muted">選手追加</label>
+      <label className="shrink-0 whitespace-nowrap text-[11px] text-muted">選手追加</label>
       <select
         value=""
         onChange={(e) => e.target.value && onAdd(e.target.value)}
-        className="flex-1 rounded-lg border border-border bg-surface px-2 py-2.5 text-sm outline-none focus:border-primary"
+        className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-2.5 text-sm outline-none focus:border-primary"
       >
         <option value="">＋ 比較に追加…</option>
         {eligible.map((r) => (
