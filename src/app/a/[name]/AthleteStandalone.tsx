@@ -63,7 +63,7 @@ export function AthleteStandalone({ summary }: { summary: AthleteSummary }) {
 
       <div className="mt-5">
         {athleteIndex ? (
-          <AthleteDetail summary={summary} athleteIndex={athleteIndex} />
+          <AthleteDetail summary={summary} athleteIndex={athleteIndex} nameInPageHeading />
         ) : (
           <>
             {/* index 到着までのサマリカード（SSR されるため初期 HTML・クローラにも載る） */}

@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "@/components/AppLink";
 import { CalendarDays, Trophy, ExternalLink, BarChart3, TrendingUp, ChevronDown, Route } from "lucide-react";
 import { readEvents } from "@/lib/events-store";
@@ -32,8 +33,8 @@ export default async function Home() {
     <div>
       {/* Hero — エディトリアル（テキストのみ・左寄せ・余白で構成） */}
       <section className="border-b border-border bg-surface">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20 lg:py-24">
-          <div className="max-w-3xl">
+        <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 sm:py-20 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-center lg:py-24">
+          <div className="min-w-0">
               <p className="flex items-center gap-2.5 text-xs font-medium tracking-wide text-muted">
                 <span className="h-px w-8 bg-primary/70" />
                 日本のオリエンテーリング・データプラットフォーム
@@ -49,7 +50,9 @@ export default async function Home() {
                 <span className="inline-block">巡航速度・ミス率・調子まで、</span>
                 <span className="inline-block">選手をまるごと分析。</span>
               </p>
-              <HeroAthleteSearch />
+              <div className="lg:hidden">
+                <HeroAthleteSearch />
+              </div>
               <div className="mt-5 flex flex-wrap items-center gap-3">
                 <Link
                   href="/events"
@@ -92,26 +95,40 @@ export default async function Home() {
                 </a>
               )}
           </div>
+          {/* PC: 右側に選手検索を大きく置く（主な使い道に直結・古くなるデータを置かない） */}
+          <div className="hidden min-w-0 rounded-2xl border border-border-strong bg-card p-8 lg:block">
+            <p className="text-lg font-bold text-foreground">選手を探す</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              名前の一部でも探せます。ポイント推移・巡航速度・ミスの傾向・対戦成績まで、1 人分をまとめて見られます。
+            </p>
+            <HeroAthleteSearch size="lg" />
+          </div>
         </div>
       </section>
 
       {/* Stats — エディトリアルなコールアウト（アクセント左ボーダー・mono 数値・カード装飾なし） */}
       <section className="border-b border-border bg-card">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-6 px-4 py-8 sm:grid-cols-4">
+        <p className="mx-auto max-w-6xl px-4 py-5 text-sm leading-relaxed text-muted">
           {[
-            { value: stats.events.toLocaleString(), label: "収集イベント" },
-            { value: stats.athletes.toLocaleString(), label: "ランキング掲載選手" },
-            { value: stats.lcRecords.toLocaleString(), label: "成績レコード" },
-            { value: stats.clubs.toLocaleString(), label: "クラブ" },
-          ].map((stat) => (
-            <div key={stat.label} className="border-l-2 border-primary/60 pl-4">
-              <div className="font-mono text-2xl font-bold tabular-nums text-foreground sm:text-3xl">
-                {stat.value}
-              </div>
-              <div className="mt-1 text-xs text-muted">{stat.label}</div>
-            </div>
+            { value: stats.events, unit: "大会" },
+            { value: stats.athletes, unit: "人のランキング掲載選手" },
+            { value: stats.lcRecords, unit: "走の成績" },
+            { value: stats.clubs, unit: "クラブ" },
+          ].map((s, i) => (
+            <Fragment key={s.unit}>
+              {i > 0 && (
+                <>
+                  ・<wbr />
+                </>
+              )}
+              <span className="whitespace-nowrap">
+                <b className="font-mono text-base font-bold tabular-nums text-foreground">{s.value.toLocaleString()}</b> {s.unit}
+              </span>
+            </Fragment>
           ))}
-        </div>
+          <wbr />
+          <span className="whitespace-nowrap">を収録しています。</span>
+        </p>
       </section>
 
       {/* 直近の大会ハイライト（上=ビルド時静的・下=ランタイム RPC） */}

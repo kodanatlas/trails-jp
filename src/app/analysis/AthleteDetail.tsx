@@ -29,6 +29,8 @@ import { computeAdjustedTop3, fillPoint, poolEvents } from "@/lib/analysis/adjus
 interface Props {
   summary: AthleteSummary;
   athleteIndex: AthleteIndex;
+  /** ページの見出しに名前・所属が出ている（/a/選手名）。カードでは繰り返さない */
+  nameInPageHeading?: boolean;
 }
 
 /**
@@ -79,7 +81,7 @@ function DeferUntilVisible({
   );
 }
 
-export function AthleteDetail({ summary, athleteIndex }: Props) {
+export function AthleteDetail({ summary, athleteIndex, nameInPageHeading = false }: Props) {
   const [profile, setProfile] = useState<AthleteProfile | null>(null);
   const [lcData, setLcData] = useState<LapCenterPerformance[] | null>(null);
   const [entryData, setEntryData] = useState<
@@ -176,6 +178,7 @@ export function AthleteDetail({ summary, athleteIndex }: Props) {
     <div className="space-y-5">
       <ProfileHeader
         profile={profile}
+        hideIdentity={nameInPageHeading}
         perEventGap={athleteIndex.perEventGap ?? 0}
         windowStart={athleteIndex.adjustment?.windowStart ?? null}
       />
@@ -259,10 +262,12 @@ function RecentMovement({ profile }: { profile: AthleteProfile }) {
 /** ヘッダー: 名前・クラブ・カテゴリ数 */
 function ProfileHeader({
   profile,
+  hideIdentity,
   perEventGap,
   windowStart,
 }: {
   profile: AthleteProfile;
+  hideIdentity: boolean;
   perEventGap: number;
   windowStart: string | null;
 }) {
@@ -306,13 +311,15 @@ function ProfileHeader({
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-        <div className="min-w-0">
+        {/* /a/選手名 ではページの見出しに名前・所属があるので、画面上は繰り返さない（読み上げ用には残す） */}
+        <div className={hideIdentity ? "sr-only" : "min-w-0"}>
           <FullText as="h2" className="truncate text-lg font-bold">{profile.name}</FullText>
           <p className="break-words text-xs text-muted">{profile.clubs.join(" / ")}</p>
         </div>
-        <div className="flex items-start gap-3 sm:shrink-0">
+        {/* 名前を出さないときは、ポイントを左・共有を右の端に分ける */}
+        <div className={hideIdentity ? "flex w-full flex-row-reverse items-start justify-between gap-3" : "flex items-start gap-3 sm:shrink-0"}>
           <ShareButtons name={profile.name} />
-          <div className="text-left sm:text-right">
+          <div className={hideIdentity ? "text-left" : "text-left sm:text-right"}>
             <p className="text-2xl font-bold text-primary">
               {adjPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
             </p>

@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 
 /** トップ hero の選手検索。/analysis の検索ボックスへ ?q= で引き継ぐ。 */
-export function HeroAthleteSearch() {
+export function HeroAthleteSearch({ size = "md" }: { size?: "md" | "lg" }) {
+  const lg = size === "lg";
   const [q, setQ] = useState("");
   const router = useRouter();
 
   return (
     <form
-      className="relative mt-8 max-w-xs"
+      className={lg ? "relative mt-5" : "relative mt-8 max-w-xs"}
       onSubmit={(e) => {
         e.preventDefault();
         const v = q.trim();
@@ -26,7 +27,7 @@ export function HeroAthleteSearch() {
         placeholder="選手名で探す..."
         aria-label="選手を検索"
         enterKeyHint="search"
-        className="w-full rounded-lg border border-border-strong bg-card py-2.5 pl-9 pr-20 text-sm outline-none transition-colors placeholder:text-muted focus:border-primary"
+        className={`w-full rounded-lg border border-border-strong pl-9 pr-20 outline-none transition-colors placeholder:text-muted focus:border-primary ${lg ? "bg-surface py-4 text-base" : "bg-card py-2.5 text-sm"}`}
       />
       <button
         type="submit"
