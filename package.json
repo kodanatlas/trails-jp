@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx tsx scripts/build-analysis-index.ts && next build",
+    "build": "npx tsx scripts/build-analysis-index.ts && npx tsx scripts/build-rookie-league.ts && next build",
     "start": "next start",
     "lint": "eslint",
     "build:analysis": "npx tsx scripts/build-analysis-index.ts",

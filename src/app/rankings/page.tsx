@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { RANKING_CONFIGS } from "@/lib/scraper/rankings";
 import { RankingView } from "./RankingView";
+import { RankingsTabs } from "./RankingsTabs";
+import { RookieLeagueView } from "./RookieLeagueView";
 import rankingsMeta from "@/data/rankings-meta.json";
 
 export const metadata: Metadata = {
   title: "ランキング",
-  description: "JOYと連携したオリエンテーリング日本ランキング。",
+  description: "JOYと連携したオリエンテーリング日本ランキングと、競技2年目までのルーキーリーグ（Bクラス）。",
 };
 
 export default function RankingsPage() {
@@ -20,7 +22,7 @@ export default function RankingsPage() {
       <p className="mb-6 text-xs text-muted">
         JOY のランキングを週次で手動取込。最終更新: {rankingsMeta.generatedAtJst} JST
       </p>
-      <RankingView rankingConfigs={RANKING_CONFIGS} />
+      <RankingsTabs joy={<RankingView rankingConfigs={RANKING_CONFIGS} />} rookie={<RookieLeagueView />} />
     </div>
   );
 }
