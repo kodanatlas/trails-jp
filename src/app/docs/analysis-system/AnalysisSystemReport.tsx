@@ -822,7 +822,7 @@ export function AnalysisSystemReport({
         <header className="hero">
           <span className="eyebrow">
             <span className="dot" />
-            LIVE — 日次自動更新で稼働中
+            LIVE — 日次更新で稼働中
           </span>
           <h1 className="big">
             日本オリエンテーリングの
@@ -830,10 +830,9 @@ export function AnalysisSystemReport({
             データを、1枚に。
           </h1>
           <p className="lead">
-            <a href="/">trails.jp</a> は、エントリーサイト <b>JOY</b>・成績データベース{" "}
-            <b>LapCenter</b> から毎日自動でデータを集め、さらに{" "}
+            <a href="/">trails.jp</a> は、エントリーサイト <b>JOY</b> と{" "}
             <b>どこオリ</b>{" "}
-            などの大会情報を手動で一覧化して取り込み、イベント・ランキング・選手分析・クラブ統計・対戦履歴までを横断する、オリエンテーリング専用のデータプラットフォームです。本ページは、その{" "}
+            などの大会情報を手動で一覧化して取り込み、成績データベース <b>LapCenter</b> から毎日データを集めて、イベント・ランキング・選手分析・クラブ統計・対戦履歴までを横断する、オリエンテーリング専用のデータプラットフォームです。本ページは、その{" "}
             <b>システム全体像と技術スタック</b> を1枚にまとめた技術ドキュメントです。
             現在 <b>{stats.events.toLocaleString()}</b> 大会・ランキング掲載{" "}
             <b>{stats.athletes.toLocaleString()}</b> 選手・
@@ -1023,7 +1022,7 @@ export function AnalysisSystemReport({
               日次<span className="grad">パイプライン</span>
             </h2>
             <span className="sec-sub">
-              3つの Cron ＋ 再デプロイ時のビルドで、PC 起動なしに完全自動で鮮度を保つ。Cron の沈黙は GitHub Actions の watchdog が検知する。
+              3つの Cron ＋ 再デプロイ時のビルドで、PC 起動なしに日々の鮮度を保つ。Cron の沈黙は GitHub Actions の watchdog が検知する。
             </span>
           </div>
           <div className="waves">
