@@ -57,4 +57,10 @@ export interface RookieSeason {
 export interface RookieLeagueData {
   generatedAtJst: string;
   seasons: RookieSeason[];
+  /** B クラス候補（古い JSON には無い） */
+  bCandidates?: {
+    from: string;
+    to: string;
+    entries: import("./b-candidates").BCandidate[];
+  };
 }

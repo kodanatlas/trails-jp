@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Loader2, Search } from "lucide-react";
 import Link from "@/components/AppLink";
 import type { Affiliation, RookieLeagueData, RookieEntry } from "@/lib/rookie/types";
+import { BCandidatesList } from "./BCandidatesList";
 
 const AFF_OPTIONS: Affiliation[] = ["大学", "中高", "一般"];
 
@@ -181,6 +182,8 @@ export function RookieLeagueView() {
           />
         ))
       )}
+
+      {data.bCandidates && <BCandidatesList data={data.bCandidates} />}
 
       <details className="mt-6 rounded-lg border border-border p-4 text-xs leading-relaxed text-muted">
         <summary className="cursor-pointer text-sm font-medium text-foreground">点数と対象の決め方</summary>

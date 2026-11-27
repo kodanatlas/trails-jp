@@ -12,8 +12,9 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { normalizeNameKey } from "../src/lib/name-key";
 import { fetchRosterCsv, mergeCurrentFy, parseRosterCsv } from "../src/lib/rookie/joa-roster";
-import { fiscalYear } from "../src/lib/rookie/rules";
 import { buildRookieTable } from "../src/lib/rookie/scoring";
+import { bCandidateWindowFrom, buildBCandidates, isA21, type BCandidate, type ClassDistance } from "../src/lib/rookie/b-candidates";
+import { classTier, fiscalYear } from "../src/lib/rookie/rules";
 import type { JoaFirstRegistration, RaceResult, RookieLeagueData, RookieSeason } from "../src/lib/rookie/types";
 
 const OUTPUT = join(process.cwd(), "public/data/rookie-league.json");
@@ -24,6 +25,8 @@ interface Loaders {
   joa(): Promise<Map<string, JoaFirstRegistration>>;
   lcFirst(from: string): Promise<Map<string, string>>;
   season(from: string, to: string, fy: number): Promise<RaceResult[]>;
+  /** コース距離（B クラス候補用）。足りない大会は LapCenter から取って足す */
+  distances(results: readonly RaceResult[]): Promise<ClassDistance[]>;
 }
 
 const toResult = (x: RawRow): RaceResult => ({
@@ -48,6 +51,10 @@ function fileLoaders(dir: string): Loaders {
     async season(_from, _to, fy) {
       const f = `season_${fy}.json`;
       return existsSync(join(dir, f)) ? read<RawRow[]>(f).map(toResult) : [];
+    },
+    async distances() {
+      const f = "distances.json";
+      return existsSync(join(dir, f)) ? read<ClassDistance[]>(f) : [];
     },
   };
 }
@@ -84,6 +91,12 @@ async function dbLoaders(): Promise<Loaders | null> {
       if (error) throw new Error(`rookie_season_results に失敗: ${error.message}`);
       return ((data ?? []) as RawRow[]).map(toResult);
     },
+    async distances(results) {
+      const stored = await readDistances();
+      const missing = eventsNeedingDistance(results, stored);
+      if (missing.length > 0) await fetchAndStoreDistances(missing);
+      return missing.length > 0 ? readDistances() : stored;
+    },
   };
 }
 
@@ -118,6 +131,75 @@ function linkableKeys(): Set<string> {
   }
 }
 
+const DISTANCE_FETCH_LIMIT = 20;
+const DISTANCE_FETCH_INTERVAL_MS = 1500;
+
+async function readDistances(): Promise<ClassDistance[]> {
+  const { supabaseAdmin } = await import("../src/lib/supabase-admin");
+  const out: ClassDistance[] = [];
+  for (let offset = 0; ; ) {
+    const { data, error } = await supabaseAdmin
+      .from("lc_class_distances")
+      .select("lc_event_id, lc_class_id, distance_km")
+      .order("lc_event_id")
+      .order("lc_class_id")
+      .range(offset, offset + 999);
+    if (error) throw new Error(`lc_class_distances の読み込みに失敗: ${error.message}`);
+    if (!data || data.length === 0) break;
+    for (const r of data) out.push({ lcEventId: r.lc_event_id, lcClassId: r.lc_class_id, km: Number(r.distance_km) });
+    // max-rows で黙って切られても取りこぼさないよう、実際に返った件数だけ進める
+    offset += data.length;
+  }
+  return out;
+}
+
+/** 21A と B（4 人以上）が同じ日に走ったのに、距離がまだ無い大会 */
+function eventsNeedingDistance(results: readonly RaceResult[], stored: readonly ClassDistance[]): number[] {
+  const known = new Set(stored.map((d) => d.lcEventId));
+  const byEvent = new Map<number, { a: boolean; b: number }>();
+  for (const r of results) {
+    const o = byEvent.get(r.lcEventId) ?? { a: false, b: 0 };
+    byEvent.set(r.lcEventId, { a: o.a || isA21(r.className), b: o.b + (classTier(r.className) === "B" ? 1 : 0) });
+  }
+  return [...byEvent.entries()].filter(([e, o]) => o.a && o.b >= 4 && !known.has(e)).map(([e]) => e);
+}
+
+async function fetchAndStoreDistances(eventIds: readonly number[]) {
+  const { supabaseAdmin } = await import("../src/lib/supabase-admin");
+  const { fetchEventClasses } = await import("../src/lib/scraper/lapcenter");
+  for (const e of eventIds.slice(0, DISTANCE_FETCH_LIMIT)) {
+    try {
+      const rows = (await fetchEventClasses(e))
+        .map((c) => ({ c, km: Number(c.distance.match(/([\d.]+)\s*km/)?.[1] ?? 0) }))
+        .filter((x) => x.km > 0)
+        .map((x) => ({ lc_event_id: e, lc_class_id: x.c.classId, class_name: x.c.className, distance_km: x.km }));
+      if (rows.length > 0) {
+        const { error } = await supabaseAdmin.from("lc_class_distances").upsert(rows, { onConflict: "lc_event_id,lc_class_id" });
+        if (error) console.warn(`⚠ 距離の保存に失敗（大会 ${e}）: ${error.message}`);
+      }
+    } catch (err) {
+      console.warn(`⚠ 距離の取得に失敗（大会 ${e}）: ${err instanceof Error ? err.message : err}`);
+    }
+    await new Promise((r) => setTimeout(r, DISTANCE_FETCH_INTERVAL_MS));
+  }
+  console.log(`  距離: ${Math.min(eventIds.length, DISTANCE_FETCH_LIMIT)} 大会を LapCenter から取得（未取得 ${eventIds.length} 大会）`);
+}
+
+/** B クラス候補。失敗してもルーキーリーグの表は出す */
+async function buildCandidates(loaders: Loaders, ctx: { joa: Map<string, JoaFirstRegistration>; lcFirst: Map<string, string>; links: Set<string>; currentFy: number; today: string }) {
+  try {
+    const from = bCandidateWindowFrom(ctx.today);
+    const results = await loaders.season(from, ctx.today, -1);
+    const distances = await loaders.distances(results);
+    const entries: BCandidate[] = buildBCandidates({ results, distances, joa: ctx.joa, lcFirst: ctx.lcFirst, linkableKeys: ctx.links, currentFy: ctx.currentFy, today: ctx.today });
+    console.log(`  B クラス候補: ${entries.length} 人（距離 ${distances.length} クラス）`);
+    return { from, to: ctx.today, entries };
+  } catch (e) {
+    console.warn(`⚠ B クラス候補の生成に失敗（一覧なしで出す）: ${e instanceof Error ? e.message : e}`);
+    return undefined;
+  }
+}
+
 async function main() {
   const inputIdx = process.argv.indexOf("--input");
   const loaders = inputIdx > 0 ? fileLoaders(process.argv[inputIdx + 1]) : await dbLoaders();
@@ -148,9 +230,11 @@ async function main() {
     console.warn("⚠ ルーキーリーグが空のため上書きしない");
     return;
   }
+  const bCandidates = await buildCandidates(loaders, { joa, lcFirst, links, currentFy, today });
   const data: RookieLeagueData = {
     generatedAtJst: `${today} ${now.toISOString().slice(11, 16)}`,
     seasons,
+    ...(bCandidates ? { bCandidates } : {}),
   };
   writeFileSync(OUTPUT, JSON.stringify(data));
   console.log(`✓ ${OUTPUT}`);
