@@ -111,7 +111,7 @@ export function RookieLeagueView() {
         競技を始めて 2 年目までの選手が、B クラスの成績で競うランキングです。大学・中高・一般（社会人）をまとめて並べます。
       </p>
 
-      <div className="mb-3 flex flex-wrap items-center gap-1.5">
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
         {data.seasons.map((s) => (
           <button
             key={s.fy}
@@ -119,17 +119,18 @@ export function RookieLeagueView() {
               setFy(s.fy);
               setOpenKey(null);
             }}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${fy === s.fy ? "bg-primary text-white" : "border border-border text-muted hover:text-foreground"}`}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${fy === s.fy ? "border border-primary bg-primary text-white" : "border border-border text-muted hover:text-foreground"}`}
           >
             {s.label}
           </button>
         ))}
-        <span className="mx-1 h-4 w-px bg-border" />
+      </div>
+      <div className="mb-3 flex flex-wrap items-center gap-1.5">
         {AFFILIATIONS.map((a) => (
           <button
             key={a}
             onClick={() => setAff(a)}
-            className={`rounded px-2.5 py-1 text-[11px] font-medium ${aff === a ? "bg-accent/20 text-accent" : "text-muted hover:text-foreground"}`}
+            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium ${aff === a ? "border border-primary bg-primary text-white" : "border border-border text-muted hover:text-foreground"}`}
           >
             {a}
           </button>
