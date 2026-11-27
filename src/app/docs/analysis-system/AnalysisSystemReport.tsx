@@ -33,13 +33,11 @@ const LAYERS: {
     accent: "#67e8f9",
     fill: "rgba(34,211,238,.05)",
     stroke: "rgba(34,211,238,.4)",
-    title: "INGEST ｜ 公開データの取込",
+    title: "INGEST ｜ データの取込",
     chips: [
-      { x: 48, w: 160, t: "events.ts" },
-      { x: 228, w: 160, t: "rankings.ts" },
-      { x: 408, w: 160, t: "lapcenter.ts" },
-      { x: 588, w: 160, t: "entries.ts" },
-      { x: 768, w: 160, t: "どこオリ手動取込", manual: true },
+      { x: 48, w: 380, t: "JOY 手動取込（大会・ランキング・エントリー）", manual: true },
+      { x: 448, w: 200, t: "lapcenter.ts" },
+      { x: 668, w: 260, t: "どこオリ手動取込", manual: true },
     ],
   },
   {
@@ -849,7 +847,7 @@ export function AnalysisSystemReport({
               システム<span className="grad">全体マップ</span>
             </h2>
             <span className="sec-sub">
-              色の意味 — アンバー：外部源／どこオリ手動取込 ／ シアン：取込 ／ 紫：自動化 ／
+              色の意味 — アンバー：外部源／JOY・どこオリ手動取込 ／ シアン：取込 ／ 紫：自動化 ／
               スレート：永続化 ／ 緑：API ／ ピンク：フロント。上から下へデータが流れる。
             </span>
           </div>
@@ -967,18 +965,18 @@ export function AnalysisSystemReport({
           <div className="contract">
             <div className="row">
               <span className="who tf">JOY</span>
-              <span className="key">events</span>
+              <span className="key">events（手動取込）</span>
               <span className="use">→ 大会名・日程・座標（トップ＋年度アーカイブ）</span>
             </div>
             <div className="row">
               <span className="who tf">JOY</span>
-              <span className="key">rankings ×80class</span>
+              <span className="key">rankings ×80class（手動取込）</span>
               <span className="use">→ 選手名・クラブ・得点・大会別スコア</span>
             </div>
             <div className="row">
               <span className="who tf">JOY</span>
-              <span className="key">entry-list</span>
-              <span className="use">→ 所属別の出場予定者（オンデマンド）</span>
+              <span className="key">entry-list（手動取込）</span>
+              <span className="use">→ 所属別の出場予定者</span>
             </div>
             <div className="row">
               <span className="who cdk">LapCenter</span>
@@ -1009,7 +1007,7 @@ export function AnalysisSystemReport({
               名寄せ：全角→半角、大学/クラブ略称の展開、回次・期数の除去。Forest／Sprint
               区分は LapCenter 側では大会名から推定するため JOY と割れることがあり（例：前日大会）、
               レース突合は日付を主キーに、同日に1レースだけ・または名称一致で名寄せして重複表示を防ぐ。
-              どこオリ大会は合成 ID（90,000,000〜）で JOY と衝突を回避し、手動取込分が無い回でも JOY 同期と既存保存分を維持するグレースフル劣化設計。
+              どこオリ大会は合成 ID（90,000,000〜）で JOY と衝突を回避し、どこオリの取込分が無い回でも JOY 取込分と既存保存分を維持するグレースフル劣化設計。
             </div>
           </div>
         </section>
@@ -1030,7 +1028,7 @@ export function AnalysisSystemReport({
               <div className="w">19:07 JST</div>
               <div className="t">sync-events</div>
               <div className="d">
-                JOY・どこオリ手動取込分の反映＋LapCenter マッチング。<b>水曜と、JOY ランキングに大会が追加された日は再デプロイを起動</b>
+                JOY・どこオリ手動取込分の反映＋LapCenter マッチング。<b>水曜と、手動取込した JOY ランキングに大会が追加された日は再デプロイを起動</b>
                 （ランキング追加分は<span style={{ whiteSpace: "nowrap" }}>20 時間に1回</span>・
                 <span style={{ whiteSpace: "nowrap" }}>7日に2回まで</span>）。
               </div>
@@ -1049,7 +1047,7 @@ export function AnalysisSystemReport({
               <div className="w">再デプロイ時</div>
               <div className="t">build-analysis-index</div>
               <div className="d">
-                ランキング最新取得 → <b>athlete-index / club-stats / クロスレース統計（cross-race・leg-fingerprint）</b> を再生成。
+                手動取込した JOY ランキングを読み込み → <b>athlete-index / club-stats / クロスレース統計（cross-race・leg-fingerprint）</b> を再生成。
                 次回の更新検知に使う大会列の一覧も書き出す。
               </div>
             </div>
@@ -1298,8 +1296,7 @@ export function AnalysisSystemReport({
               <span className="use">→ いいね上位（週次／累計）</span>
             </div>
             <div className="note">
-              ランキング取得用の内部プロキシはビルド時のみ・認証必須。Vercel ビルド環境からの
-              JOY 直アクセス不可を回避するための仕組み。
+              ランキング取込用の内部エンドポイントはビルド時のみ・認証必須。
             </div>
           </div>
         </section>
@@ -1370,7 +1367,7 @@ export function AnalysisSystemReport({
               <div className="p">P3</div>
               <div className="w">完了</div>
               <div className="d">
-                堅牢性 — API 障害時の縮退表示・Cron 死活監視（watchdog）・JOY ランキング更新の反映。
+                堅牢性 — API 障害時の縮退表示・Cron 死活監視（watchdog）・JOY ランキングの手動取込分の反映。
               </div>
               <div className="chips">
                 <span className="chip c">運用</span>
@@ -1382,14 +1379,14 @@ export function AnalysisSystemReport({
               <div className="no">1</div>
               <div>
                 <div className="t">Hobby Cron は 1日1回</div>
-                <div className="d">3つのジョブを1日1パスずつに分け、制限内に収める設計。JOY ランキングの更新は最大1日遅れで反映される。</div>
+                <div className="d">3つのジョブを1日1パスずつに分け、制限内に収める設計。JOY ランキングの手動取込分は最大1日遅れで反映される。</div>
               </div>
             </div>
             <div className="act">
               <div className="no">2</div>
               <div>
-                <div className="t">ビルド環境から JOY へ直アクセス不可</div>
-                <div className="d">前回デプロイの関数をプロキシに使い、ランキングをビルド時取得。</div>
+                <div className="t">JOY ランキングは手動取込</div>
+                <div className="d">手動で取り込んだランキングを、再デプロイ時のビルドで分析用データに反映する。</div>
               </div>
             </div>
           </div>
