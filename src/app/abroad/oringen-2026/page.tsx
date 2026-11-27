@@ -93,7 +93,7 @@ export default async function OringenPage() {
   );
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6">
+    <div className="mx-auto max-w-5xl px-4 py-6">
       <nav className="mb-3 text-[10px] text-muted">
         <Link href="/abroad" className="hover:text-foreground">
           海外遠征

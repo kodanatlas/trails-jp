@@ -258,16 +258,16 @@ export function EventList({ events }: EventListProps) {
             ))}
           </select>
         </div>
-        <div className="flex w-fit gap-px overflow-hidden rounded-lg border border-border">
+        <div className="grid w-full grid-cols-2 gap-px overflow-hidden rounded-lg border border-border sm:flex sm:w-fit">
           <button
             onClick={() => setViewMode("list")}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "list" ? "bg-primary text-white" : "bg-card text-muted hover:text-foreground"}`}
+            className={`px-3 py-2 text-xs font-medium transition-colors sm:py-1.5 ${viewMode === "list" ? "bg-primary text-white" : "bg-card text-muted hover:text-foreground"}`}
           >
             リスト
           </button>
           <button
             onClick={() => setViewMode("calendar")}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "calendar" ? "bg-primary text-white" : "bg-card text-muted hover:text-foreground"}`}
+            className={`px-3 py-2 text-xs font-medium transition-colors sm:py-1.5 ${viewMode === "calendar" ? "bg-primary text-white" : "bg-card text-muted hover:text-foreground"}`}
           >
             カレンダー
           </button>

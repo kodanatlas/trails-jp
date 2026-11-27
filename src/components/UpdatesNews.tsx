@@ -143,7 +143,7 @@ export async function UpdatesNews() {
 
   return (
     <section className="border-b border-border py-12 sm:py-16">
-      <div className="mx-auto max-w-6xl px-4">
+      <div className="mx-auto max-w-5xl px-4">
         <div className="flex items-center gap-2">
           <Newspaper className="h-4 w-4 text-primary" />
           <h2 className="text-lg font-bold">更新情報</h2>

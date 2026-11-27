@@ -234,8 +234,8 @@ function RecentMovement({ profile }: { profile: AthleteProfile }) {
   return (
     <div className="rounded-lg border border-border bg-card p-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">最近の動き</span>
-        <span className="text-[10px] text-muted">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted">最近の動き</span>
+        <span className="text-xs text-muted">
           {isSprint ? "スプリント" : "フォレスト"} {primary.className}
         </span>
         <span className="text-sm">
@@ -243,7 +243,7 @@ function RecentMovement({ profile }: { profile: AthleteProfile }) {
           <span className={`ml-1.5 font-mono text-xs font-bold ${flat ? "text-muted" : up ? "text-green-400" : "text-accent"}`}>
             {flat ? "±0" : `${up ? "↑" : "↓"}${Math.abs(rankDelta).toLocaleString()}`}
           </span>
-          <span className="ml-0.5 text-[10px] text-muted">{label}</span>
+          <span className="ml-0.5 text-xs text-muted">{label}</span>
         </span>
         {ptsDelta != null && ptsDelta !== 0 && (
           <span className="text-xs text-muted">
@@ -326,13 +326,13 @@ function ProfileHeader({
             </p>
             <button
               onClick={() => setShowBreakdown((v) => !v)}
-              className="inline-flex items-center gap-0.5 text-[10px] text-muted hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-0.5 text-xs text-muted hover:text-foreground transition-colors"
             >
               補正済みポイント
               <ChevronDown className={`h-3 w-3 transition-transform ${showBreakdown ? "rotate-180" : ""}`} />
             </button>
             {(forestRanking || sprintRanking) && (
-              <p className="text-[10px] text-muted">
+              <p className="text-xs text-muted">
                 {forestRanking && (
                   <span className="text-green-400 whitespace-nowrap">
                     F {forestRanking.totalPoints.toLocaleString()}（{forestRanking.rank}位）
@@ -346,7 +346,7 @@ function ProfileHeader({
                 )}
               </p>
             )}
-            <p className="text-[9px] text-muted/60">
+            <p className="text-[11px] text-muted/60">
               種目間の水準差を補正（
               <a href="/docs/analysis-system#adjusted" className="underline hover:text-foreground">
                 算出方法
@@ -361,7 +361,7 @@ function ProfileHeader({
         <div className="mt-3 border-t border-border pt-3 space-y-3">
           {/* 計算式 */}
           <div className="rounded bg-surface p-2.5 text-xs text-muted">
-            <p className="mb-1 text-[9px] text-muted/60">
+            <p className="mb-1 text-[11px] text-muted/60">
               直近1年の各大会の得点をフォレスト基準に補正し、フォレスト／スプリント混在で上位3大会を合計。
               {windowStart && profile.sprintGap != null && (
                 <>
@@ -378,10 +378,10 @@ function ProfileHeader({
               {hasBoth ? (
                 <>
                   <span className="text-green-400">{forestPts!.toLocaleString()}</span>
-                  <span className="text-muted/60 text-[9px]"> {openForestClass}</span>
+                  <span className="text-muted/60 text-[11px]"> {openForestClass}</span>
                   <span className="mx-1">／</span>
                   <span className="text-blue-400">{sprintPts!.toLocaleString()}</span>
-                  <span className="text-muted/60 text-[9px]"> {openSprintClass}</span>
+                  <span className="text-muted/60 text-[11px]"> {openSprintClass}</span>
                   <span className="mx-1">→ 補正後 上位3大会合計</span>
                   <span className="font-bold text-primary">
                     {adjPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
@@ -406,7 +406,7 @@ function ProfileHeader({
           {/* 補正済みポイントを構成する上位3大会 */}
           {adjustedTop3.length > 0 && (
             <div className="rounded bg-surface p-2.5 text-xs">
-              <p className="mb-1.5 text-[9px] text-muted/60">
+              <p className="mb-1.5 text-[11px] text-muted/60">
                 補正済みポイントを構成する上位3大会（フォレスト／スプリント混在・スプリントは補正後）
               </p>
               <div className="space-y-0.5">
@@ -417,7 +417,7 @@ function ProfileHeader({
                     ? "bg-blue-500/20 border border-blue-500/30"
                     : "bg-green-500/20 border border-green-500/30";
                   return (
-                    <div key={i} className={`flex items-center gap-2 rounded px-2 py-1.5 text-[10px] ${bg}`}>
+                    <div key={i} className={`flex items-center gap-2 rounded px-2 py-1.5 text-xs ${bg}`}>
                       <span className={`w-4 flex-shrink-0 text-center font-bold ${cc}`}>{isS ? "S" : "F"}</span>
                       <span className="w-[4.5rem] flex-shrink-0 font-mono text-muted">{e.date}</span>
                       <FullText className="min-w-0 flex-1 truncate">{e.eventName}</FullText>
@@ -431,7 +431,7 @@ function ProfileHeader({
                   );
                 })}
               </div>
-              <p className="mt-1.5 text-right text-[10px] text-muted">
+              <p className="mt-1.5 text-right text-xs text-muted">
                 合計{" "}
                 <span className="font-mono text-xs font-bold text-primary">
                   {adjPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}
@@ -459,7 +459,7 @@ function ProfileHeader({
           )}
 
           {!forestRanking && !sprintRanking && (
-            <p className="text-[10px] text-muted">無差別クラスのランキングデータがありません</p>
+            <p className="text-xs text-muted">無差別クラスのランキングデータがありません</p>
           )}
         </div>
       )}
@@ -552,8 +552,8 @@ function PointBreakdownTable({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <span className={`text-[10px] font-bold ${colorClass}`}>{label}</span>
-        <span className="text-[10px] text-muted">
+        <span className={`text-xs font-bold ${colorClass}`}>{label}</span>
+        <span className="text-xs text-muted">
           {ranking.rank}位 / 上位3計{" "}
           <span className={`font-bold ${colorClass}`}>
             {top3Sum.toLocaleString()}
@@ -565,7 +565,7 @@ function PointBreakdownTable({
         {top3.map((e, i) => (
           <div
             key={`top-${e.date}-${i}`}
-            className={`flex items-center gap-2 rounded px-2 py-1.5 text-[10px] ${bgTop}`}
+            className={`flex items-center gap-2 rounded px-2 py-1.5 text-xs ${bgTop}`}
           >
             <span className={`w-4 flex-shrink-0 font-bold ${colorClass}`}>
               {i + 1}
@@ -582,7 +582,7 @@ function PointBreakdownTable({
             {showAll && rest.map((e, i) => (
               <div
                 key={`rest-${e.date}-${i}`}
-                className={`flex items-center gap-2 rounded px-2 py-1 text-[10px] ${bgRest}`}
+                className={`flex items-center gap-2 rounded px-2 py-1 text-xs ${bgRest}`}
               >
                 <span className="w-4 flex-shrink-0 text-muted/40 font-mono">
                   {i + 4}
@@ -597,7 +597,7 @@ function PointBreakdownTable({
             {/* 展開/閉じるボタン（リスト下部・ボタン体裁） */}
             <button
               onClick={() => setShowAll((v) => !v)}
-              className="mt-1 flex w-full items-center justify-center gap-1 rounded-md border border-border bg-surface px-3 py-1.5 text-[10px] font-medium text-muted transition-colors hover:border-primary/30 hover:bg-card-hover hover:text-foreground"
+              className="mt-1 flex w-full items-center justify-center gap-1 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary/30 hover:bg-card-hover hover:text-foreground"
             >
               {showAll ? "閉じる" : `他 ${rest.length} 大会を表示`}
               <ChevronDown className={`h-3 w-3 transition-transform ${showAll ? "rotate-180" : ""}`} />
@@ -649,7 +649,7 @@ function TypeBadge({ profile }: { profile: AthleteProfile }) {
           lean は build 側で両無差別カテゴリ出場時のみ算出。null なら公平に比較不可＝バー非表示。 */}
       {lean != null && (
         <div className="mt-3">
-          <div className="mb-1 flex justify-between text-[10px] text-muted">
+          <div className="mb-1 flex justify-between text-xs text-muted">
             <span className="text-green-400">◀ Forest寄り {forestRank !== null ? `(${forestRank}位)` : ""}</span>
             <span className="text-blue-400">Sprint寄り ▶ {sprintRank !== null ? `(${sprintRank}位)` : ""}</span>
           </div>
@@ -662,11 +662,11 @@ function TypeBadge({ profile }: { profile: AthleteProfile }) {
               }}
             />
           </div>
-          <div className="mt-1 flex justify-between text-[10px] font-mono text-muted">
+          <div className="mt-1 flex justify-between text-xs font-mono text-muted">
             <span>{forestPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}</span>
             <span>{sprintPoints.toLocaleString(undefined, { maximumFractionDigits: 1 })}</span>
           </div>
-          <p className="mt-1 text-[9px] text-muted/70">
+          <p className="mt-1 text-[11px] text-muted/70">
             ※ 位置は種目間のポイント水準差を補正した相対評価（スプリントは全体に高得点なため単純差では測れない）。下段は実ポイント。
           </p>
         </div>
@@ -690,13 +690,13 @@ function StatsCards({ profile }: { profile: AthleteProfile }) {
       <div className="rounded-lg border border-border bg-card p-3">
         <div className="flex items-center gap-1.5">
           <Target className="h-3.5 w-3.5 text-primary" />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">安定性</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted">安定性</span>
         </div>
         <p className="mt-1 text-2xl font-bold">
           {allEvents.length >= 2 ? `${consistency}` : "—"}
           {allEvents.length >= 2 && <span className="text-sm text-muted">/100</span>}
         </p>
-        <p className="text-[10px] text-muted">
+        <p className="text-xs text-muted">
           {allEvents.length >= 2
             ? `${consistency >= 70 ? "非常に安定" : consistency >= 40 ? "やや安定" : "ばらつきあり"}（${allEvents.length}戦${allEvents.length < 4 ? "・参考値" : ""}）`
             : "データ不足"}
@@ -714,12 +714,12 @@ function StatsCards({ profile }: { profile: AthleteProfile }) {
           ) : (
             <Minus className="h-3.5 w-3.5 text-muted" />
           )}
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">最近の調子</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted">最近の調子</span>
         </div>
         <p className={`mt-1 text-2xl font-bold ${recentForm >= 5 ? "text-green-400" : recentForm <= -5 ? "text-red-400" : ""}`}>
           {allEvents.length >= 2 ? `${recentForm > 0 ? "+" : ""}${recentForm}%` : "—"}
         </p>
-        <p className="text-[10px] text-muted">
+        <p className="text-xs text-muted">
           直近3大会 vs 全体平均
           {allEvents.length >= 2 && `（${allEvents.length}戦${allEvents.length < 5 ? "・参考値" : ""}）`}
         </p>
@@ -729,12 +729,12 @@ function StatsCards({ profile }: { profile: AthleteProfile }) {
       <div className="rounded-lg border border-border bg-card p-3">
         <div className="flex items-center gap-1.5">
           <Zap className="h-3.5 w-3.5 text-yellow-400" />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">ベストスコア</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted">ベストスコア</span>
         </div>
         <p className="mt-1 text-2xl font-bold text-primary">
           {best ? best.points.toLocaleString() : "—"}
         </p>
-        <FullText as="p" className="truncate text-[10px] text-muted">
+        <FullText as="p" className="truncate text-xs text-muted">
           {best ? `${best.date} ${best.eventName}` : "—"}
         </FullText>
       </div>
@@ -839,7 +839,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
               <button
                 key={r.value}
                 onClick={() => setChartRange(r.value)}
-                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
                   chartRange === r.value
                     ? "bg-primary/20 text-primary"
                     : "text-muted hover:text-foreground"
@@ -849,7 +849,7 @@ function ScoreChart({ profile }: { profile: AthleteProfile }) {
               </button>
             ))}
           </div>
-          <div className="flex gap-3 text-[10px]">
+          <div className="flex gap-3 text-xs">
             {hasForest && (
               <span className="flex items-center gap-1 text-green-400">
                 <span className="inline-block h-2 w-2 rounded-full bg-green-400" />
@@ -1167,7 +1167,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-xs font-semibold tracking-wider text-muted">
           巡航速度・ミス率推移
-          <span className="ml-1 text-[9px] font-normal">(LapCenter)</span>
+          <span className="ml-1 text-[11px] font-normal">(LapCenter)</span>
         </h3>
         <div className="flex items-center gap-3">
           <div className="flex gap-1">
@@ -1175,7 +1175,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
               <button
                 key={r.value}
                 onClick={() => setChartRange(r.value)}
-                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
                   chartRange === r.value
                     ? "bg-primary/20 text-primary"
                     : "text-muted hover:text-foreground"
@@ -1185,7 +1185,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
               </button>
             ))}
           </div>
-          <div className="flex gap-3 text-[10px]">
+          <div className="flex gap-3 text-xs">
             {hasForest && (
               <span className="flex items-center gap-1 text-green-400">
                 <span className="inline-block h-2 w-2 rounded-full bg-green-400" />
@@ -1203,7 +1203,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
       </div>
 
       {/* 巡航速度チャート */}
-      <p className="mb-1 text-[10px] text-muted">巡航速度（小さいほど速い）</p>
+      <p className="mb-1 text-xs text-muted">巡航速度（小さいほど速い）</p>
       <div className="h-44 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
@@ -1311,7 +1311,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
       </div>
 
       {/* ミス率チャート */}
-      <p className="mb-1 mt-4 text-[10px] text-muted">ミス率 (%)</p>
+      <p className="mb-1 mt-4 text-xs text-muted">ミス率 (%)</p>
       <div className="h-44 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
@@ -1417,7 +1417,7 @@ function LapCenterChart({ data, profile }: { data: LapCenterPerformance[]; profi
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <p className="mt-2 text-[9px] text-muted">
+      <p className="mt-2 text-[11px] text-muted">
         破線＝トレンド（外れ値に強い頑健回帰・レース順ベース・信頼できるレース5本以上で表示。
         <a href="/docs/analysis-system#trend" className="underline hover:text-foreground">算出方法</a>）
       </p>
@@ -1526,7 +1526,7 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
       </div>
 
       {/* 凡例 */}
-      <div className="mb-3 flex flex-wrap gap-2.5 text-[9px] text-muted">
+      <div className="mb-3 flex flex-wrap gap-2.5 text-[11px] text-muted">
         {([
           { level: "excellent" as const, label: "好成績" },
           { level: "good" as const, label: "やや良い" },
@@ -1543,7 +1543,7 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
 
       {/* 月別アクティビティ */}
       <div className="mb-4">
-        <p className="mb-1.5 text-[10px] text-muted">月別参加頻度（直近12ヶ月）</p>
+        <p className="mb-1.5 text-xs text-muted">月別参加頻度（直近12ヶ月）</p>
         <div className="flex gap-1">
           {months.map((m) => {
             const level = m.count > 0 ? performanceLevel(m.avgPts) : "average";
@@ -1587,7 +1587,7 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
               <span className="w-[3.75rem] flex-shrink-0 text-[11px] font-medium tabular-nums tracking-tight text-muted">
                 {dateStr}
               </span>
-              <span className={`flex-shrink-0 rounded px-1 py-0.5 text-[9px] font-bold leading-none ${
+              <span className={`flex-shrink-0 rounded px-1 py-0.5 text-[11px] font-bold leading-none ${
                 isSprint
                   ? "bg-blue-500/15 text-blue-400"
                   : "bg-green-500/15 text-green-400"
@@ -1596,7 +1596,7 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
               </span>
               <FullText className="min-w-0 flex-1 truncate text-xs">{e.eventName}</FullText>
               {lcMatch?.c && (
-                <span className="hidden flex-shrink-0 items-center gap-1 text-[10px] text-muted sm:flex">
+                <span className="hidden flex-shrink-0 items-center gap-1 text-xs text-muted sm:flex">
                   <span className="rounded bg-white/5 px-1 py-0.5">{lcMatch.c}</span>
                   {lcMatch.r != null && (
                     <span className="font-mono font-medium text-foreground/80">{lcMatch.r}位</span>
@@ -1617,7 +1617,7 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
               {lcMatch && (
                 <Link
                   href={`/results/go?e=${encodeURIComponent(lcMatch.e)}&d=${encodeURIComponent(lcMatch.d)}&c=${encodeURIComponent(lcMatch.c)}&athlete=${encodeURIComponent(profile.name)}&disc=${lcMatch.t}`}
-                  className="flex-shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary transition-colors hover:bg-primary/25"
+                  className="flex-shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[11px] font-bold text-primary transition-colors hover:bg-primary/25"
                   title="このレースのレッグ分析"
                 >
                   レッグ▸
@@ -1629,7 +1629,7 @@ function RecentEvents({ profile, lcData }: { profile: AthleteProfile; lcData?: L
       </div>
 
       {displayRows.length > 10 && (
-        <p className="mt-2 text-center text-[10px] text-muted">
+        <p className="mt-2 text-center text-xs text-muted">
           直近10大会を表示（全{displayRows.length}大会・レッグ分析あり {displayRows.filter((r) => r.lcMatch).length}）
         </p>
       )}

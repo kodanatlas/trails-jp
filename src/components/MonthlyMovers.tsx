@@ -37,7 +37,7 @@ export function MonthlyMovers() {
 
   return (
     <section className="border-b border-border py-12 sm:py-16">
-      <div className="mx-auto max-w-6xl px-4">
+      <div className="mx-auto max-w-5xl px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-positive" />

@@ -57,7 +57,7 @@
 }
 
 .report-root *{box-sizing:border-box;}
-.report-root .wrap{max-width:1160px;margin:0 auto;padding:0 28px 80px;}
+.report-root .wrap{max-width:1080px;margin:0 auto;padding:0 28px 80px;}
 .report-root code,.report-root .mono{font-family:"SF Mono","Consolas",monospace;font-size:12.5px;overflow-wrap:anywhere;}
 .report-root code{background:var(--code-bg);border:1px solid var(--code-bd);color:var(--code-ink);padding:1px 7px;border-radius:6px;}
 

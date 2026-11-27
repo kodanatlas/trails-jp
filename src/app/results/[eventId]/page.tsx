@@ -43,7 +43,7 @@ export default async function EventClassPicker({ params }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6">
+    <div className="mx-auto max-w-5xl px-4 py-6">
       <Link href="/results" className="text-xs text-muted transition-colors hover:text-foreground">
         ← 大会一覧
       </Link>

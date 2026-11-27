@@ -39,7 +39,7 @@ function DisciplineRow({
     <div className="rounded-lg bg-surface p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p className="text-sm font-semibold">{label}</p>
-        <p className="text-[10px] text-muted">
+        <p className="text-xs text-muted">
           n={entry.n}レース / 対象{fitAthletes}選手
         </p>
       </div>
@@ -61,14 +61,14 @@ function DisciplineRow({
             style={{ left: `${entry.pct}%` }}
           />
         </div>
-        <div className="mt-0.5 flex justify-between text-[9px] text-muted">
+        <div className="mt-0.5 flex justify-between text-[11px] text-muted">
           <span>ミスが少ない</span>
           <span>ミスが多い</span>
         </div>
       </div>
       <p className="mt-2 text-xs text-muted">
         高ミス率レース: {entry.blow}/{entry.n}
-        <span className="text-[10px]">（種目内ミス率の上位四分位＝{q3Miss}%以上）</span>
+        <span className="text-xs">（種目内ミス率の上位四分位＝{q3Miss}%以上）</span>
       </p>
       {(() => {
         // 1行解釈（参考・断定しない）: 中央値の帯位置 × 大崩れ頻度（構成上の期待=25%）の組合せ。
@@ -120,7 +120,7 @@ export function CrossRaceCard({ name }: { name: string }) {
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-sm font-bold">クロスレース分析 — ミス率の相対評価</h3>
-        <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[9px] font-medium text-accent">
+        <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[11px] font-medium text-accent">
           β
         </span>
       </div>
@@ -142,7 +142,7 @@ export function CrossRaceCard({ name }: { name: string }) {
           />
         )}
       </div>
-      <p className="mt-3 text-[10px] leading-relaxed text-muted">
+      <p className="mt-3 max-w-2xl text-xs leading-relaxed text-muted">
         期待値＝同じ巡航速度指標の選手が平均的に出すミス率（LapCenter 取込5レース以上の選手が対象・数値は
         LapCenter 算出値の集計）。「巡航速度指標」は出走クラス相対の値で、絶対走力の比較ではありません。
         <a href="/docs/analysis-system#cross-race" className="underline hover:text-foreground">算出方法の詳細</a>

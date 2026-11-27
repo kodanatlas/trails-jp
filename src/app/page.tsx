@@ -33,13 +33,13 @@ export default async function Home() {
     <div>
       {/* Hero — エディトリアル（テキストのみ・左寄せ・余白で構成） */}
       <section className="border-b border-border bg-surface">
-        <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 sm:py-20 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-center lg:py-24">
+        <div className="mx-auto grid max-w-5xl gap-12 px-4 py-16 sm:py-20 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.9fr)] lg:items-center lg:py-24">
           <div className="min-w-0">
               <p className="flex items-center gap-2.5 text-xs font-medium tracking-wide text-muted">
                 <span className="h-px w-8 bg-primary/70" />
                 日本のオリエンテーリング・データプラットフォーム
               </p>
-              <h1 className="mt-5 text-4xl font-bold leading-[1.18] tracking-tight sm:text-5xl lg:text-6xl">
+              <h1 className="mt-5 text-4xl font-bold leading-[1.18] tracking-tight sm:text-5xl lg:whitespace-nowrap lg:text-6xl">
                 <span className="text-primary">オリエンティア</span>を、
                 <br />
                 ライバルを、
@@ -56,28 +56,28 @@ export default async function Home() {
               <div className="mt-5 flex flex-wrap items-center gap-3">
                 <Link
                   href="/events"
-                  className="inline-flex items-center gap-2 rounded-lg border border-border-strong px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border-strong px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
                 >
                   <CalendarDays className="h-4 w-4" />
                   イベント
                 </Link>
                 <Link
                   href="/rankings"
-                  className="inline-flex items-center gap-2 rounded-lg border border-border-strong px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border-strong px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-card-hover"
                 >
                   <Trophy className="h-4 w-4" />
                   ランキング
                 </Link>
                 <Link
                   href="/analysis"
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-bold text-background transition-colors hover:bg-primary-dark"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-background transition-colors hover:bg-primary-dark"
                 >
                   <BarChart3 className="h-4 w-4" />
                   選手分析
                 </Link>
                 <Link
                   href="/results"
-                  className="inline-flex items-center gap-2 rounded-lg border border-primary/50 bg-primary/10 px-6 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/20"
+                  className="inline-flex items-center gap-2 rounded-lg border border-primary/50 bg-primary/10 px-5 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/20"
                 >
                   <Route className="h-4 w-4" />
                   結果分析
@@ -110,7 +110,7 @@ export default async function Home() {
 
       {/* Stats — エディトリアルなコールアウト（アクセント左ボーダー・mono 数値・カード装飾なし） */}
       <section className="border-b border-border bg-card">
-        <p className="mx-auto max-w-6xl px-4 py-5 text-sm leading-relaxed text-muted">
+        <p className="mx-auto max-w-5xl px-4 py-5 text-sm leading-relaxed text-muted">
           {[
             { value: stats.events, unit: "大会" },
             { value: stats.athletes, unit: "人のランキング掲載選手" },
@@ -141,7 +141,7 @@ export default async function Home() {
 
       {/* Upcoming Events (JOY連携) */}
       <section className="border-b border-border bg-surface py-12 sm:py-16">
-        <div className="mx-auto max-w-6xl px-4">
+        <div className="mx-auto max-w-5xl px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold">近日開催のイベント</h2>

@@ -432,7 +432,7 @@ export function LegFingerprintCard({ name }: { name: string }) {
           />
         )}
       </div>
-      <p className="mt-3 text-xs leading-relaxed text-muted">
+      <p className="mt-3 max-w-2xl text-xs leading-relaxed text-muted">
         「ミス」はレッグのタイムが自分の想定タイムを30%以上上回った場合の機械判定で、ナビミスとは限りません
         （集団走・地形・慎重な安全ルートで時間がかかった場合も含まれえます。「もっと攻めるべき」という意味ではありません）。
         赤フラグは統計的な偏りの判定で、1割程度は偶然でも生じえます。

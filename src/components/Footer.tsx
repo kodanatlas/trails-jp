@@ -11,7 +11,7 @@ export function Footer() {
 
   return (
     <footer className="border-t border-border bg-card">
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 py-6 text-xs text-muted sm:flex-row sm:justify-between">
+      <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-4 py-6 text-xs text-muted sm:flex-row sm:justify-between">
         <p>&copy; 2026 trails.jp</p>
         <div className="flex gap-6">
           <Link href="/about" className="transition-colors hover:text-foreground">

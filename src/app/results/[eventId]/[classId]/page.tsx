@@ -71,7 +71,7 @@ export default async function ResultLegPage({ params, searchParams }: Props) {
   const className = typeof sp.cn === "string" && sp.cn ? sp.cn : null;
 
   return (
-    <div className="mx-auto max-w-[480px] px-4 py-6">
+    <div className="mx-auto max-w-5xl px-4 py-6">
       <LegAnalysisClient
         eventId={Number(eventId)}
         classId={Number(classId)}
