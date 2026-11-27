@@ -873,7 +873,7 @@ export function AnalysisSystemReport({
               <div className="ghost">E</div>
               <span className="tag">EVENTS</span>
               <h3>イベント</h3>
-              <p>JOY の公開大会情報を反映、どこオリ大会は手動で一覧化して取込。リスト／カレンダー2ビュー。</p>
+              <p>JOY 大会・どこオリ大会とも手動で一覧化して取込。リスト／カレンダー2ビュー。</p>
               <ul>
                 <li>都道府県・受付状態・日付での<b>絞り込み</b></li>
                 <li>受付中・直近30日は<b>所属別エントリー</b>を展開</li>
@@ -1030,7 +1030,7 @@ export function AnalysisSystemReport({
               <div className="w">19:07 JST</div>
               <div className="t">sync-events</div>
               <div className="d">
-                JOY 大会情報の反映＋どこオリ手動取込分の反映＋LapCenter マッチング。<b>水曜と、JOY ランキングに大会が追加された日は再デプロイを起動</b>
+                JOY・どこオリ手動取込分の反映＋LapCenter マッチング。<b>水曜と、JOY ランキングに大会が追加された日は再デプロイを起動</b>
                 （ランキング追加分は<span style={{ whiteSpace: "nowrap" }}>20 時間に1回</span>・
                 <span style={{ whiteSpace: "nowrap" }}>7日に2回まで</span>）。
               </div>
@@ -1038,7 +1038,7 @@ export function AnalysisSystemReport({
             <div className="wave">
               <div className="w">20:23 JST</div>
               <div className="t">sync-entries</div>
-              <div className="d">未開催大会の公開エントリー情報から<b>選手別インデックス</b>を生成。</div>
+              <div className="d">未開催大会の手動取込したエントリー情報から<b>選手別インデックス</b>を生成。</div>
             </div>
             <div className="wave">
               <div className="w">21:41 JST</div>

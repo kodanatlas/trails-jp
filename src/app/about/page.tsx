@@ -31,12 +31,12 @@ export default function AboutPage() {
               {
                 icon: CalendarDays,
                 title: "イベント",
-                desc: "JOY（Japan-O-entrY）の公開大会情報をもとに掲載。エントリー状況や開催地を一覧・カレンダーで確認できます。",
+                desc: "JOY（Japan-O-entrY）の大会情報を手動で取り込んで掲載。エントリー状況や開催地を一覧・カレンダーで確認できます。",
               },
               {
                 icon: BarChart3,
                 title: "ランキング",
-                desc: "JOY の公開ランキングをもとに週次で更新。クラス別ランキングと選手の成績を横断的に確認できます。",
+                desc: "JOY のランキングを週次で手動取込。クラス別ランキングと選手の成績を横断的に確認できます。",
               },
             ].map((item) => (
               <div key={item.title} className="rounded-lg border border-border bg-card p-4">
