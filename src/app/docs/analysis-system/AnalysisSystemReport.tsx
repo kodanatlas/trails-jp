@@ -888,6 +888,7 @@ export function AnalysisSystemReport({
               <ul>
                 <li>選手名・クラブで<b>即時フィルタ</b></li>
                 <li>前月比・前年比の<b>増減デルタ</b>表示</li>
+                <li>競技2年目までの<b>ルーキーリーグ</b>（B クラス）</li>
               </ul>
               <span className="file mono">/rankings</span>
             </div>
@@ -1229,6 +1230,21 @@ export function AnalysisSystemReport({
               <div className="cap">
                 主指標は各レッグでの <b>通過順位（elapsedRank）の1人あたり平均変動</b>＝仮定ゼロの記述統計。
                 副指標は上位完走者のミス残差の連動度。<b>百分率では出さない</b>（「このレッグで X% 決まった」とは言えない設計）。完走者8名未満・リレー系は非表示。
+              </div>
+            </div>
+            <div className="dec fig" id="rookie-league" style={{ scrollMarginTop: "80px" }}>
+              <div className="k">ROOKIE LEAGUE ｜ ルーキーリーグ（B 部門）</div>
+              <div className="cap">
+                <b>対象</b>：競技 2 年目までの選手。大学・中高・一般（社会人）をまとめて 1 本の表にし、区分で絞り込める。年度（4 月〜翌 3 月）ごとの表。
+                <br />
+                <b>新人の判定</b>：JOA 競技者登録名簿（年度ごとに手動取込）で<b>初めて名簿に載った年度</b>を 1 年目とする。
+                登録していない人は、LapCenter の結果に<b>初めて出た年度</b>から数える。<span style={{ whiteSpace: "nowrap" }}>1〜3 月</span>に始めた人は翌年度を 1 年目とする。
+                名簿が FY2019 より前に遡れないため、FY2019 から名簿にいる人（未登録なら LapCenter の初出が FY2019 以前の人）と、初登録より 2 年以上前から LapCenter に出ている人（復帰者）は対象外。
+                <br />
+                <b>点</b>：B クラスの結果だけを使う。1 大会の点は「そのクラスの上位 3 人の平均タイム ÷ 自分のタイム」（上限 1.05）に人数の補正 n/(n+2) を掛けたもので、4 人未満のクラスは使わない。
+                順位は<b>上位 2 戦の平均</b>（1 戦だけの人はもう 1 戦を 0 点とする）。A クラス（21A・ME など 20 人以上）で上位 3 人の平均の 0.85 倍以上の速さを出した人は、その日から後の B を数えない。
+                <br />
+                新人かどうかは推定のため、誤りや掲載停止の希望は<a href="/contact">お問い合わせ</a>で受け付ける。
               </div>
             </div>
           </div>

@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 /** ランキングページの上段タブ（JOY ランキング／ルーキーリーグ） */
 export function RankingsTabs({ joy, rookie }: { joy: ReactNode; rookie: ReactNode }) {
   const [tab, setTab] = useState<"joy" | "rookie">("joy");
+  // ?tab=rookie で直接ルーキーリーグを開く（お知らせからのリンク用）
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("tab") === "rookie") setTab("rookie"); // eslint-disable-line react-hooks/set-state-in-effect
+  }, []);
   const tabs = [
     { key: "joy" as const, label: "JOY ランキング" },
     { key: "rookie" as const, label: "ルーキーリーグ（B）" },

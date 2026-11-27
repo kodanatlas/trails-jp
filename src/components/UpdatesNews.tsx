@@ -108,10 +108,15 @@ export async function UpdatesNews() {
   // 新機能アナウンス（静的）。データ更新フィードに新機能のお知らせを加える。
   entries.push(
     {
+      date: new Date("2026-11-27T00:00:00+09:00"),
+      label: "新機能『ルーキーリーグ』を追加 — 競技 2 年目までの選手を B クラスの成績で順位付け（大学・中高・一般）",
+      href: "/rankings?tab=rookie",
+      isNew: true,
+    },
+    {
       date: new Date("2026-09-30T00:00:00+09:00"),
       label: "『ミスの傾向』のセルから根拠のレッグを表示 — 割合の元になったレースとレッグを確認し、結果分析の該当レッグへ移動",
       href: "/analysis",
-      isNew: true,
     },
     {
       date: new Date("2026-07-07T00:00:00+09:00"),
