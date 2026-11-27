@@ -5,7 +5,16 @@ import { ChevronDown, ChevronUp, Loader2, Search } from "lucide-react";
 import Link from "@/components/AppLink";
 import type { Affiliation, RookieLeagueData, RookieEntry } from "@/lib/rookie/types";
 
-const AFFILIATIONS: (Affiliation | "すべて")[] = ["すべて", "大学", "中高", "一般"];
+const AFF_OPTIONS: Affiliation[] = ["大学", "中高", "一般"];
+
+/** 区分の選択を切り替える。3 つとも選んだら「すべて」（空の選択）に戻す */
+function toggleAff(selected: readonly Affiliation[], a: Affiliation): Affiliation[] {
+  const next = selected.includes(a) ? selected.filter((x) => x !== a) : [...selected, a];
+  return next.length === AFF_OPTIONS.length ? [] : next;
+}
+
+const chipClass = (on: boolean) =>
+  `whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium ${on ? "border border-primary bg-primary text-white" : "border border-border text-muted hover:text-foreground"}`;
 
 function RookieRow({ entry, rankInView, open, onToggle }: { entry: RookieEntry; rankInView: number; open: boolean; onToggle: () => void }) {
   return (
@@ -63,7 +72,7 @@ export function RookieLeagueView() {
   const [data, setData] = useState<RookieLeagueData | null>(null);
   const [failed, setFailed] = useState(false);
   const [fy, setFy] = useState<number | null>(null);
-  const [aff, setAff] = useState<Affiliation | "すべて">("すべて");
+  const [affs, setAffs] = useState<Affiliation[]>([]);
   const [query, setQuery] = useState("");
   const [openKey, setOpenKey] = useState<string | null>(null);
 
@@ -85,15 +94,15 @@ export function RookieLeagueView() {
   const season = data?.seasons.find((s) => s.fy === fy);
   const rows = useMemo(() => {
     const all = season?.entries ?? [];
-    const byAff = aff === "すべて" ? all : all.filter((e) => e.affiliation === aff);
+    const byAff = affs.length === 0 ? all : all.filter((e) => affs.includes(e.affiliation));
     const q = query.trim().toLowerCase();
     return q ? byAff.filter((e) => e.name.toLowerCase().includes(q) || e.club.toLowerCase().includes(q)) : byAff;
-  }, [season, aff, query]);
+  }, [season, affs, query]);
   const rankInAff = useMemo(() => {
     const all = season?.entries ?? [];
-    const list = aff === "すべて" ? all : all.filter((e) => e.affiliation === aff);
+    const list = affs.length === 0 ? all : all.filter((e) => affs.includes(e.affiliation));
     return new Map(list.map((e, i) => [e.nameKey, i + 1]));
-  }, [season, aff]);
+  }, [season, affs]);
 
   if (failed) return <p className="py-12 text-center text-sm text-muted">ルーキーリーグを読み込めませんでした。</p>;
   if (!data || !season) {
@@ -126,12 +135,11 @@ export function RookieLeagueView() {
         ))}
       </div>
       <div className="mb-3 flex flex-wrap items-center gap-1.5">
-        {AFFILIATIONS.map((a) => (
-          <button
-            key={a}
-            onClick={() => setAff(a)}
-            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium ${aff === a ? "border border-primary bg-primary text-white" : "border border-border text-muted hover:text-foreground"}`}
-          >
+        <button onClick={() => setAffs([])} aria-pressed={affs.length === 0} className={chipClass(affs.length === 0)}>
+          すべて
+        </button>
+        {AFF_OPTIONS.map((a) => (
+          <button key={a} onClick={() => setAffs((cur) => toggleAff(cur, a))} aria-pressed={affs.includes(a)} className={chipClass(affs.includes(a))}>
             {a}
           </button>
         ))}
