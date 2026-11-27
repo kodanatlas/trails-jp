@@ -99,7 +99,9 @@ export default async function Home() {
           <div className="hidden min-w-0 rounded-2xl border border-border-strong bg-card p-8 lg:block">
             <p className="text-lg font-bold text-foreground">選手を探す</p>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              名前の一部でも探せます。ポイント推移・巡航速度・ミスの傾向・対戦成績まで、1 人分をまとめて見られます。
+              <span className="inline-block">名前の一部でも探せます。</span>
+              <span className="inline-block">ポイント推移・巡航速度・ミスの傾向・</span>
+              <span className="inline-block">対戦成績まで、1 人分をまとめて見られます。</span>
             </p>
             <HeroAthleteSearch size="lg" />
           </div>

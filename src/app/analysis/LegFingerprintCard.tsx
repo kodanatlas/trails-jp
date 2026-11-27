@@ -115,7 +115,7 @@ function FpCell({
     ) : (
       <>
         {(rate * 100).toFixed(0)}%
-        <span className="ml-0.5 text-[8px] font-normal text-muted">({c.n})</span>
+        <span className="ml-0.5 text-[11px] font-normal text-foreground/60">({c.n})</span>
       </>
     );
   const title = `n=${c.n} ミス${c.m}${bandRate != null ? `｜参考: 近い巡航速度帯の平均 約${Math.round(bandRate * 100)}%` : ""}`;
@@ -165,14 +165,14 @@ function SevRow({
       <span className="w-8 flex-shrink-0 text-right font-mono tabular-nums">{count}</span>
     </>
   );
-  if (!drill) return <div className="flex items-center gap-2 text-[10px]">{inner}</div>;
+  if (!drill) return <div className="flex items-center gap-2 text-xs">{inner}</div>;
   return (
     <button
       type="button"
       aria-pressed={selected}
       aria-label={`ミスの規模「${label}」の根拠レッグを表示（${count} 件）`}
       onClick={() => drill.onSelect({ kind: "sev", bin })}
-      className={`flex w-full items-center gap-2 rounded text-[10px] transition-colors hover:bg-white/5 ${selected ? "ring-1 ring-primary" : ""}`}
+      className={`flex w-full items-center gap-2 rounded text-xs transition-colors hover:bg-white/5 ${selected ? "ring-1 ring-primary" : ""}`}
     >
       {inner}
     </button>
@@ -222,13 +222,13 @@ function DisciplineBlock({
     <div className="min-w-0 rounded-lg bg-surface p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p className="text-sm font-semibold">{label}</p>
-        <p className="text-[10px] text-muted">
+        <p className="text-xs text-muted">
           {fp.racesUsed}レース / {fp.legsValid}レッグ / 全レッグ中ミス {(base * 100).toFixed(0)}%
         </p>
       </div>
 
       {/* 3×3 グリッド（行=局面・列=レッグ長） */}
-      <div className="mt-2 grid grid-cols-[auto_repeat(3,1fr)] gap-1 text-center text-[10px]">
+      <div className="mt-2 grid grid-cols-[auto_repeat(3,1fr)] gap-1 text-center text-xs">
         <span />
         {LEN_LABELS.map((l) => (
           <span key={l} className="text-muted">
@@ -252,11 +252,11 @@ function DisciplineBlock({
       </div>
       {drill && drill.selected?.kind !== "sev" && drill.panel}
       {drill && !drill.selected && (
-        <p className="mt-1 text-[9px] text-muted/70">セルや規模のバーをタップすると、根拠のレッグが見られます。</p>
+        <p className="mt-1 text-[11px] text-muted/70">セルや規模のバーをタップすると、根拠のレッグが見られます。</p>
       )}
 
       {/* 重大度ヒストグラム */}
-      <p className="mt-2 text-[9px] text-muted/70">ミスの規模別 件数</p>
+      <p className="mt-2 text-[11px] text-muted/70">ミスの規模別 件数</p>
       <div className="mt-1 space-y-0.5">
         {fp.sev.map((count, i) => (
           <SevRow key={i} bin={i as 0 | 1 | 2} label={sevLabels[i]} count={count} max={sevMax} drill={drill} />
@@ -266,15 +266,15 @@ function DisciplineBlock({
 
       {/* lag-1（ゲート通過時のみ） */}
       {fp.lag1 && (
-        <p className="mt-2 text-[10px] text-muted">
+        <p className="mt-2 text-xs text-muted">
           ミスの直後のレッグもミスになりやすい傾向
           <span className="font-mono font-bold text-foreground/85">（約{fp.lag1.rr.toFixed(1)}倍・レース内比較・参考）</span>
         </p>
       )}
 
-      {bandLine && <p className="mt-1.5 text-[10px] text-muted">{bandLine}</p>}
+      {bandLine && <p className="mt-1.5 text-xs text-muted">{bandLine}</p>}
       {fp.cells.every((c) => c.flag === 0) && (
-        <p className="mt-1.5 text-[10px] text-muted/80">
+        <p className="mt-1.5 text-xs text-muted/80">
           {bandLine
             ? "統計的に偏って多いセルはありません（帯との差は偶然の範囲を出ない可能性があります）。"
             : "統計的に偏って多いセルはありません。"}
@@ -284,7 +284,7 @@ function DisciplineBlock({
       {/* 期間別の未調整観測ミス率（Stage 2d・検定なし・矢印/色で改善判定を示さない） */}
       {fp.periods && (
         <div className="mt-2 border-t border-border/50 pt-2">
-          <p className="text-[10px] text-muted">
+          <p className="text-xs text-muted">
             未調整の観測ミス率（参考）:{" "}
             <span className="text-foreground/85">
               直近12ヶ月 約{pct5(fp.periods.recent)}%
@@ -294,7 +294,7 @@ function DisciplineBlock({
             <span className="text-foreground/85">それ以前 約{pct5(fp.periods.older)}%</span>
             <span className="text-muted/70">（{fp.periods.older.races}レース）</span>
           </p>
-          <p className="mt-0.5 text-[9px] text-muted/60">
+          <p className="mt-0.5 text-[11px] text-muted/60">
             同種目の取込レースを日付で二分した未調整値（5%刻み）。クラス・季節・コース難度を分離しておらず、
             レッグはレース内で相関するため小さな差は読めません。上達／悪化の判定には使えません（方向は上のトレンド線を参照）。
           </p>
@@ -302,7 +302,7 @@ function DisciplineBlock({
       )}
 
       {(fp.legsPack > 0 || fp.packUnchecked > 0) && (
-        <p className="mt-1.5 text-[9px] text-muted/70">
+        <p className="mt-1.5 text-[11px] text-muted/70">
           {fp.legsPack > 0 ? `集団走の疑い ${fp.legsPack} レッグを除外。` : ""}
           {fp.packUnchecked > 0 ? `スタート時刻不明で未チェック ${fp.packUnchecked} レース。` : ""}
         </p>
@@ -407,7 +407,7 @@ export function LegFingerprintCard({ name }: { name: string }) {
     <div ref={rootRef} className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-sm font-bold">ミスの傾向（クロスレース）</h3>
-        <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[9px] font-medium text-accent">β</span>
+        <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[11px] font-medium text-accent">β</span>
       </div>
       <p className="mt-1 text-xs text-foreground/80">
         どの局面・どの所要時間のレッグでミスが出やすいか。赤いセルは自分の平均より統計的に偏って多い場所。
@@ -432,7 +432,7 @@ export function LegFingerprintCard({ name }: { name: string }) {
           />
         )}
       </div>
-      <p className="mt-3 text-[10px] leading-relaxed text-muted">
+      <p className="mt-3 text-xs leading-relaxed text-muted">
         「ミス」はレッグのタイムが自分の想定タイムを30%以上上回った場合の機械判定で、ナビミスとは限りません
         （集団走・地形・慎重な安全ルートで時間がかかった場合も含まれえます。「もっと攻めるべき」という意味ではありません）。
         赤フラグは統計的な偏りの判定で、1割程度は偶然でも生じえます。

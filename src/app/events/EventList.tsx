@@ -218,7 +218,7 @@ export function EventList({ events }: EventListProps) {
     <div>
       {/* Controls */}
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
             <input
@@ -226,13 +226,13 @@ export function EventList({ events }: EventListProps) {
               placeholder="大会名・地域..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="rounded-lg border border-border bg-surface py-1.5 pl-8 pr-3 text-sm outline-none focus:border-primary"
+              className="w-full rounded-lg border border-border bg-surface py-1.5 pl-8 pr-3 text-sm outline-none focus:border-primary"
             />
           </div>
           <select
             value={tagFilter}
             onChange={(e) => setTagFilter(e.target.value)}
-            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-primary"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-primary sm:w-auto"
           >
             <option value="">全てのタグ</option>
             {allTags.map((t) => (
@@ -242,7 +242,7 @@ export function EventList({ events }: EventListProps) {
           <select
             value={entryFilter}
             onChange={(e) => setEntryFilter(e.target.value)}
-            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-primary"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-primary sm:w-auto"
           >
             <option value="">全ての状態</option>
             <option value="open">受付中</option>
@@ -251,7 +251,7 @@ export function EventList({ events }: EventListProps) {
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-primary"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-primary sm:w-auto"
           >
             {DATE_RANGE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>

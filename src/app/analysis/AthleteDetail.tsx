@@ -309,7 +309,8 @@ function ProfileHeader({
   ).top3.map((e) => ({ ...e, disc: e.discipline }));
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    // /a/選手名 では枠を外し、ページの見出し（名前・所属）の続きの 1 行として見せる（カードにしない）
+    <div className={hideIdentity ? "-mt-2" : "rounded-lg border border-border bg-card p-4"}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
         {/* /a/選手名 ではページの見出しに名前・所属があるので、画面上は繰り返さない（読み上げ用には残す） */}
         <div className={hideIdentity ? "sr-only" : "min-w-0"}>
@@ -317,7 +318,7 @@ function ProfileHeader({
           <p className="break-words text-xs text-muted">{profile.clubs.join(" / ")}</p>
         </div>
         {/* 名前を出さないときは、ポイントを左・共有を右の端に分ける */}
-        <div className={hideIdentity ? "flex w-full flex-row-reverse items-start justify-between gap-3" : "flex items-start gap-3 sm:shrink-0"}>
+        <div className={hideIdentity ? "flex flex-row-reverse items-start justify-end gap-4" : "flex items-start gap-3 sm:shrink-0"}>
           <ShareButtons name={profile.name} />
           <div className={hideIdentity ? "text-left" : "text-left sm:text-right"}>
             <p className="text-2xl font-bold text-primary">

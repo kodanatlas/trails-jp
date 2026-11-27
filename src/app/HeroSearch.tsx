@@ -31,7 +31,7 @@ export function HeroAthleteSearch({ size = "md" }: { size?: "md" | "lg" }) {
       />
       <button
         type="submit"
-        className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md bg-primary px-3 py-1.5 text-xs font-bold text-background transition-colors hover:bg-primary-dark"
+        className={`absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md bg-primary font-bold text-background transition-colors hover:bg-primary-dark ${lg ? "px-5 py-2 text-sm" : "px-3 py-1.5 text-xs"}`}
       >
         検索
       </button>
