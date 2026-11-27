@@ -33,7 +33,7 @@ const LAYERS: {
     accent: "#67e8f9",
     fill: "rgba(34,211,238,.05)",
     stroke: "rgba(34,211,238,.4)",
-    title: "INGEST ｜ スクレイパー（cheerio + undici）＋ 手動取込",
+    title: "INGEST ｜ 公開データの取込",
     chips: [
       { x: 48, w: 160, t: "events.ts" },
       { x: 228, w: 160, t: "rankings.ts" },
@@ -850,7 +850,7 @@ export function AnalysisSystemReport({
               システム<span className="grad">全体マップ</span>
             </h2>
             <span className="sec-sub">
-              色の意味 — アンバー：外部源／どこオリ手動取込 ／ シアン：取込（スクレイパー＋手動） ／ 紫：自動化 ／
+              色の意味 — アンバー：外部源／どこオリ手動取込 ／ シアン：取込 ／ 紫：自動化 ／
               スレート：永続化 ／ 緑：API ／ ピンク：フロント。上から下へデータが流れる。
             </span>
           </div>
@@ -873,7 +873,7 @@ export function AnalysisSystemReport({
               <div className="ghost">E</div>
               <span className="tag">EVENTS</span>
               <h3>イベント</h3>
-              <p>JOY 大会を日次取得、どこオリ大会は手動で一覧化して取込。リスト／カレンダー2ビュー。</p>
+              <p>JOY の公開大会情報を反映、どこオリ大会は手動で一覧化して取込。リスト／カレンダー2ビュー。</p>
               <ul>
                 <li>都道府県・受付状態・日付での<b>絞り込み</b></li>
                 <li>受付中・直近30日は<b>所属別エントリー</b>を展開</li>
@@ -1030,15 +1030,15 @@ export function AnalysisSystemReport({
               <div className="w">19:07 JST</div>
               <div className="t">sync-events</div>
               <div className="d">
-                JOY イベント同期＋どこオリ手動取込分の反映＋LapCenter マッチング。<b>水曜と、JOY ランキングに大会が追加された日は再デプロイを起動</b>
-                （自動検知分は<span style={{ whiteSpace: "nowrap" }}>20 時間に1回</span>・
+                JOY 大会情報の反映＋どこオリ手動取込分の反映＋LapCenter マッチング。<b>水曜と、JOY ランキングに大会が追加された日は再デプロイを起動</b>
+                （ランキング追加分は<span style={{ whiteSpace: "nowrap" }}>20 時間に1回</span>・
                 <span style={{ whiteSpace: "nowrap" }}>7日に2回まで</span>）。
               </div>
             </div>
             <div className="wave">
               <div className="w">20:23 JST</div>
               <div className="t">sync-entries</div>
-              <div className="d">未開催大会のエントリーを並列スクレイプし、<b>選手別インデックス</b>を生成。</div>
+              <div className="d">未開催大会の公開エントリー情報から<b>選手別インデックス</b>を生成。</div>
             </div>
             <div className="wave">
               <div className="w">21:41 JST</div>
@@ -1316,8 +1316,7 @@ export function AnalysisSystemReport({
             <div className="topic c">
               <div className="h">C｜収集・UI</div>
               <ul>
-                <li><b>cheerio ＋ undici</b>（スクレイピング）</li>
-                <li><b>Tailwind CSS v4</b> / lucide-react</li>
+                                <li><b>Tailwind CSS v4</b> / lucide-react</li>
               </ul>
             </div>
           </div>
@@ -1356,7 +1355,7 @@ export function AnalysisSystemReport({
               <div className="p">P3</div>
               <div className="w">完了</div>
               <div className="d">
-                堅牢性 — API 障害時の縮退表示・Cron 死活監視（watchdog）・JOY ランキング更新の自動検知。
+                堅牢性 — API 障害時の縮退表示・Cron 死活監視（watchdog）・JOY ランキング更新の反映。
               </div>
               <div className="chips">
                 <span className="chip c">運用</span>
@@ -1368,7 +1367,7 @@ export function AnalysisSystemReport({
               <div className="no">1</div>
               <div>
                 <div className="t">Hobby Cron は 1日1回</div>
-                <div className="d">3つのジョブを1日1パスずつに分け、制限内に収める設計。JOY ランキングの更新も日次で検知するため、反映は最大1日遅れ。</div>
+                <div className="d">3つのジョブを1日1パスずつに分け、制限内に収める設計。JOY ランキングの更新は最大1日遅れで反映される。</div>
               </div>
             </div>
             <div className="act">
